@@ -9,7 +9,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
+  overflow: hidden;
 }
+
+/* no overlay; hover uses brightness/contrast only */
 
 .menu-icon-img {
   width: 100%;
@@ -33,4 +37,13 @@
 
 .menu-item {
   position: relative;
+  transform-origin: center;
 }
+
+/* hover effects only on the icon */
+.menu-item:hover { transform: scale(1.06); }
+
+.menu-item:hover .menu-icon { filter: brightness(1.25) contrast(1.15); }
+
+.menu-item:active { transform: scale(1.02); }
+.menu-item:active .menu-icon { filter: brightness(1.1) contrast(1.05); }
