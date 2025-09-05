@@ -1,6 +1,6 @@
 import React from 'react';
-import PanZoomViewport from '../components/PanZoomViewport';
-export default function Home() {
+import PanZoomViewport from '../layouts/PanZoomViewport';
+export default function House() {
     return (
         <div>
             <PanZoomViewport />

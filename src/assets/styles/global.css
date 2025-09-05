@@ -1,0 +1,52 @@
+/* Global styles for CryptoValley */
+
+/* ByteBounce Font Setup */
+@font-face {
+  font-family: 'ByteBounce';
+  src: url('/public/fonts/ByteBounce.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap; /* Improves loading performance */
+}
+
+/* Global font application */
+* {
+  font-family: 'ByteBounce', 'Courier New', monospace;
+}
+
+body {
+  font-family: 'ByteBounce', 'Courier New', monospace;
+  margin: 0;
+  padding: 0;
+  background-color: #2F2F2F;
+  color: #FFFFFF;
+}
+
+/* Ensure pixel-perfect rendering */
+* {
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+}
+
+/* Remove default button and input styling for game aesthetic */
+button, input, select, textarea {
+  font-family: 'ByteBounce', 'Courier New', monospace;
+}
+
+/* Smooth scrolling for better UX */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Global text styling for all elements */
+h1, h2, h3, h4, h5, h6, p, div, span, a, button, input, select, textarea {
+  font-weight: 600;
+  text-shadow: rgb(43, 45, 49) -1px -1px 0px, rgb(43, 45, 49) 1px 1px 0px, rgb(43, 45, 49) -1px 0px 0px, rgb(43, 45, 49) 0px -1px 0px, rgb(43, 45, 49) 0px 1px 0px, rgb(43, 45, 49) 1px -1px 0px, rgb(43, 45, 49) 1px 0px 0px, rgb(43, 45, 49) -1px 1px 0px;
+  color: white;
+}
+
+/* Specific sizing for headings */
+h1, h2 {
+  font-size: 1.5rem;
+}
