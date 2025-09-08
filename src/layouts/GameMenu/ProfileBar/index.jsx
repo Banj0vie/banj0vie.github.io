@@ -3,13 +3,14 @@ import './style.css';
 import Avatar from './Avatar';
 import ProfileButton from '../../../components/buttons/ProfileButton';
 import { profileAssets } from '../../../assets/images/baseimages';
+import ProfileView from './ProfileView';
 
 const ProfileBar = () => {
   return (
     <div className="profile-bar">
+      <img alt="Profile" src={profileAssets.profileBg} className="profile-background"/>
       <Avatar />
-      <div className="name-pill">kcat</div>
-      
+      <ProfileView />
       <ProfileButton icon={<img alt="Settings" src={profileAssets.btnSettings} />} title="Settings" />
       <ProfileButton icon={<img alt="Inventory" src={profileAssets.btnInventory} />} title="Inventory" />
       <ProfileButton icon={<img alt="Tutorial" src={profileAssets.btnTutorial} />} title="Tutorial" />

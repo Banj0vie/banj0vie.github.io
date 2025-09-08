@@ -49,3 +49,19 @@ h1, h2, h3, h4, h5, h6, p, div, span, a, button, input, select, textarea {
 h1, h2 {
   font-size: 1.5rem;
 }
+
+/* disable text selection globally */
+html, body {
+  -webkit-user-select: none; /* Safari */
+  -moz-user-select: none;    /* Firefox */
+  -ms-user-select: none;     /* IE/Edge */
+  user-select: none;         /* standard */
+}
+
+/* allow selection for controls like inputs/links */
+input, textarea, select, button, a {
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
+}

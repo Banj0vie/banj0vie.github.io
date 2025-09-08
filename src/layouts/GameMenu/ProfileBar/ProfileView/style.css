@@ -1,0 +1,9 @@
+.name-pill {
+    align-items: center;
+    padding-left: 50px;
+    padding-right: 20px;
+    font-size: 1.8rem;
+    width: 260px;
+    display: flex;
+    justify-content: space-between;
+}
