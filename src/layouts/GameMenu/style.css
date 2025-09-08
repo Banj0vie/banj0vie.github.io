@@ -9,6 +9,12 @@
   flex-direction: column;
   gap: 24px;
   font-size: 12px;
+  pointer-events: none; /* Allow clicks to pass through to PanZoomViewport */
+}
+
+/* Re-enable pointer events for interactive elements */
+.game-menu > * {
+  pointer-events: auto;
 }
 
 /* profile bar container */

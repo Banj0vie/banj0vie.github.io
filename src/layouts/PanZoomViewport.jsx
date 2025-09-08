@@ -71,10 +71,7 @@ const PanZoomViewport = () => {
     if (target && target.closest && target.closest('[data-hotspot="true"]')) {
       return;
     }
-    // Only start panning if click is on the pan surface (image/layer)
-    if (!(target && target.closest && target.closest('[data-pan-surface="true"]'))) {
-      return;
-    }
+    // Allow panning anywhere in the viewport (including white background)
     e.preventDefault();
     if (e.button !== 0 && e.pointerType === "mouse") return;
     e.currentTarget?.setPointerCapture?.(e.pointerId);
@@ -121,11 +118,7 @@ const PanZoomViewport = () => {
   }, [endPan]);
 
   const uiStyles = {
-    root: { position: 'fixed', inset: 0, width: '100vw', height: '100vh', userSelect: 'none', background: '#fff' },
-    toolbar: { position: 'fixed', top: 8, left: 8, display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(255,255,255,0.9)', padding: 6, borderRadius: 10, border: '1px solid #e5e7eb', zIndex: 10 },
-    hint: { fontSize: 12, color: '#4b5563', marginRight: 8 },
-    btn: { padding: '4px 8px', borderRadius: 12, border: '1px solid #e5e7eb', fontSize: 12, cursor: 'pointer', background: '#fff' },
-    percent: { minWidth: 64, textAlign: 'center', fontSize: 12 },
+    root: { position: 'fixed', inset: 0, width: '100vw', height: '100vh', userSelect: 'none' },
     viewport: { position: 'fixed', inset: 0, overflow: 'hidden', cursor: 'grab' },
     layer: { position: 'absolute', top: 0, left: 0, willChange: 'transform', transformOrigin: '0 0' },
     hotspotBtn: { position: 'absolute', padding: '4px 8px', background: '#f97316', color: '#fff', fontSize: 12, borderRadius: 6, cursor: 'pointer', boxShadow: '0 1px 2px rgba(0,0,0,0.25)' },
@@ -140,14 +133,6 @@ const PanZoomViewport = () => {
     <div style={uiStyles.root}>
       <style>{buttonAnimCss}</style>
 
-      <div style={uiStyles.toolbar}>
-        <span style={uiStyles.hint}>Drag to pan • Scroll to zoom • Double-click to reset</span>
-        <button style={uiStyles.btn} onClick={() => setScale(clamp(scale * 0.9, 0.2, 6))}>−</button>
-        <div style={uiStyles.percent}>{Math.round(scale * 100)}%</div>
-        <button style={uiStyles.btn} onClick={() => setScale(clamp(scale * 1.1, 0.2, 6))}>+</button>
-        <button style={uiStyles.btn} onClick={() => { setTx(0); setTy(0); setScale(1); }}>Reset</button>
-      </div>
-
       <div
         ref={containerRef}
         style={{ ...uiStyles.viewport, touchAction: 'none' }}
@@ -157,7 +142,6 @@ const PanZoomViewport = () => {
         onDoubleClick={onDoubleClick}
       >
         <div
-          data-pan-surface="true"
           style={{
             ...uiStyles.layer,
             transform: `translate(${tx}px, ${ty}px) scale(${scale})`,
