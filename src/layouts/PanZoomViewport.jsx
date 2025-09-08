@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 
-export default function PanZoomViewport() {
+const PanZoomViewport = () => {
   const buttonAnimCss = `
     @keyframes mapFloat { 0% { transform: translateY(0); } 50% { transform: translateY(-4px); } 100% { transform: translateY(0); } }
     .map-btn { animation: mapFloat 1.8s ease-in-out infinite; will-change: transform; }
@@ -201,4 +201,6 @@ export default function PanZoomViewport() {
       )}
     </div>
   );
-} 
+}
+
+export default PanZoomViewport;

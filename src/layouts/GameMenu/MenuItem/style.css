@@ -38,6 +38,7 @@
 .menu-item {
   position: relative;
   transform-origin: center;
+  width: fit-content;
 }
 
 /* hover effects only on the icon */

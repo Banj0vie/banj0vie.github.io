@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import './style.css';
 
-export default function MenuItem({ path, icon, label, isActive }) {
+const MenuItem = ({ path, icon, label, isActive }) => {
   return (
     <Link
       to={path}
@@ -19,3 +19,5 @@ export default function MenuItem({ path, icon, label, isActive }) {
     </Link>
   );
 }
+
+export default MenuItem;

@@ -2,9 +2,10 @@ import React from 'react';
 import { useLocation } from 'react-router-dom';
 import { menuIcons } from '../../assets/images/baseimages';
 import MenuItem from './MenuItem';
+import ProfileBar from './ProfileBar';
 import './style.css';
 
-export default function GameMenu() {
+const GameMenu = () => {
   const location = useLocation();
 
   const menuItems = [
@@ -17,6 +18,7 @@ export default function GameMenu() {
 
   return (
     <nav className="game-menu">
+      <ProfileBar />
       {menuItems.map((item) => {
         const isActive = location.pathname === item.path;
         return (
@@ -32,3 +34,5 @@ export default function GameMenu() {
     </nav>
   );
 }
+
+export default GameMenu;

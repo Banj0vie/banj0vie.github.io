@@ -1,7 +1,9 @@
 import React from 'react';
 import PanZoomViewport from '../layouts/PanZoomViewport';
-export default function Valley() {
+const Valley = () => {
   return (
     <PanZoomViewport />
   );
 }
+
+export default Valley;

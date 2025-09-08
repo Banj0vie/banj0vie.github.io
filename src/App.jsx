@@ -4,7 +4,7 @@ import Valley from './router/valley.jsx';
 import House from './router/house.jsx';
 import GameMenu from './layouts/GameMenu';
 
-export default function App() {
+const App = () => {
   return (
     <Router>
       <div style={{ 
@@ -29,4 +29,6 @@ export default function App() {
       </div>
     </Router>
   );
-} 
+}
+
+export default App;
