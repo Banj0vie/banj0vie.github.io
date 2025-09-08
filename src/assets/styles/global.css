@@ -4,7 +4,7 @@
 @font-face {
   font-family: 'ByteBounce';
   src: url('/public/fonts/ByteBounce.ttf') format('truetype');
-  font-weight: normal;
+  font-weight: 100;
   font-style: normal;
   font-display: swap; /* Improves loading performance */
 }
@@ -41,7 +41,6 @@ html {
 
 /* Global text styling for all elements */
 h1, h2, h3, h4, h5, h6, p, div, span, a, button, input, select, textarea {
-  font-weight: 600;
   text-shadow: rgb(43, 45, 49) -1px -1px 0px, rgb(43, 45, 49) 1px 1px 0px, rgb(43, 45, 49) -1px 0px 0px, rgb(43, 45, 49) 0px -1px 0px, rgb(43, 45, 49) 0px 1px 0px, rgb(43, 45, 49) 1px -1px 0px, rgb(43, 45, 49) 1px 0px 0px, rgb(43, 45, 49) -1px 1px 0px;
   color: white;
 }

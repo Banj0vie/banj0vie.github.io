@@ -1,0 +1,68 @@
+.profile-btn {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.125rem;
+  /* border-image nine-slice based on provided sample */
+  border-image: var(--profile-btn-bg) 6 fill / 1rem / 0.5rem repeat;
+  border-style: solid;
+  background-size: 100% 100%;
+  color: #fff;
+}
+
+.profile-btn:hover {
+  filter: brightness(1.1) contrast(1.05);
+}
+
+.pb-bg {
+  display: none;
+}
+
+.pb-icon {
+  font-size: 16px;
+}
+
+.pb-icon img {
+  width: 16px;
+  height: 16px;
+  display: block;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+}
+
+.pb-text {
+  font-size: 1.4rem;
+}
+
+/* full-bleed icon variant */
+.profile-btn.only-icon {
+  width: 1.5rem;
+  height: 1.5rem;
+  cursor: pointer;
+}
+
+.profile-btn.only-icon .pb-icon,
+.profile-btn.only-icon .pb-icon img {
+  width: 2rem;
+  height: 2rem;
+}
+
+.profile-btn.with-text {
+  width: 5.5rem;
+  height: 1.5rem;
+  cursor: help;
+}
+
+.profile-btn.with-text .pb-icon,
+.profile-btn.with-text .pb-icon img {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.profile-btn .pb-icon,
+.profile-btn .pb-text {
+  position: relative;
+  z-index: 1;
+}
