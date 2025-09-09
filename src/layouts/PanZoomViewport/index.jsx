@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import './style.css';
 import TooltipButton from '../../components/buttons/TooltipButton';
-import BaseDialog from '../../components/dialogs/BaseDialog';
 
 const defaultHotspots = [
   { id: 'gold', label: 'GOLD', x: 210, y: 110, delay: 0 },
@@ -11,8 +10,8 @@ const defaultHotspots = [
   { id: 'referrals', label: 'REFERRALS', x: 600, y: 240, delay: 0.8 },
 ];
 
-const PanZoomViewport = ({ backgroundSrc, hotspots = defaultHotspots, width, height }) => {
-  
+const PanZoomViewport = ({ backgroundSrc, hotspots = defaultHotspots, dialogs = [], width, height }) => {
+
   const containerRef = useRef(null);
 
   const [tx, setTx] = useState(0);
@@ -114,7 +113,7 @@ const PanZoomViewport = ({ backgroundSrc, hotspots = defaultHotspots, width, hei
     };
   }, [endPan]);
 
-  
+
 
   const normalizeSize = (v) => {
     if (v === undefined || v === null || v === false || v === true) return undefined;
@@ -151,21 +150,13 @@ const PanZoomViewport = ({ backgroundSrc, hotspots = defaultHotspots, width, hei
               className="map-btn"
               label={h.label}
               style={{ left: h.x, top: h.y, animationDelay: `${h.delay}s` }}
-              onClick={() => setActiveModal(h)}
+              onClick={() => setActiveModal(dialogs.find(d => d.id === h.id) || dialogs[0])}
             />
           ))}
         </div>
       </div>
-
-      {activeModal && (
-        <BaseDialog title={activeModal.label} onClose={() => setActiveModal(null)}>
-          <div>Items Dropped</div>
-          <div style={{ marginTop: 12 }}>Chest Status</div>
-          <div style={{ marginTop: 12 }}>Next Chest In</div>
-          <div style={{ marginTop: 12 }}>Already Claimed</div>
-        </BaseDialog>
-      )}
-    </div>
+      {activeModal && <activeModal.component onClose={() => setActiveModal(null)} label={activeModal.label} header={activeModal.header} />}
+    </div >
   );
 }
 
