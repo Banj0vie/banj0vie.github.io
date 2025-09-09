@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import './style.css';
+import TooltipButton from '../../components/buttons/TooltipButton';
 
 const defaultHotspots = [
   { id: 'gold', label: 'GOLD', x: 210, y: 110, delay: 0 },
@@ -9,7 +10,7 @@ const defaultHotspots = [
   { id: 'referrals', label: 'REFERRALS', x: 600, y: 240, delay: 0.8 },
 ];
 
-const PanZoomViewport = ({ backgroundSrc, hotspots = defaultHotspots }) => {
+const PanZoomViewport = ({ backgroundSrc, hotspots = defaultHotspots, width, height }) => {
   
   const containerRef = useRef(null);
 
@@ -114,6 +115,17 @@ const PanZoomViewport = ({ backgroundSrc, hotspots = defaultHotspots }) => {
 
   
 
+  const normalizeSize = (v) => {
+    if (v === undefined || v === null || v === false || v === true) return undefined;
+    return typeof v === 'number' ? `${v}px` : v;
+  };
+
+  const layerInlineStyle = {
+    transform: `translate(${tx}px, ${ty}px) scale(${scale})`,
+    ...(normalizeSize(width) ? { width: normalizeSize(width) } : {}),
+    ...(normalizeSize(height) ? { height: normalizeSize(height) } : {}),
+  };
+
   return (
     <div className="panzoom-root">
 
@@ -126,21 +138,20 @@ const PanZoomViewport = ({ backgroundSrc, hotspots = defaultHotspots }) => {
         onPointerMove={onPointerMove}
         onDoubleClick={onDoubleClick}
       >
-        <div className="panzoom-layer" style={{ transform: `translate(${tx}px, ${ty}px) scale(${scale})` }}>
+        <div className="panzoom-layer" style={layerInlineStyle}>
           {backgroundSrc && (
             <img className="img-scene" src={backgroundSrc} alt="Scene" draggable={false} onDragStart={(e) => e.preventDefault()} />
           )}
 
           {hotspots.map((h) => (
-            <button
+            <TooltipButton
               key={h.id}
               data-hotspot="true"
-              className="map-btn hotspot-btn"
+              className="map-btn"
+              label={h.label}
               style={{ left: h.x, top: h.y, animationDelay: `${h.delay}s` }}
               onClick={() => setActiveModal(h)}
-            >
-              {h.label}
-            </button>
+            />
           ))}
         </div>
       </div>
@@ -164,5 +175,6 @@ const PanZoomViewport = ({ backgroundSrc, hotspots = defaultHotspots }) => {
 }
 
 export default PanZoomViewport;
+
 
 

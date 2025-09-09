@@ -1,0 +1,52 @@
+.tooltip-btn:hover {
+  transform: scale(1.1) translateZ(1px) !important;
+  animation: auto ease 0s 1 normal none running none !important;
+}
+
+.tooltip-btn {
+  position: absolute;
+  color: #fff;
+  font-size: 12px;
+  cursor: pointer;
+  min-width: 10rem;
+  height: 3rem;
+  display: flex;
+  justify-content: center;
+  background-repeat: no-repeat;
+  background-position: 50% center;
+  background-size: contain;
+  background-position: 50% center;
+  transition: 0.25s ease-in-out;
+  font-size: 1.15rem;
+}
+
+.tooltip-btn span {
+  margin-top: 10px;
+}
+
+.tooltip-btn.map-btn {
+  animation: mapFloat 2.6s ease-in-out infinite;
+  will-change: transform;
+}
+
+.tooltip-btn__hint {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(17, 24, 39, 0.9);
+  color: #fff;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease-out;
+}
+
+.tooltip-btn:hover .tooltip-btn__hint {
+  opacity: 1;
+}
+
+

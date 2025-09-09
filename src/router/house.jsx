@@ -1,5 +1,5 @@
 import React from 'react';
-import PanZoomViewport from '../components/PanZoomViewport';
+import PanZoomViewport from '../layouts/PanZoomViewport';
 const House = () => {
     return (
         <div>
