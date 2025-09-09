@@ -1,9 +1,9 @@
 import React from 'react';
-import PanZoomViewport from '../layouts/PanZoomViewport';
+import PanZoomViewport from '../components/PanZoomViewport';
 const House = () => {
     return (
         <div>
-            <PanZoomViewport />
+            <PanZoomViewport backgroundSrc="/images/backgrounds/house_new.png" />
         </div>
     );
 }

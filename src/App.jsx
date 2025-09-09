@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Valley from './router/valley.jsx';
 import House from './router/house.jsx';
+import Market from './router/market.jsx';
 import GameMenu from './layouts/GameMenu';
 
 const App = () => {
@@ -21,8 +22,8 @@ const App = () => {
           <Routes>
             <Route path="/" element={<Valley />} />
             <Route path="/house" element={<House />} />
+            <Route path="/market" element={<Market />} />
             <Route path="/farm" element={<div style={{color: 'white'}}>Farm - Coming Soon!</div>} />
-            <Route path="/market" element={<div style={{color: 'white'}}>Market - Coming Soon!</div>} />
             <Route path="/tavern" element={<div style={{color: 'white'}}>Tavern - Coming Soon!</div>} />
           </Routes>
         </div>

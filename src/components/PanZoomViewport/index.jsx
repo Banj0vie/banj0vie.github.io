@@ -1,10 +1,16 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import './style.css';
 
-const PanZoomViewport = () => {
-  const buttonAnimCss = `
-    @keyframes mapFloat { 0% { transform: translateY(0); } 50% { transform: translateY(-4px); } 100% { transform: translateY(0); } }
-    .map-btn { animation: mapFloat 1.8s ease-in-out infinite; will-change: transform; }
-  `;
+const defaultHotspots = [
+  { id: 'gold', label: 'GOLD', x: 210, y: 110, delay: 0 },
+  { id: 'angler', label: 'ANGLER', x: 70, y: 260, delay: 0.2 },
+  { id: 'gold-chest', label: 'GOLD CHEST', x: 500, y: 160, delay: 0.4 },
+  { id: 'gardener', label: 'GARDENER', x: 720, y: 100, delay: 0.6 },
+  { id: 'referrals', label: 'REFERRALS', x: 600, y: 240, delay: 0.8 },
+];
+
+const PanZoomViewport = ({ backgroundSrc, hotspots = defaultHotspots }) => {
+  
   const containerRef = useRef(null);
 
   const [tx, setTx] = useState(0);
@@ -20,20 +26,11 @@ const PanZoomViewport = () => {
     startTy: 0,
   });
 
-  // Hotspot coordinates in image pixels (top/left anchors)
-  const hotspots = [
-    { id: 'gold', label: 'GOLD', x: 210, y: 110, delay: 0 },
-    { id: 'angler', label: 'ANGLER', x: 70, y: 260, delay: 0.2 },
-    { id: 'gold-chest', label: 'GOLD CHEST', x: 500, y: 160, delay: 0.4 },
-    { id: 'gardener', label: 'GARDENER', x: 720, y: 100, delay: 0.6 },
-    { id: 'referrals', label: 'REFERRALS', x: 600, y: 240, delay: 0.8 },
-  ];
-
   const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
 
   const setScaleAroundPoint = useCallback(
     (nextScale, clientX, clientY) => {
-      if (activeModal) return; // disable zoom when modal open
+      if (activeModal) return;
       const el = containerRef.current;
       if (!el) {
         setScale(nextScale);
@@ -56,7 +53,7 @@ const PanZoomViewport = () => {
   );
 
   const onWheel = (e) => {
-    if (activeModal) return; // block scroll zoom over backdrop too
+    if (activeModal) return;
     e.preventDefault();
     const zoomIntensity = 0.0012;
     const factor = Math.exp(-e.deltaY * zoomIntensity);
@@ -65,13 +62,11 @@ const PanZoomViewport = () => {
   };
 
   const onPointerDown = (e) => {
-    if (activeModal) return; // ignore panning when modal open
-    // If starting on a hotspot button, let the click go through
+    if (activeModal) return;
     const target = e.target;
     if (target && target.closest && target.closest('[data-hotspot="true"]')) {
       return;
     }
-    // Allow panning anywhere in the viewport (including white background)
     e.preventDefault();
     if (e.button !== 0 && e.pointerType === "mouse") return;
     e.currentTarget?.setPointerCapture?.(e.pointerId);
@@ -117,49 +112,31 @@ const PanZoomViewport = () => {
     };
   }, [endPan]);
 
-  const uiStyles = {
-    root: { position: 'fixed', inset: 0, width: '100vw', height: '100vh', userSelect: 'none' },
-    viewport: { position: 'fixed', inset: 0, overflow: 'hidden', cursor: 'grab' },
-    layer: { position: 'absolute', top: 0, left: 0, willChange: 'transform', transformOrigin: '0 0' },
-    hotspotBtn: { position: 'absolute', padding: '4px 8px', background: '#f97316', color: '#fff', fontSize: 12, borderRadius: 6, cursor: 'pointer', boxShadow: '0 1px 2px rgba(0,0,0,0.25)' },
-    backdrop: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 20 },
-    modal: { width: 640, maxWidth: '90vw', background: '#2b2b2b', color: '#fff', borderRadius: 12, border: '2px solid #6b7280', boxShadow: '0 10px 30px rgba(0,0,0,0.5)', padding: 16, position: 'relative' },
-    close: { position: 'absolute', top: 8, right: 8, background: '#ef4444', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 10px', cursor: 'pointer' },
-    modalHeader: { fontWeight: 700, textAlign: 'center', marginBottom: 12, fontSize: 18 },
-    modalBody: { background: '#3f3f46', borderRadius: 8, padding: 12, minHeight: 160 },
-  };
+  
 
   return (
-    <div style={uiStyles.root}>
-      <style>{buttonAnimCss}</style>
+    <div className="panzoom-root">
 
       <div
         ref={containerRef}
-        style={{ ...uiStyles.viewport, touchAction: 'none' }}
+        className="panzoom-viewport"
+        style={{ touchAction: 'none' }}
         onWheel={onWheel}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onDoubleClick={onDoubleClick}
       >
-        <div
-          style={{
-            ...uiStyles.layer,
-            transform: `translate(${tx}px, ${ty}px) scale(${scale})`,
-          }}
-        >
-          <img src="/house_new.png" alt="House Scene" draggable={false} onDragStart={(e) => e.preventDefault()} style={{ display: 'block', userSelect: 'none', pointerEvents: 'none' }} />
+        <div className="panzoom-layer" style={{ transform: `translate(${tx}px, ${ty}px) scale(${scale})` }}>
+          {backgroundSrc && (
+            <img className="img-scene" src={backgroundSrc} alt="Scene" draggable={false} onDragStart={(e) => e.preventDefault()} />
+          )}
 
           {hotspots.map((h) => (
             <button
               key={h.id}
               data-hotspot="true"
-              className="map-btn"
-              style={{
-                ...uiStyles.hotspotBtn,
-                left: h.x,
-                top: h.y,
-                animationDelay: `${h.delay}s`,
-              }}
+              className="map-btn hotspot-btn"
+              style={{ left: h.x, top: h.y, animationDelay: `${h.delay}s` }}
               onClick={() => setActiveModal(h)}
             >
               {h.label}
@@ -169,12 +146,11 @@ const PanZoomViewport = () => {
       </div>
 
       {activeModal && (
-        <div style={uiStyles.backdrop} onClick={() => setActiveModal(null)}>
-          <div style={uiStyles.modal} onClick={(e) => e.stopPropagation()}>
-            <div style={uiStyles.modalHeader}>{activeModal.label}</div>
-            <button style={uiStyles.close} onClick={() => setActiveModal(null)}>X</button>
-            <div style={uiStyles.modalBody}>
-              {/* Replace with real content per hotspot */}
+        <div className="modal-backdrop" onClick={() => setActiveModal(null)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">{activeModal.label}</div>
+            <button className="modal-close" onClick={() => setActiveModal(null)}>X</button>
+            <div className="modal-body">
               <div>Items Dropped</div>
               <div style={{ marginTop: 12 }}>Chest Status</div>
               <div style={{ marginTop: 12 }}>Next Chest In</div>
@@ -188,3 +164,5 @@ const PanZoomViewport = () => {
 }
 
 export default PanZoomViewport;
+
+

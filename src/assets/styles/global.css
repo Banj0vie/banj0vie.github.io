@@ -1,5 +1,10 @@
 /* Global styles for CryptoValley */
 
+:root {
+  /* Default nine-slice border image for profile-style buttons */
+  --profile-btn-bg: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAuElEQVQ4jWNkgAIr+7j/DCSAowcWMjIwMDCwwDT3TqgnRT+DtUP8/6MHFjIywjSfvnSHJANM9VQYigsaIS5A1rxh9Va8GgNCvRmQ9bAgS25YvZVBTVkbrwEbVm+FG8LAwMDAhCxJSDM2NUw41BENRg1AMyA+wYWgBnQ1LAwMDAyXL91k0NVTZzh96Q5BQ2AJ6PKlmwgDrp45w8DAwAA3hBC4fOkmXA8jAwPpOREGjh5YyMgI45CbnQFYkEGQYdJn5wAAAABJRU5ErkJggg==');
+}
+
 /* ByteBounce Font Setup */
 @font-face {
   font-family: 'ByteBounce';

@@ -12,7 +12,7 @@ const ProfileButton = ({ icon, text, title, ariaLabel, style, bg }) => {
       aria-label={ariaLabel || title}
       role="button"
       tabIndex={0}
-      style={{ '--profile-btn-bg': `url(${backgroundUrl})`, ...style }}
+      style={bg ? { '--profile-btn-bg': `url(${backgroundUrl})`, ...style } : style}
     >
       {icon ? <span className="pb-icon" aria-hidden>{icon}</span> : null}
       {text ? <span className="pb-text">{text}</span> : null}
