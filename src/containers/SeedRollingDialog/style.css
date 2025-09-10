@@ -1,0 +1,25 @@
+.seed-gacha-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.seed-rolling-box {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  padding: 2rem;
+  width: 24rem;
+  gap: 1.5rem;
+  min-height: 8rem;
+  -o-border-image: var(--primary-bg) 6 repeat;
+  border-image: var(--primary-bg) 6 fill repeat;
+  border-image-width: 1rem;
+}
+
+.seed-rolling-buttons-wrapper {
+  display: flex;
+  gap: 0.75rem;
+  width: 75%;
+  margin: auto;
+}

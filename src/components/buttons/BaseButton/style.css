@@ -45,3 +45,16 @@
   border-image: var(--base-button-active-bg) 15 fill repeat;
   border-image-width: 2rem;
 }
+
+.base-button-disabled:hover {
+  filter: none !important;
+}
+
+.base-button-disabled:active {
+  border-image: var(--base-button-bg) 15 fill repeat !important;
+  border-image-width: 2rem !important;
+}
+
+.base-button-disabled {
+  cursor: not-allowed !important;
+}

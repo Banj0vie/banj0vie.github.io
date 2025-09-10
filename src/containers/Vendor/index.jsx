@@ -5,22 +5,61 @@ import VendorMenu from "./VendorMenu";
 import BuySeeds from "./BuySeeds";
 import RollChances from "./RollChances";
 import CustomSeedsDialog from "../CustomSeedsDialog";
+import { ID_SEED_SHOP_ITEMS } from "../../constants/id";
+import { SEED_PACK_STATUS, SEED_SHOP_PAGES } from "../../constants/seedPack";
+import SeedRollingDialog from "../SeedRollingDialog";
 const VendorDialog = ({ onClose, label = "VENDOR", header = "" }) => {
-  const [pageIndex, setMenuIndex] = useState(0);
-  // 0: Vendor Menu
-  // 1: Buy Seeds
-  // 2: Roll Chances
+  const [pageIndex, setPageIndex] = useState(SEED_SHOP_PAGES.SEED_PACK_LIST);
   const [selectedSeed, setSelectedSeed] = useState(0);
   const [selectedSeedPack, setSelectedSeedPack] = useState({});
   const [isCustomDlg, setIsCustomDlg] = useState(false);
+  const [isRollingDlg, setIsRollingDlg] = useState(false);
+  const [rollingInfo, setRollingInfo] = useState({});
+  const [seedStatus, setSeedStatus] = React.useState({
+    [ID_SEED_SHOP_ITEMS.FEEBLE_SEED]: {
+      label: "Feeble Seeds",
+      status: SEED_PACK_STATUS.NORMAL,
+      count: 0,
+    },
+    [ID_SEED_SHOP_ITEMS.PICO_SEED]: {
+      label: "Pico Seeds",
+      status: SEED_PACK_STATUS.NORMAL,
+      count: 0,
+    },
+    [ID_SEED_SHOP_ITEMS.BASIC_SEED]: {
+      label: "Basic Seeds",
+      status: SEED_PACK_STATUS.NORMAL,
+      count: 0,
+    },
+    [ID_SEED_SHOP_ITEMS.PREMIUM_SEED]: {
+      label: "Premium Seeds",
+      status: SEED_PACK_STATUS.NORMAL,
+      count: 0,
+    },
+  });
 
   const onSeedsClicked = (id) => {
     setSelectedSeed(id);
-    setMenuIndex(1);
+    if (seedStatus[id].status === SEED_PACK_STATUS.COMMITED) {
+      setSeedStatus((prev) => ({
+        ...prev,
+        [id]: {
+          ...prev[id],
+          status: SEED_PACK_STATUS.NORMAL,
+        },
+      }));
+      setRollingInfo({
+        id,
+        count: seedStatus[id].count,
+      });
+      setIsRollingDlg(true);
+    } else {
+      setPageIndex(SEED_SHOP_PAGES.SEED_PACK_DETAIL);
+    }
   };
 
   const onRollChancesClicked = () => {
-    setMenuIndex(2);
+    setPageIndex(SEED_SHOP_PAGES.ROLL_CHANCES);
   };
 
   const onBuy = (item) => {
@@ -41,30 +80,49 @@ const VendorDialog = ({ onClose, label = "VENDOR", header = "" }) => {
   };
 
   const handleBuy = (item) => {
-    console.log("handleBuy", item, selectedSeed);
+    setIsRollingDlg(false);
+    setSeedStatus((prev) => ({
+      ...prev,
+      [selectedSeed]: {
+        ...prev[selectedSeed],
+        status: SEED_PACK_STATUS.COMMITING,
+        count: item.count,
+      },
+    }));
+    setTimeout(() => {
+      setSeedStatus((prev) => ({
+        ...prev,
+        [selectedSeed]: {
+          ...prev[selectedSeed],
+          status: SEED_PACK_STATUS.COMMITED,
+        },
+      }));
+    }, 3000);
+    setPageIndex(SEED_SHOP_PAGES.SEED_PACK_LIST);
   };
 
-  return (
+  return !isRollingDlg ? (
     <BaseDialog title={label} onClose={onClose} header={header}>
-      {pageIndex === 0 && (
+      {pageIndex === SEED_SHOP_PAGES.SEED_PACK_LIST && (
         <VendorMenu
+          seedStatus={seedStatus}
           onSeedsClicked={onSeedsClicked}
           onRollChancesClicked={onRollChancesClicked}
         ></VendorMenu>
       )}
-      {pageIndex === 1 && (
+      {pageIndex === SEED_SHOP_PAGES.SEED_PACK_DETAIL && (
         <BuySeeds
           menuId={selectedSeed}
           onBack={() => {
-            setMenuIndex(0);
+            setPageIndex(SEED_SHOP_PAGES.SEED_PACK_LIST);
           }}
           onBuy={onBuy}
         ></BuySeeds>
       )}
-      {pageIndex === 2 && (
+      {pageIndex === SEED_SHOP_PAGES.ROLL_CHANCES && (
         <RollChances
           onBack={() => {
-            setMenuIndex(0);
+            setPageIndex(SEED_SHOP_PAGES.SEED_PACK_LIST);
           }}
         ></RollChances>
       )}
@@ -78,6 +136,15 @@ const VendorDialog = ({ onClose, label = "VENDOR", header = "" }) => {
         ></CustomSeedsDialog>
       )}
     </BaseDialog>
+  ) : (
+    <SeedRollingDialog
+      rollingInfo={rollingInfo}
+      onClose={onClose}
+      onBack={() => setIsRollingDlg(false)}
+      onBuyAgain={() => {
+        handleBuy(rollingInfo);
+      }}
+    ></SeedRollingDialog>
   );
 };
 

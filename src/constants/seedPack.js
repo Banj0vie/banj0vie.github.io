@@ -1,6 +1,13 @@
 import { seedIcons } from "./baseimages";
 import { ID_SEED_SHOP_ITEMS } from "./id";
 
+export const SEED_SHOP_PAGES = {
+    SEED_PACK_LIST: "SEED_SHOP_PAGES_SEED_PACK_LIST",
+    SEED_PACK_DETAIL: "SEED_SHOP_PAGES_SEED_PACK_DETAIL",
+    ROLL_CHANCES: "SEED_SHOP_PAGES_ROLL_CHANCES",
+    CUSTOM_AMOUNT: "SEED_SHOP_PAGES_CUSTOM_AMOUNT",
+}
+
 export const SEED_PACKS = [
     {
         id: ID_SEED_SHOP_ITEMS.FEEBLE_SEED,
@@ -105,3 +112,9 @@ export const SEED_PACKS = [
         ],
     }
 ]
+
+export const SEED_PACK_STATUS = {
+    NORMAL: "SEED_PACK_STATUS_NORMAL",
+    COMMITING: "SEED_PACK_STATUS_COMMITING",
+    COMMITED: "SEED_PACK_STATUS_COMMITED",
+}

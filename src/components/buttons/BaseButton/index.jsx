@@ -1,13 +1,20 @@
 import React from "react";
 import "./style.css";
 
-const BaseButton = ({ className="", label = "Button", onClick }) => {
+const BaseButton = ({
+  className = "",
+  label = "Button",
+  onClick,
+  disabled = false,
+}) => {
   return (
     <div className={`${className} base-button-wrapper`}>
       <div
-        className="base-button"
+        className={`base-button ${disabled && "base-button-disabled"}`}
         onClick={(e) => {
-          onClick();
+          if (!disabled) {
+            onClick();
+          }
         }}
       >
         <p>{label}</p>
