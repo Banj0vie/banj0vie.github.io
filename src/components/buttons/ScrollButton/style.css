@@ -1,0 +1,52 @@
+.scroll-button-wrapper {
+  width: 100%;
+  animation: popup 0.1s ease-in;
+}
+
+.scroll-button {
+  width: 256px;
+  min-height: 58px;
+  background-image: var(--scroll-button-bg);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  user-select: none;
+  font-size: 1.75rem;
+  font-weight: 600;
+  margin: auto;
+}
+
+.scroll-button p {
+  margin-bottom: 0rem;
+  margin-top: 0;
+}
+
+.scroll-button:hover {
+  filter: brightness(1.2);
+}
+
+@keyframes popup {
+  0% {
+    transform: scale(0.95);
+  }
+
+  to {
+    transform: scale(1.05);
+  }
+}
+
+.scroll-button-disabled:hover {
+  filter: none !important;
+}
+
+.scroll-button-disabled:active {
+  border-image: var(--scroll-button-bg) 15 fill repeat !important;
+  border-image-width: 2rem !important;
+}
+
+.scroll-button-disabled {
+  cursor: not-allowed !important;
+}

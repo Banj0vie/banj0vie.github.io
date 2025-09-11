@@ -177,6 +177,7 @@ const PanZoomViewport = ({
           onClose={() => setActiveModal(null)}
           label={activeModal.label}
           header={activeModal.header}
+          actions={activeModal.actions}
         />
       )}
     </div>

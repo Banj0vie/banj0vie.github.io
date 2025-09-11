@@ -47,6 +47,10 @@ const App = () => {
       `url(${buttonFrames.baseButtonBg})`
     );
     document.documentElement.style.setProperty(
+      "--scroll-button-bg",
+      `url(${buttonFrames.scrollButtonBg})`
+    );
+    document.documentElement.style.setProperty(
       "--base-button-active-bg",
       `url(${buttonFrames.baseButtonActiveBg})`
     );
