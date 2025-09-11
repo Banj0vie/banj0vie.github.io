@@ -14,7 +14,6 @@ const SeedRollingBox = ({ seedPackId, delay = 0 }) => {
     const timer = setTimeout(() => {
       setIsRolling(false);
       const randomSeed = getRandomSeedEntry();
-      console.log("RandomSeed, ", randomSeed);
       setSelectedSeed(randomSeed);
     }, 3000); // stop after 3s
 
