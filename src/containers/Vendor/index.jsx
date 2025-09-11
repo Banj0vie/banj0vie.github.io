@@ -5,11 +5,11 @@ import VendorMenu from "./VendorMenu";
 import BuySeeds from "./BuySeeds";
 import RollChances from "./RollChances";
 import CustomSeedsDialog from "../CustomSeedsDialog";
-import { ID_SEED_SHOP_ITEMS } from "../../constants/id";
-import { SEED_PACK_STATUS, SEED_SHOP_PAGES } from "../../constants/seedPack";
+import { ID_SEED_SHOP_ITEMS, ID_SEED_SHOP_PAGES } from "../../constants/id";
+import { SEED_PACK_STATUS } from "../../constants/seedPack";
 import SeedRollingDialog from "../SeedRollingDialog";
 const VendorDialog = ({ onClose, label = "VENDOR", header = "" }) => {
-  const [pageIndex, setPageIndex] = useState(SEED_SHOP_PAGES.SEED_PACK_LIST);
+  const [pageIndex, setPageIndex] = useState(ID_SEED_SHOP_PAGES.SEED_PACK_LIST);
   const [selectedSeed, setSelectedSeed] = useState(0);
   const [selectedSeedPack, setSelectedSeedPack] = useState({});
   const [isCustomDlg, setIsCustomDlg] = useState(false);
@@ -54,12 +54,12 @@ const VendorDialog = ({ onClose, label = "VENDOR", header = "" }) => {
       });
       setIsRollingDlg(true);
     } else {
-      setPageIndex(SEED_SHOP_PAGES.SEED_PACK_DETAIL);
+      setPageIndex(ID_SEED_SHOP_PAGES.SEED_PACK_DETAIL);
     }
   };
 
   const onRollChancesClicked = () => {
-    setPageIndex(SEED_SHOP_PAGES.ROLL_CHANCES);
+    setPageIndex(ID_SEED_SHOP_PAGES.ROLL_CHANCES);
   };
 
   const onBuy = (item) => {
@@ -98,31 +98,31 @@ const VendorDialog = ({ onClose, label = "VENDOR", header = "" }) => {
         },
       }));
     }, 3000);
-    setPageIndex(SEED_SHOP_PAGES.SEED_PACK_LIST);
+    setPageIndex(ID_SEED_SHOP_PAGES.SEED_PACK_LIST);
   };
 
   return !isRollingDlg ? (
     <BaseDialog title={label} onClose={onClose} header={header}>
-      {pageIndex === SEED_SHOP_PAGES.SEED_PACK_LIST && (
+      {pageIndex === ID_SEED_SHOP_PAGES.SEED_PACK_LIST && (
         <VendorMenu
           seedStatus={seedStatus}
           onSeedsClicked={onSeedsClicked}
           onRollChancesClicked={onRollChancesClicked}
         ></VendorMenu>
       )}
-      {pageIndex === SEED_SHOP_PAGES.SEED_PACK_DETAIL && (
+      {pageIndex === ID_SEED_SHOP_PAGES.SEED_PACK_DETAIL && (
         <BuySeeds
           menuId={selectedSeed}
           onBack={() => {
-            setPageIndex(SEED_SHOP_PAGES.SEED_PACK_LIST);
+            setPageIndex(ID_SEED_SHOP_PAGES.SEED_PACK_LIST);
           }}
           onBuy={onBuy}
         ></BuySeeds>
       )}
-      {pageIndex === SEED_SHOP_PAGES.ROLL_CHANCES && (
+      {pageIndex === ID_SEED_SHOP_PAGES.ROLL_CHANCES && (
         <RollChances
           onBack={() => {
-            setPageIndex(SEED_SHOP_PAGES.SEED_PACK_LIST);
+            setPageIndex(ID_SEED_SHOP_PAGES.SEED_PACK_LIST);
           }}
         ></RollChances>
       )}

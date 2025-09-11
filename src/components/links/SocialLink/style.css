@@ -1,0 +1,12 @@
+.icon-base svg path {
+  fill: #ffd664 !important;
+}
+
+.icon-base svg {
+  height: 2.5rem;
+  width: 2.5rem;
+}
+
+.icon-base:hover {
+  transform: scale(1.1);
+}

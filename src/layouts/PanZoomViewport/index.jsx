@@ -2,6 +2,8 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import "./style.css";
 import TooltipButton from "../../components/buttons/TooltipButton";
 import GameMenu from "../GameMenu";
+import { isWalletConnected } from "../../utils/basic";
+import AuthPage from "../AuthPage";
 
 const defaultHotspots = [
   { id: "gold", label: "GOLD", x: 210, y: 110, delay: 0 },
@@ -133,7 +135,7 @@ const PanZoomViewport = ({
     ...(normalizeSize(height) ? { height: normalizeSize(height) } : {}),
   };
 
-  return (
+  return isWalletConnected() ? (
     <div className="panzoom-root">
       <GameMenu />
       <div
@@ -178,6 +180,8 @@ const PanZoomViewport = ({
         />
       )}
     </div>
+  ) : (
+    <AuthPage></AuthPage>
   );
 };
 

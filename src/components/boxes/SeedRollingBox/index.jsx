@@ -15,9 +15,10 @@ const SeedRollingBox = ({ seedPackId, delay = 0 }) => {
       setIsRolling(false);
       const randomSeed = getRandomSeedEntry();
       setSelectedSeed(randomSeed);
-    }, 3000); // stop after 3s
+    }, 3000 + delay); // stop after 3s
 
     return () => clearTimeout(timer); // cleanup
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   return (
     <div className="seed-rolling-box">

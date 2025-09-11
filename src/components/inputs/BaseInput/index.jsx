@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import "./style.css";
 import { generateId } from "../../../utils/basic";
 
@@ -7,8 +7,9 @@ const BaseInput = ({
   className = "",
   type = "text",
   value = "",
-  setValue, 
+  setValue,
   placeholder = "",
+  maxLength = 32,
 }) => {
   return (
     <div className={`${className} base-input`}>
@@ -17,8 +18,9 @@ const BaseInput = ({
         type={type}
         placeholder={placeholder}
         value={value}
+        maxLength={maxLength}
         onChange={(e) => {
-          setValue(e.value);
+          setValue(e.target.value);
         }}
       />
     </div>

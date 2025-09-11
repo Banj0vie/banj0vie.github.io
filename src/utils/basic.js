@@ -38,3 +38,7 @@ export const getRandomSeedEntry = () => {
   const [key, seed] = entries[randomIndex];
   return { id: key, ...seed };
 };
+
+export const isWalletConnected = () => {
+  return false;
+}
