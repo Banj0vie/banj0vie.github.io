@@ -1,0 +1,12 @@
+.buy-seeds-wrapper {
+    width: 450px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.buy-seed-tip {
+    opacity: .9;
+    font-weight: 400;
+    text-align: center;
+}
