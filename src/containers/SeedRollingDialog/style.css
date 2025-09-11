@@ -4,7 +4,7 @@
   gap: 0.75rem;
 }
 
-.seed-rolling-box {
+.seed-rolling-box-wrapper {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;

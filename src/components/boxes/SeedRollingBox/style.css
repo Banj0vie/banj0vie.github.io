@@ -1,0 +1,111 @@
+.seed-roller {
+  width: 7rem;
+  height: 6rem;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  -o-border-image: var(--primary-bg) 6 repeat;
+  border-image: var(--primary-bg) 6 fill repeat;
+  border-image-width: 1rem;
+}
+
+.seed-rolling-image {
+  width: 4rem;
+  height: 4rem;
+  background: url(/public/images/crops/seeds.png) 0;
+}
+
+.seed-rolling-image.rolling {
+  animation: scroll-bg 3s linear infinite;
+  filter: blur(0.25rem);
+}
+
+@keyframes scroll-bg {
+  from {
+    background-position-y: 0;
+  }
+  to {
+    background-position-y: calc(var(--all-seed-image-height));
+  }
+}
+
+.seed-rolling-image.finish {
+  animation: seed-rolling-finish 0.25s ease-in-out;
+}
+
+.seed-rolling-image.start {
+  animation: seed-rolling-start 0.25s ease-in-out;
+}
+
+@keyframes seed-rolling-finish {
+  0% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(15px);
+  }
+
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes seed-rolling-start {
+  0% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-25px);
+  }
+
+  to {
+    transform: translateY(0);
+  }
+}
+
+.seed-label {
+  background-color: rgba(0, 0, 0, 0.25);
+  border-radius: 0.25rem;
+  padding-top: 0.1rem;
+  padding-bottom: 0.1rem;
+  margin-top: 0.25rem;
+  width: 7rem;
+  height: 2.5rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  -o-border-image: var(--primary-bg) 6 repeat;
+  border-image: var(--primary-bg) 6 fill repeat;
+  border-image-width: 1rem;
+}
+
+.seed-label p {
+  font-weight: 600;
+  margin-top: 0;
+  margin-bottom: 0.2rem;
+  font-size: 1.25rem;
+  animation: slide-in-9e8ec30a 0.15s ease-in-out;
+}
+
+@keyframes slide-in-9e8ec30a {
+  0% {
+    transform: translateY(-100%);
+  }
+
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes slide-out-9e8ec30a {
+  0% {
+    transform: translateY(-100%);
+  }
+
+  to {
+    transform: translateX(0);
+  }
+}

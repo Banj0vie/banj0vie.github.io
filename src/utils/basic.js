@@ -1,3 +1,5 @@
+import { SEEDS } from "../constants/seedPack";
+
 export function generateId(prefix = "id") {
   return `${prefix}-${Math.random().toString(36).substr(2, 9)}`;
 }
@@ -28,3 +30,11 @@ export function formatNumber(value) {
     return format(num);
   }
 }
+
+// For the test
+export const getRandomSeedEntry = () => {
+  const entries = Object.entries(SEEDS);
+  const randomIndex = Math.floor(Math.random() * entries.length);
+  const [key, seed] = entries[randomIndex];
+  return { id: key, ...seed };
+};
