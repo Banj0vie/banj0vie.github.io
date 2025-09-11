@@ -31,6 +31,11 @@ export function formatNumber(value) {
   }
 }
 
+export function formatAddress(address, chars = 4) {
+  if (!address) return "";
+  return `${address.slice(0, chars + 2)}...${address.slice(-chars)}`;
+}
+
 // For the test
 export const getRandomSeedEntry = () => {
   const entries = Object.entries(SEEDS);
@@ -40,5 +45,6 @@ export const getRandomSeedEntry = () => {
 };
 
 export const isWalletConnected = () => {
-  return false;
+  return true;
+  // return false;
 }
