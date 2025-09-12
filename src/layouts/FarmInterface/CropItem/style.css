@@ -1,0 +1,68 @@
+.crop-item {
+  width: 4rem;
+  height: 4rem;
+  position: absolute;
+  background: url(/public/images/crops/bigger_plants.png);
+  transform-origin: 32px 64px;
+}
+
+.crop-item .bounding-box {
+  position: absolute;
+  top: 33%;
+  right: 1rem;
+  left: 1rem;
+  bottom: -10%;
+  z-index: 1000;
+  cursor: pointer;
+}
+
+.crop-item.selected {
+  filter: drop-shadow(1px 1px 0 white) drop-shadow(-1px 1px 0 white)
+    drop-shadow(1px -1px 0 white) drop-shadow(-1px -1px 0 white);
+}
+
+.crop-item.planted {
+  animation: planted 0.25s ease-in-out;
+}
+
+.crop-item.harvested {
+  animation: harvested 0.25s ease-in-out;
+}
+
+.crop-item.jiggling {
+  animation: jiggling 0.5s ease-in-out infinite;
+}
+
+@keyframes jiggling {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  50% {
+    transform: rotate(5deg);
+  }
+
+  to {
+    transform: rotate(0deg);
+  }
+}
+
+@keyframes planted {
+  0% {
+    transform: scaleX(1.15);
+  }
+
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes harvested {
+  0% {
+    transform: translateY(0);
+  }
+
+  to {
+    transform: translateY(-16px);
+  }
+}

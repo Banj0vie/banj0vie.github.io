@@ -9,14 +9,37 @@ const FarmerDialog = ({
   header = "",
   actions = {},
 }) => {
-    console.log(actions);
   return (
     <BaseDialog title={label} header={header} onClose={onClose}>
       <div className="farmer-dialog">
-        <ScrollButton label="Plant" onClick={actions.plant}></ScrollButton>
-        <ScrollButton label="Plant All" onClick={actions.plantAll}></ScrollButton>
-        <ScrollButton label="Harvest" onClick={actions.harvest}></ScrollButton>
-        <ScrollButton label="Harvest All" onClick={actions.harvestAll}></ScrollButton>
+        <ScrollButton
+          label="Plant"
+          onClick={() => {
+            onClose();
+            actions.plant();
+          }}
+        ></ScrollButton>
+        <ScrollButton
+          label="Plant All"
+          onClick={() => {
+            onClose();
+            actions.plantAll();
+          }}
+        ></ScrollButton>
+        <ScrollButton
+          label="Harvest"
+          onClick={() => {
+            onClose();
+            actions.harvest();
+          }}
+        ></ScrollButton>
+        <ScrollButton
+          label="Harvest All"
+          onClick={() => {
+            onClose();
+            actions.harvestAll();
+          }}
+        ></ScrollButton>
       </div>
     </BaseDialog>
   );

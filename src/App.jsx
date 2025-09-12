@@ -27,6 +27,10 @@ const App = () => {
       `url(${baseFrames.secondaryBg})`
     );
     document.documentElement.style.setProperty(
+      "--tetiary-bg",
+      `url(${baseFrames.tetiaryBg})`
+    );
+    document.documentElement.style.setProperty(
       "--dialog-edge-bg",
       `url(${dialogFrames.modalBgTopLeft}), url(${dialogFrames.modalBgTopRight}), url(${dialogFrames.modalBgBottomLeft}), url(${dialogFrames.modalBgBottomRight})`
     );
