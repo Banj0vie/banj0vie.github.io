@@ -27,6 +27,10 @@ const App = () => {
       `url(${baseFrames.secondaryBg})`
     );
     document.documentElement.style.setProperty(
+      "--tetiary-bg",
+      `url(${baseFrames.tetiaryBg})`
+    );
+    document.documentElement.style.setProperty(
       "--dialog-edge-bg",
       `url(${dialogFrames.modalBgTopLeft}), url(${dialogFrames.modalBgTopRight}), url(${dialogFrames.modalBgBottomLeft}), url(${dialogFrames.modalBgBottomRight})`
     );
@@ -45,6 +49,10 @@ const App = () => {
     document.documentElement.style.setProperty(
       "--base-button-bg",
       `url(${buttonFrames.baseButtonBg})`
+    );
+    document.documentElement.style.setProperty(
+      "--scroll-button-bg",
+      `url(${buttonFrames.scrollButtonBg})`
     );
     document.documentElement.style.setProperty(
       "--base-button-active-bg",

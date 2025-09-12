@@ -1,0 +1,51 @@
+.pick-seed-item-box {
+  display: flex;
+  justify-content: space-between;
+  flex-direction: column;
+  gap: 0.25rem;
+  align-items: center;
+  -o-border-image: var(--primary-bg) 6 repeat;
+  border-image: var(--primary-bg) 6 fill repeat;
+  border-image-width: 0.5rem;
+  height: 7rem;
+  width: 6rem;
+  position: relative;
+  cursor: pointer;
+}
+
+.pick-seed-item-box:hover {
+  filter: brightness(1.1);
+}
+
+.pick-seed-item-icon {
+  image-rendering: pixelated;
+  width: 4rem;
+  height: 4rem;
+  background: brown;
+  transform-origin: 32px 64px;
+  background: url(/public/images/crops/seeds.png);
+  margin-top: 0.5rem;
+}
+
+.pick-seed-item-label {
+  width: 100%;
+  height: 2.5rem;
+  -o-border-image: var(--tetiary-bg) 6 repeat;
+  border-image: var(--tetiary-bg) 6 fill repeat;
+  border-image-width: 1.5rem;
+  font-weight: 300;
+  font-size: 1.2rem;
+  text-align: center;
+  line-height: 2.1rem;
+}
+
+.pick-seed-item-badge {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  padding: 0 0.2rem;
+  border-radius: 0.2rem;
+  background: rgba(0, 0, 0, 0.25);
+  font-weight: 300;
+  font-size: 1.45rem;
+}

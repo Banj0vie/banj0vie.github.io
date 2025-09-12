@@ -19,6 +19,8 @@ const PanZoomViewport = ({
   dialogs = [],
   width,
   height,
+  hideMenu = false,
+  children,
 }) => {
   const containerRef = useRef(null);
 
@@ -137,7 +139,7 @@ const PanZoomViewport = ({
 
   return isWalletConnected() ? (
     <div className="panzoom-root">
-      <GameMenu />
+      {!hideMenu && <GameMenu />}
       <div
         ref={containerRef}
         className="panzoom-viewport"
@@ -170,6 +172,7 @@ const PanZoomViewport = ({
               }
             />
           ))}
+          <div className="panzoom-children">{children}</div>
         </div>
       </div>
       {activeModal && (
@@ -177,6 +180,7 @@ const PanZoomViewport = ({
           onClose={() => setActiveModal(null)}
           label={activeModal.label}
           header={activeModal.header}
+          actions={activeModal.actions}
         />
       )}
     </div>

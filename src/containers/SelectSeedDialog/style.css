@@ -1,0 +1,7 @@
+.select-seed-dialog {
+  width: 380px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  row-gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
