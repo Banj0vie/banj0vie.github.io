@@ -43,16 +43,16 @@ const AppContent = () => {
         }}
       >
         <Routes>
-          <Route path="/" element={<Valley />} />
-          <Route path="/house" element={<House />} />
+          <Route path="/" element={<Market />} />
+          {/* <Route path="/house" element={<House />} /> */}
           <Route path="/market" element={<Market />} />
           <Route path="/farm" element={<Farm />} />
-          <Route
+          {/* <Route
             path="/tavern"
             element={
               <div style={{ color: "white" }}>Tavern - Coming Soon!</div>
             }
-          />
+          /> */}
         </Routes>
       </div>
     </div>
