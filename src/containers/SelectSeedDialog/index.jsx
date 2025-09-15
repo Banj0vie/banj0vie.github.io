@@ -4,8 +4,11 @@ import BaseDialog from "../BaseDialog";
 import PickSeedItemBox from "../../components/boxes/PickSeedItemBox";
 import { useSeeds } from "../../hooks/useSeeds";
 
-const SelectSeedDialog = ({ onClose, onClickSeed }) => {
-  const { seeds, loading, error } = useSeeds();
+const SelectSeedDialog = ({ onClose, onClickSeed, availableSeeds = null }) => {
+  const { seeds: originalSeeds, loading, error } = useSeeds();
+  
+  // Use availableSeeds if provided, otherwise fall back to original seeds
+  const seeds = availableSeeds || originalSeeds;
 
   if (loading) {
     return (

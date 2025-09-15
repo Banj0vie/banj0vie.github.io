@@ -15,7 +15,8 @@ const VendorMenu = ({
   pendingRequests = [], 
   onRevealClicked, 
   isRevealing = false,
-  isLoading = false
+  isLoading = false,
+  buyingSeedId = null
 }) => {
   const seedOrder = [
     ID_SEED_SHOP_ITEMS.FEEBLE_SEED,
@@ -44,15 +45,24 @@ const VendorMenu = ({
         });
         const isPendingTier = tierPendingRequests.length > 0;
         const isThisTierRevealing = isPendingTier && isRevealing;
+        const isThisSeedBuying = buyingSeedId === id;
         
         // Calculate total count for this tier
         const totalCount = tierPendingRequests.reduce((sum, req) => sum + parseInt(req.count), 0);
+        
+        // Determine if this button should be disabled
+        const isDisabled = seedStatus[id].status === SEED_PACK_STATUS.COMMITING || 
+                          (hasPendingRequests && !isPendingTier) ||
+                          (buyingSeedId !== null && !isThisSeedBuying) ||
+                          isRevealing; // Disable ALL buttons when any reveal is happening
         
         return (
           <BaseButton
             className={`vendor-button`}
             label={
-              isThisTierRevealing
+              isThisSeedBuying
+                ? "Buying..."
+                : isThisTierRevealing
                 ? "Revealing..."
                 : isPendingTier
                 ? `Reveal ${totalCount} ${seedStatus[id].label}`
@@ -72,7 +82,7 @@ const VendorMenu = ({
                 onSeedsClicked(id);
               }
             }}
-            disabled={seedStatus[id].status === SEED_PACK_STATUS.COMMITING || (hasPendingRequests && !isPendingTier)}
+            disabled={isDisabled}
           />
         );
       })}
@@ -83,7 +93,7 @@ const VendorMenu = ({
         onClick={() => {
           onRollChancesClicked();
         }}
-        disabled={hasPendingRequests}
+        disabled={hasPendingRequests || buyingSeedId !== null || isRevealing}
       ></BaseButton>
       <br />
       <ErrorLabel

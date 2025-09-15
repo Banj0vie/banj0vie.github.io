@@ -31,6 +31,7 @@ const VendorDialog = ({ onClose, label = "VENDOR", header = "" }) => {
   const [revealCleanup, setRevealCleanup] = useState(null);
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [dataLoaded, setDataLoaded] = useState(false);
+  const [buyingSeedId, setBuyingSeedId] = useState(null); // Track which seed is being bought
   
   // Memoized initial seed status to prevent unnecessary re-renders
   const initialSeedStatus = useMemo(() => ({
@@ -286,6 +287,8 @@ const VendorDialog = ({ onClose, label = "VENDOR", header = "" }) => {
       return;
     }
 
+    // Set buying state for this specific seed
+    setBuyingSeedId(selectedSeed);
     setIsRollingDlg(false);
     setSeedStatus((prev) => ({
       ...prev,
@@ -324,7 +327,10 @@ const VendorDialog = ({ onClose, label = "VENDOR", header = "" }) => {
           status: SEED_PACK_STATUS.NORMAL,
         },
       }));
-      show(`Failed to buy seed pack: ${err?.message || 'Unknown'}`, 'error');
+      show(`Failed to buy seed pack: ${err.message}`);
+    } finally {
+      // Reset buying state
+      setBuyingSeedId(null);
     }
 
     setPageIndex(ID_SEED_SHOP_PAGES.SEED_PACK_LIST);
@@ -361,6 +367,7 @@ const VendorDialog = ({ onClose, label = "VENDOR", header = "" }) => {
           onRevealClicked={handleReveal}
           isRevealing={isRevealing}
           isLoading={isLoadingData}
+          buyingSeedId={buyingSeedId}
         ></VendorMenu>
       )}
       {pageIndex === ID_SEED_SHOP_PAGES.SEED_PACK_DETAIL && (
