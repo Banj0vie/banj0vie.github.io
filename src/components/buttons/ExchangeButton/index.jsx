@@ -3,13 +3,10 @@ import "./style.css";
 
 const ExchangeButton = ({ onclick }) => {
   return (
-    <div
-      className="exchange-button"
-      onClick={(e) => {
+    <div className="exchange-button">
+      <p onClick={(e) => {
         onclick();
-      }}
-    >
-      <p>⇅</p>
+      }}>⇅</p>
     </div>
   );
 };

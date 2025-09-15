@@ -7,7 +7,6 @@ export const MARKET_VIEWPORT = {
 
 export const MARKET_HOTSPOTS = [
   { id: ID_MARKET_HOTSPOTS.VENDOR, label: 'VENDOR', x: 564, y: 290, delay: 0 },
-  { id: ID_MARKET_HOTSPOTS.SAGE, label: 'SAGE', x: 444, y: -10, delay: 0.2 },
   { id: ID_MARKET_HOTSPOTS.DEX, label: 'DEX', x: 110, y: 230, delay: 0.4 },
   { id: ID_MARKET_HOTSPOTS.BANKER, label: 'BANKER', x: 780, y: 120, delay: 0.6 },
   { id: ID_MARKET_HOTSPOTS.HELPER, label: 'HELPER', x: 360, y: 330, delay: 0.8 },
