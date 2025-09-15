@@ -16,8 +16,8 @@
 
 .panzoom-layer {
   position: absolute;
-  top: 0;
-  left: 0;
+  /* top: 50%;
+  left: 50%; */
   will-change: transform;
   transform-origin: 0 0;
   border-image: var(--profile-btn-bg) 6 fill / 1rem / 0.5rem repeat;

@@ -24,8 +24,22 @@ const PanZoomViewport = ({
 }) => {
   const containerRef = useRef(null);
 
-  const [tx, setTx] = useState(0);
-  const [ty, setTy] = useState(0);
+  // Center the layer in the viewport: (viewportWidth - layerWidth) / 2
+  const computeInitialTx = useCallback(() => {
+    if (typeof width === 'number') {
+      return (window?.innerWidth || 0) / 2 - width / 2;
+    }
+    return 0;
+  }, [width]);
+  const computeInitialTy = useCallback(() => {
+    if (typeof height === 'number') {
+      return (window?.innerHeight || 0) / 2 - height / 2;
+    }
+    return 0;
+  }, [height]);
+
+  const [tx, setTx] = useState(() => computeInitialTx());
+  const [ty, setTy] = useState(() => computeInitialTy());
   const [scale, setScale] = useState(1);
   const [activeModal, setActiveModal] = useState(null);
 
@@ -132,12 +146,19 @@ const PanZoomViewport = ({
     window.addEventListener("pointerup", handleUp);
     window.addEventListener("pointercancel", handleUp);
     window.addEventListener("keydown", handleEsc);
+    // Re-center when window resizes or layer size props change
+    const handleResize = () => {
+      setTx(computeInitialTx());
+      setTy(computeInitialTy());
+    };
+    window.addEventListener('resize', handleResize);
     return () => {
       window.removeEventListener("pointerup", handleUp);
       window.removeEventListener("pointercancel", handleUp);
       window.removeEventListener("keydown", handleEsc);
+      window.removeEventListener('resize', handleResize);
     };
-  }, [endPan]);
+  }, [endPan, computeInitialTx, computeInitialTy]);
 
   const normalizeSize = (v) => {
     if (v === undefined || v === null || v === false || v === true)
