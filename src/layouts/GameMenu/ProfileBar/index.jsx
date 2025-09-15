@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import './style.css';
-import Avatar from './Avatar';
-import ProfileButton from '../../../components/buttons/ProfileButton';
-import { profileAssets } from '../../../constants/_baseimages';
-import ProfileView from './ProfileView';
-import { useGameState } from '../../../contexts/GameStateContext';
-import { useWeb3 } from '../../../contexts/Web3Context';
+import React, { useState, useEffect } from "react";
+import "./style.css";
+import Avatar from "./Avatar";
+import ProfileButton from "../../../components/buttons/ProfileButton";
+import { profileAssets } from "../../../constants/_baseimages";
+import ProfileView from "./ProfileView";
+import { useGameState } from "../../../contexts/GameStateContext";
+import { useWeb3 } from "../../../contexts/Web3Context";
+import { formatNumber } from "../../../utils/basic";
 
 const ProfileBar = () => {
   const { balances, formatBalance } = useGameState();
@@ -18,28 +19,26 @@ const ProfileBar = () => {
       if (balances && contractService && account) {
         try {
           // Get locked yield from Sage contract
-          const lockedYieldAmount = await contractService.getLockedGameToken(account);
-          
+          const lockedYieldAmount = await contractService.getLockedGameToken(
+            account
+          );
+
           // Format the balances to show k notation for large numbers
           const formatBalanceForDisplay = (balance) => {
             const formatted = formatBalance(balance);
-            const num = parseFloat(formatted);
-            if (num >= 1000) {
-              return (num / 1000).toFixed(2) + 'k';
-            }
-            return formatted;
+            return formatNumber(formatted);
           };
 
           setLockedYield(formatBalanceForDisplay(lockedYieldAmount.toString()));
           setYieldBalance(formatBalanceForDisplay(balances.yield));
         } catch (error) {
-          console.error('Failed to load locked yield:', error);
+          console.error("Failed to load locked yield:", error);
           // Fallback to staked yield if Sage contract fails
           const formatBalanceForDisplay = (balance) => {
             const formatted = formatBalance(balance);
             const num = parseFloat(formatted);
             if (num >= 1000) {
-              return (num / 1000).toFixed(2) + 'k';
+              return (num / 1000).toFixed(2) + "k";
             }
             return formatted;
           };
@@ -54,20 +53,44 @@ const ProfileBar = () => {
 
   return (
     <div className="profile-bar">
-      <img alt="Profile" src={profileAssets.profileBg} className="profile-background"/>
+      <img
+        alt="Profile"
+        src={profileAssets.profileBg}
+        className="profile-background"
+      />
       <Avatar />
       <ProfileView />
-      <ProfileButton icon={<img alt="Settings" src={profileAssets.btnSettings} />} title="Settings" />
-      <ProfileButton icon={<img alt="Inventory" src={profileAssets.btnInventory} />} title="Inventory" />
-      <ProfileButton icon={<img alt="Tutorial" src={profileAssets.btnTutorial} />} title="Tutorial" />
+      <ProfileButton
+        icon={<img alt="Settings" src={profileAssets.btnSettings} />}
+        title="Settings"
+      />
+      <ProfileButton
+        icon={<img alt="Inventory" src={profileAssets.btnInventory} />}
+        title="Inventory"
+      />
+      <ProfileButton
+        icon={<img alt="Tutorial" src={profileAssets.btnTutorial} />}
+        title="Tutorial"
+      />
       <div className="resource-badge">
-        <ProfileButton icon={<img alt="Locked Ready Balance" src={profileAssets.btnLockedYield} />} text={lockedYield} title="Locked Ready Balance" />
-        <ProfileButton icon={<img alt="Ready Balance" src={profileAssets.btnYield} />} text={yieldBalance} title="Ready Balance" />
+        <ProfileButton
+          icon={
+            <img
+              alt="Locked Ready Balance"
+              src={profileAssets.btnLockedYield}
+            />
+          }
+          text={lockedYield}
+          title="Locked Ready Balance"
+        />
+        <ProfileButton
+          icon={<img alt="Ready Balance" src={profileAssets.btnYield} />}
+          text={yieldBalance}
+          title="Ready Balance"
+        />
       </div>
     </div>
   );
-}
+};
 
 export default ProfileBar;
-
-

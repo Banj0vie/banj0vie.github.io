@@ -1,0 +1,21 @@
+.grow-status-box {
+  width: 100%;
+  display: flex;
+  gap: 0.25rem;
+}
+
+.grow-status-box .step {
+  width: 20%;
+  height: 1rem;
+  border-radius: 0.25rem;
+}
+
+.grow-status-box .active {
+  background-color: #5ab552;
+  border: 1px solid #743f39;
+}
+
+.grow-status-box .empty {
+  background-color: #743f39;
+  border: 1px solid #3f2832;
+}

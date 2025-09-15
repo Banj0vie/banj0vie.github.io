@@ -2,10 +2,9 @@ import React, { useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { Web3Provider, useWeb3 } from "./contexts/Web3Context";
 import { GameStateProvider } from "./contexts/GameStateContext";
+import { NotificationProvider } from "./contexts/NotificationContext";
 import AuthPage from "./layouts/AuthPage";
-import GameMenu from "./layouts/GameMenu";
-import Valley from "./router/valley.jsx";
-import House from "./router/house.jsx";
+// ...existing imports
 import Market from "./router/market.jsx";
 import {
   baseFrames,
@@ -35,7 +34,6 @@ const AppContent = () => {
         position: "relative",
       }}
     >
-      <GameMenu />
       <div
         style={{
           padding: "80px 20px 20px 20px",
@@ -78,6 +76,10 @@ const App = () => {
       `url(${baseFrames.tetiaryBg})`
     );
     document.documentElement.style.setProperty(
+      "--crop-circle-bg",
+      `url(${baseFrames.cropCircleBg})`
+    );
+    document.documentElement.style.setProperty(
       "--dialog-edge-bg",
       `url(${dialogFrames.modalBgTopLeft}), url(${dialogFrames.modalBgTopRight}), url(${dialogFrames.modalBgBottomLeft}), url(${dialogFrames.modalBgBottomRight})`
     );
@@ -114,9 +116,11 @@ const App = () => {
   return (
     <Web3Provider>
       <GameStateProvider>
-        <Router>
-          <AppContent />
-        </Router>
+        <NotificationProvider>
+          <Router>
+            <AppContent />
+          </Router>
+        </NotificationProvider>
       </GameStateProvider>
     </Web3Provider>
   );

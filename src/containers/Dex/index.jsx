@@ -9,6 +9,7 @@ import DividerLink from "../../components/links/DividerLink";
 import { generateId } from "../../utils/basic";
 import { useDex } from "../../hooks/useContracts";
 import { useWeb3 } from "../../contexts/Web3Context";
+import { useNotification } from "../../contexts/NotificationContext";
 import { ethers } from "ethers";
 const DexDialog = ({ onClose, label = "DEX", header = "" }) => {
   const { isConnected } = useWeb3();
@@ -19,6 +20,7 @@ const DexDialog = ({ onClose, label = "DEX", header = "" }) => {
   const [ethAmount, setEthAmount] = useState('');
   const [yieldAmount, setYieldAmount] = useState('0');
   const [isCalculating, setIsCalculating] = useState(false);
+  const { show: showNotification } = useNotification();
 
   // Calculate yield amount when ETH amount changes
   useEffect(() => {
@@ -47,12 +49,12 @@ const DexDialog = ({ onClose, label = "DEX", header = "" }) => {
 
   const onSwap = async () => {
     if (!isConnected) {
-      alert('Please connect your wallet first');
+      showNotification('Please connect your wallet first', 'warning');
       return;
     }
 
     if (!ethAmount || parseFloat(ethAmount) <= 0) {
-      alert('Please enter a valid ETH amount');
+      showNotification('Please enter a valid ETH amount', 'warning');
       return;
     }
 
@@ -61,13 +63,13 @@ const DexDialog = ({ onClose, label = "DEX", header = "" }) => {
       const result = await swapETHForYield(ethWei);
       
       if (result) {
-        alert('Swap successful! Check your Yield token balance.');
+        showNotification('Swap successful! Check your Yield token balance.', 'success');
         setEthAmount('');
         setYieldAmount('0');
       }
     } catch (err) {
       console.error('Failed to swap:', err);
-      alert(`Swap failed: ${err.message}`);
+      showNotification(`Swap failed: ${err?.message || 'Unknown error'}`, 'error');
     }
   };
 
@@ -82,6 +84,7 @@ const DexDialog = ({ onClose, label = "DEX", header = "" }) => {
   return (
     <BaseDialog className="dex-wrapper" title={label} onClose={onClose} header={header}>
       <div className="dex-dialog">
+  {/* Notifications rendered at app level */}
         <div
           className="swap-wrapper"
           style={{ flexDirection: isReversed ? "column-reverse" : "column" }}

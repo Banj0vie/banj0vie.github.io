@@ -9,6 +9,7 @@ import FarmMenu from "../layouts/FarmInterface/FarmMenu";
 import SelectSeedDialog from "../containers/SelectSeedDialog";
 import { useSeeds } from "../hooks/useSeeds";
 import { useContracts, useFarming } from "../hooks/useContracts";
+import { useNotification } from "../contexts/NotificationContext";
 import { CropItemArrayClass } from "../models/crop";
 const Farm = () => {
   const { width, height } = FARM_VIEWPORT;
@@ -16,6 +17,7 @@ const Farm = () => {
   const { seeds: currentSeeds } = useSeeds(); // Get seeds from contract
   const { contracts, isReady } = useContracts();
   const { plant, plantBatch, harvest, harvestAll, getUserCrops, getMaxPlots, getGrowthTime } = useFarming(contracts);
+  const { show } = useNotification();
   const [isFarmMenu, setIsFarmMenu] = useState(false);
   const [isPlanting, setIsPlanting] = useState(true);
   const [isSelectCropDialog, setIsSelectCropDialog] = useState(false);
@@ -184,7 +186,7 @@ const Farm = () => {
     
     if (maxPlots <= 0) {
       console.log('No plots available - cannot plant');
-      alert('You need to level up to unlock farming plots!');
+      show('You need to level up to unlock farming plots!', 'warning');
       return;
     }
     
@@ -212,7 +214,7 @@ const Farm = () => {
     
     if (emptyPlots === 0) {
       console.log('No empty plots available');
-      alert('All your farming plots are already planted!');
+      show('All your farming plots are already planted!', 'info');
       return;
     }
     
@@ -239,7 +241,7 @@ const Farm = () => {
     console.log('Sorted seeds by quality:', sortedSeeds.map(s => ({ id: s.id, label: s.label, category: s.category, count: s.count })));
     
     if (sortedSeeds.length === 0) {
-      alert('You don\'t have any seeds to plant!');
+      show("You don't have any seeds to plant!", 'info');
       return;
     }
     
@@ -273,10 +275,10 @@ const Farm = () => {
     
     
     if (totalPlanted === 0) {
-      alert('No seeds were planted. All plots may already be occupied.');
+      show('No seeds were planted. All plots may already be occupied.', 'info');
       return;
     }
-  }, [currentSeeds, getGrowthTimeForSeed, maxPlots, cropArray, isFarmMenu, previewCropArray]);
+  }, [currentSeeds, getGrowthTimeForSeed, maxPlots, cropArray, isFarmMenu, previewCropArray, show]);
 
 
   const startHarvesting = () => {
@@ -287,7 +289,7 @@ const Farm = () => {
 
   const handleHarvestAll = async () => {
     if (!isReady) {
-      alert('Contracts not ready yet. Please wait a moment and try again.');
+      show('Contracts not ready yet. Please wait a moment and try again.', 'warning');
       return;
     }
     
@@ -309,13 +311,13 @@ const Farm = () => {
         }
       }
       
-      alert('Harvesting all ready crops...');
+  show('Harvesting all ready crops...', 'info');
       
       // Call the contract to harvest all ready crops
       const result = await harvestAll();
       if (result) {
-        console.log('Successfully harvested all ready crops');
-        alert('✅ Successfully harvested all ready crops!');
+  console.log('Successfully harvested all ready crops');
+  show('✅ Successfully harvested all ready crops!', 'success');
         
         // Reload crops from contract to sync state
         if (userAddress) {
@@ -325,11 +327,11 @@ const Farm = () => {
         setIsFarmMenu(false);
         setIsPlanting(true);
       } else {
-        alert('❌ Failed to harvest crops. Please try again.');
+  show('❌ Failed to harvest crops. Please try again.', 'error');
       }
     } catch (error) {
       console.error('Failed to harvest all crops:', error);
-      alert(`❌ Failed to harvest crops: ${error.message}`);
+  show(`❌ Failed to harvest crops: ${error?.message || 'Unknown'}`, 'error');
     }
   };
 
@@ -337,7 +339,7 @@ const Farm = () => {
 
   const handlePlant = async () => {
     if (!isReady) {
-      alert('Contracts not ready yet. Please wait a moment and try again.');
+      show('Contracts not ready yet. Please wait a moment and try again.', 'warning');
       return;
     }
     
@@ -348,7 +350,7 @@ const Farm = () => {
       
       if (maxPlots <= 0) {
         console.log('No plots available - cannot plant');
-        alert('You need to level up to unlock farming plots!');
+        show('You need to level up to unlock farming plots!', 'warning');
         setIsFarmMenu(false);
         return;
       }
@@ -371,9 +373,9 @@ const Farm = () => {
       if (cropsToPlant.length === 0) {
         console.log('No new crops to plant - closing farm menu');
         if (!selectedSeed) {
-          alert('Please select a seed first!');
+          show('Please select a seed first!', 'info');
         } else {
-          alert('No crops selected to plant. Please click on plots to plant seeds or use "Plant All".');
+          show('No crops selected to plant. Please click on plots to plant seeds or use "Plant All".', 'info');
         }
         setIsFarmMenu(false);
         return;
@@ -383,7 +385,7 @@ const Farm = () => {
       const loadingMessage = cropsToPlant.length === 1 
         ? 'Planting seed...' 
         : `Planting ${cropsToPlant.length} seeds...`;
-      alert(loadingMessage);
+  show(loadingMessage, 'info');
       
       // Call contract to plant all crops
       if (cropsToPlant.length === 1) {
@@ -392,9 +394,9 @@ const Farm = () => {
         const result = await plant(cropsToPlant[0].seedId, cropsToPlant[0].plotNumber);
         if (result) {
           console.log('Successfully planted seed:', cropsToPlant[0].seedId, 'at plot:', cropsToPlant[0].plotNumber);
-          alert(`✅ Successfully planted seed at plot ${cropsToPlant[0].plotNumber}!`);
+          show(`✅ Successfully planted seed at plot ${cropsToPlant[0].plotNumber}!`, 'success');
         } else {
-          alert('❌ Failed to plant seed. Please try again.');
+          show('❌ Failed to plant seed. Please try again.', 'error');
           return;
         }
       } else {
@@ -405,9 +407,9 @@ const Farm = () => {
         const result = await plantBatch(seedIds, plotNumbers);
         if (result) {
           console.log(`Successfully planted ${cropsToPlant.length} seeds`);
-          alert(`✅ Successfully planted ${cropsToPlant.length} seeds!`);
+          show(`✅ Successfully planted ${cropsToPlant.length} seeds!`, 'success');
         } else {
-          alert('❌ Failed to plant seeds. Please try again.');
+          show('❌ Failed to plant seeds. Please try again.', 'error');
           return;
         }
       }
@@ -430,18 +432,18 @@ const Farm = () => {
       setIsFarmMenu(false);
     } catch (error) {
       console.error('Failed to plant crops:', error);
-      alert(`❌ Failed to plant crops: ${error.message}`);
+      show(`❌ Failed to plant crops: ${error?.message || 'Unknown'}`, 'error');
     }
   };
 
   const handleHarvest = async () => {
     if (!isReady) {
-      alert('Contracts not ready yet. Please wait a moment and try again.');
+      show('Contracts not ready yet. Please wait a moment and try again.', 'warning');
       return;
     }
     
     if (!selectedIndexes || selectedIndexes.length === 0) {
-      alert('Please select crops to harvest first!');
+      show('Please select crops to harvest first!', 'info');
       return;
     }
     
@@ -480,12 +482,12 @@ const Farm = () => {
       }
       
       if (readyCrops.length === 0) {
-        alert('No selected crops are ready to harvest! Make sure crops are fully grown.');
+        show('No selected crops are ready to harvest! Make sure crops are fully grown.', 'info');
         return;
       }
       
       console.log(`Found ${readyCrops.length} ready crops to harvest:`, readyCrops);
-      alert(`Harvesting ${readyCrops.length} ready crops...`);
+  show(`Harvesting ${readyCrops.length} ready crops...`, 'info');
       
       let successCount = 0;
       // Call the contract to harvest each ready crop
@@ -503,9 +505,9 @@ const Farm = () => {
       }
       
       if (successCount > 0) {
-        alert(`✅ Successfully harvested ${successCount} crops!`);
+        show(`✅ Successfully harvested ${successCount} crops!`, 'success');
       } else {
-        alert('❌ Failed to harvest crops. Please try again.');
+        show('❌ Failed to harvest crops. Please try again.', 'error');
         return;
       }
       
@@ -514,7 +516,7 @@ const Farm = () => {
       setIsPlanting(true);
     } catch (error) {
       console.error('Failed to harvest crops:', error);
-      alert(`❌ Failed to harvest crops: ${error.message}`);
+      show(`❌ Failed to harvest crops: ${error?.message || 'Unknown'}`, 'error');
     }
   };
 
@@ -585,7 +587,7 @@ const Farm = () => {
     const seed = currentSeeds.find((s) => s.id === id);
     if (!seed || seed.count <= 0) {
       console.log('Seed not available or count is 0:', seed);
-      alert('You don\'t have any seeds of this type!');
+      show("You don't have any seeds of this type!", 'info');
       return;
     }
     

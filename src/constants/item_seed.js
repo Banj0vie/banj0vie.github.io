@@ -106,6 +106,25 @@ export const SEED_PACKS = [
     }
 ]
 
+export const SEED_PACK_LIST = {
+    [ID_SEED_SHOP_ITEMS.FEEBLE_SEED]: {
+        id: ID_SEED_SHOP_ITEMS.FEEBLE_SEED,
+        label: "Feeble",
+    },
+    [ID_SEED_SHOP_ITEMS.PICO_SEED]: {
+        id: ID_SEED_SHOP_ITEMS.PICO_SEED,
+        label: "Pico",
+    },
+    [ID_SEED_SHOP_ITEMS.BASIC_SEED]: {
+        id: ID_SEED_SHOP_ITEMS.BASIC_SEED,
+        label: "Basic",
+    },
+    [ID_SEED_SHOP_ITEMS.PREMIUM_SEED]: {
+        id: ID_SEED_SHOP_ITEMS.PREMIUM_SEED,
+        label: "Premium",
+    }
+}
+
 export const SEED_PACK_STATUS = {
     NORMAL: "SEED_PACK_STATUS_NORMAL",
     COMMITING: "SEED_PACK_STATUS_COMMITING",
@@ -493,4 +512,11 @@ export const SEEDS = {
         yield: 5.4,
         lockedYield: 8.1,
     },
+}
+
+export const GROW_STATUS = {
+    [-1]: "Newly Planted",
+    0: "Sprout",
+    1: "Budding",
+    2: "Harvest",
 }

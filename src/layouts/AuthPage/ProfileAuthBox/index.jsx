@@ -4,15 +4,18 @@ import BaseDivider from "../../../components/dividers/BaseDivider";
 import BaseInput from "../../../components/inputs/BaseInput";
 import BaseButton from "../../../components/buttons/BaseButton";
 import { useWeb3 } from "../../../contexts/Web3Context";
+import { useNotification } from "../../../contexts/NotificationContext";
 
 const ProfileAuthBox = ({ onCreateProfile }) => {
   const [username, setUsername] = useState("");
   const [referralCode, setReferralCode] = useState("");
   const { createProfile, isCreatingProfile, error } = useWeb3();
 
+  const { show } = useNotification();
+
   const handleCreateProfile = async () => {
     if (!username.trim()) {
-      alert("Please enter a username");
+      show("Please enter a username", 'info');
       return;
     }
 

@@ -124,6 +124,10 @@ a {
   color: #ffcb5b;
 }
 
+.error {
+  color: rgb(223, 84, 74);
+}
+
 .w-50 {
   width: 50%;
 }
@@ -154,4 +158,8 @@ a {
 
 .text-center {
   text-align: center;
+}
+
+.text-1\.25 {
+  font-size: 1.25rem;
 }
