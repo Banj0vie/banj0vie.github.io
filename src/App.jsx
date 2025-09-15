@@ -1,5 +1,9 @@
 import React, { useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { Web3Provider, useWeb3 } from "./contexts/Web3Context";
+import { GameStateProvider } from "./contexts/GameStateContext";
+import AuthPage from "./layouts/AuthPage";
+import GameMenu from "./layouts/GameMenu";
 import Valley from "./router/valley.jsx";
 import House from "./router/house.jsx";
 import Market from "./router/market.jsx";
@@ -11,6 +15,49 @@ import {
   sliderImages,
 } from "./constants/_baseimages.js";
 import Farm from "./router/farm.jsx";
+
+const AppContent = () => {
+  const { isConnected, account, hasProfile } = useWeb3();
+
+  // Show AuthPage if not connected, no account, or no profile
+  if (!isConnected || !account || !hasProfile) {
+    return <AuthPage />;
+  }
+
+  // Show main app if connected
+  return (
+    <div
+      style={{
+        minHeight: "100vh",
+        backgroundColor: "#2F2F2F",
+        padding: "0",
+        margin: "0",
+        position: "relative",
+      }}
+    >
+      <GameMenu />
+      <div
+        style={{
+          padding: "80px 20px 20px 20px",
+          marginLeft: "100px", // Space for the fixed menu
+        }}
+      >
+        <Routes>
+          <Route path="/" element={<Valley />} />
+          <Route path="/house" element={<House />} />
+          <Route path="/market" element={<Market />} />
+          <Route path="/farm" element={<Farm />} />
+          <Route
+            path="/tavern"
+            element={
+              <div style={{ color: "white" }}>Tavern - Coming Soon!</div>
+            }
+          />
+        </Routes>
+      </div>
+    </div>
+  );
+};
 
 const App = () => {
   useEffect(() => {
@@ -65,36 +112,13 @@ const App = () => {
   }, []);
 
   return (
-    <Router>
-      <div
-        style={{
-          minHeight: "100vh",
-          backgroundColor: "#2F2F2F",
-          padding: "0",
-          margin: "0",
-        }}
-      >
-        <div
-          style={{
-            padding: "80px 20px 20px 20px",
-            marginLeft: "100px", // Space for the fixed menu
-          }}
-        >
-          <Routes>
-            <Route path="/" element={<Valley />} />
-            <Route path="/house" element={<House />} />
-            <Route path="/market" element={<Market />} />
-            <Route path="/farm" element={<Farm />} />
-            <Route
-              path="/tavern"
-              element={
-                <div style={{ color: "white" }}>Tavern - Coming Soon!</div>
-              }
-            />
-          </Routes>
-        </div>
-      </div>
-    </Router>
+    <Web3Provider>
+      <GameStateProvider>
+        <Router>
+          <AppContent />
+        </Router>
+      </GameStateProvider>
+    </Web3Provider>
   );
 };
 

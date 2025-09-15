@@ -2,10 +2,12 @@
   position: fixed;
   inset: 0;
   background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 20;
+  z-index: 9999;
 }
 
 .modal {
@@ -17,7 +19,7 @@
   color: #fff;
   padding: 16px;
   position: relative;
-  z-index: 10000;
+  z-index: 10001;
   background-image: var(--dialog-bg);
   background-repeat: repeat-y, repeat-y, repeat-x, repeat-x;
   position: relative;
@@ -49,7 +51,7 @@
   right: -3rem;
   top: 1rem;
   cursor: pointer;
-  z-index: 10002;
+  z-index: 10003;
   background: var(--dialog-close) 0% 0% / 100% 100%;
 }
 

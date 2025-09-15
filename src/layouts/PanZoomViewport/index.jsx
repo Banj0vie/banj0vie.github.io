@@ -63,14 +63,28 @@ const PanZoomViewport = ({
     [scale, tx, ty, activeModal]
   );
 
-  const onWheel = (e) => {
-    if (activeModal) return;
-    e.preventDefault();
-    const zoomIntensity = 0.0012;
-    const factor = Math.exp(-e.deltaY * zoomIntensity);
-    const desired = clamp(scale * factor, 0.2, 6);
-    setScaleAroundPoint(desired, e.clientX, e.clientY);
-  };
+
+  // Add wheel event listener with preventDefault capability
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const handleWheel = (e) => {
+      if (activeModal) return;
+      e.preventDefault();
+      const zoomIntensity = 0.0012;
+      const factor = Math.exp(-e.deltaY * zoomIntensity);
+      const desired = clamp(scale * factor, 0.2, 6);
+      setScaleAroundPoint(desired, e.clientX, e.clientY);
+    };
+
+    // Add event listener with passive: false to allow preventDefault
+    container.addEventListener('wheel', handleWheel, { passive: false });
+
+    return () => {
+      container.removeEventListener('wheel', handleWheel);
+    };
+  }, [scale, setScaleAroundPoint, activeModal]);
 
   const onPointerDown = (e) => {
     if (activeModal) return;
@@ -138,41 +152,42 @@ const PanZoomViewport = ({
   };
 
   return isWalletConnected() ? (
-    <div className="panzoom-root">
-      {!hideMenu && <GameMenu />}
-      <div
-        ref={containerRef}
-        className="panzoom-viewport"
-        style={{ touchAction: "none" }}
-        onWheel={onWheel}
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onDoubleClick={onDoubleClick}
-      >
-        <div className="panzoom-layer" style={layerInlineStyle}>
-          {backgroundSrc && (
-            <img
-              className="img-scene"
-              src={backgroundSrc}
-              alt="Scene"
-              draggable={false}
-              onDragStart={(e) => e.preventDefault()}
-            />
-          )}
+    <>
+      <div className="panzoom-root">
+        {!hideMenu && <GameMenu />}
+        <div
+          ref={containerRef}
+          className="panzoom-viewport"
+          style={{ touchAction: "none" }}
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onDoubleClick={onDoubleClick}
+        >
+          <div className="panzoom-layer" style={layerInlineStyle}>
+            {backgroundSrc && (
+              <img
+                className="img-scene"
+                src={backgroundSrc}
+                alt="Scene"
+                draggable={false}
+                onDragStart={(e) => e.preventDefault()}
+              />
+            )}
 
-          {hotspots.map((h) => (
-            <TooltipButton
-              key={h.id}
-              data-hotspot="true"
-              className="map-btn"
-              label={h.label}
-              style={{ left: h.x, top: h.y, animationDelay: `${h.delay}s` }}
-              onClick={() =>
-                setActiveModal(dialogs.find((d) => d.id === h.id) || dialogs[0])
-              }
-            />
-          ))}
-          <div className="panzoom-children">{children}</div>
+            {hotspots.map((h) => (
+              <TooltipButton
+                key={h.id}
+                data-hotspot="true"
+                className="map-btn"
+                label={h.label}
+                style={{ left: h.x, top: h.y, animationDelay: `${h.delay}s` }}
+                onClick={() =>
+                  setActiveModal(dialogs.find((d) => d.id === h.id) || dialogs[0])
+                }
+              />
+            ))}
+            <div className="panzoom-children">{children}</div>
+          </div>
         </div>
       </div>
       {activeModal && (
@@ -183,7 +198,7 @@ const PanZoomViewport = ({
           actions={activeModal.actions}
         />
       )}
-    </div>
+    </>
   ) : (
     <AuthPage></AuthPage>
   );

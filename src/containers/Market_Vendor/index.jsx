@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import BaseDialog from "../BaseDialog";
 import "./style.css";
 import VendorMenu from "./VendorMenu";
@@ -8,14 +8,30 @@ import CustomSeedsDialog from "../CustomSeedsDialog";
 import { ID_SEED_SHOP_ITEMS, ID_SEED_SHOP_PAGES } from "../../constants/app_ids";
 import { SEED_PACK_STATUS } from "../../constants/item_seed";
 import SeedRollingDialog from "../SeedRollingDialog";
+import { useVendor, useFarming, useContracts } from "../../hooks/useContracts";
+import { useWeb3 } from "../../contexts/Web3Context";
 const VendorDialog = ({ onClose, label = "VENDOR", header = "" }) => {
+  const { isConnected, account } = useWeb3();
+  const { contracts, isReady } = useContracts();
+  const { buySeedPack, getPackPrice, checkPendingRequests, getAllPendingRequests, fulfillPendingRequest, listenForSeedsRevealed } = useVendor();
+  const { getMaxPlots } = useFarming(contracts);
+  
   const [pageIndex, setPageIndex] = useState(ID_SEED_SHOP_PAGES.SEED_PACK_LIST);
+  const [availablePlots, setAvailablePlots] = useState(0);
   const [selectedSeed, setSelectedSeed] = useState(0);
   const [selectedSeedPack, setSelectedSeedPack] = useState({});
   const [isCustomDlg, setIsCustomDlg] = useState(false);
   const [isRollingDlg, setIsRollingDlg] = useState(false);
   const [rollingInfo, setRollingInfo] = useState({});
-  const [seedStatus, setSeedStatus] = React.useState({
+  const [hasPendingRequests, setHasPendingRequests] = useState(false);
+  const [pendingRequests, setPendingRequests] = useState([]);
+  const [isRevealing, setIsRevealing] = useState(false);
+  const [revealCleanup, setRevealCleanup] = useState(null);
+  const [isLoadingData, setIsLoadingData] = useState(false);
+  const [dataLoaded, setDataLoaded] = useState(false);
+  
+  // Memoized initial seed status to prevent unnecessary re-renders
+  const initialSeedStatus = useMemo(() => ({
     [ID_SEED_SHOP_ITEMS.FEEBLE_SEED]: {
       label: "Feeble Seeds",
       status: SEED_PACK_STATUS.NORMAL,
@@ -36,9 +52,104 @@ const VendorDialog = ({ onClose, label = "VENDOR", header = "" }) => {
       status: SEED_PACK_STATUS.NORMAL,
       count: 0,
     },
-  });
+  }), []);
+  
+  const [seedStatus, setSeedStatus] = useState(initialSeedStatus);
 
-  const onSeedsClicked = (id) => {
+  // Memoized tier mapping to prevent recreation on every render
+  const tierMap = useMemo(() => ({
+    [ID_SEED_SHOP_ITEMS.FEEBLE_SEED]: 1,
+    [ID_SEED_SHOP_ITEMS.PICO_SEED]: 2,
+    [ID_SEED_SHOP_ITEMS.BASIC_SEED]: 3,
+    [ID_SEED_SHOP_ITEMS.PREMIUM_SEED]: 4,
+  }), []);
+
+  // Load available plots - only when needed
+  const loadAvailablePlots = useCallback(async () => {
+    if (!isConnected || !account || !isReady || !getMaxPlots) return;
+    
+    try {
+      const maxPlots = await getMaxPlots(account);
+      if (maxPlots !== null) {
+        setAvailablePlots(Number(maxPlots));
+        console.log('Available plots:', maxPlots);
+      }
+    } catch (err) {
+      console.error('Failed to load available plots:', err);
+    }
+  }, [isConnected, account, isReady, getMaxPlots]);
+
+  // Load pending requests - only when needed
+  const loadPendingRequests = useCallback(async () => {
+    if (!isConnected || !account || !checkPendingRequests || !getAllPendingRequests) return;
+    
+    try {
+      const hasPending = await checkPendingRequests();
+      setHasPendingRequests(hasPending);
+      
+      if (hasPending) {
+        const allPendingReqs = await getAllPendingRequests();
+        setPendingRequests(allPendingReqs);
+      } else {
+        setPendingRequests([]);
+      }
+    } catch (err) {
+      console.error('Failed to load pending requests:', err);
+    }
+  }, [isConnected, account, checkPendingRequests, getAllPendingRequests]);
+
+  // Load pack prices - only when needed (lazy loading)
+  const loadPackPrices = useCallback(async () => {
+    if (!getPackPrice) return;
+    
+    try {
+      // Load prices in parallel instead of sequentially
+      const pricePromises = Array.from({ length: 4 }, (_, i) => 
+        getPackPrice(i + 1).catch(err => {
+          console.error(`Failed to load tier ${i + 1} price:`, err);
+          return null;
+        })
+      );
+      
+      const prices = await Promise.all(pricePromises);
+      console.log('Pack prices:', prices);
+    } catch (err) {
+      console.error('Failed to load pack prices:', err);
+    }
+  }, [getPackPrice]);
+
+  // Main data loading effect - only runs when dialog opens or account changes
+  useEffect(() => {
+    if (!isConnected || !account || !isReady || dataLoaded) return;
+    
+    const loadData = async () => {
+      setIsLoadingData(true);
+      try {
+        // Load essential data in parallel
+        await Promise.all([
+          loadAvailablePlots(),
+          loadPendingRequests(),
+          // Don't load pack prices immediately - load them when needed
+        ]);
+        setDataLoaded(true);
+      } catch (err) {
+        console.error('Failed to load vendor data:', err);
+      } finally {
+        setIsLoadingData(false);
+      }
+    };
+
+    loadData();
+  }, [isConnected, account, isReady, dataLoaded, loadAvailablePlots, loadPendingRequests]);
+
+  // Load pack prices when user navigates to seed pack detail
+  useEffect(() => {
+    if (pageIndex === ID_SEED_SHOP_PAGES.SEED_PACK_DETAIL) {
+      loadPackPrices();
+    }
+  }, [pageIndex, loadPackPrices]);
+
+  const onSeedsClicked = useCallback((id) => {
     setSelectedSeed(id);
     if (seedStatus[id].status === SEED_PACK_STATUS.COMMITED) {
       setSeedStatus((prev) => ({
@@ -49,37 +160,130 @@ const VendorDialog = ({ onClose, label = "VENDOR", header = "" }) => {
         },
       }));
       setRollingInfo({
-        id,
+        revealedSeeds: Array(seedStatus[id].count).fill(0),
         count: seedStatus[id].count,
       });
       setIsRollingDlg(true);
     } else {
       setPageIndex(ID_SEED_SHOP_PAGES.SEED_PACK_DETAIL);
     }
-  };
+  }, [seedStatus]);
 
-  const onRollChancesClicked = () => {
+
+  const onRollChancesClicked = useCallback(() => {
     setPageIndex(ID_SEED_SHOP_PAGES.ROLL_CHANCES);
-  };
+  }, []);
 
-  const onBuy = (item) => {
-    setSelectedSeedPack(item);
-    if (item.count === 0) {
-      setIsCustomDlg(true);
-    } else {
-      handleBuy(item);
+  const handleReveal = useCallback(async (requestId, tier, count) => {
+    if (!requestId) return;
+    
+    // Clean up any existing reveal process
+    if (revealCleanup) {
+      revealCleanup();
+      setRevealCleanup(null);
     }
-  };
+    
+    setIsRevealing(true);
+    try {
+      // Event listener will be set up after fulfill call with the correct block number
+      
+      // Fulfill the pending request via VRNG system
+      const result = await fulfillPendingRequest(requestId);
+      if (result) {
+        // Get the block number from the fulfill transaction
+        const fulfillBlockNumber = result.blockNumber;
+        
+        // Immediately update UI state since fulfill was successful
+        // This will update the UI buttons to remove the reveal status
+        setIsRevealing(false); // Reset revealing state immediately
+        
+        // Also refresh pending requests to ensure consistency
+        setTimeout(async () => {
+          await loadPendingRequests();
+        }, 500); // Short delay to ensure transaction is processed
+        
+        // Show rolling dialog immediately as fallback
+        const rollingInfo = {
+          id: tier,
+          count: parseInt(count),
+          isReveal: true,
+          isComplete: false, // Will be updated when event is received
+          isFallback: true, // Indicates this is a fallback dialog
+          revealedSeeds: Array(parseInt(count)).fill(0) // Initialize with 0s for animation
+        };
+        setRollingInfo(rollingInfo);
+        setIsRollingDlg(true);
+        
+        // Set up event listener with the fulfill transaction block number
+        const eventCleanup = await listenForSeedsRevealed(requestId, (revealedSeeds) => {
+          
+          // Update the rolling dialog with the actual revealed seeds
+          setRollingInfo(prev => ({
+            ...prev,
+            revealedSeeds: revealedSeeds.seedIds,
+            isComplete: true,
+            isFallback: false // This is real data, not fallback
+          }));
+          
+          // Keep the dialog open to show results - don't hide it immediately
+          // User will close it manually via onClose/onBack buttons
+          setIsRevealing(false);
+          setRevealCleanup(null);
+          
+          // Refresh pending requests after reveal
+          setTimeout(async () => {
+            await loadPendingRequests();
+          }, 1000); // Wait 1 second for the transaction to be mined
+        }, fulfillBlockNumber);
+        
+        if (eventCleanup) {
+          setRevealCleanup(eventCleanup);
+        }
+      } else {
+        // If fulfillment failed, reset the revealing state
+        setIsRevealing(false);
+        setRevealCleanup(null);
+      }
+      
+      // Clean up event listener after 30 seconds (timeout)
+      setTimeout(() => {
+        if (revealCleanup) revealCleanup();
+        setIsRevealing(false); // Reset revealing state on timeout
+        setRevealCleanup(null);
+      }, 30000);
+      
+    } catch (err) {
+      console.error('Failed to reveal:', err);
+      setIsRevealing(false);
+      setRevealCleanup(null);
+    }
+  }, [listenForSeedsRevealed, fulfillPendingRequest, loadPendingRequests, revealCleanup]);
 
-  const onConfirm = (count) => {
-    handleBuy({
-      ...selectedSeedPack,
-      count,
-    });
-    setIsCustomDlg(false);
-  };
+  // Cancel reveal process
+  const cancelReveal = useCallback(() => {
+    if (revealCleanup) {
+      revealCleanup();
+      setRevealCleanup(null);
+    }
+    setIsRevealing(false);
+    setIsRollingDlg(false);
+  }, [revealCleanup]);
 
-  const handleBuy = (item) => {
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (revealCleanup) {
+        revealCleanup();
+      }
+    };
+  }, [revealCleanup]);
+
+  const handleBuy = useCallback(async (item) => {
+    if (!isConnected) {
+      alert('Please connect your wallet first');
+      return;
+    }
+
     setIsRollingDlg(false);
     setSeedStatus((prev) => ({
       ...prev,
@@ -89,17 +293,58 @@ const VendorDialog = ({ onClose, label = "VENDOR", header = "" }) => {
         count: item.count,
       },
     }));
-    setTimeout(() => {
+
+    try {
+      const tier = tierMap[selectedSeed];
+      const result = await buySeedPack(tier, item.count);
+      console.log('Seed pack purchase result:', result);
+      if (result) {
+        setSeedStatus((prev) => ({
+          ...prev,
+          [selectedSeed]: {
+            ...prev[selectedSeed],
+            status: SEED_PACK_STATUS.COMMITED,
+          },
+        }));
+        console.log('Seed pack purchase successful:', result);
+        
+        // Refresh pending requests after successful purchase
+        await loadPendingRequests();
+      } else {
+        throw new Error('Purchase failed');
+      }
+    } catch (err) {
+      console.error('Failed to buy seed pack:', err);
       setSeedStatus((prev) => ({
         ...prev,
         [selectedSeed]: {
           ...prev[selectedSeed],
-          status: SEED_PACK_STATUS.COMMITED,
+          status: SEED_PACK_STATUS.NORMAL,
         },
       }));
-    }, 3000);
+      alert(`Failed to buy seed pack: ${err.message}`);
+    }
+
     setPageIndex(ID_SEED_SHOP_PAGES.SEED_PACK_LIST);
-  };
+  }, [isConnected, selectedSeed, tierMap, buySeedPack, loadPendingRequests]);
+
+  const onBuy = useCallback((item) => {
+    setSelectedSeedPack(item);
+    if (item.count === 0) {
+      setIsCustomDlg(true);
+    } else {
+      handleBuy(item);
+    }
+  }, [handleBuy]);
+
+  const onConfirm = useCallback((count) => {
+    handleBuy({
+      ...selectedSeedPack,
+      count,
+    });
+    setIsCustomDlg(false);
+  }, [selectedSeedPack, handleBuy]);
+
 
   return !isRollingDlg ? (
     <BaseDialog title={label} onClose={onClose} header={header}>
@@ -108,6 +353,12 @@ const VendorDialog = ({ onClose, label = "VENDOR", header = "" }) => {
           seedStatus={seedStatus}
           onSeedsClicked={onSeedsClicked}
           onRollChancesClicked={onRollChancesClicked}
+          availablePlots={availablePlots}
+          hasPendingRequests={hasPendingRequests}
+          pendingRequests={pendingRequests}
+          onRevealClicked={handleReveal}
+          isRevealing={isRevealing}
+          isLoading={isLoadingData}
         ></VendorMenu>
       )}
       {pageIndex === ID_SEED_SHOP_PAGES.SEED_PACK_DETAIL && (
@@ -139,9 +390,10 @@ const VendorDialog = ({ onClose, label = "VENDOR", header = "" }) => {
   ) : (
     <SeedRollingDialog
       rollingInfo={rollingInfo}
-      onClose={onClose}
-      onBack={() => setIsRollingDlg(false)}
+      onClose={cancelReveal}
+      onBack={cancelReveal}
       onBuyAgain={() => {
+        cancelReveal();
         handleBuy(rollingInfo);
       }}
     ></SeedRollingDialog>

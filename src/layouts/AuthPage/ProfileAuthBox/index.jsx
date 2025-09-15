@@ -3,10 +3,28 @@ import "./style.css";
 import BaseDivider from "../../../components/dividers/BaseDivider";
 import BaseInput from "../../../components/inputs/BaseInput";
 import BaseButton from "../../../components/buttons/BaseButton";
+import { useWeb3 } from "../../../contexts/Web3Context";
 
 const ProfileAuthBox = ({ onCreateProfile }) => {
   const [username, setUsername] = useState("");
   const [referralCode, setReferralCode] = useState("");
+  const { createProfile, isCreatingProfile, error } = useWeb3();
+
+  const handleCreateProfile = async () => {
+    if (!username.trim()) {
+      alert("Please enter a username");
+      return;
+    }
+
+    try {
+      await createProfile(username.trim());
+      onCreateProfile(username.trim(), referralCode.trim());
+    } catch (err) {
+      console.error("Failed to create profile:", err);
+      // Error is already handled by Web3Context
+    }
+  };
+
   return (
     <div className="profile-auth-box">
       <div>Create your Profile!</div>
@@ -25,10 +43,16 @@ const ProfileAuthBox = ({ onCreateProfile }) => {
         setValue={(rc) => setReferralCode(rc)}
         value={referralCode}
       ></BaseInput>
+      {error && (
+        <div style={{color: 'red', margin: '10px 0', fontSize: '14px'}}>
+          {error}
+        </div>
+      )}
       <BaseButton
         className="h-3rem w-75"
-        label="Create Profile"
-        onClick={() => onCreateProfile(username, referralCode)}
+        label={isCreatingProfile ? "Creating Profile..." : "Create Profile"}
+        onClick={handleCreateProfile}
+        disabled={isCreatingProfile}
       ></BaseButton>
     </div>
   );

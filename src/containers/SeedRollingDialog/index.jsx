@@ -9,8 +9,8 @@ const SeedRollingDialog = ({ rollingInfo, onClose, onBack, onBuyAgain }) => {
     <BaseDialog title="SEED GACHA" onClose={onClose}>
       <div className="seed-gacha-wrapper">
         <div className="seed-rolling-box-wrapper">
-          {Array.from({ length: rollingInfo.count }).map((_, idx) => (
-            <SeedRollingBox key={idx} seedPackId={rollingInfo.id} delay={idx * 200} />
+          {(rollingInfo.revealedSeeds || []).map((seedId, idx) => (
+            <SeedRollingBox key={idx} seedPackId={seedId} delay={idx * 200} />
           ))}
         </div>
         <div className="seed-rolling-buttons-wrapper">

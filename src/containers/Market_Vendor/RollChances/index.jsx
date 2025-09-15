@@ -7,11 +7,11 @@ import BaseButton from "../../../components/buttons/BaseButton";
 
 const RollChances = ({ onBack }) => {
   const primaryData = [
-    { label: "Commons", value: "27.34% (0.50%)" },
-    { label: "Uncommons", value: "27.34% (0.50%)" },
-    { label: "Rares", value: "27.34% (0.50%)" },
-    { label: "Epics", value: "27.34% (0.50%)" },
-    { label: "Legendaries", value: "27.34% (0.50%)" },
+    { label: "Commons", value: "27.34%" },
+    { label: "Uncommons", value: "43.76%" },
+    { label: "Rares", value: "21.88%" },
+    { label: "Epics", value: "6.26%" },
+    { label: "Legendaries", value: "0.76%" },
   ];
 
   const [farmLevel, setFarmLevel] = useState(0);

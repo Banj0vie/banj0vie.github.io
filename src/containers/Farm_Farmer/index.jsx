@@ -22,8 +22,14 @@ const FarmerDialog = ({
         <ScrollButton
           label="Plant All"
           onClick={() => {
+            console.log('=== FARMER DIALOG PLANT ALL CLICKED ===');
+            console.log('actions.plantAll:', actions.plantAll);
             onClose();
-            actions.plantAll();
+            if (actions.plantAll) {
+              actions.plantAll();
+            } else {
+              console.error('actions.plantAll is not defined!');
+            }
           }}
         ></ScrollButton>
         <ScrollButton
