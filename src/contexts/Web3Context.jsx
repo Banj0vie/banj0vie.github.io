@@ -34,17 +34,29 @@ export const Web3Provider = ({ children }) => {
   const connect = async () => {
     if (!isMetaMaskInstalled()) {
       setError('MetaMask is not installed. Please install MetaMask to continue.');
-      return;
+      return null;
     }
 
     setIsConnecting(true);
     setError(null);
 
     try {
-      // Request account access
-      const accounts = await window.ethereum.request({
-        method: 'eth_requestAccounts',
-      });
+      // If user disconnected before, force MetaMask prompt by requesting permissions first
+      let accounts;
+      try {
+        const forcePrompt = window.localStorage.getItem('web3_force_prompt_next_connect') === 'true';
+        if (forcePrompt) {
+          await window.ethereum.request({
+            method: 'wallet_requestPermissions',
+            params: [{ eth_accounts: {} }],
+          });
+        }
+      } catch (permErr) {
+        console.warn('wallet_requestPermissions failed or not supported:', permErr);
+      }
+
+      // Request account access (this should open MetaMask if not already granted)
+      accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
 
       if (accounts.length === 0) {
         throw new Error('No accounts found');
@@ -60,6 +72,12 @@ export const Web3Provider = ({ children }) => {
       setAccount(account);
       setChainId(network.chainId.toString());
       setIsConnected(true);
+
+      // Persist auto-connect preference
+      try {
+        window.localStorage.setItem('web3_should_autoconnect', 'true');
+        window.localStorage.setItem('web3_force_prompt_next_connect', 'false');
+      } catch {}
 
       // Initialize contract service
       const service = new ContractService(provider, signer, network.chainId.toString());
@@ -81,9 +99,13 @@ export const Web3Provider = ({ children }) => {
         await switchToAbstractTestnet();
       }
 
+      // No signature required; MetaMask requestAccounts already prompts selection
+
+      return account;
     } catch (err) {
       console.error('Failed to connect:', err);
       setError(err.message);
+      return null;
     } finally {
       setIsConnecting(false);
     }
@@ -157,6 +179,12 @@ export const Web3Provider = ({ children }) => {
     setContractService(null);
     setHasProfile(false);
     setIsCreatingProfile(false);
+
+    // Disable auto-connect on next load
+    try {
+      window.localStorage.setItem('web3_should_autoconnect', 'false');
+      window.localStorage.setItem('web3_force_prompt_next_connect', 'true');
+    } catch {}
   };
 
   // Listen for account changes
@@ -186,9 +214,21 @@ export const Web3Provider = ({ children }) => {
     }
   }, []);
 
-  // Check if already connected on mount
+  // Check if already connected on mount (only if user allowed auto-connect)
   useEffect(() => {
     const checkConnection = async () => {
+      if (!isMetaMaskInstalled()) return;
+
+      // Respect persisted auto-connect preference
+      let shouldAutoConnect = false;
+      try {
+        shouldAutoConnect = window.localStorage.getItem('web3_should_autoconnect') === 'true';
+      } catch {}
+
+      if (!shouldAutoConnect) {
+        return;
+      }
+
       if (isMetaMaskInstalled()) {
         try {
           const accounts = await window.ethereum.request({
