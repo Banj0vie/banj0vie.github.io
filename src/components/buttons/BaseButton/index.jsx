@@ -6,11 +6,12 @@ const BaseButton = ({
   label = "Button",
   onClick,
   disabled = false,
+  focused = false,
 }) => {
   return (
     <div className={`${className} base-button-wrapper`}>
       <div
-        className={`base-button ${disabled && "base-button-disabled"}`}
+        className={`base-button ${disabled && "base-button-disabled"} ${focused && "base-button-focused"}`}
         onClick={(e) => {
           if (!disabled) {
             onClick();

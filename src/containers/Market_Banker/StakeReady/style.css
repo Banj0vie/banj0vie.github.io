@@ -1,0 +1,16 @@
+.stake-ready {
+    width: 450px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-top: 1rem;
+}
+
+.stake-unstake-buttons {
+    display: flex;
+    gap: 1rem;
+}
+
+.stake-ready .hint {
+    text-align: center;
+}

@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import PanZoomViewport from "../layouts/PanZoomViewport";
 import { FARM_HOTSPOTS, FARM_VIEWPORT } from "../constants/scene_farm";
 import { ID_FARM_HOTSPOTS } from "../constants/app_ids";
-import FarmerDialog from "../containers/Farmer";
+import FarmerDialog from "../containers/Farm_Farmer";
 import { dialogFrames } from "../constants/_baseimages";
 import FarmInterface from "../layouts/FarmInterface";
 import FarmMenu from "../layouts/FarmInterface/FarmMenu";

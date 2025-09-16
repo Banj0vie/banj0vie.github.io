@@ -31,14 +31,14 @@ const TokenInputRow = ({
     <div className="token-input-row">
       <TokenBox token={token}></TokenBox>
       <BaseInput
-        className="w-50 h-3rem"
+        className={`${balance == null ? "w-70" : "w-50"} h-3rem`}
         type="number"
         value={internalValue}
         setValue={handleValueChange}
         readOnly={readOnly}
         disabled={disabled}
       ></BaseInput>
-      <BalanceBox balance={formatNumber(balance)}></BalanceBox>
+      {balance !== null && <BalanceBox balance={formatNumber(balance)}></BalanceBox>}
     </div>
   );
 };

@@ -2,7 +2,7 @@ import React from 'react';
 import PanZoomViewport from '../layouts/PanZoomViewport';
 const Valley = () => {
   return (
-    <PanZoomViewport backgroundSrc="/images/backgrounds/house_new.png" />
+    <PanZoomViewport backgroundSrc="/images/backgrounds/valley.gif" />
   );
 }
 
