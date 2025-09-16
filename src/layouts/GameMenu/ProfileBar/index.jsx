@@ -11,15 +11,15 @@ import { formatNumber } from "../../../utils/basic";
 const ProfileBar = () => {
   const { balances, formatBalance } = useGameState();
   const { contractService, account } = useWeb3();
-  const [lockedYield, setLockedYield] = useState("0.0");
-  const [yieldBalance, setYieldBalance] = useState("0.0");
+  const [lockedReady, setLockedReady] = useState("0.0");
+  const [readyBalance, setReadyBalance] = useState("0.0");
 
   useEffect(() => {
     const loadBalances = async () => {
       if (balances && contractService && account) {
         try {
-          // Get locked yield from Sage contract
-          const lockedYieldAmount = await contractService.getLockedGameToken(
+          // Get locked ready from Sage contract
+          const lockedReadyAmount = await contractService.getLockedGameToken(
             account
           );
 
@@ -29,10 +29,10 @@ const ProfileBar = () => {
             return formatNumber(formatted);
           };
 
-          setLockedYield(formatBalanceForDisplay(lockedYieldAmount.toString()));
-          setYieldBalance(formatBalanceForDisplay(balances.yield));
+          setLockedReady(formatBalanceForDisplay(lockedReadyAmount.toString()));
+          setReadyBalance(formatBalanceForDisplay(balances.yield));
         } catch (error) {
-          console.error("Failed to load locked yield:", error);
+          console.error("Failed to load locked ready:", error);
           // Fallback to staked yield if Sage contract fails
           const formatBalanceForDisplay = (balance) => {
             const formatted = formatBalance(balance);
@@ -42,8 +42,8 @@ const ProfileBar = () => {
             }
             return formatted;
           };
-          setLockedYield(formatBalanceForDisplay(balances.stakedYield));
-          setYieldBalance(formatBalanceForDisplay(balances.yield));
+          setLockedReady(formatBalanceForDisplay(balances.stakedYield));
+          setReadyBalance(formatBalanceForDisplay(balances.yield));
         }
       }
     };
@@ -77,15 +77,15 @@ const ProfileBar = () => {
           icon={
             <img
               alt="Locked Ready Balance"
-              src={profileAssets.btnLockedYield}
+              src={profileAssets.btnLockedReady}
             />
           }
-          text={lockedYield}
+          text={lockedReady}
           title="Locked Ready Balance"
         />
         <ProfileButton
-          icon={<img alt="Ready Balance" src={profileAssets.btnYield} />}
-          text={yieldBalance}
+          icon={<img alt="Ready Balance" src={profileAssets.btnReady} />}
+          text={readyBalance}
           title="Ready Balance"
         />
       </div>

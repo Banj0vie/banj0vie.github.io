@@ -254,7 +254,7 @@ export const SEEDS = {
         category: ID_SEED_CATEGORIES.COMMON,
         pos: 1,
         yield: 50,
-        lockedYield: 75,
+        lockedReady: 75,
     },
     [ID_SEEDS.TOMATO]: {
         label: "TOMATO",
@@ -262,7 +262,7 @@ export const SEEDS = {
         category: ID_SEED_CATEGORIES.COMMON,
         pos: 2,
         yield: 50,
-        lockedYield: 75,
+        lockedReady: 75,
     },
     [ID_SEEDS.CARROT]: {
         label: "CARROT",
@@ -270,7 +270,7 @@ export const SEEDS = {
         category: ID_SEED_CATEGORIES.COMMON,
         pos: 3,
         yield: 50,
-        lockedYield: 75,
+        lockedReady: 75,
     },
     [ID_SEEDS.CORN]: {
         label: "CORN",
@@ -278,7 +278,7 @@ export const SEEDS = {
         category: ID_SEED_CATEGORIES.COMMON,
         pos: 4,
         yield: 50,
-        lockedYield: 75,
+        lockedReady: 75,
     },
     [ID_SEEDS.PUMPKIN]: {
         label: "PUMPKIN",
@@ -286,7 +286,7 @@ export const SEEDS = {
         category: ID_SEED_CATEGORIES.UNCOMMON,
         pos: 5,
         yield: 90,
-        lockedYield: 135,
+        lockedReady: 135,
     },
     [ID_SEEDS.CHILI]: {
         label: "CHILI",
@@ -294,7 +294,7 @@ export const SEEDS = {
         category: ID_SEED_CATEGORIES.UNCOMMON,
         pos: 6,
         yield: 90,
-        lockedYield: 135,
+        lockedReady: 135,
     },
     [ID_SEEDS.PARSNIP]: {
         label: "PARSNIP",
@@ -302,7 +302,7 @@ export const SEEDS = {
         category: ID_SEED_CATEGORIES.UNCOMMON,
         pos: 7,
         yield: 90,
-        lockedYield: 135,
+        lockedReady: 135,
     },
     [ID_SEEDS.CELERY]: {
         label: "CELERY",
@@ -310,7 +310,7 @@ export const SEEDS = {
         category: ID_SEED_CATEGORIES.RARE,
         pos: 8,
         yield: 120,
-        lockedYield: 180,
+        lockedReady: 180,
     },
     [ID_SEEDS.BROCCOLI]: {
         label: "BROCCOLI",
@@ -318,7 +318,7 @@ export const SEEDS = {
         category: ID_SEED_CATEGORIES.RARE,
         pos: 9,
         yield: 120,
-        lockedYield: 180,
+        lockedReady: 180,
     },
     [ID_SEEDS.CAULIFLOWER]: {
         label: "CAULIFLOWER",
@@ -326,7 +326,7 @@ export const SEEDS = {
         category: ID_SEED_CATEGORIES.EPIC,
         pos: 10,
         yield: 200,
-        lockedYield: 300,
+        lockedReady: 300,
     },
     [ID_SEEDS.BERRY]: {
         label: "BERRY",
@@ -334,7 +334,7 @@ export const SEEDS = {
         category: ID_SEED_CATEGORIES.EPIC,
         pos: 11,
         yield: 200,
-        lockedYield: 300,
+        lockedReady: 300,
     },
     [ID_SEEDS.GRAPES]: {
         label: "GRAPES",
@@ -342,7 +342,7 @@ export const SEEDS = {
         category: ID_SEED_CATEGORIES.LEGENDARY,
         pos: 12,
         yield: 540,
-        lockedYield: 810,
+        lockedReady: 810,
     },
     [ID_SEEDS.BANANA]: {
         label: "BANANA",
@@ -350,7 +350,7 @@ export const SEEDS = {
         category: ID_SEED_CATEGORIES.COMMON,
         pos: 13,
         yield: 400,
-        lockedYield: 600,
+        lockedReady: 600,
     },
     [ID_SEEDS.MANGO]: {
         label: "MANGO",
@@ -358,7 +358,7 @@ export const SEEDS = {
         category: ID_SEED_CATEGORIES.COMMON,
         pos: 14,
         yield: 400,
-        lockedYield: 600,
+        lockedReady: 600,
     },
     [ID_SEEDS.AVOCADO]: {
         label: "AVOCADO",
@@ -366,7 +366,7 @@ export const SEEDS = {
         category: ID_SEED_CATEGORIES.COMMON,
         pos: 15,
         yield: 400,
-        lockedYield: 600,
+        lockedReady: 600,
     },
     [ID_SEEDS.PINEAPPLE]: {
         label: "PINEAPPLE",
@@ -374,7 +374,7 @@ export const SEEDS = {
         category: ID_SEED_CATEGORIES.UNCOMMON,
         pos: 16,
         yield: 720,
-        lockedYield: 1080,
+        lockedReady: 1080,
     },
     [ID_SEEDS.BLUEBERRY]: {
         label: "BLUEBERRY",
@@ -382,7 +382,7 @@ export const SEEDS = {
         category: ID_SEED_CATEGORIES.UNCOMMON,
         pos: 17,
         yield: 720,
-        lockedYield: 1080,
+        lockedReady: 1080,
     },
     [ID_SEEDS.ARTICHOKE]: {
         label: "ARTICHOKE",
@@ -390,7 +390,7 @@ export const SEEDS = {
         category: ID_SEED_CATEGORIES.UNCOMMON,
         pos: 18,
         yield: 720,
-        lockedYield: 1080,
+        lockedReady: 1080,
     },
     [ID_SEEDS.PAPAYA]: {
         label: "PAPAYA",
@@ -398,7 +398,7 @@ export const SEEDS = {
         category: ID_SEED_CATEGORIES.RARE,
         pos: 19,
         yield: 960,
-        lockedYield: 1440,
+        lockedReady: 1440,
     },
     [ID_SEEDS.FIG]: {
         label: "FIG",
@@ -406,7 +406,7 @@ export const SEEDS = {
         category: ID_SEED_CATEGORIES.RARE,
         pos: 20,
         yield: 960,
-        lockedYield: 1440,
+        lockedReady: 1440,
     },
     [ID_SEEDS.LICHI]: {
         label: "LICHI",
@@ -414,7 +414,7 @@ export const SEEDS = {
         category: ID_SEED_CATEGORIES.EPIC,
         pos: 21,
         yield: 1600,
-        lockedYield: 2400,
+        lockedReady: 2400,
     },
     [ID_SEEDS.LAVENDER]: {
         label: "LAVENDER",
@@ -422,7 +422,7 @@ export const SEEDS = {
         category: ID_SEED_CATEGORIES.EPIC,
         pos: 22,
         yield: 1600,
-        lockedYield: 2400,
+        lockedReady: 2400,
     },
     [ID_SEEDS.DRAGON_FRUIT]: {
         label: "DRAGON_FRUIT",
@@ -430,7 +430,7 @@ export const SEEDS = {
         category: ID_SEED_CATEGORIES.LEGENDARY,
         pos: 23,
         yield: 4400,
-        lockedYield: 6600,
+        lockedReady: 6600,
     },
     [ID_SEEDS.POTATO]: {
         label: "POTATO",
@@ -438,7 +438,7 @@ export const SEEDS = {
         category: ID_SEED_CATEGORIES.COMMON,
         pos: 24,
         yield: 10,
-        lockedYield: 15,
+        lockedReady: 15,
     },
     [ID_SEEDS.LETTUCE]: {
         label: "LETTUCE",
@@ -446,7 +446,7 @@ export const SEEDS = {
         category: ID_SEED_CATEGORIES.UNCOMMON,
         pos: 25,
         yield: 18,
-        lockedYield: 27,
+        lockedReady: 27,
     },
     [ID_SEEDS.CABBAGE]: {
         label: "CABBAGE",
@@ -454,7 +454,7 @@ export const SEEDS = {
         category: ID_SEED_CATEGORIES.RARE,
         pos: 26,
         yield: 24,
-        lockedYield: 36,
+        lockedReady: 36,
     },
     [ID_SEEDS.ONION]: {
         label: "ONION",
@@ -462,7 +462,7 @@ export const SEEDS = {
         category: ID_SEED_CATEGORIES.EPIC,
         pos: 27,
         yield: 40,
-        lockedYield: 60,
+        lockedReady: 60,
     },
     [ID_SEEDS.RADISH]: {
         label: "RADISH",
@@ -470,7 +470,7 @@ export const SEEDS = {
         category: ID_SEED_CATEGORIES.LEGENDARY,
         pos: 28,
         yield: 108,
-        lockedYield: 162,
+        lockedReady: 162,
     },
     [ID_SEEDS.F_POTATO]: {
         label: "F.POTATO",
@@ -478,7 +478,7 @@ export const SEEDS = {
         category: ID_SEED_CATEGORIES.COMMON,
         pos: 29,
         yield: 0.5,
-        lockedYield: 0.75,
+        lockedReady: 0.75,
     },
     [ID_SEEDS.F_LETTUCE]: {
         label: "F.LETTUCE",
@@ -486,7 +486,7 @@ export const SEEDS = {
         category: ID_SEED_CATEGORIES.UNCOMMON,
         pos: 30,
         yield: 0.9,
-        lockedYield: 1.35,
+        lockedReady: 1.35,
     },
     [ID_SEEDS.F_CABBAGE]: {
         label: "F.CABBAGE",
@@ -494,7 +494,7 @@ export const SEEDS = {
         category: ID_SEED_CATEGORIES.RARE,
         pos: 31,
         yield: 1.2,
-        lockedYield: 1.8,
+        lockedReady: 1.8,
     },
     [ID_SEEDS.F_ONION]: {
         label: "F.ONION",
@@ -502,7 +502,7 @@ export const SEEDS = {
         category: ID_SEED_CATEGORIES.EPIC,
         pos: 32,
         yield: 2,
-        lockedYield: 3,
+        lockedReady: 3,
     },
     [ID_SEEDS.F_RADISH]: {
         label: "F.RADISH",
@@ -510,7 +510,7 @@ export const SEEDS = {
         category: ID_SEED_CATEGORIES.LEGENDARY,
         pos: 33,
         yield: 5.4,
-        lockedYield: 8.1,
+        lockedReady: 8.1,
     },
 }
 
