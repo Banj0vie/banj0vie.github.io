@@ -12,6 +12,7 @@ export const MARKET_HOTSPOTS = [
   { id: ID_MARKET_HOTSPOTS.HELPER, label: 'HELPER', x: 360, y: 330, delay: 0.8 },
   { id: ID_MARKET_HOTSPOTS.MARKET, label: 'MARKET', x: 280, y: 270, delay: 0.2 },
   { id: ID_MARKET_HOTSPOTS.LEADERBOARD, label: 'LEADERBOARD', x: 630, y: 120, delay: 0.4 },
+  { id: ID_MARKET_HOTSPOTS.SAGE, label: 'SAGE', x: 444, y: -10, delay: 0.6 },
 ];
 
 

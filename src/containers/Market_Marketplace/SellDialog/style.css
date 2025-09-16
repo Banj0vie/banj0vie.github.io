@@ -1,0 +1,14 @@
+.sell-dialog-content {
+    width: 1024px;
+    height: 600px;
+    display: flex;
+    gap: 0.75rem;
+}
+
+.sell-dialog-content .left-panel {
+    width: 35%;
+}
+
+.sell-dialog-content .right-panel {
+    width: 65%;
+}

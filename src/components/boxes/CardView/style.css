@@ -1,0 +1,15 @@
+.card-view {
+  min-height: 4rem;
+  height: auto;
+  -o-border-image: var(--primary-bg) 6 repeat;
+  border-image: var(--primary-bg) 6 fill repeat;
+  border-image-width: 0.5rem;
+  padding: 1rem;
+  width: 100%;
+}
+
+.card-view.secondary {
+  -o-border-image: var(--secondary-bg) 6 repeat;
+  border-image: var(--secondary-bg) 6 fill repeat;
+  border-image-width: 0.5rem;
+}
