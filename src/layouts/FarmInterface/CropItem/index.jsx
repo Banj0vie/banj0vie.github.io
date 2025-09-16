@@ -143,7 +143,7 @@ const CropItem = ({
       onMouseLeave={handleMouseLeave}
     >
       {/* Growth progress bar */}
-      {data.seedId && (
+      {data.seedId && data.seedId !== 0n && (
         <div className="growth-progress">
           <div
             className="growth-bar"
@@ -153,7 +153,7 @@ const CropItem = ({
       )}
 
       {/* Tooltip rendered into portal container so it aligns with transformed parents */}
-      {tooltipVisible && data.seedId && portalContainer && (
+      {tooltipVisible && data.seedId && data.seedId !== 0n && portalContainer && (
         <CropTooltip container={portalContainer} pos={tooltipPos} data={data} growthProgress={growthProgress} />
       )}
 

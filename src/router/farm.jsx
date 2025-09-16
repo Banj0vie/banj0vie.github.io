@@ -106,11 +106,10 @@ const Farm = () => {
               if (crop.seedId !== 0n) {
                 const item = newCropArray.getItem(crop.plotNumber);
                 if (item) {
-                  item.seedId = crop.seedId;
-                  // Convert BigInt to number and calculate when planted
+                  item.seedId = crop.seedId; // keep BigInt for SEEDS map keys
                   const endTime = Number(crop.endTime);
                   const growthTime = await getGrowthTimeForSeed(crop.seedId);
-                  item.plantedAt = endTime - growthTime; // Calculate when planted
+                  item.plantedAt = (endTime - growthTime) * 1000; // store in ms
                   item.growthTime = growthTime;
                   item.growStatus = crop.isReady ? 2 : 1; // 2 = ready, 1 = growing
                 }
@@ -613,7 +612,7 @@ const Farm = () => {
 
       // Check which crops are actually ready to harvest
       const readyCrops = [];
-      const currentTime = Math.floor(Date.now() / 1000); // Current timestamp in seconds
+      const currentTime = Math.floor(Date.now()); // Current timestamp in seconds
       console.log("Current timestamp:", currentTime);
 
       for (const idx of selectedIndexes) {
@@ -782,6 +781,13 @@ const Farm = () => {
       return;
     }
 
+    // Ensure plot is empty before proceeding (UI guard)
+    const existing = cropArray.getItem(idx);
+    if (existing && existing.seedId && existing.seedId !== 0n) {
+      show(`Plot ${idx} is already occupied.`, "error");
+      return;
+    }
+
     // Check if seed is available considering used seeds in preview
     const availableSeeds = getAvailableSeeds();
     const seed = availableSeeds.find((s) => s.id === id);
@@ -810,9 +816,6 @@ const Farm = () => {
     }));
 
     setPreviewCropArray(newPreviewCropArray);
-    setSelectedSeed(id);
-
-    console.log("Seed planted in preview, selectedSeed set to:", id);
   };
 
   const dialogs = [

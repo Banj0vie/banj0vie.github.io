@@ -1,10 +1,11 @@
+/* global BigInt */
 import { useState, useEffect, useCallback } from 'react';
 import { ethers } from 'ethers';
 import { useWeb3 } from '../contexts/Web3Context';
 import { CONTRACT_ADDRESSES, CONTRACT_ABIS } from '../config/contracts';
 
 export const useContracts = () => {
-  const { provider, signer, isConnected } = useWeb3();
+  const { provider, signer, isConnected, contractService } = useWeb3();
   const [contracts, setContracts] = useState({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -35,6 +36,11 @@ export const useContracts = () => {
             }
           });
 
+          // Add contract service to the contracts object
+          if (contractService) {
+            contractInstances.contractService = contractService;
+          }
+
           // Debug: Log which contracts were initialized
           console.log('Initialized contracts:', Object.keys(contractInstances));
 
@@ -51,7 +57,7 @@ export const useContracts = () => {
     } else {
       setContracts({});
     }
-  }, [provider, signer, isConnected]);
+  }, [provider, signer, isConnected, contractService]);
 
   return {
     contracts,
@@ -325,9 +331,9 @@ export const useFarming = (contracts) => {
   const [error, setError] = useState(null);
 
   const plant = useCallback(async (seedId, plotNumber) => {
-    if (!contracts || !contracts.farming) {
-      console.error('Farming contract not available');
-      setError('Farming contract not available');
+    if (!contracts || !contracts.contractService) {
+      console.error('Contract service not available');
+      setError('Contract service not available');
       return null;
     }
 
@@ -336,11 +342,9 @@ export const useFarming = (contracts) => {
     setError(null);
 
     try {
-      const tx = await contracts.farming.plant(seedId, plotNumber);
-      console.log('Plant transaction sent, waiting for confirmation...');
-      const receipt = await tx.wait();
+      const tx = await contracts.contractService.plantSeed(seedId, plotNumber);
       console.log('Plant successful!');
-      return receipt;
+      return tx;
     } catch (err) {
       console.error('Failed to plant seed:', err);
       setError(err.message);
@@ -351,9 +355,9 @@ export const useFarming = (contracts) => {
   }, [contracts]);
 
   const plantBatch = useCallback(async (seedIds, plotNumbers) => {
-    if (!contracts || !contracts.farming) {
-      console.error('Farming contract not available');
-      setError('Farming contract not available');
+    if (!contracts || !contracts.contractService) {
+      console.error('Contract service not available');
+      setError('Contract service not available');
       return null;
     }
 
@@ -362,11 +366,9 @@ export const useFarming = (contracts) => {
     setError(null);
 
     try {
-      const tx = await contracts.farming.plantBatch(seedIds, plotNumbers);
-      console.log('Plant batch transaction sent, waiting for confirmation...');
-      const receipt = await tx.wait();
+      const tx = await contracts.contractService.plantSeedsBatch(seedIds, plotNumbers);
       console.log('Plant batch successful!');
-      return receipt;
+      return tx;
     } catch (err) {
       console.error('Failed to plant seeds batch:', err);
       setError(err.message);
@@ -421,9 +423,9 @@ export const useFarming = (contracts) => {
   }, [contracts]);
 
   const getUserCrops = useCallback(async (userAddress) => {
-    if (!contracts || !contracts.farming) {
-      setError('Farming contract not available');
-      return null;
+    if (!contracts || !contracts.contractService) {
+      setError('Contract service not available');
+      return [];
     }
 
     setLoading(true);
@@ -431,55 +433,42 @@ export const useFarming = (contracts) => {
 
     try {
       console.log('Getting user crops for address:', userAddress);
-      console.log('Farming contract:', contracts.farming);
       
-      // Get max plots first
-      const maxPlots = await contracts.farming.getMaxPlots(userAddress);
-      console.log('Max plots:', maxPlots);
+      const crops = await contracts.contractService.getUserCrops(userAddress);
+      console.log('Got user crops from contract service:', crops);
       
-      const crops = [];
-      const currentTime = Math.floor(Date.now() / 1000); // Current timestamp in seconds
-      
-      // Iterate through all possible plots
-      for (let i = 0; i < maxPlots; i++) {
-        try {
-          const crop = await contracts.farming.crops(userAddress, i);
-          if (crop.seedId !== 0) {
-            // Convert BigInt to number for comparison and storage
-            const endTime = Number(crop.endTime);
-            crops.push({
-              plotNumber: i,
-              seedId: crop.seedId,
-              endTime: endTime,
-              isReady: currentTime >= endTime
-            });
-          }
-        } catch (err) {
-          console.warn(`Failed to get crop at plot ${i}:`, err);
-          // Continue with next plot
-        }
-      }
-      
-      console.log('Final crops array:', crops);
-      return crops;
+      // Convert crops to the expected format (seedId as BigInt, endTime as Number)
+      const formattedCrops = crops.map((crop, index) => {
+        const seedIdBig = BigInt(crop.seedId);
+        const endTimeNum = Number(crop.endTime);
+        return ({
+          plotNumber: index,
+          seedId: seedIdBig,
+          endTime: endTimeNum,
+          isReady: seedIdBig !== 0n && endTimeNum <= Math.floor(Date.now() / 1000)
+        });
+      });
+
+      console.log('Formatted crops:', formattedCrops);
+      return formattedCrops;
     } catch (err) {
       console.error('Failed to get user crops:', err);
       setError(err.message);
-      return null;
+      return [];
     } finally {
       setLoading(false);
     }
   }, [contracts]);
 
   const getMaxPlots = useCallback(async (userAddress) => {
-    if (!contracts || !contracts.farming) {
-      console.error('Farming contract not available');
+    if (!contracts || !contracts.contractService) {
+      console.error('Contract service not available');
       return 0;
     }
 
     try {
-      const maxPlots = await contracts.farming.getMaxPlots(userAddress);
-      return maxPlots;
+      const maxPlots = await contracts.contractService.getMaxPlots(userAddress);
+      return Number(maxPlots);
     } catch (err) {
       console.error('Failed to get max plots:', err);
       return 0;
@@ -502,10 +491,10 @@ export const useFarming = (contracts) => {
   }, [contracts]);
 
   const getGrowthTime = useCallback(async (seedId) => {
-    if (!contracts.farming) return 60; // Default fallback
+    if (!contracts || !contracts.contractService) return 60; // Default fallback
 
     try {
-      const growthTime = await contracts.farming.getGrowthTime(seedId);
+      const growthTime = await contracts.contractService.getGrowthTime(seedId);
       return Number(growthTime);
     } catch (err) {
       console.error('Failed to get growth time:', err);
