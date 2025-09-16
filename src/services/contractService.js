@@ -338,6 +338,23 @@ class ContractService {
     }
   }
 
+  async harvestMany(slots) {
+    try {
+      const farming = this.getContract('FARMING');
+      
+      // Estimate gas first
+      const gasEstimate = await farming.harvestMany.estimateGas(slots);
+      const gasLimit = gasEstimate * 120n / 100n; // Add 20% buffer
+
+      const tx = await farming.harvestMany(slots, { gasLimit });
+      await tx.wait();
+      return tx;
+    } catch (error) {
+      console.error('Error harvesting many crops:', error);
+      throw error;
+    }
+  }
+
   // Items functions
   async getItemBalance(address, itemId) {
     try {

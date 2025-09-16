@@ -400,9 +400,9 @@ export const useFarming = (contracts) => {
     }
   }, [contracts]);
 
-  const harvestAll = useCallback(async () => {
-    if (!contracts || !contracts.farming) {
-      setError('Farming contract not available');
+  const harvestMany = useCallback(async (slots) => {
+    if (!contracts || !contracts.contractService) {
+      setError('Contract service not available');
       return null;
     }
 
@@ -410,9 +410,40 @@ export const useFarming = (contracts) => {
     setError(null);
 
     try {
-      const tx = await contracts.farming.harvestAll();
-      const receipt = await tx.wait();
-      return receipt;
+      const tx = await contracts.contractService.harvestMany(slots);
+      console.log('Harvest many successful!');
+      return tx;
+    } catch (err) {
+      console.error('Failed to harvest many:', err);
+      setError(err.message);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, [contracts]);
+
+  const harvestAll = useCallback(async () => {
+    if (!contracts) {
+      setError('Contracts not available');
+      return null;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      if (contracts.contractService && typeof contracts.contractService.harvestAll === 'function') {
+        const tx = await contracts.contractService.harvestAll();
+        console.log('Harvest all via service successful!');
+        return tx;
+      }
+      if (contracts.farming) {
+        const tx = await contracts.farming.harvestAll();
+        const receipt = await tx.wait();
+        return receipt;
+      }
+      setError('Farming contract not available');
+      return null;
     } catch (err) {
       console.error('Failed to harvest all:', err);
       setError(err.message);
@@ -506,6 +537,7 @@ export const useFarming = (contracts) => {
     plant,
     plantBatch,
     harvest,
+    harvestMany,
     harvestAll,
     getUserCrops,
     getMaxPlots,
