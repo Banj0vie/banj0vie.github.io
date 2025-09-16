@@ -20,6 +20,8 @@
   left: 50%; */
   will-change: transform;
   transform-origin: 0 0;
+  /* Disable transitions so scale changes are applied immediately without animation */
+  transition: none !important;
   border-image: var(--profile-btn-bg) 6 fill / 1rem / 0.5rem repeat;
 }
 

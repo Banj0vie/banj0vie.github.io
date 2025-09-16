@@ -18,32 +18,32 @@ const DexDialog = ({ onClose, label = "DEX", header = "" }) => {
   const [isReversed, setIsReversed] = useState(false);
   const [swapInfo, setSwapInfo] = useState([]);
   const [ethAmount, setEthAmount] = useState('');
-  const [yieldAmount, setYieldAmount] = useState('0');
+  const [readyAmount, setReadyAmount] = useState('0');
   const [isCalculating, setIsCalculating] = useState(false);
   const { show: showNotification } = useNotification();
 
   // Calculate yield amount when ETH amount changes
   useEffect(() => {
-    const calculateYield = async () => {
+    const calculateReady = async () => {
       if (!ethAmount || !isConnected) {
-        setYieldAmount('0');
+        setReadyAmount('0');
         return;
       }
 
       try {
         setIsCalculating(true);
         const ethWei = ethers.parseEther(ethAmount);
-        const yieldAmount = await getYieldAmount(ethWei);
-        setYieldAmount(ethers.formatEther(yieldAmount));
+        const readyAmount = await getYieldAmount(ethWei);
+        setReadyAmount(ethers.formatEther(readyAmount));
       } catch (err) {
-        console.error('Failed to calculate yield:', err);
-        setYieldAmount('0');
+        console.error('Failed to calculate ready:', err);
+        setReadyAmount('0');
       } finally {
         setIsCalculating(false);
       }
     };
 
-    const timeoutId = setTimeout(calculateYield, 500); // Debounce
+    const timeoutId = setTimeout(calculateReady, 500); // Debounce
     return () => clearTimeout(timeoutId);
   }, [ethAmount, isConnected, getYieldAmount]);
 
@@ -63,9 +63,9 @@ const DexDialog = ({ onClose, label = "DEX", header = "" }) => {
       const result = await swapETHForYield(ethWei);
       
       if (result) {
-        showNotification('Swap successful! Check your Yield token balance.', 'success');
+        showNotification('Swap successful! Check your Ready token balance.', 'success');
         setEthAmount('');
-        setYieldAmount('0');
+        setReadyAmount('0');
       }
     } catch (err) {
       console.error('Failed to swap:', err);
@@ -77,9 +77,9 @@ const DexDialog = ({ onClose, label = "DEX", header = "" }) => {
     setSwapInfo([
       { label: "Slippage", value: "0.5%" },
       { label: "Price Impact", value: "0.39%" },
-      { label: "Minimum Received", value: isCalculating ? "Calculating..." : yieldAmount },
+      { label: "Minimum Received", value: isCalculating ? "Calculating..." : readyAmount },
     ]);
-  }, [yieldAmount, isCalculating]);
+  }, [readyAmount, isCalculating]);
 
   return (
     <BaseDialog className="dex-wrapper" title={label} onClose={onClose} header={header}>
@@ -102,9 +102,9 @@ const DexDialog = ({ onClose, label = "DEX", header = "" }) => {
             }}
           ></ExchangeButton>
           <TokenInputRow 
-            token={"Yield"} 
-            balance={isCalculating ? "Calculating..." : yieldAmount}
-            value={yieldAmount}
+            token={"Ready"} 
+            balance={isCalculating ? "Calculating..." : readyAmount}
+            value={readyAmount}
             readOnly={true}
             disabled={true}
           />

@@ -1,6 +1,12 @@
 .grow-status-box {
   width: 100%;
   display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.grow-status-box .progress-bar {
+  display: flex;
   gap: 0.25rem;
 }
 
@@ -18,4 +24,32 @@
 .grow-status-box .empty {
   background-color: #743f39;
   border: 1px solid #3f2832;
+}
+
+.grow-status-box .time-display {
+  text-align: center;
+  color: #ffffff;
+  font-size: 1.8rem;
+}
+
+.grow-status-box .reward-display {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.7rem;
+}
+
+.grow-status-box .reward-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.grow-status-box .reward-label {
+  color: #cccccc;
+}
+
+.grow-status-box .reward-amount {
+  color: #5ab552;
+  font-weight: bold;
 }

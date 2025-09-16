@@ -62,11 +62,13 @@ const SelectSeedDialog = ({ onClose, onClickSeed, availableSeeds = null }) => {
     );
   }
 
+  const totalSeedCount = seeds.reduce((sum, s) => sum + (Number(s.count) || 0), 0);
+
   return (
     <BaseDialog title="PICK SEED" onClose={onClose}>
       <div className="select-seed-dialog">
         <div className="seeds-header">
-          <span className="seeds-count">You have {seeds.length} seed{seeds.length !== 1 ? 's' : ''}</span>
+          <span className="seeds-count">You have {totalSeedCount} seed{totalSeedCount !== 1 ? 's' : ''}</span>
         </div>
         <div className="seeds-grid">
           {seeds.map((seed, index) => (

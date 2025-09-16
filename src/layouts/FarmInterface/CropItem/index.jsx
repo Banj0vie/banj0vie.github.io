@@ -119,6 +119,21 @@ const CropItem = ({
         FARM_CROP_HEIGHT * Math.floor(plotIndex / FARM_GRID_COLS),
   };
 
+  // Determine sprite frame based on growth progress for smoother, real-time stages
+  const FRAMES_PER_SEED = 6; // total frames across X for one seed line
+  let frameIndex = 0;
+  if (data.seedId && SEEDS[data.seedId]) {
+    if (data.growStatus === -1) {
+      frameIndex = 1; // newly planted
+    } else if (data.growStatus === 2) {
+      frameIndex = FRAMES_PER_SEED - 1; // ready frame
+    } else {
+      // growing: interpolate frames based on progress, keep last frame for ready
+      const clamped = Math.max(0, Math.min(0.999, growthProgress || 0));
+      frameIndex = 1 + Math.floor(clamped * (FRAMES_PER_SEED - 2));
+    }
+  }
+
   return (
     <div
       ref={rootRef}
@@ -129,8 +144,7 @@ const CropItem = ({
         ...position,
         backgroundPositionX:
           data.seedId && SEEDS[data.seedId]
-            ? 0 -
-              (data.growStatus === -1 ? 1 : data.growStatus) * ONE_SEED_HEIGHT
+            ? 0 - frameIndex * ONE_SEED_HEIGHT
             : 0,
         backgroundPositionY:
           data.seedId && SEEDS[data.seedId]
@@ -143,7 +157,7 @@ const CropItem = ({
       onMouseLeave={handleMouseLeave}
     >
       {/* Growth progress bar */}
-      {data.seedId && (
+      {data.seedId && data.seedId !== 0n && (
         <div className="growth-progress">
           <div
             className="growth-bar"
@@ -153,7 +167,7 @@ const CropItem = ({
       )}
 
       {/* Tooltip rendered into portal container so it aligns with transformed parents */}
-      {tooltipVisible && data.seedId && portalContainer && (
+      {tooltipVisible && data.seedId && data.seedId !== 0n && portalContainer && (
         <CropTooltip container={portalContainer} pos={tooltipPos} data={data} growthProgress={growthProgress} />
       )}
 

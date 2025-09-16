@@ -1,4 +1,5 @@
 /* eslint-disable react-hooks/exhaustive-deps */
+/* global BigInt */
 import React, { useState, useEffect, useCallback } from "react";
 import PanZoomViewport from "../layouts/PanZoomViewport";
 import { FARM_HOTSPOTS, FARM_VIEWPORT } from "../constants/scene_farm";
@@ -15,15 +16,16 @@ import { CropItemArrayClass } from "../models/crop";
 const Farm = () => {
   const { width, height } = FARM_VIEWPORT;
   const hotspots = FARM_HOTSPOTS;
-  const { seeds: currentSeeds } = useSeeds(); // Get seeds from contract
+  const { seeds: currentSeeds, refetch: refetchSeeds } = useSeeds(); // Get seeds and refetch from contract
   const { contracts, isReady } = useContracts();
   const {
     plant,
     plantBatch,
     harvest,
+    harvestMany,
     harvestAll,
-    getUserCrops,
     getMaxPlots,
+    getCrop,
     getGrowthTime,
   } = useFarming(contracts);
   const { show } = useNotification();
@@ -91,60 +93,69 @@ const Farm = () => {
     async (address) => {
       try {
         console.log("Loading crops for address:", address);
-        setUserCropsLoaded(false); // Reset loading state
-        const contractCrops = await getUserCrops(address);
-        console.log("Contract crops received:", contractCrops);
+        setUserCropsLoaded(false);
 
-        if (contractCrops) {
-          // Use total plots (30) for array size
-          const newCropArray = new CropItemArrayClass(30);
+        // Read all plots directly to avoid gaps from contract count(), in parallel
+        const totalPlotsToCheck = 30;
+        const indices = Array.from({ length: totalPlotsToCheck }, (_, i) => i);
+        const crops = await Promise.all(
+          indices.map((i) =>
+            getCrop(address, i)
+              .then((c) => ({ index: i, crop: c }))
+              .catch((e) => ({ index: i, error: e }))
+          )
+        );
 
-          // Process crops sequentially to handle async growth time fetching
-          for (const crop of contractCrops) {
-            // Only process crops that are within our array bounds
-            if (crop.plotNumber < 30) {
-              if (crop.seedId !== 0n) {
-                const item = newCropArray.getItem(crop.plotNumber);
-                if (item) {
-                  item.seedId = crop.seedId;
-                  // Convert BigInt to number and calculate when planted
-                  const endTime = Number(crop.endTime);
-                  const growthTime = await getGrowthTimeForSeed(crop.seedId);
-                  item.plantedAt = endTime - growthTime; // Calculate when planted
-                  item.growthTime = growthTime;
-                  item.growStatus = crop.isReady ? 2 : 1; // 2 = ready, 1 = growing
-                }
-              } else {
-                newCropArray.removeCropAt(crop.plotNumber);
-              }
-            } else {
-              console.warn(
-                `Crop at plot ${crop.plotNumber} exceeds total plots 30, skipping`
-              );
+        // Collect unique seedIds to fetch growth times once per seed type
+        const uniqueSeedIds = Array.from(
+          new Set(
+            crops
+              .map((r) => r.crop?.seedId)
+              .filter((sid) => sid && sid !== "0")
+          )
+        ).map((sid) => BigInt(sid));
+
+        const growthTimeCache = new Map();
+        await Promise.all(
+          uniqueSeedIds.map(async (sid) => {
+            const gt = await getGrowthTimeForSeed(sid);
+            growthTimeCache.set(sid.toString(), gt);
+          })
+        );
+
+        const nowSec = Math.floor(Date.now() / 1000);
+        const newCropArray = new CropItemArrayClass(totalPlotsToCheck);
+        for (const r of crops) {
+          if (r.crop && r.crop.seedId && r.crop.seedId !== "0") {
+            const item = newCropArray.getItem(r.index);
+            if (item) {
+              const seedIdBig = BigInt(r.crop.seedId);
+              item.seedId = seedIdBig;
+              const endTime = Number(r.crop.endTime);
+              const growthTime = growthTimeCache.get(seedIdBig.toString()) ?? 60;
+              item.plantedAt = (endTime - growthTime) * 1000; // ms
+              item.growthTime = growthTime;
+              const isReady = endTime <= nowSec;
+              item.growStatus = isReady ? 2 : 1;
             }
+          } else {
+            newCropArray.removeCropAt(r.index);
           }
-
-          setCropArray(newCropArray);
-          setPreviewCropArray(newCropArray);
-          setUserCropsLoaded(true); // Mark as loaded
-          console.log("Final crop array:", newCropArray);
-        } else {
-          console.log("No crops found, initializing empty array");
-          const emptyArray = new CropItemArrayClass(30);
-          setCropArray(emptyArray);
-          setPreviewCropArray(emptyArray);
-          setUserCropsLoaded(true); // Mark as loaded even if no crops
         }
+
+        setCropArray(newCropArray);
+        setPreviewCropArray(newCropArray);
+        setUserCropsLoaded(true);
+        console.log("Final crop array (full scan):", newCropArray);
       } catch (error) {
         console.error("Failed to load crops from contract:", error);
-        // Initialize empty array on error
         const emptyArray = new CropItemArrayClass(30);
         setCropArray(emptyArray);
         setPreviewCropArray(emptyArray);
-        setUserCropsLoaded(true); // Mark as loaded even on error
+        setUserCropsLoaded(true);
       }
     },
-    [getUserCrops, getGrowthTimeForSeed]
+    [getCrop, getGrowthTimeForSeed]
   );
 
   // Load user address and crops from contract
@@ -413,43 +424,58 @@ const Farm = () => {
     }
 
     try {
-      console.log("Harvesting all ready crops...");
+      console.log("Harvest All clicked - computing ready plots");
 
-      // Check what crops are available and their status
-      console.log("Current crop array status:");
+      // Build list of all ready plots
+      const readySlots = [];
+      const currentTimeSeconds = Math.floor(Date.now() / 1000);
+
       for (let i = 0; i < cropArray.getLength(); i++) {
         const item = cropArray.getItem(i);
         if (item && item.seedId) {
-          console.log(`Plot ${i}:`, {
-            seedId: item.seedId,
-            growStatus: item.growStatus,
-            plantedAt: item.plantedAt,
-            growthTime: item.growthTime,
-            isReady: item.growStatus === 2,
-          });
+          const endTime = Math.floor((item.plantedAt || 0) / 1000) + (item.growthTime || 0);
+          const isReady = (item.growStatus === 2) || (currentTimeSeconds >= endTime);
+          if (isReady) {
+            readySlots.push(i);
+          }
         }
       }
 
-      show("Harvesting all ready crops...", "info");
+      if (readySlots.length === 0) {
+        show("No crops are ready to harvest!", "info");
+        return;
+      }
 
-      // Call the contract to harvest all ready crops
-      const result = await harvestAll();
-      if (result) {
-        console.log("Successfully harvested all ready crops");
-        show("✅ Successfully harvested all ready crops!", "success");
+      show(`Harvesting ${readySlots.length} ready crops...`, "info");
 
-        // Reload crops from contract to sync state
-        if (userAddress) {
-          await loadCropsFromContract(userAddress);
-        }
-
-        setIsFarmMenu(false);
-        setIsPlanting(true);
+      let ok = false;
+      if (readySlots.length > 1 && typeof harvestMany === "function") {
+        const res = await harvestMany(readySlots);
+        ok = !!res;
+      } else if (readySlots.length === 1) {
+        const res = await harvest(readySlots[0]);
+        ok = !!res;
       } else {
-        show("❌ Failed to harvest crops. Please try again.", "error");
+        // Fallback if batch method is unavailable
+        const res = await harvestAll();
+        ok = !!res;
       }
+
+      if (!ok) {
+        show("❌ Failed to harvest crops. Please try again.", "error");
+        return;
+      }
+
+      // Reload crops from contract to sync state
+      if (userAddress) {
+        await loadCropsFromContract(userAddress);
+      }
+
+      show(`✅ Successfully harvested ${readySlots.length} crops!`, "success");
+      setIsFarmMenu(false);
+      setIsPlanting(true);
     } catch (error) {
-      console.error("Failed to harvest all crops:", error);
+      console.error("Failed during Harvest All:", error);
       show(
         `❌ Failed to harvest crops: ${error?.message || "Unknown"}`,
         "error"
@@ -568,10 +594,21 @@ const Farm = () => {
         }
       }
 
-      // Reload crops from contract to sync state
+      // Reload crops and seeds concurrently to reduce total wait time
       if (userAddress) {
-        console.log("Reloading crops from contract...");
-        await loadCropsFromContract(userAddress);
+        console.log("Reloading crops and seeds concurrently...");
+        await Promise.all([
+          loadCropsFromContract(userAddress),
+          (async () => {
+            try {
+              if (typeof refetchSeeds === "function") {
+                await refetchSeeds();
+              }
+            } catch (e) {
+              console.warn("Failed to refetch seeds after planting:", e);
+            }
+          })(),
+        ]);
       }
 
       // Confirm planting in preview array (transition -1 to 1)
@@ -613,7 +650,7 @@ const Farm = () => {
 
       // Check which crops are actually ready to harvest
       const readyCrops = [];
-      const currentTime = Math.floor(Date.now() / 1000); // Current timestamp in seconds
+      const currentTime = Math.floor(Date.now()); // Current timestamp in seconds
       console.log("Current timestamp:", currentTime);
 
       for (const idx of selectedIndexes) {
@@ -658,12 +695,21 @@ const Farm = () => {
       show(`Harvesting ${readyCrops.length} ready crops...`, "info");
 
       let successCount = 0;
-      // Call the contract to harvest each ready crop
-      for (const idx of readyCrops) {
-        const result = await harvest(idx);
+      // Prefer batch harvest when multiple crops are ready
+      if (readyCrops.length > 1 && typeof harvestMany === "function") {
+        const result = await harvestMany(readyCrops);
         if (result) {
-          console.log("Successfully harvested crop at plot:", idx);
-          successCount++;
+          successCount = readyCrops.length;
+          console.log(`Successfully batch-harvested ${successCount} crops`);
+        }
+      } else {
+        // Fallback to single harvest
+        for (const idx of readyCrops) {
+          const result = await harvest(idx);
+          if (result) {
+            console.log("Successfully harvested crop at plot:", idx);
+            successCount++;
+          }
         }
       }
 
@@ -732,32 +778,36 @@ const Farm = () => {
         return;
       }
 
-      if (isShift && selectedSeed) {
-        // Check if selected seed is still available
-        const currentSeed = currentSeeds.find((s) => s.id === selectedSeed);
-        if (!currentSeed || currentSeed.count <= 0) {
-          // selected seed no longer available or exhausted
-          console.log("Selected seed no longer available, opening seed dialog");
+      // Require Shift for quick-plant; otherwise open the seed dialog
+      if (selectedSeed && isShift) {
+        // Use preview-adjusted availability
+        const availableSeeds = getAvailableSeeds();
+        const selectedAvailable = availableSeeds.find((s) => s.id === selectedSeed);
+        if (!selectedAvailable || selectedAvailable.count <= 0) {
+          console.log("Selected seed unavailable in preview (count 0), opening seed dialog");
           setSelectedSeed(null);
           setCurrentFieldIndex(index);
           setIsSelectCropDialog(true);
           return;
         }
 
-        // Plant the selected seed directly
-        console.log("Planting selected seed:", selectedSeed, "at plot:", index);
-        setCurrentFieldIndex(index);
-        handleClickSeedFromDialog(selectedSeed, index);
-      } else {
-        // Open seed selection dialog and show farm menu
-        console.log("Opening seed selection dialog for plot:", index);
-        setCurrentFieldIndex(index);
-        setIsSelectCropDialog(true);
-        // Show farm menu when selecting a seed
+        console.log("Quick-planting selected seed (with Shift):", selectedSeed, "at plot:", index);
         if (!isFarmMenu) {
           setPreviewCropArray(cropArray);
           setIsFarmMenu(true);
         }
+        setCurrentFieldIndex(index);
+        handleClickSeedFromDialog(selectedSeed, index);
+        return;
+      }
+
+      // Open selection dialog when Shift not held or no seed selected
+      console.log("Opening seed selection dialog for plot:", index, "(Shift held:", isShift, ")");
+      setCurrentFieldIndex(index);
+      setIsSelectCropDialog(true);
+      if (!isFarmMenu) {
+        setPreviewCropArray(cropArray);
+        setIsFarmMenu(true);
       }
     } else {
       // Harvesting mode - toggle selection
@@ -775,10 +825,19 @@ const Farm = () => {
       fieldIndex,
       currentFieldIndex,
     });
+    // Remember the selected seed so Shift+click can reuse it across plots
+    setSelectedSeed(id);
     setIsSelectCropDialog(false);
     const idx = typeof fieldIndex === "number" ? fieldIndex : currentFieldIndex;
     if (idx < 0) {
       console.log("Invalid field index:", idx);
+      return;
+    }
+
+    // Ensure plot is empty before proceeding (UI guard)
+    const existing = cropArray.getItem(idx);
+    if (existing && existing.seedId && existing.seedId !== 0n) {
+      show(`Plot ${idx} is already occupied.`, "error");
       return;
     }
 
@@ -810,9 +869,6 @@ const Farm = () => {
     }));
 
     setPreviewCropArray(newPreviewCropArray);
-    setSelectedSeed(id);
-
-    console.log("Seed planted in preview, selectedSeed set to:", id);
   };
 
   const dialogs = [
