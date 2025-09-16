@@ -1,14 +1,12 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import "./style.css";
 import { SOCIAL_LINKS } from "../../constants/app_url";
 import SocialLink from "../../components/links/SocialLink";
 import ConnectWalletAuthBox from "./ConnectWalletAuthBox";
 import { ID_AUTH_PAGES } from "../../constants/app_ids";
 import ProfileAuthBox from "./ProfileAuthBox";
-import { useWeb3 } from "../../contexts/Web3Context";
 
 const AuthPage = () => {
-  const { account, isConnected } = useWeb3();
   const [pageId, setPageId] = useState(ID_AUTH_PAGES.CONNECT_WALLET);
   const onWalletConnect = () => {
     setPageId(ID_AUTH_PAGES.PROFILE);
@@ -27,7 +25,7 @@ const AuthPage = () => {
           alt="logo"
           className="auth-box-logo"
         ></img>
-        {(pageId === ID_AUTH_PAGES.CONNECT_WALLET && !isConnected) && (
+        {pageId === ID_AUTH_PAGES.CONNECT_WALLET && (
           <ConnectWalletAuthBox
             onWalletConnect={onWalletConnect}
           ></ConnectWalletAuthBox>
