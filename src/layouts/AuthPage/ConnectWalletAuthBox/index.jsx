@@ -14,9 +14,9 @@ const ConnectWalletAuthBox = ({ onWalletConnect }) => {
 
   const handleConnect = async () => {
     try {
-      const connectedAccount = await connect();
+      await connect();
       // If connection successful, proceed to profile creation
-      if (connectedAccount || account) {
+      if (account) {
         onWalletConnect();
       }
     } catch (err) {
