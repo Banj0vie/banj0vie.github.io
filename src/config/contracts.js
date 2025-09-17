@@ -96,7 +96,10 @@ export const CONTRACT_ABIS = {
     "function profileOf(address) view returns (bool exists, uint16 level, uint64 nextChestAt, uint64 nextFishAt)",
     "function xpOf(address) view returns (uint256)",
     "function addXP(address, uint256)",
-    "function usernameOf(address) view returns (string)"
+    "function usernameOf(address) view returns (string)",
+    "function top5(uint256) view returns (address)",
+    "function top5Xp(uint256) view returns (uint256)",
+    "function epochStart() view returns (uint64)"
   ],
   
   ITEMS_1155: [

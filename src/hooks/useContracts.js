@@ -766,3 +766,113 @@ export const useDex = () => {
   };
 };
 
+// Hook for Leaderboard data
+export const useLeaderboard = () => {
+  const { contracts } = useContracts();
+  const { account } = useWeb3();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [leaderboardData, setLeaderboardData] = useState([]);
+  const [userScore, setUserScore] = useState(0);
+  const [epochStart, setEpochStart] = useState(0);
+
+  const fetchLeaderboardData = useCallback(async () => {
+    if (!contracts.player_store) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+      const leaderboardData = [];
+      
+      // Fetch top 5 players and their XP
+      for (let i = 0; i < 5; i++) {
+        const address = await contracts.player_store.top5(i);
+        
+        if (address !== "0x0000000000000000000000000000000000000000") {
+          try {
+            // Get profile data for this address
+            const username = await contracts.player_store.usernameOf(address);
+            // Get XP using xpOf function
+            const xp = await contracts.player_store.xpOf(address);
+            leaderboardData.push({
+              rank: i + 1,
+              name: username,
+              address: address,
+              score: parseFloat(xp.toString()) / 1e18
+            });
+          } catch (err) {
+            console.log(`Failed to get profile for address ${address}:`, err);
+            // Fallback with empty data
+            leaderboardData.push({
+              rank: i + 1,
+              name: "Error",
+              address: address,
+              score: 0.0
+            });
+          }
+        } else {
+          leaderboardData.push({
+            rank: i + 1,
+            name: "Empty",
+            address: "0x0000000000000000000000000000000000000000",
+            score: 0.0
+          });
+        }
+      }
+
+      // Get user's XP if connected
+      if (account && contracts.player_store) {
+        try {
+          const userXp = await contracts.player_store.xpOf(account);
+          setUserScore(parseFloat(userXp.toString()) / 1e18);
+        } catch (err) {
+          console.log('Could not fetch user XP:', err);
+          setUserScore(0);
+        }
+      }
+
+      // Get epoch start time
+      try {
+        const epochStartTime = await contracts.player_store.epochStart();
+        setEpochStart(Number(epochStartTime));
+      } catch (err) {
+        console.log('Could not fetch epoch start:', err);
+        setEpochStart(0);
+      }
+
+      setLeaderboardData(leaderboardData);
+    } catch (error) {
+      console.error('Failed to fetch leaderboard data:', error);
+      setError(error.message);
+      // Fallback to empty data
+      setLeaderboardData([
+        { rank: 1, name: "Loading...", address: "0x0000000000000000000000000000000000000000", score: 0.0 },
+        { rank: 2, name: "Loading...", address: "0x0000000000000000000000000000000000000000", score: 0.0 },
+        { rank: 3, name: "Loading...", address: "0x0000000000000000000000000000000000000000", score: 0.0 },
+        { rank: 4, name: "Loading...", address: "0x0000000000000000000000000000000000000000", score: 0.0 },
+        { rank: 5, name: "Loading...", address: "0x0000000000000000000000000000000000000000", score: 0.0 },
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  }, [contracts.player_store, account]);
+
+  const getUserRank = useCallback(async () => {
+    if (!contracts.player_store || !account) {
+      return null;
+    }
+  }, [contracts.player_store, account]);
+
+  return {
+    leaderboardData,
+    userScore,
+    epochStart,
+    fetchLeaderboardData,
+    getUserRank,
+    loading,
+    error
+  };
+};
+

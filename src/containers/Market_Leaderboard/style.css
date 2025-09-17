@@ -46,3 +46,9 @@
 .triangle-button:hover {
   filter: brightness(1.2);
 }
+
+.button-row {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}
