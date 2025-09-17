@@ -8,6 +8,7 @@ const StakeReady = ({ onBack }) => {
   const [isStaking, setIsStaking] = useState(true);
   const [amount, setAmount] = useState("0");
   const [data, setData] = useState([]);
+  const onDeposit = () => {};
   const onWithdraw = () => {};
 
   useEffect(() => {
@@ -44,12 +45,15 @@ const StakeReady = ({ onBack }) => {
       </div>
       <TokenInputRow
         balance={null}
-        token={"Ready"}
+        token={isStaking ? "Ready" : "XReady"}
         value={amount}
         onChange={setAmount}
       ></TokenInputRow>
       <CardListView data={data}></CardListView>
-      <BaseButton label="Withdraw" onClick={onWithdraw}></BaseButton>
+      <BaseButton
+        label={isStaking ? "Deposit" : "Withdraw"}
+        onClick={isStaking ? onDeposit : onWithdraw}
+      ></BaseButton>
       <BaseButton label="Back" onClick={onBack}></BaseButton>
       <div className="hint">
         <span className="highlight">0.5%</span> of each gacha roll is
