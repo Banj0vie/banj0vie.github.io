@@ -1,0 +1,13 @@
+.rewards-dialog-content {
+    width: 350px;
+}
+
+.rewards-item-wrapper {
+    text-align: center;
+}
+
+.rewards-item-card {
+    display: flex;
+    align-items: center;
+    margin-top: 0.5rem;
+}

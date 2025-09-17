@@ -1,0 +1,48 @@
+.leaderboard-content {
+  width: 450px;
+}
+
+.leaderboard-spliter {
+  display: flex;
+  align-items: center;
+  height: 100%;
+}
+
+.leaderboard-spliter .split {
+  flex: 1;
+  text-align: center;
+}
+
+.leaderboard-card {
+  margin-top: 0.5rem;
+  height: 4rem;
+}
+
+.leaderboard-content .timer {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 0.25rem;
+  margin-top: 0.25rem;
+}
+
+.epoch-selector {
+  height: 2rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  margin: 0 auto;
+  border-radius: 0.25rem;
+  margin-top: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.triangle-button {
+  width: 1.75rem;
+  height: 1.75rem;
+  cursor: pointer;
+  line-height: 2rem;
+}
+
+.triangle-button:hover {
+  filter: brightness(1.2);
+}
