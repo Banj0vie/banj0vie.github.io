@@ -3,11 +3,13 @@ import { ethers } from 'ethers';
 import { CONTRACT_ADDRESSES, CONTRACT_ABIS } from '../config/contracts';
 
 class ContractService {
-  constructor(provider, signer, chainId) {
+  constructor(provider, signer, chainId, disconnect) {
     this.provider = provider;
     this.signer = signer;
     this.chainId = chainId;
     this.contracts = {};
+    
+    this.disconnect = disconnect;
   }
 
   // Get contract instance for a given contract name
@@ -85,6 +87,7 @@ class ContractService {
       } catch (contractError) {
         if (contractError.message.includes('BAD_DATA') || contractError.message.includes('0x')) {
           console.warn('PlayerStore contract not deployed or wrong address');
+          // it should disco
           return {
             exists: false,
             level: 0,

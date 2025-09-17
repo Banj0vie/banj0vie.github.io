@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import "./style.css";
 import { SOCIAL_LINKS } from "../../constants/app_url";
 import SocialLink from "../../components/links/SocialLink";
@@ -8,11 +8,22 @@ import ProfileAuthBox from "./ProfileAuthBox";
 import { useWeb3 } from "../../contexts/Web3Context";
 
 const AuthPage = () => {
-  const { isConnected } = useWeb3();
+  const { isConnected, hasProfile } = useWeb3();
+  console.log(isConnected);
   const [pageId, setPageId] = useState(ID_AUTH_PAGES.CONNECT_WALLET);
-  const onWalletConnect = () => {
-    setPageId(ID_AUTH_PAGES.PROFILE);
-  };
+
+  // if is connected is true, but pageId is not profile, then set pageId to profile
+  useEffect(() => {
+    if(!isConnected) {
+      if (pageId !== ID_AUTH_PAGES.CONNECT_WALLET) {
+        setPageId(ID_AUTH_PAGES.CONNECT_WALLET);
+      }
+    } else if (isConnected && !hasProfile) {
+      if (pageId !== ID_AUTH_PAGES.PROFILE) {
+        setPageId(ID_AUTH_PAGES.PROFILE);
+      }
+    }
+  }, [isConnected, pageId, hasProfile]);
 
   const onCreateProfile = (username, referralCode) => {
     console.log("Created Profile!", username, referralCode);
@@ -28,9 +39,7 @@ const AuthPage = () => {
           className="auth-box-logo"
         ></img>
         {(pageId === ID_AUTH_PAGES.CONNECT_WALLET && !isConnected) && (
-          <ConnectWalletAuthBox
-            onWalletConnect={onWalletConnect}
-          ></ConnectWalletAuthBox>
+          <ConnectWalletAuthBox></ConnectWalletAuthBox>
         )}
         {pageId === ID_AUTH_PAGES.PROFILE && (
           <ProfileAuthBox onCreateProfile={onCreateProfile}></ProfileAuthBox>

@@ -80,7 +80,7 @@ export const Web3Provider = ({ children }) => {
       } catch {}
 
       // Initialize contract service
-      const service = new ContractService(provider, signer, network.chainId.toString());
+      const service = new ContractService(provider, signer, network.chainId.toString(), disconnect);
       setContractService(service);
 
       // Check if user has a profile
@@ -247,7 +247,7 @@ export const Web3Provider = ({ children }) => {
             setIsConnected(true);
 
             // Initialize contract service
-            const service = new ContractService(provider, signer, network.chainId.toString());
+            const service = new ContractService(provider, signer, network.chainId.toString(), disconnect);
             setContractService(service);
 
             // Check if user has a profile

@@ -3,7 +3,7 @@ import "./style.css";
 import BaseButton from "../../../components/buttons/BaseButton";
 import { useWeb3 } from "../../../contexts/Web3Context";
 
-const ConnectWalletAuthBox = ({ onWalletConnect }) => {
+const ConnectWalletAuthBox = () => {
   const { 
     account, 
     isConnected, 
@@ -11,14 +11,10 @@ const ConnectWalletAuthBox = ({ onWalletConnect }) => {
     error, 
     connect
   } = useWeb3();
-
   const handleConnect = async () => {
     try {
       const connectedAccount = await connect();
-      // If connection successful, proceed to profile creation
-      if (connectedAccount || account) {
-        onWalletConnect();
-      }
+      console.log(connectedAccount);
     } catch (err) {
       console.error('Wallet connection failed:', err);
     }
@@ -32,7 +28,6 @@ const ConnectWalletAuthBox = ({ onWalletConnect }) => {
         <BaseButton
           label="Continue to Profile"
           className="h-4rem auth-wallet-connect-button"
-          onClick={onWalletConnect}
         ></BaseButton>
       </div>
     );
