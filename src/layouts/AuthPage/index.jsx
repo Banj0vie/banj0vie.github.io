@@ -12,7 +12,6 @@ const AuthPage = () => {
   console.log(isConnected);
   const [pageId, setPageId] = useState(ID_AUTH_PAGES.CONNECT_WALLET);
 
-  // if is connected is true, but pageId is not profile, then set pageId to profile
   useEffect(() => {
     if(!isConnected) {
       if (pageId !== ID_AUTH_PAGES.CONNECT_WALLET) {
