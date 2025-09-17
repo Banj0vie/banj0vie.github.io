@@ -367,18 +367,6 @@ class ContractService {
     }
   }
 
-  async getItemBalances(address, itemIds) {
-    try {
-      const items = this.getContract('ITEMS_1155');
-      const addresses = new Array(itemIds.length).fill(address);
-      const balances = await items.balanceOfBatch(addresses, itemIds);
-      return balances;
-    } catch (error) {
-      console.error('Error getting item balances:', error);
-      throw error;
-    }
-  }
-
   // Calculate harvest rewards for a seed
   async calculateHarvestRewards(seedId, userAddress) {
     try {

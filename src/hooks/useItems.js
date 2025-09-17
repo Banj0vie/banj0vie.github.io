@@ -38,14 +38,9 @@ export const useItems = () => {
         // Convert item IDs to strings for the contract call
         const itemIdStrings = allItemIds.map(id => id.toString());
         
-        console.log('Fetching items for account:', account);
-        console.log('Item IDs:', itemIdStrings.slice(0, 5), '... (showing first 5)');
-        
         // Fetch balances for all items at once
         const balances = await contracts.items_1155.balanceOfBatch(addresses, itemIdStrings);
-        
-        console.log('Balances received:', balances.slice(0, 5), '... (showing first 5)');
-        
+                
         // Filter out items with zero balance and map to item objects
         const userItems = [];
         balances.forEach((balance, index) => {
@@ -64,7 +59,6 @@ export const useItems = () => {
           }
         });
 
-        console.log('User items found:', userItems.length, userItems);
         setItems(userItems);
       } catch (err) {
         console.error('Failed to fetch items:', err);

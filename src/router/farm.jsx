@@ -9,14 +9,14 @@ import { dialogFrames } from "../constants/_baseimages";
 import FarmInterface from "../layouts/FarmInterface";
 import FarmMenu from "../layouts/FarmInterface/FarmMenu";
 import SelectSeedDialog from "../containers/SelectSeedDialog";
-import { useSeeds } from "../hooks/useSeeds";
+import { useItems } from "../hooks/useItems";
 import { useContracts, useFarming } from "../hooks/useContracts";
 import { useNotification } from "../contexts/NotificationContext";
 import { CropItemArrayClass } from "../models/crop";
 const Farm = () => {
   const { width, height } = FARM_VIEWPORT;
   const hotspots = FARM_HOTSPOTS;
-  const { seeds: currentSeeds, refetch: refetchSeeds } = useSeeds(); // Get seeds and refetch from contract
+  const { seeds: currentSeeds, refetch: refetchSeeds } = useItems(); // Get seeds and refetch from contract
   const { contracts, isReady } = useContracts();
   const {
     plant,
@@ -87,6 +87,7 @@ const Farm = () => {
 
     return availableSeeds;
   }, [currentSeeds, usedSeedsInPreview]);
+
 
   // Load crops from contract
   const loadCropsFromContract = useCallback(
@@ -290,7 +291,6 @@ const Farm = () => {
     let emptyPlots = 0;
     const occupiedPlots = [];
     const emptyPlotNumbers = [];
-
     for (let i = 0; i < maxPlots; i++) {
       const item = newPreviewCropArray.getItem(i);
       if (item && (item.seedId === null || item.seedId === undefined)) {
@@ -304,6 +304,16 @@ const Farm = () => {
         });
       }
     }
+    
+    console.log(`Found ${emptyPlots} empty plots:`, emptyPlotNumbers);
+    console.log(`Found ${occupiedPlots.length} occupied plots:`, occupiedPlots);
+    
+    if (emptyPlots === 0) {
+      console.log('No empty plots available');
+      alert('All your farming plots are already planted!');
+      return;
+    }
+    
 
     console.log(`Found ${emptyPlots} empty plots:`, emptyPlotNumbers);
     console.log(`Found ${occupiedPlots.length} occupied plots:`, occupiedPlots);
@@ -658,7 +668,6 @@ const Farm = () => {
           const item = cropArray.getItem(idx);
           const endTime = item?.plantedAt + item?.growthTime;
           const isActuallyReady = currentTime >= endTime;
-
           console.log(`Plot ${idx}:`, {
             seedId: item?.seedId,
             growStatus: item?.growStatus,
@@ -796,6 +805,9 @@ const Farm = () => {
           setPreviewCropArray(cropArray);
           setIsFarmMenu(true);
         }
+        
+        // Plant the selected seed directly
+        console.log('Planting selected seed:', selectedSeed, 'at plot:', index);
         setCurrentFieldIndex(index);
         handleClickSeedFromDialog(selectedSeed, index);
         return;
@@ -887,6 +899,7 @@ const Farm = () => {
   ];
   return (
     <div>
+      
       <PanZoomViewport
         backgroundSrc="/images/backgrounds/farm.gif"
         hotspots={hotspots}

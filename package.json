@@ -3,15 +3,17 @@
   "version": "1.0.0",
   "private": true,
   "dependencies": {
+    "@web3modal/ethereum": "^2.7.1",
+    "@web3modal/react": "^2.7.1",
+    "ajv": "^8.12.0",
+    "ajv-keywords": "^5.1.0",
+    "ethers": "^6.15.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-router-dom": "^7.8.2",
     "react-scripts": "5.0.1",
-    "ethers": "^6.15.0",
-    "@web3modal/ethereum": "^2.7.1",
-    "@web3modal/react": "^2.7.1",
-    "wagmi": "^2.16.9",
-    "viem": "^2.37.5"
+    "viem": "^2.37.5",
+    "wagmi": "^2.16.9"
   },
   "scripts": {
     "start": "react-scripts start",
