@@ -159,6 +159,10 @@ a {
   height: 100%;
 }
 
+.h-fit {
+  height: fit-content;
+}
+
 .text-center {
   text-align: center;
 }
@@ -167,6 +171,12 @@ a {
   font-size: 1.25rem;
 }
 
+.p-0 {
+  padding: 0;
+}
+.mt-1rem {
+  margin-top: 1rem;
+}
 ::-webkit-scrollbar {
     width: 1rem
 }

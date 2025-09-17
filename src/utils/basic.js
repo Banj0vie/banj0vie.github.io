@@ -36,6 +36,28 @@ export function formatAddress(address, chars = 4) {
   return `${address.slice(0, chars + 2)}...${address.slice(-chars)}`;
 }
 
+export const formatDuration = (timestampMs) => {
+  // If input is in seconds, convert to ms
+  let totalSeconds = Math.floor(timestampMs / 1000);
+
+  const days = Math.floor(totalSeconds / (24 * 3600));
+  totalSeconds %= 24 * 3600;
+
+  const hours = Math.floor(totalSeconds / 3600);
+  totalSeconds %= 3600;
+
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+
+  let result = [];
+  if (days > 0) result.push(`${days}d`);
+  if (hours > 0) result.push(`${hours}h`);
+  if (minutes > 0) result.push(`${minutes}m`);
+  if (seconds > 0 || result.length === 0) result.push(`${seconds}s`);
+
+  return result.join(" ");
+}
+
 // For the test
 export const getRandomSeedEntry = () => {
   const entries = Object.entries(ALL_ITEMS);

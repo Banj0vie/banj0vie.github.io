@@ -15,4 +15,65 @@ export const MARKET_HOTSPOTS = [
   { id: ID_MARKET_HOTSPOTS.SAGE, label: 'SAGE', x: 444, y: -10, delay: 0.6 },
 ];
 
-
+export const PRIZES = [
+  [
+    {
+      label: "Golden Chests",
+      count: 20,
+      highlighted: true,
+    },
+    {
+      label: "Fertilizer III",
+      count: 3,
+      highlighted: false,
+    },
+  ],
+  [
+    {
+      label: "Golden Chests",
+      count: 15,
+      highlighted: true,
+    },
+    {
+      label: "Fertilizer III",
+      count: 2,
+      highlighted: false,
+    },
+  ],
+  [
+    {
+      label: "Golden Chests",
+      count: 12,
+      highlighted: true,
+    },
+    {
+      label: "Fertilizer II",
+      count: 1,
+      highlighted: false,
+    },
+  ],
+  [
+    {
+      label: "Golden Chests",
+      count: 9,
+      highlighted: true,
+    },
+    {
+      label: "Fertilizer II",
+      count: 1,
+      highlighted: false,
+    },
+  ],
+  [
+    {
+      label: "Golden Chests",
+      count: 6,
+      highlighted: true,
+    },
+    {
+      label: "Fertilizer II",
+      count: 1,
+      highlighted: false,
+    },
+  ],
+]

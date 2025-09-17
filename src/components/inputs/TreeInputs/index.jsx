@@ -13,7 +13,7 @@ const TreeInput = ({ onBack, onSelect }) => {
 
   useEffect(() => {
     onSelect(Array.from(checked));
-  }, [checked, onSelect]);
+  }, [checked]);
 
   const toggleExpand = (id) => {
     setExpanded((s) => {
