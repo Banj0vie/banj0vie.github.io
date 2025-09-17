@@ -1,123 +1,491 @@
-import { ID_CROP_CATEGORIES, ID_ITEM_CATEGORIES, ID_LOOT_CATEGORIES, ID_LOOTS, ID_POTION_CATEGORIES, ID_POTIONS, ID_SEEDS } from "./app_ids";
+import { ID_CROP_CATEGORIES, ID_ITEM_CATEGORIES, ID_LOOT_CATEGORIES, ID_LOOTS, ID_POTION_CATEGORIES, ID_POTIONS, ID_SEED_TYPE, ID_SEEDS } from "./app_ids";
 
 export const ALL_ITEM_TREE = [
-    {
-        id: "ALL",
-        label: "All",
+  {
+    id: "ALL",
+    label: "All",
+    children: [
+      {
+        id: ID_ITEM_CATEGORIES.CROP,
+        label: "Crops",
         children: [
-            {
-                id: ID_ITEM_CATEGORIES.CROP,
-                label: "Crops",
-                children: [
-                    {
-                        id: ID_CROP_CATEGORIES.PICO_SEED, label: "Pico", children: [
-                            { id: ID_SEEDS.POTATO, label: "Potato" },
-                            { id: ID_SEEDS.LETTUCE, label: "Lettuce" },
-                            { id: ID_SEEDS.CABBAGE, label: "Cabbage" },
-                            { id: ID_SEEDS.ONION, label: "Onion" },
-                            { id: ID_SEEDS.RADISH, label: "Radish" },
-                        ]
-                    },
-                    {
-                        id: ID_CROP_CATEGORIES.BASIC_SEED, label: "Basic", children: [
-                            { id: ID_SEEDS.WEAT, label: "Wheat" },
-                            { id: ID_SEEDS.TOMATO, label: "Tomato" },
-                            { id: ID_SEEDS.CARROT, label: "Carrot" },
-                            { id: ID_SEEDS.CORN, label: "Corn" },
-                            { id: ID_SEEDS.PUMPKIN, label: "Pumpkin" },
-                            { id: ID_SEEDS.CHILI, label: "Chili" },
-                            { id: ID_SEEDS.PARSNIP, label: "Parsnip" },
-                            { id: ID_SEEDS.CELERY, label: "Celery" },
-                            { id: ID_SEEDS.BROCCOLI, label: "Broccoli" },
-                            { id: ID_SEEDS.CAULIFLOWER, label: "Cauliflower" },
-                            { id: ID_SEEDS.BERRY, label: "Berry" },
-                            { id: ID_SEEDS.GRAPES, label: "Grapes" },
-                        ]
-                    },
-                    {
-                        id: ID_CROP_CATEGORIES.PREMIUM_SEED, label: "Premium", children: [
-                            { id: ID_SEEDS.BANANA, label: "Banana" },
-                            { id: ID_SEEDS.MANGO, label: "Mango" },
-                            { id: ID_SEEDS.AVOCADO, label: "Avocado" },
-                            { id: ID_SEEDS.PINEAPPLE, label: "Pineapple" },
-                            { id: ID_SEEDS.BLUEBERRY, label: "Blueberry" },
-                            { id: ID_SEEDS.ARTICHOKE, label: "Artichoke" },
-                            { id: ID_SEEDS.PAPAYA, label: "Papaya" },
-                            { id: ID_SEEDS.FIG, label: "Fig" },
-                            { id: ID_SEEDS.LICHI, label: "Lichi" },
-                            { id: ID_SEEDS.LAVENDER, label: "Lavender" },
-                            { id: ID_SEEDS.DRAGON_FRUIT, label: "Dragon Fruit" },
-                        ]
-                    },
-                ],
-            },
-            {
-                id: ID_ITEM_CATEGORIES.POTION,
-                label: "Potions",
-                children: [
-                    {
-                        id: ID_POTION_CATEGORIES.GROWTH_ELIXIR, label: "Growth Elixirs", children: [
-                            { id: ID_POTIONS.GROWTH_ELIXIR, label: "Growth Elixir I" },
-                            { id: ID_POTIONS.GROWTH_ELIXIR_II, label: "Growth Elixir II" },
-                            { id: ID_POTIONS.GROWTH_ELIXIR_III, label: "Growth Elixir III" },
-                        ]
-                    },
-                    {
-                        id: ID_POTION_CATEGORIES.FERTILIZER, label: "Fertilizers", children: [
-                            { id: ID_POTIONS.FERTILIZER, label: "Fertilizer" },
-                            { id: ID_POTIONS.FERTILIZER_II, label: "Fertilizer II" },
-                            { id: ID_POTIONS.FERTILIZER_III, label: "Fertilizer III" },
-                        ]
-                    },
-                    {
-                        id: ID_POTION_CATEGORIES.PESTICIDE, label: "Pesticides", children: [
-                            { id: ID_POTIONS.PESTICIDE, label: "Pesticide" },
-                            { id: ID_POTIONS.PESTICIDE_II, label: "Pesticide II" },
-                            { id: ID_POTIONS.PESTICIDE_III, label: "Pesticide III" },
-                        ]
-                    }
-                ]
-            },
-            {
-                id: ID_ITEM_CATEGORIES.LOOT,
-                label: "Loot",
-                children: [
-                    {
-                        id: ID_LOOT_CATEGORIES.CHEST, label: "Chests", children: [
-                            { id: ID_LOOTS.WOODEN_CHEST, label: "Wooden Chest" },
-                            { id: ID_LOOTS.BRONZE_CHEST, label: "Bronze Chest" },
-                            { id: ID_LOOTS.SILVER_CHEST, label: "Silver Chest" },
-                            { id: ID_LOOTS.GOLDEN_CHEST, label: "Golden Chest" },
-                            { id: ID_LOOTS.PLATINUM_CHEST, label: "Platinum Chest" },
-                        ]
-                    },
-                    {
-                        id: ID_LOOT_CATEGORIES.BAIT, label: "Baits", children: [
-                            { id: ID_LOOTS.BAIT_I, label: "Bait I" },
-                            { id: ID_LOOTS.BAIT_II, label: "Bait II" },
-                            { id: ID_LOOTS.BAIT_III, label: "Bait III" }
-                        ]
-                    },
-                    {
-                        id: ID_LOOT_CATEGORIES.FISH, label: "Fish", children: [
-                            { id: ID_LOOTS.ANCHOVY, label: "Anchovy" },
-                            { id: ID_LOOTS.SARDINE, label: "Sardine" },
-                            { id: ID_LOOTS.HERRING, label: "Herring" },
-                            { id: ID_LOOTS.SMALL_TROUT, label: "Small Trout" },
-                            { id: ID_LOOTS.YELLOW_PERCH, label: "Yellow Perch" },
-                            { id: ID_LOOTS.SALMON, label: "Salmon" },
-                            { id: ID_LOOTS.ORANGE_ROUGHY, label: "Orange Roughy" },
-                            { id: ID_LOOTS.CATFISH, label: "Catfish" },
-                            { id: ID_LOOTS.SMALL_SHARK, label: "Small Shark" },
-                        ]
-                    },
-                    {
-                        id: ID_LOOT_CATEGORIES.MISC, label: "Misc", children: [
-                            { id: ID_LOOTS.LIFE_BUD, label: "Life Bud" },
-                        ]
-                    }
-                ]
-            }
+          {
+            id: ID_CROP_CATEGORIES.PICO_SEED, label: "Pico", children: [
+              { id: ID_SEEDS.POTATO, label: "Potato" },
+              { id: ID_SEEDS.LETTUCE, label: "Lettuce" },
+              { id: ID_SEEDS.CABBAGE, label: "Cabbage" },
+              { id: ID_SEEDS.ONION, label: "Onion" },
+              { id: ID_SEEDS.RADISH, label: "Radish" },
+            ]
+          },
+          {
+            id: ID_CROP_CATEGORIES.BASIC_SEED, label: "Basic", children: [
+              { id: ID_SEEDS.WHEAT, label: "Wheat" },
+              { id: ID_SEEDS.TOMATO, label: "Tomato" },
+              { id: ID_SEEDS.CARROT, label: "Carrot" },
+              { id: ID_SEEDS.CORN, label: "Corn" },
+              { id: ID_SEEDS.PUMPKIN, label: "Pumpkin" },
+              { id: ID_SEEDS.CHILI, label: "Chili" },
+              { id: ID_SEEDS.PARSNIP, label: "Parsnip" },
+              { id: ID_SEEDS.CELERY, label: "Celery" },
+              { id: ID_SEEDS.BROCCOLI, label: "Broccoli" },
+              { id: ID_SEEDS.CAULIFLOWER, label: "Cauliflower" },
+              { id: ID_SEEDS.BERRY, label: "Berry" },
+              { id: ID_SEEDS.GRAPES, label: "Grapes" },
+            ]
+          },
+          {
+            id: ID_CROP_CATEGORIES.PREMIUM_SEED, label: "Premium", children: [
+              { id: ID_SEEDS.BANANA, label: "Banana" },
+              { id: ID_SEEDS.MANGO, label: "Mango" },
+              { id: ID_SEEDS.AVOCADO, label: "Avocado" },
+              { id: ID_SEEDS.PINEAPPLE, label: "Pineapple" },
+              { id: ID_SEEDS.BLUEBERRY, label: "Blueberry" },
+              { id: ID_SEEDS.ARTICHOKE, label: "Artichoke" },
+              { id: ID_SEEDS.PAPAYA, label: "Papaya" },
+              { id: ID_SEEDS.FIG, label: "Fig" },
+              { id: ID_SEEDS.LICHI, label: "Lichi" },
+              { id: ID_SEEDS.LAVENDER, label: "Lavender" },
+              { id: ID_SEEDS.DRAGON_FRUIT, label: "Dragon Fruit" },
+            ]
+          },
         ],
-    },
+      },
+      {
+        id: ID_ITEM_CATEGORIES.POTION,
+        label: "Potions",
+        children: [
+          {
+            id: ID_POTION_CATEGORIES.GROWTH_ELIXIR, label: "Growth Elixirs", children: [
+              { id: ID_POTIONS.GROWTH_ELIXIR, label: "Growth Elixir I" },
+              { id: ID_POTIONS.GROWTH_ELIXIR_II, label: "Growth Elixir II" },
+              { id: ID_POTIONS.GROWTH_ELIXIR_III, label: "Growth Elixir III" },
+            ]
+          },
+          {
+            id: ID_POTION_CATEGORIES.FERTILIZER, label: "Fertilizers", children: [
+              { id: ID_POTIONS.FERTILIZER, label: "Fertilizer" },
+              { id: ID_POTIONS.FERTILIZER_II, label: "Fertilizer II" },
+              { id: ID_POTIONS.FERTILIZER_III, label: "Fertilizer III" },
+            ]
+          },
+          {
+            id: ID_POTION_CATEGORIES.PESTICIDE, label: "Pesticides", children: [
+              { id: ID_POTIONS.PESTICIDE, label: "Pesticide" },
+              { id: ID_POTIONS.PESTICIDE_II, label: "Pesticide II" },
+              { id: ID_POTIONS.PESTICIDE_III, label: "Pesticide III" },
+            ]
+          }
+        ]
+      },
+      {
+        id: ID_ITEM_CATEGORIES.LOOT,
+        label: "Loot",
+        children: [
+          {
+            id: ID_LOOT_CATEGORIES.CHEST, label: "Chests", children: [
+              { id: ID_LOOTS.WOODEN_CHEST, label: "Wooden Chest" },
+              { id: ID_LOOTS.BRONZE_CHEST, label: "Bronze Chest" },
+              { id: ID_LOOTS.SILVER_CHEST, label: "Silver Chest" },
+              { id: ID_LOOTS.GOLDEN_CHEST, label: "Golden Chest" },
+              { id: ID_LOOTS.PLATINUM_CHEST, label: "Platinum Chest" },
+            ]
+          },
+          {
+            id: ID_LOOT_CATEGORIES.BAIT, label: "Baits", children: [
+              { id: ID_LOOTS.BAIT_I, label: "Bait I" },
+              { id: ID_LOOTS.BAIT_II, label: "Bait II" },
+              { id: ID_LOOTS.BAIT_III, label: "Bait III" }
+            ]
+          },
+          {
+            id: ID_LOOT_CATEGORIES.FISH, label: "Fish", children: [
+              { id: ID_LOOTS.ANCHOVY, label: "Anchovy" },
+              { id: ID_LOOTS.SARDINE, label: "Sardine" },
+              { id: ID_LOOTS.HERRING, label: "Herring" },
+              { id: ID_LOOTS.SMALL_TROUT, label: "Small Trout" },
+              { id: ID_LOOTS.YELLOW_PERCH, label: "Yellow Perch" },
+              { id: ID_LOOTS.SALMON, label: "Salmon" },
+              { id: ID_LOOTS.ORANGE_ROUGHY, label: "Orange Roughy" },
+              { id: ID_LOOTS.CATFISH, label: "Catfish" },
+              { id: ID_LOOTS.SMALL_SHARK, label: "Small Shark" },
+            ]
+          },
+          {
+            id: ID_LOOT_CATEGORIES.MISC, label: "Misc", children: [
+              { id: ID_LOOTS.LIFE_BUD, label: "Life Bud" },
+            ]
+          }
+        ]
+      }
+    ],
+  },
 ];
+
+export const IMAGE_URL_CROP = "/public/images/crops/seeds.png";
+
+export const ALL_ITEMS = {
+  [ID_SEEDS.WHEAT]: {
+    id: ID_SEEDS.WHEAT,
+    label: "Wheat",
+    category: ID_ITEM_CATEGORIES.CROP,
+    subCategory: ID_CROP_CATEGORIES.BASIC_SEED,
+    type: ID_SEED_TYPE.COMMON,
+    image: IMAGE_URL_CROP,
+    pos: 1,
+    ready: 50,
+    lockedReady: 75,
+  },
+  [ID_SEEDS.TOMATO]: {
+    id: ID_SEEDS.TOMATO,
+    label: "Tomato",
+    category: ID_ITEM_CATEGORIES.CROP,
+    subCategory: ID_CROP_CATEGORIES.BASIC_SEED,
+    type: ID_SEED_TYPE.COMMON,
+    image: IMAGE_URL_CROP,
+    pos: 2,
+    ready: 50,
+    lockedReady: 75,
+  },
+  [ID_SEEDS.CARROT]: {
+    id: ID_SEEDS.CARROT,
+    label: "Carrot",
+    category: ID_ITEM_CATEGORIES.CROP,
+    subCategory: ID_CROP_CATEGORIES.BASIC_SEED,
+    type: ID_SEED_TYPE.COMMON,
+    image: IMAGE_URL_CROP,
+    pos: 3,
+    ready: 50,
+    lockedReady: 75,
+  },
+  [ID_SEEDS.CORN]: {
+    id: ID_SEEDS.CORN,
+    label: "Corn",
+    category: ID_ITEM_CATEGORIES.CROP,
+    subCategory: ID_CROP_CATEGORIES.BASIC_SEED,
+    type: ID_SEED_TYPE.COMMON,
+    image: IMAGE_URL_CROP,
+    pos: 4,
+    ready: 50,
+    lockedReady: 75,
+  },
+  [ID_SEEDS.PUMPKIN]: {
+    id: ID_SEEDS.PUMPKIN,
+    label: "Pumpkin",
+    category: ID_ITEM_CATEGORIES.CROP,
+    subCategory: ID_CROP_CATEGORIES.BASIC_SEED,
+    type: ID_SEED_TYPE.UNCOMMON,
+    image: IMAGE_URL_CROP,
+    pos: 5,
+    ready: 90,
+    lockedReady: 135,
+  },
+  [ID_SEEDS.CHILI]: {
+    id: ID_SEEDS.CHILI,
+    label: "Chili",
+    category: ID_ITEM_CATEGORIES.CROP,
+    subCategory: ID_CROP_CATEGORIES.BASIC_SEED,
+    type: ID_SEED_TYPE.UNCOMMON,
+    image: IMAGE_URL_CROP,
+    pos: 6,
+    ready: 90,
+    lockedReady: 135,
+  },
+  [ID_SEEDS.PARSNIP]: {
+    id: ID_SEEDS.PARSNIP,
+    label: "Parsnip",
+    category: ID_ITEM_CATEGORIES.CROP,
+    subCategory: ID_CROP_CATEGORIES.BASIC_SEED,
+    type: ID_SEED_TYPE.UNCOMMON,
+    image: IMAGE_URL_CROP,
+    pos: 7,
+    ready: 90,
+    lockedReady: 135,
+  },
+  [ID_SEEDS.CELERY]: {
+    id: ID_SEEDS.CELERY,
+    label: "Celery",
+    category: ID_ITEM_CATEGORIES.CROP,
+    subCategory: ID_CROP_CATEGORIES.BASIC_SEED,
+    type: ID_SEED_TYPE.RARE,
+    image: IMAGE_URL_CROP,
+    pos: 8,
+    ready: 120,
+    lockedReady: 180,
+  },
+  [ID_SEEDS.BROCCOLI]: {
+    id: ID_SEEDS.BROCCOLI,
+    label: "Broccoli",
+    category: ID_ITEM_CATEGORIES.CROP,
+    subCategory: ID_CROP_CATEGORIES.BASIC_SEED,
+    type: ID_SEED_TYPE.RARE,
+    image: IMAGE_URL_CROP,
+    pos: 9,
+    ready: 120,
+    lockedReady: 180,
+  },
+  [ID_SEEDS.CAULIFLOWER]: {
+    id: ID_SEEDS.CAULIFLOWER,
+    label: "Cauliflower",
+    category: ID_ITEM_CATEGORIES.CROP,
+    subCategory: ID_CROP_CATEGORIES.BASIC_SEED,
+    type: ID_SEED_TYPE.EPIC,
+    image: IMAGE_URL_CROP,
+    pos: 10,
+    ready: 200,
+    lockedReady: 300,
+  },
+  [ID_SEEDS.BERRY]: {
+    id: ID_SEEDS.BERRY,
+    label: "Berry",
+    category: ID_ITEM_CATEGORIES.CROP,
+    subCategory: ID_CROP_CATEGORIES.BASIC_SEED,
+    type: ID_SEED_TYPE.EPIC,
+    image: IMAGE_URL_CROP,
+    pos: 11,
+    ready: 200,
+    lockedReady: 300,
+  },
+  [ID_SEEDS.GRAPES]: {
+    id: ID_SEEDS.GRAPES,
+    label: "Grapes",
+    category: ID_ITEM_CATEGORIES.CROP,
+    subCategory: ID_CROP_CATEGORIES.BASIC_SEED,
+    type: ID_SEED_TYPE.LEGENDARY,
+    image: IMAGE_URL_CROP,
+    pos: 12,
+    ready: 540,
+    lockedReady: 810,
+  },
+  [ID_SEEDS.BANANA]: {
+    id: ID_SEEDS.BANANA,
+    label: "Banana",
+    category: ID_ITEM_CATEGORIES.CROP,
+    subCategory: ID_CROP_CATEGORIES.PREMIUM_SEED,
+    type: ID_SEED_TYPE.COMMON,
+    image: IMAGE_URL_CROP,
+    pos: 13,
+    ready: 400,
+    lockedReady: 600,
+  },
+  [ID_SEEDS.MANGO]: {
+    id: ID_SEEDS.MANGO,
+    label: "Mango",
+    category: ID_ITEM_CATEGORIES.CROP,
+    subCategory: ID_CROP_CATEGORIES.PREMIUM_SEED,
+    type: ID_SEED_TYPE.COMMON,
+    image: IMAGE_URL_CROP,
+    pos: 14,
+    ready: 400,
+    lockedReady: 600,
+  },
+  [ID_SEEDS.AVOCADO]: {
+    id: ID_SEEDS.AVOCADO,
+    label: "Avocado",
+    category: ID_ITEM_CATEGORIES.CROP,
+    subCategory: ID_CROP_CATEGORIES.PREMIUM_SEED,
+    type: ID_SEED_TYPE.COMMON,
+    image: IMAGE_URL_CROP,
+    pos: 15,
+    ready: 400,
+    lockedReady: 600,
+  },
+  [ID_SEEDS.PINEAPPLE]: {
+    id: ID_SEEDS.PINEAPPLE,
+    label: "Pineapple",
+    category: ID_ITEM_CATEGORIES.CROP,
+    subCategory: ID_CROP_CATEGORIES.PREMIUM_SEED,
+    type: ID_SEED_TYPE.UNCOMMON,
+    image: IMAGE_URL_CROP,
+    pos: 16,
+    ready: 720,
+    lockedReady: 1080,
+  },
+  [ID_SEEDS.BLUEBERRY]: {
+    id: ID_SEEDS.BLUEBERRY,
+    label: "Blueberry",
+    category: ID_ITEM_CATEGORIES.CROP,
+    subCategory: ID_CROP_CATEGORIES.PREMIUM_SEED,
+    type: ID_SEED_TYPE.UNCOMMON,
+    image: IMAGE_URL_CROP,
+    pos: 17,
+    ready: 720,
+    lockedReady: 1080,
+  },
+  [ID_SEEDS.ARTICHOKE]: {
+    id: ID_SEEDS.ARTICHOKE,
+    label: "Artichoke",
+    category: ID_ITEM_CATEGORIES.CROP,
+    subCategory: ID_CROP_CATEGORIES.PREMIUM_SEED,
+    type: ID_SEED_TYPE.UNCOMMON,
+    image: IMAGE_URL_CROP,
+    pos: 18,
+    ready: 720,
+    lockedReady: 1080,
+  },
+  [ID_SEEDS.PAPAYA]: {
+    id: ID_SEEDS.PAPAYA,
+    label: "Papaya",
+    category: ID_ITEM_CATEGORIES.CROP,
+    subCategory: ID_CROP_CATEGORIES.PREMIUM_SEED,
+    type: ID_SEED_TYPE.RARE,
+    image: IMAGE_URL_CROP,
+    pos: 19,
+    ready: 960,
+    lockedReady: 1440,
+  },
+  [ID_SEEDS.FIG]: {
+    id: ID_SEEDS.FIG,
+    label: "Fig",
+    category: ID_ITEM_CATEGORIES.CROP,
+    subCategory: ID_CROP_CATEGORIES.PREMIUM_SEED,
+    type: ID_SEED_TYPE.RARE,
+    image: IMAGE_URL_CROP,
+    pos: 20,
+    ready: 960,
+    lockedReady: 1440,
+  },
+  [ID_SEEDS.LICHI]: {
+    id: ID_SEEDS.LICHI,
+    label: "Lichi",
+    category: ID_ITEM_CATEGORIES.CROP,
+    subCategory: ID_CROP_CATEGORIES.PREMIUM_SEED,
+    type: ID_SEED_TYPE.EPIC,
+    image: IMAGE_URL_CROP,
+    pos: 21,
+    ready: 1600,
+    lockedReady: 2400,
+  },
+  [ID_SEEDS.LAVENDER]: {
+    id: ID_SEEDS.LAVENDER,
+    label: "Lavender",
+    category: ID_ITEM_CATEGORIES.CROP,
+    subCategory: ID_CROP_CATEGORIES.PREMIUM_SEED,
+    type: ID_SEED_TYPE.EPIC,
+    image: IMAGE_URL_CROP,
+    pos: 22,
+    ready: 1600,
+    lockedReady: 2400,
+  },
+  [ID_SEEDS.DRAGON_FRUIT]: {
+    id: ID_SEEDS.DRAGON_FRUIT,
+    label: "Dragon Fruit",
+    category: ID_ITEM_CATEGORIES.CROP,
+    subCategory: ID_CROP_CATEGORIES.PREMIUM_SEED,
+    type: ID_SEED_TYPE.LEGENDARY,
+    image: IMAGE_URL_CROP,
+    pos: 23,
+    ready: 4400,
+    lockedReady: 6600,
+  },
+  [ID_SEEDS.POTATO]: {
+    id: ID_SEEDS.POTATO,
+    label: "Potato",
+    category: ID_ITEM_CATEGORIES.CROP,
+    subCategory: ID_CROP_CATEGORIES.PICO_SEED,
+    type: ID_SEED_TYPE.COMMON,
+    image: IMAGE_URL_CROP,
+    pos: 24,
+    ready: 10,
+    lockedReady: 15,
+  },
+  [ID_SEEDS.LETTUCE]: {
+    id: ID_SEEDS.LETTUCE,
+    label: "Lettuce",
+    category: ID_ITEM_CATEGORIES.CROP,
+    subCategory: ID_CROP_CATEGORIES.PICO_SEED,
+    type: ID_SEED_TYPE.UNCOMMON,
+    image: IMAGE_URL_CROP,
+    pos: 25,
+    ready: 18,
+    lockedReady: 27,
+  },
+  [ID_SEEDS.CABBAGE]: {
+    id: ID_SEEDS.CABBAGE,
+    label: "Cabbage",
+    category: ID_ITEM_CATEGORIES.CROP,
+    subCategory: ID_CROP_CATEGORIES.PICO_SEED,
+    type: ID_SEED_TYPE.RARE,
+    image: IMAGE_URL_CROP,
+    pos: 26,
+    ready: 24,
+    lockedReady: 36,
+  },
+  [ID_SEEDS.ONION]: {
+    id: ID_SEEDS.ONION,
+    label: "Onion",
+    category: ID_ITEM_CATEGORIES.CROP,
+    subCategory: ID_CROP_CATEGORIES.PICO_SEED,
+    type: ID_SEED_TYPE.EPIC,
+    image: IMAGE_URL_CROP,
+    pos: 27,
+    ready: 40,
+    lockedReady: 60,
+  },
+  [ID_SEEDS.RADISH]: {
+    id: ID_SEEDS.RADISH,
+    label: "Radish",
+    category: ID_ITEM_CATEGORIES.CROP,
+    subCategory: ID_CROP_CATEGORIES.PICO_SEED,
+    type: ID_SEED_TYPE.LEGENDARY,
+    image: IMAGE_URL_CROP,
+    pos: 28,
+    ready: 108,
+    lockedReady: 162,
+  },
+  [ID_SEEDS.F_POTATO]: {
+    id: ID_SEEDS.F_POTATO,
+    label: "F.Potato",
+    category: ID_ITEM_CATEGORIES.CROP,
+    subCategory: ID_CROP_CATEGORIES.FEEBLE_SEED,
+    type: ID_SEED_TYPE.COMMON,
+    image: IMAGE_URL_CROP,
+    pos: 29,
+    ready: 0.5,
+    lockedReady: 0.75,
+  },
+  [ID_SEEDS.F_LETTUCE]: {
+    id: ID_SEEDS.F_LETTUCE,
+    label: "F.Lettuce",
+    category: ID_ITEM_CATEGORIES.CROP,
+    subCategory: ID_CROP_CATEGORIES.FEEBLE_SEED,
+    type: ID_SEED_TYPE.UNCOMMON,
+    image: IMAGE_URL_CROP,
+    pos: 30,
+    ready: 0.9,
+    lockedReady: 1.35,
+  },
+  [ID_SEEDS.F_CABBAGE]: {
+    id: ID_SEEDS.F_CABBAGE,
+    label: "F.Cabbage",
+    category: ID_ITEM_CATEGORIES.CROP,
+    subCategory: ID_CROP_CATEGORIES.FEEBLE_SEED,
+    type: ID_SEED_TYPE.RARE,
+    image: IMAGE_URL_CROP,
+    pos: 31,
+    ready: 1.2,
+    lockedReady: 1.8,
+  },
+  [ID_SEEDS.F_ONION]: {
+    id: ID_SEEDS.F_ONION,
+    label: "F.Onion",
+    category: ID_ITEM_CATEGORIES.CROP,
+    subCategory: ID_CROP_CATEGORIES.FEEBLE_SEED,
+    type: ID_SEED_TYPE.EPIC,
+    image: IMAGE_URL_CROP,
+    pos: 32,
+    ready: 2,
+    lockedReady: 3,
+  },
+  [ID_SEEDS.F_RADISH]: {
+    id: ID_SEEDS.F_RADISH,
+    label: "F.Radish",
+    category: ID_ITEM_CATEGORIES.CROP,
+    subCategory: ID_CROP_CATEGORIES.FEEBLE_SEED,
+    type: ID_SEED_TYPE.LEGENDARY,
+    image: IMAGE_URL_CROP,
+    pos: 33,
+    ready: 5.4,
+    lockedReady: 8.1,
+  },
+};

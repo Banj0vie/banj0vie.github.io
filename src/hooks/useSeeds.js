@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useContracts } from './useContracts';
 import { useWeb3 } from '../contexts/Web3Context';
 import { ID_SEEDS } from '../constants/app_ids';
-import { SEEDS } from '../constants/item_seed';
+import { ALL_ITEMS } from '../constants/item_all';
 
 export const useSeeds = () => {
   const { contracts, isReady } = useContracts();
@@ -46,7 +46,7 @@ export const useSeeds = () => {
           const balanceNum = typeof balance === 'object' && balance.toNumber ? balance.toNumber() : Number(balance);
           if (balanceNum > 0) {
             const seedId = seedIds[index];
-            const seedData = SEEDS[seedId];
+            const seedData = ALL_ITEMS[seedId];
             if (seedData) {
               userSeeds.push({
                 id: seedId,
@@ -92,7 +92,7 @@ export const useSeeds = () => {
               const balanceNum = typeof balance === 'object' && balance.toNumber ? balance.toNumber() : Number(balance);
               if (balanceNum > 0) {
                 const seedId = seedIds[index];
-                const seedData = SEEDS[seedId];
+                const seedData = ALL_ITEMS[seedId];
                 if (seedData) {
                   userSeeds.push({
                     id: seedId,

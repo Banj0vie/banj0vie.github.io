@@ -10,10 +10,8 @@ import {
   FARM_GRID_COLS,
   FARM_PLOTS_PER_SIDE,
 } from "../../../constants/scene_farm";
-import {
-  ONE_SEED_HEIGHT,
-  SEEDS,
-} from "../../../constants/item_seed";
+import { ONE_SEED_HEIGHT } from "../../../constants/item_seed";
+import { ALL_ITEMS } from "../../../constants/item_all";
 import CropTooltip from "./CropTooltip";
 
 const CropItem = ({
@@ -122,7 +120,7 @@ const CropItem = ({
   // Determine sprite frame based on growth progress for smoother, real-time stages
   const FRAMES_PER_SEED = 6; // total frames across X for one seed line
   let frameIndex = 0;
-  if (data.seedId && SEEDS[data.seedId]) {
+  if (data.seedId && ALL_ITEMS[data.seedId]) {
     if (data.growStatus === -1) {
       frameIndex = 1; // newly planted
     } else if (data.growStatus === 2) {
@@ -143,12 +141,12 @@ const CropItem = ({
       style={{
         ...position,
         backgroundPositionX:
-          data.seedId && SEEDS[data.seedId]
+          data.seedId && ALL_ITEMS[data.seedId]
             ? 0 - frameIndex * ONE_SEED_HEIGHT
             : 0,
         backgroundPositionY:
-          data.seedId && SEEDS[data.seedId]
-            ? 0 - SEEDS[data.seedId].pos * ONE_SEED_HEIGHT
+          data.seedId && ALL_ITEMS[data.seedId]
+            ? 0 - ALL_ITEMS[data.seedId].pos * ONE_SEED_HEIGHT
             : 0,
         cursor: isDisabled ? "not-allowed" : "pointer",
       }}

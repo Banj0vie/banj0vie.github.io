@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import ReactDOM from "react-dom";
 import "./style.css";
-import { ONE_SEED_HEIGHT, SEEDS, SEED_CATEGORIES, SEED_PACK_LIST, GROW_STATUS } from "../../../../constants/item_seed";
+import { ONE_SEED_HEIGHT, SEED_CATEGORIES, SEED_PACK_LIST, GROW_STATUS } from "../../../../constants/item_seed";
+import { ALL_ITEMS } from "../../../../constants/item_all";
 import BaseDivider from "../../../../components/dividers/BaseDivider";
 import GrowStatusBox from "../../../../components/boxes/GrowStatusBox";
 import { useWeb3 } from "../../../../contexts/Web3Context";
@@ -163,14 +164,14 @@ const CropTooltip = ({ container, pos = { x: 0, y: 0 }, data = {}, growthProgres
         <div className="crop-icon-bg">
           <div
             className="crop-icon"
-            style={{ backgroundPositionY: -SEEDS[data.seedId]?.pos * ONE_SEED_HEIGHT }}
+            style={{ backgroundPositionY: -ALL_ITEMS[data.seedId]?.pos * ONE_SEED_HEIGHT }}
           ></div>
         </div>
         <div className="crop-info-name">
-          <div className="">{SEEDS[data.seedId]?.label || `Seed ${data.seedId}`}</div>
-          <div style={{ color: SEED_CATEGORIES[SEEDS[data.seedId]?.category]?.color }}>
-            {SEED_CATEGORIES[SEEDS[data.seedId]?.category]?.label}&nbsp;
-            {SEED_PACK_LIST[SEEDS[data.seedId]?.pack]?.label}
+          <div className="">{ALL_ITEMS[data.seedId]?.label || `Seed ${data.seedId}`}</div>
+          <div style={{ color: SEED_CATEGORIES[ALL_ITEMS[data.seedId]?.type]?.color }}>
+            {SEED_CATEGORIES[ALL_ITEMS[data.seedId]?.type]?.label}&nbsp;
+            {SEED_PACK_LIST[ALL_ITEMS[data.seedId]?.subCategory]?.label}
           </div>
         </div>
       </div>

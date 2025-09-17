@@ -4,8 +4,8 @@ import {
   ALL_SEED_IMAGE_HEIGHT,
   ONE_SEED_HEIGHT,
   SEED_CATEGORIES,
-  SEEDS,
 } from "../../../constants/item_seed";
+import { ALL_ITEMS } from "../../../constants/item_all";
 import { getRandomSeedEntry } from "../../../utils/basic";
 import { ID_SEEDS } from "../../../constants/app_ids";
 
@@ -21,7 +21,7 @@ const convertSeedIdToSeedData = (seedId) => {
   // Find the seed in our constants
   for (const [key, value] of Object.entries(ID_SEEDS)) {
     if (value.toString() === seedIdStr) {
-      const seedData = SEEDS[value];
+      const seedData = ALL_ITEMS[value];
       if (seedData) {
         return { id: key, ...seedData };
       }
@@ -78,15 +78,14 @@ const SeedRollingBox = ({ seedPackId, delay = 0 }) => {
       <div className="seed-label">
         <p
           style={{
-            color: selectedSeed.category
-              ? SEED_CATEGORIES[selectedSeed.category].color
+            color: selectedSeed.type
+              ? SEED_CATEGORIES[selectedSeed.type].color
               : "white",
           }}
         >
           {isRolling
             ? "ROLLING"
-            : selectedSeed.category &&
-              SEED_CATEGORIES[selectedSeed.category].label}
+            : selectedSeed.type && SEED_CATEGORIES[selectedSeed.type].label}
         </p>
       </div>
     </div>

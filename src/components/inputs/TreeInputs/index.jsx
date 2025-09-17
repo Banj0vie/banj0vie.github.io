@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import "./style.css";
 import BaseInput from "../BaseInput";
 import BaseButton from "../../buttons/BaseButton";
@@ -6,10 +6,14 @@ import { ALL_ITEM_TREE } from "../../../constants/item_all";
 import CardView from "../../boxes/CardView";
 import BaseCheckBox from "../BaseCheckBox";
 
-const TreeInput = ({ onBack }) => {
+const TreeInput = ({ onBack, onSelect }) => {
   const [search, setSearch] = useState("");
   const [expanded, setExpanded] = useState(() => new Set());
   const [checked, setChecked] = useState(() => new Set());
+
+  useEffect(() => {
+    onSelect(Array.from(checked));
+  }, [checked, onSelect]);
 
   const toggleExpand = (id) => {
     setExpanded((s) => {

@@ -1,4 +1,4 @@
-import { SEEDS } from "../constants/item_seed";
+import { ALL_ITEMS } from "../constants/item_all";
 
 export function generateId(prefix = "id") {
   return `${prefix}-${Math.random().toString(36).substr(2, 9)}`;
@@ -38,7 +38,7 @@ export function formatAddress(address, chars = 4) {
 
 // For the test
 export const getRandomSeedEntry = () => {
-  const entries = Object.entries(SEEDS);
+  const entries = Object.entries(ALL_ITEMS);
   const randomIndex = Math.floor(Math.random() * entries.length);
   const [key, seed] = entries[randomIndex];
   return { id: key, ...seed };
