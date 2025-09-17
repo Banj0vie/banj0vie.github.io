@@ -2,11 +2,10 @@ import React from "react";
 import "./style.css";
 import BaseDialog from "../BaseDialog";
 import PickSeedItemBox from "../../components/boxes/PickSeedItemBox";
-import { useSeeds } from "../../hooks/useSeeds";
+import { useItems } from "../../hooks/useItems";
 
 const SelectSeedDialog = ({ onClose, onClickSeed, availableSeeds = null }) => {
-  const { seeds: originalSeeds, loading, error } = useSeeds();
-  
+  const { seeds: originalSeeds, loading, error } = useItems();
   // Use availableSeeds if provided, otherwise fall back to original seeds
   const seeds = availableSeeds || originalSeeds;
 

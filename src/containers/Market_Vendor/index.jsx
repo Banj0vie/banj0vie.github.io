@@ -5,7 +5,7 @@ import VendorMenu from "./VendorMenu";
 import BuySeeds from "./BuySeeds";
 import RollChances from "./RollChances";
 import CustomSeedsDialog from "../CustomSeedsDialog";
-import { ID_SEED_SHOP_ITEMS, ID_SEED_SHOP_PAGES } from "../../constants/app_ids";
+import { ID_CROP_CATEGORIES, ID_SEED_SHOP_PAGES } from "../../constants/app_ids";
 import { SEED_PACK_STATUS } from "../../constants/item_seed";
 import SeedRollingDialog from "../SeedRollingDialog";
 import { useVendor, useFarming, useContracts } from "../../hooks/useContracts";
@@ -35,22 +35,22 @@ const VendorDialog = ({ onClose, label = "VENDOR", header = "" }) => {
   
   // Memoized initial seed status to prevent unnecessary re-renders
   const initialSeedStatus = useMemo(() => ({
-    [ID_SEED_SHOP_ITEMS.FEEBLE_SEED]: {
+    [ID_CROP_CATEGORIES.FEEBLE_SEED]: {
       label: "Feeble Seeds",
       status: SEED_PACK_STATUS.NORMAL,
       count: 0,
     },
-    [ID_SEED_SHOP_ITEMS.PICO_SEED]: {
+    [ID_CROP_CATEGORIES.PICO_SEED]: {
       label: "Pico Seeds",
       status: SEED_PACK_STATUS.NORMAL,
       count: 0,
     },
-    [ID_SEED_SHOP_ITEMS.BASIC_SEED]: {
+    [ID_CROP_CATEGORIES.BASIC_SEED]: {
       label: "Basic Seeds",
       status: SEED_PACK_STATUS.NORMAL,
       count: 0,
     },
-    [ID_SEED_SHOP_ITEMS.PREMIUM_SEED]: {
+    [ID_CROP_CATEGORIES.PREMIUM_SEED]: {
       label: "Premium Seeds",
       status: SEED_PACK_STATUS.NORMAL,
       count: 0,
@@ -61,10 +61,10 @@ const VendorDialog = ({ onClose, label = "VENDOR", header = "" }) => {
 
   // Memoized tier mapping to prevent recreation on every render
   const tierMap = useMemo(() => ({
-    [ID_SEED_SHOP_ITEMS.FEEBLE_SEED]: 1,
-    [ID_SEED_SHOP_ITEMS.PICO_SEED]: 2,
-    [ID_SEED_SHOP_ITEMS.BASIC_SEED]: 3,
-    [ID_SEED_SHOP_ITEMS.PREMIUM_SEED]: 4,
+    [ID_CROP_CATEGORIES.FEEBLE_SEED]: 1,
+    [ID_CROP_CATEGORIES.PICO_SEED]: 2,
+    [ID_CROP_CATEGORIES.BASIC_SEED]: 3,
+    [ID_CROP_CATEGORIES.PREMIUM_SEED]: 4,
   }), []);
 
   // Load available plots - only when needed

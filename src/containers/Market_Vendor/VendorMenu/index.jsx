@@ -3,7 +3,7 @@ import "./style.css";
 import BaseDivider from "../../../components/dividers/BaseDivider";
 import BaseButton from "../../../components/buttons/BaseButton";
 import ErrorLabel from "../../../components/labels/ErrorLabel";
-import { ID_SEED_SHOP_ITEMS } from "../../../constants/app_ids";
+import { ID_CROP_CATEGORIES } from "../../../constants/app_ids";
 import { SEED_PACK_STATUS } from "../../../constants/item_seed";
 
 const VendorMenu = ({ 
@@ -19,18 +19,18 @@ const VendorMenu = ({
   buyingSeedId = null
 }) => {
   const seedOrder = [
-    ID_SEED_SHOP_ITEMS.FEEBLE_SEED,
-    ID_SEED_SHOP_ITEMS.PICO_SEED,
-    ID_SEED_SHOP_ITEMS.BASIC_SEED,
-    ID_SEED_SHOP_ITEMS.PREMIUM_SEED,
+    ID_CROP_CATEGORIES.FEEBLE_SEED,
+    ID_CROP_CATEGORIES.PICO_SEED,
+    ID_CROP_CATEGORIES.BASIC_SEED,
+    ID_CROP_CATEGORIES.PREMIUM_SEED,
   ];
   
   // Tier mapping to match the contract
   const tierMap = {
-    [ID_SEED_SHOP_ITEMS.FEEBLE_SEED]: 1,
-    [ID_SEED_SHOP_ITEMS.PICO_SEED]: 2,
-    [ID_SEED_SHOP_ITEMS.BASIC_SEED]: 3,
-    [ID_SEED_SHOP_ITEMS.PREMIUM_SEED]: 4,
+    [ID_CROP_CATEGORIES.FEEBLE_SEED]: 1,
+    [ID_CROP_CATEGORIES.PICO_SEED]: 2,
+    [ID_CROP_CATEGORIES.BASIC_SEED]: 3,
+    [ID_CROP_CATEGORIES.PREMIUM_SEED]: 4,
   };
   return (
     <div className="vendor-menu">

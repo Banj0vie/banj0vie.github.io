@@ -166,3 +166,23 @@ a {
 .text-1\.25 {
   font-size: 1.25rem;
 }
+
+::-webkit-scrollbar {
+    width: 1rem
+}
+
+::-webkit-scrollbar-track {
+    background: #2c1c1a;
+    border-radius: .25rem
+}
+
+::-webkit-scrollbar-thumb {
+    background: #bf6f4a;
+    border-radius: .25rem;
+    border: 2px solid #5d2c28
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #e69c69;
+    border: 2px solid #302b28
+}

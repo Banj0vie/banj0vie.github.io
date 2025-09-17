@@ -159,43 +159,6 @@ export const GameStateProvider = ({ children }) => {
     }
   }, [isConnected, account, isReady, contracts, provider]);
 
-  // Load item balances (ERC1155)
-  const loadItemBalances = useCallback(async () => {
-    if (!isConnected || !account || !contracts.items_1155) return;
-
-    setLoading(prev => ({ ...prev, items: true }));
-    setErrors(prev => ({ ...prev, items: null }));
-
-    try {
-      // Define item IDs to check (from ItemConstants.sol)
-      const itemIds = [
-        // Seeds
-        '0x0100000000000000000000000000000000000000000000000000000000000001', // F_POTATO
-        '0x0100000000000000000000000000000000000000000000000000000000000002', // F_LETTUCE
-        '0x0100000000000000000000000000000000000000000000000000000000000003', // F_CABBAGE
-        '0x0100000000000000000000000000000000000000000000000000000000000004', // F_ONION
-        '0x0100000000000000000000000000000000000000000000000000000000000005', // F_RADISH
-        // Add more item IDs as needed
-      ];
-
-      const balances = await contracts.items_1155.balanceOfBatch(
-        new Array(itemIds.length).fill(account),
-        itemIds
-      );
-
-      const itemBalances = {};
-      itemIds.forEach((itemId, index) => {
-        itemBalances[itemId] = balances[index].toString();
-      });
-
-      setItemBalances(itemBalances);
-    } catch (err) {
-      console.error('Failed to load item balances:', err);
-      setErrors(prev => ({ ...prev, items: err.message }));
-    } finally {
-      setLoading(prev => ({ ...prev, items: false }));
-    }
-  }, [isConnected, account, contracts.items_1155]);
 
   // Load farming data
   const loadFarmingData = useCallback(async () => {
@@ -255,10 +218,9 @@ export const GameStateProvider = ({ children }) => {
     await Promise.all([
       loadPlayerData(),
       loadBalances(),
-      loadItemBalances(),
       loadFarmingData()
     ]);
-  }, [loadPlayerData, loadBalances, loadItemBalances, loadFarmingData]);
+  }, [loadPlayerData, loadBalances, loadFarmingData]);
 
   // Auto-refresh when account changes
   useEffect(() => {
@@ -336,7 +298,6 @@ export const GameStateProvider = ({ children }) => {
     refreshAll,
     loadPlayerData,
     loadBalances,
-    loadItemBalances,
     loadFarmingData,
 
     // Helpers

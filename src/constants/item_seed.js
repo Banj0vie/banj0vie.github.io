@@ -1,9 +1,9 @@
 import { seedIcons } from "./_baseimages";
-import { ID_SEED_SHOP_ITEMS, ID_SEED_CATEGORIES, ID_SEEDS } from "./app_ids";
+import { ID_CROP_CATEGORIES, ID_RARE_TYPE, ID_SEEDS } from "./app_ids";
 
 export const SEED_PACKS = [
     {
-        id: ID_SEED_SHOP_ITEMS.FEEBLE_SEED,
+        id: ID_CROP_CATEGORIES.FEEBLE_SEED,
         items: [
             {
                 label: "1x Seed",
@@ -29,7 +29,7 @@ export const SEED_PACKS = [
         ],
         tip: "Feeble seeds won't give produce!",
     }, {
-        id: ID_SEED_SHOP_ITEMS.PICO_SEED,
+        id: ID_CROP_CATEGORIES.PICO_SEED,
         items: [
             {
                 label: "1x Seed",
@@ -54,7 +54,7 @@ export const SEED_PACKS = [
             },
         ],
     }, {
-        id: ID_SEED_SHOP_ITEMS.BASIC_SEED,
+        id: ID_CROP_CATEGORIES.BASIC_SEED,
         items: [
             {
                 label: "1x Seed",
@@ -79,7 +79,7 @@ export const SEED_PACKS = [
             },
         ],
     }, {
-        id: ID_SEED_SHOP_ITEMS.PREMIUM_SEED,
+        id: ID_CROP_CATEGORIES.PREMIUM_SEED,
         items: [
             {
                 label: "1x Seed",
@@ -107,20 +107,20 @@ export const SEED_PACKS = [
 ]
 
 export const SEED_PACK_LIST = {
-    [ID_SEED_SHOP_ITEMS.FEEBLE_SEED]: {
-        id: ID_SEED_SHOP_ITEMS.FEEBLE_SEED,
+    [ID_CROP_CATEGORIES.FEEBLE_SEED]: {
+        id: ID_CROP_CATEGORIES.FEEBLE_SEED,
         label: "Feeble",
     },
-    [ID_SEED_SHOP_ITEMS.PICO_SEED]: {
-        id: ID_SEED_SHOP_ITEMS.PICO_SEED,
+    [ID_CROP_CATEGORIES.PICO_SEED]: {
+        id: ID_CROP_CATEGORIES.PICO_SEED,
         label: "Pico",
     },
-    [ID_SEED_SHOP_ITEMS.BASIC_SEED]: {
-        id: ID_SEED_SHOP_ITEMS.BASIC_SEED,
+    [ID_CROP_CATEGORIES.BASIC_SEED]: {
+        id: ID_CROP_CATEGORIES.BASIC_SEED,
         label: "Basic",
     },
-    [ID_SEED_SHOP_ITEMS.PREMIUM_SEED]: {
-        id: ID_SEED_SHOP_ITEMS.PREMIUM_SEED,
+    [ID_CROP_CATEGORIES.PREMIUM_SEED]: {
+        id: ID_CROP_CATEGORIES.PREMIUM_SEED,
         label: "Premium",
     }
 }
@@ -134,385 +134,120 @@ export const SEED_PACK_STATUS = {
 export const ALL_SEED_IMAGE_HEIGHT = 2176;
 export const ONE_SEED_HEIGHT = 64;
 export const SEED_CATEGORIES = {
-    [ID_SEED_CATEGORIES.COMMON]: {
+    [ID_RARE_TYPE.COMMON]: {
         label: "COMMON",
         color: "#f7efec"
     },
-    [ID_SEED_CATEGORIES.UNCOMMON]: {
+    [ID_RARE_TYPE.UNCOMMON]: {
         label: "UNCOMMON",
         color: "#81c935"
     },
-    [ID_SEED_CATEGORIES.RARE]: {
+    [ID_RARE_TYPE.RARE]: {
         label: "RARE",
         color: "#29b2c2",
     },
-    [ID_SEED_CATEGORIES.EPIC]: {
+    [ID_RARE_TYPE.EPIC]: {
         label: "EPIC",
         color: "#db6595"
     },
-    [ID_SEED_CATEGORIES.LEGENDARY]: {
+    [ID_RARE_TYPE.LEGENDARY]: {
         label: "LEGENDARY",
         color: "#eedb33"
     }
 }
 
 export const SEED_TREE = {
-    [ID_SEED_SHOP_ITEMS.FEEBLE_SEED]: {
-        [ID_SEED_CATEGORIES.COMMON]: {
+    [ID_CROP_CATEGORIES.FEEBLE_SEED]: {
+        [ID_RARE_TYPE.COMMON]: {
             count: 1,
             list: [ID_SEEDS.F_POTATO]
         },
-        [ID_SEED_CATEGORIES.UNCOMMON]: {
+        [ID_RARE_TYPE.UNCOMMON]: {
             count: 1,
             list: [ID_SEEDS.F_LETTUCE]
         },
-        [ID_SEED_CATEGORIES.RARE]: {
+        [ID_RARE_TYPE.RARE]: {
             count: 1,
             list: [ID_SEEDS.F_CABBAGE]
         },
-        [ID_SEED_CATEGORIES.EPIC]: {
+        [ID_RARE_TYPE.EPIC]: {
             count: 1,
             list: [ID_SEEDS.F_ONION]
         },
-        [ID_SEED_CATEGORIES.LEGENDARY]: {
+        [ID_RARE_TYPE.LEGENDARY]: {
             count: 1,
             list: [ID_SEEDS.F_RADISH]
         },
     },
-    [ID_SEED_SHOP_ITEMS.PICO_SEED]: {
-        [ID_SEED_CATEGORIES.COMMON]: {
+    [ID_CROP_CATEGORIES.PICO_SEED]: {
+        [ID_RARE_TYPE.COMMON]: {
             count: 1,
             list: [ID_SEEDS.POTATO]
         },
-        [ID_SEED_CATEGORIES.UNCOMMON]: {
+        [ID_RARE_TYPE.UNCOMMON]: {
             count: 1,
             list: [ID_SEEDS.LETTUCE]
         },
-        [ID_SEED_CATEGORIES.RARE]: {
+        [ID_RARE_TYPE.RARE]: {
             count: 1,
             list: [ID_SEEDS.CABBAGE]
         },
-        [ID_SEED_CATEGORIES.EPIC]: {
+        [ID_RARE_TYPE.EPIC]: {
             count: 1,
             list: [ID_SEEDS.ONION]
         },
-        [ID_SEED_CATEGORIES.LEGENDARY]: {
+        [ID_RARE_TYPE.LEGENDARY]: {
             count: 1,
             list: [ID_SEEDS.RADISH]
         },
     },
-    [ID_SEED_SHOP_ITEMS.BASIC_SEED]: {
-        [ID_SEED_CATEGORIES.COMMON]: {
+    [ID_CROP_CATEGORIES.BASIC_SEED]: {
+        [ID_RARE_TYPE.COMMON]: {
             count: 4,
-            list: [ID_SEEDS.WEAT, ID_SEEDS.TOMATO, ID_SEEDS.CARROT, ID_SEEDS.CORN]
+            list: [ID_SEEDS.WHEAT, ID_SEEDS.TOMATO, ID_SEEDS.CARROT, ID_SEEDS.CORN]
         },
-        [ID_SEED_CATEGORIES.UNCOMMON]: {
+        [ID_RARE_TYPE.UNCOMMON]: {
             count: 3,
             list: [ID_SEEDS.PUMPKIN, ID_SEEDS.CHILI, ID_SEEDS.PARSNIP]
         },
-        [ID_SEED_CATEGORIES.RARE]: {
+        [ID_RARE_TYPE.RARE]: {
             count: 2,
             list: [ID_SEEDS.CELERY, ID_SEEDS.BROCCOLI]
         },
-        [ID_SEED_CATEGORIES.EPIC]: {
+        [ID_RARE_TYPE.EPIC]: {
             count: 1,
             list: [ID_SEEDS.CAULIFLOWER, ID_SEEDS.BERRY]
         },
-        [ID_SEED_CATEGORIES.LEGENDARY]: {
+        [ID_RARE_TYPE.LEGENDARY]: {
             count: 1,
             list: [ID_SEEDS.GRAPES]
         },
     },
-    [ID_SEED_SHOP_ITEMS.PREMIUM_SEED]: {
-        [ID_SEED_CATEGORIES.COMMON]: {
+    [ID_CROP_CATEGORIES.PREMIUM_SEED]: {
+        [ID_RARE_TYPE.COMMON]: {
             count: 3,
             list: [ID_SEEDS.BANANA, ID_SEEDS.MANGO, ID_SEEDS.AVOCADO]
         },
-        [ID_SEED_CATEGORIES.UNCOMMON]: {
+        [ID_RARE_TYPE.UNCOMMON]: {
             count: 3,
             list: [ID_SEEDS.PINEAPPLE, ID_SEEDS.BLUEBERRY, ID_SEEDS.ARTICHOKE]
         },
-        [ID_SEED_CATEGORIES.RARE]: {
+        [ID_RARE_TYPE.RARE]: {
             count: 2,
             list: [ID_SEEDS.PAPAYA, ID_SEEDS.FIG]
         },
-        [ID_SEED_CATEGORIES.EPIC]: {
+        [ID_RARE_TYPE.EPIC]: {
             count: 1,
             list: [ID_SEEDS.LICHI, ID_SEEDS.LAVENDER]
         },
-        [ID_SEED_CATEGORIES.LEGENDARY]: {
+        [ID_RARE_TYPE.LEGENDARY]: {
             count: 1,
             list: [ID_SEEDS.DRAGON_FRUIT]
         },
     },
 }
 
-export const SEEDS = {
-    [ID_SEEDS.WEAT]: {
-        label: "WEAT",
-        pack: ID_SEED_SHOP_ITEMS.BASIC_SEED,
-        category: ID_SEED_CATEGORIES.COMMON,
-        pos: 1,
-        yield: 50,
-        lockedReady: 75,
-    },
-    [ID_SEEDS.TOMATO]: {
-        label: "TOMATO",
-        pack: ID_SEED_SHOP_ITEMS.BASIC_SEED,
-        category: ID_SEED_CATEGORIES.COMMON,
-        pos: 2,
-        yield: 50,
-        lockedReady: 75,
-    },
-    [ID_SEEDS.CARROT]: {
-        label: "CARROT",
-        pack: ID_SEED_SHOP_ITEMS.BASIC_SEED,
-        category: ID_SEED_CATEGORIES.COMMON,
-        pos: 3,
-        yield: 50,
-        lockedReady: 75,
-    },
-    [ID_SEEDS.CORN]: {
-        label: "CORN",
-        pack: ID_SEED_SHOP_ITEMS.BASIC_SEED,
-        category: ID_SEED_CATEGORIES.COMMON,
-        pos: 4,
-        yield: 50,
-        lockedReady: 75,
-    },
-    [ID_SEEDS.PUMPKIN]: {
-        label: "PUMPKIN",
-        pack: ID_SEED_SHOP_ITEMS.BASIC_SEED,
-        category: ID_SEED_CATEGORIES.UNCOMMON,
-        pos: 5,
-        yield: 90,
-        lockedReady: 135,
-    },
-    [ID_SEEDS.CHILI]: {
-        label: "CHILI",
-        pack: ID_SEED_SHOP_ITEMS.BASIC_SEED,
-        category: ID_SEED_CATEGORIES.UNCOMMON,
-        pos: 6,
-        yield: 90,
-        lockedReady: 135,
-    },
-    [ID_SEEDS.PARSNIP]: {
-        label: "PARSNIP",
-        pack: ID_SEED_SHOP_ITEMS.BASIC_SEED,
-        category: ID_SEED_CATEGORIES.UNCOMMON,
-        pos: 7,
-        yield: 90,
-        lockedReady: 135,
-    },
-    [ID_SEEDS.CELERY]: {
-        label: "CELERY",
-        pack: ID_SEED_SHOP_ITEMS.BASIC_SEED,
-        category: ID_SEED_CATEGORIES.RARE,
-        pos: 8,
-        yield: 120,
-        lockedReady: 180,
-    },
-    [ID_SEEDS.BROCCOLI]: {
-        label: "BROCCOLI",
-        pack: ID_SEED_SHOP_ITEMS.BASIC_SEED,
-        category: ID_SEED_CATEGORIES.RARE,
-        pos: 9,
-        yield: 120,
-        lockedReady: 180,
-    },
-    [ID_SEEDS.CAULIFLOWER]: {
-        label: "CAULIFLOWER",
-        pack: ID_SEED_SHOP_ITEMS.BASIC_SEED,
-        category: ID_SEED_CATEGORIES.EPIC,
-        pos: 10,
-        yield: 200,
-        lockedReady: 300,
-    },
-    [ID_SEEDS.BERRY]: {
-        label: "BERRY",
-        pack: ID_SEED_SHOP_ITEMS.BASIC_SEED,
-        category: ID_SEED_CATEGORIES.EPIC,
-        pos: 11,
-        yield: 200,
-        lockedReady: 300,
-    },
-    [ID_SEEDS.GRAPES]: {
-        label: "GRAPES",
-        pack: ID_SEED_SHOP_ITEMS.BASIC_SEED,
-        category: ID_SEED_CATEGORIES.LEGENDARY,
-        pos: 12,
-        yield: 540,
-        lockedReady: 810,
-    },
-    [ID_SEEDS.BANANA]: {
-        label: "BANANA",
-        pack: ID_SEED_SHOP_ITEMS.PREMIUM_SEED,
-        category: ID_SEED_CATEGORIES.COMMON,
-        pos: 13,
-        yield: 400,
-        lockedReady: 600,
-    },
-    [ID_SEEDS.MANGO]: {
-        label: "MANGO",
-        pack: ID_SEED_SHOP_ITEMS.PREMIUM_SEED,
-        category: ID_SEED_CATEGORIES.COMMON,
-        pos: 14,
-        yield: 400,
-        lockedReady: 600,
-    },
-    [ID_SEEDS.AVOCADO]: {
-        label: "AVOCADO",
-        pack: ID_SEED_SHOP_ITEMS.PREMIUM_SEED,
-        category: ID_SEED_CATEGORIES.COMMON,
-        pos: 15,
-        yield: 400,
-        lockedReady: 600,
-    },
-    [ID_SEEDS.PINEAPPLE]: {
-        label: "PINEAPPLE",
-        pack: ID_SEED_SHOP_ITEMS.PREMIUM_SEED,
-        category: ID_SEED_CATEGORIES.UNCOMMON,
-        pos: 16,
-        yield: 720,
-        lockedReady: 1080,
-    },
-    [ID_SEEDS.BLUEBERRY]: {
-        label: "BLUEBERRY",
-        pack: ID_SEED_SHOP_ITEMS.PREMIUM_SEED,
-        category: ID_SEED_CATEGORIES.UNCOMMON,
-        pos: 17,
-        yield: 720,
-        lockedReady: 1080,
-    },
-    [ID_SEEDS.ARTICHOKE]: {
-        label: "ARTICHOKE",
-        pack: ID_SEED_SHOP_ITEMS.PREMIUM_SEED,
-        category: ID_SEED_CATEGORIES.UNCOMMON,
-        pos: 18,
-        yield: 720,
-        lockedReady: 1080,
-    },
-    [ID_SEEDS.PAPAYA]: {
-        label: "PAPAYA",
-        pack: ID_SEED_SHOP_ITEMS.PREMIUM_SEED,
-        category: ID_SEED_CATEGORIES.RARE,
-        pos: 19,
-        yield: 960,
-        lockedReady: 1440,
-    },
-    [ID_SEEDS.FIG]: {
-        label: "FIG",
-        pack: ID_SEED_SHOP_ITEMS.PREMIUM_SEED,
-        category: ID_SEED_CATEGORIES.RARE,
-        pos: 20,
-        yield: 960,
-        lockedReady: 1440,
-    },
-    [ID_SEEDS.LICHI]: {
-        label: "LICHI",
-        pack: ID_SEED_SHOP_ITEMS.PREMIUM_SEED,
-        category: ID_SEED_CATEGORIES.EPIC,
-        pos: 21,
-        yield: 1600,
-        lockedReady: 2400,
-    },
-    [ID_SEEDS.LAVENDER]: {
-        label: "LAVENDER",
-        pack: ID_SEED_SHOP_ITEMS.PREMIUM_SEED,
-        category: ID_SEED_CATEGORIES.EPIC,
-        pos: 22,
-        yield: 1600,
-        lockedReady: 2400,
-    },
-    [ID_SEEDS.DRAGON_FRUIT]: {
-        label: "DRAGON_FRUIT",
-        pack: ID_SEED_SHOP_ITEMS.PREMIUM_SEED,
-        category: ID_SEED_CATEGORIES.LEGENDARY,
-        pos: 23,
-        yield: 4400,
-        lockedReady: 6600,
-    },
-    [ID_SEEDS.POTATO]: {
-        label: "POTATO",
-        pack: ID_SEED_SHOP_ITEMS.PICO_SEED,
-        category: ID_SEED_CATEGORIES.COMMON,
-        pos: 24,
-        yield: 10,
-        lockedReady: 15,
-    },
-    [ID_SEEDS.LETTUCE]: {
-        label: "LETTUCE",
-        pack: ID_SEED_SHOP_ITEMS.PICO_SEED,
-        category: ID_SEED_CATEGORIES.UNCOMMON,
-        pos: 25,
-        yield: 18,
-        lockedReady: 27,
-    },
-    [ID_SEEDS.CABBAGE]: {
-        label: "CABBAGE",
-        pack: ID_SEED_SHOP_ITEMS.PICO_SEED,
-        category: ID_SEED_CATEGORIES.RARE,
-        pos: 26,
-        yield: 24,
-        lockedReady: 36,
-    },
-    [ID_SEEDS.ONION]: {
-        label: "ONION",
-        pack: ID_SEED_SHOP_ITEMS.PICO_SEED,
-        category: ID_SEED_CATEGORIES.EPIC,
-        pos: 27,
-        yield: 40,
-        lockedReady: 60,
-    },
-    [ID_SEEDS.RADISH]: {
-        label: "RADISH",
-        pack: ID_SEED_SHOP_ITEMS.PICO_SEED,
-        category: ID_SEED_CATEGORIES.LEGENDARY,
-        pos: 28,
-        yield: 108,
-        lockedReady: 162,
-    },
-    [ID_SEEDS.F_POTATO]: {
-        label: "F.POTATO",
-        pack: ID_SEED_SHOP_ITEMS.FEEBLE_SEED,
-        category: ID_SEED_CATEGORIES.COMMON,
-        pos: 29,
-        yield: 0.5,
-        lockedReady: 0.75,
-    },
-    [ID_SEEDS.F_LETTUCE]: {
-        label: "F.LETTUCE",
-        pack: ID_SEED_SHOP_ITEMS.FEEBLE_SEED,
-        category: ID_SEED_CATEGORIES.UNCOMMON,
-        pos: 30,
-        yield: 0.9,
-        lockedReady: 1.35,
-    },
-    [ID_SEEDS.F_CABBAGE]: {
-        label: "F.CABBAGE",
-        pack: ID_SEED_SHOP_ITEMS.FEEBLE_SEED,
-        category: ID_SEED_CATEGORIES.RARE,
-        pos: 31,
-        yield: 1.2,
-        lockedReady: 1.8,
-    },
-    [ID_SEEDS.F_ONION]: {
-        label: "F.ONION",
-        pack: ID_SEED_SHOP_ITEMS.FEEBLE_SEED,
-        category: ID_SEED_CATEGORIES.EPIC,
-        pos: 32,
-        yield: 2,
-        lockedReady: 3,
-    },
-    [ID_SEEDS.F_RADISH]: {
-        label: "F.RADISH",
-        pack: ID_SEED_SHOP_ITEMS.FEEBLE_SEED,
-        category: ID_SEED_CATEGORIES.LEGENDARY,
-        pos: 33,
-        yield: 5.4,
-        lockedReady: 8.1,
-    },
-}
+// SEEDS removed in favor of ALL_ITEMS in item_all.js
 
 export const GROW_STATUS = {
     [-1]: "Newly Planted",

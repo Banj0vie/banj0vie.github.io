@@ -9,6 +9,7 @@ import Market from "./router/market.jsx";
 import {
   baseFrames,
   buttonFrames,
+  checkboxFrames,
   dialogFrames,
   profileAssets,
   sliderImages,
@@ -110,6 +111,14 @@ const App = () => {
     document.documentElement.style.setProperty(
       "--slider-bg",
       `url(${sliderImages.sliderBg})`
+    );
+    document.documentElement.style.setProperty(
+      "--checkbox-checked",
+      `url(${checkboxFrames.checked})`
+    );
+    document.documentElement.style.setProperty(
+      "--checkbox-unchecked",
+      `url(${checkboxFrames.unchecked})`
     );
   }, []);
 
