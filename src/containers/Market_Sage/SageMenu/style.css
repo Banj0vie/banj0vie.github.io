@@ -1,0 +1,7 @@
+.sage-menu-wrapper {
+    width: 220px;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}

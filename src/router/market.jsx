@@ -8,6 +8,7 @@ import BankerDialog from "../containers/Market_Banker";
 import { ID_MARKET_HOTSPOTS } from "../constants/app_ids";
 import MarketPlaceDialog from "../containers/Market_Marketplace";
 import LeaderboardDialog from "../containers/Market_Leaderboard";
+import SageDialog from "../containers/Market_Sage";
 
 const Market = () => {
   const { width, height } = MARKET_VIEWPORT;
@@ -40,6 +41,11 @@ const Market = () => {
       component: LeaderboardDialog,
       label: "LEADERBOARD",
       header: dialogFrames.modalHeaderTrophy,
+    },
+    {
+      id: ID_MARKET_HOTSPOTS.SAGE,
+      component: SageDialog,
+      label: "SAGE",
     },
   ];
 
