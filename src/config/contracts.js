@@ -4,16 +4,17 @@
 export const CONTRACT_ADDRESSES = {
   // Abstract Testnet (Chain ID: 11124)
   ABSTRACT_TESTNET: {
-    GAME_REGISTRY: "0x26CA4D0Fd43cd35A4bA7FcF4eF060693aCd1CF91",
-    YIELD_TOKEN: "0xB662E078FdF362A504377Bc4C4F60017F9b5ef48",
-    ITEMS_1155: "0xb544aeF440A9f5FD41aaad8fD99046375AB8c735",
-    PLAYER_STORE: "0xf43646Fb1Ef0CAB22C1296B24d030dafeeD42F02",
-    RNG_HUB: "0x8c479F74F3B58766E2d4ff73E7957Daf1144f14D",
-    BANKER: "0x45210e63dD3fF638690fC8f69384F8873Ca9F8f3",
-    FARMING: "0xfCBf096a96D6e3cdDC1E82044Ab065601CD51ead",
-    VENDOR: "0x7925e24a5230eF313fD9a7ed30A2728Def287F09",
-    SAGE: "0x78596D79A691E294dA2D0393E4e1BCaDb4F9278b",
-    DEX: "0xCa8189D9dEc8035B0f219e99DE6b91f5Bc0e2178",
+    GAME_REGISTRY: "0xd1bFA43120B203176ad86f2E3694d944dcd09375",
+    YIELD_TOKEN: "0xd2F979c17D19e792b30fF164e12Ba853AF089404",
+    ITEMS_1155: "0x24f1eB0D4284a01CafFad1d923d4030A870AaBa3",
+    PLAYER_STORE: "0xEd5214ba9AA47fD5583BA99E077b41dA67f321D4",
+    RNG_HUB: "0x18c10E8CAd2095a41B27Dc98C01fbb9B2947A167",
+    BANKER: "0xa9Cd984166aab3ed67C64A983C32BF7D5cc3CCfB",
+    FARMING: "0xEDF24B728417e7387582Ca9c41f16C3B3BB785F7",
+    VENDOR: "0xA164614bb6063115bec06E0a5217F678cD183063",
+    SAGE: "0x305e49C1Cf818Acd93b409B1790d0441Db524Ee5",
+    DEX: "0x7bD77ef86f90E06462ff72b49687Cda0eCEAB3FB",
+    GARDENER: "0x81f4B77E7A485bE5F7a44469DE078A0ab482B71E",
   }
 };
 
@@ -175,13 +176,13 @@ export const CONTRACT_ABIS = {
   //   "function setVrngSystem(address vrngSystem)"
   // ],
 
-  // GARDENER: [
-  //   "function levelUp(uint16 targetLevel)",
-  //   "function priceForLevel(uint16) view returns (uint256)",
-  //   "function maxLevel() view returns (uint16)",
-  //   "function setPrice(uint16 level, uint256 price)",
-  //   "function setMaxLevel(uint16 m)"
-  // ],
+  GARDENER: [
+    "function levelUp(uint16 targetLevel)",
+    "function priceForLevel(uint16) view returns (uint256)",
+    "function maxLevel() view returns (uint16)",
+    "function setPrice(uint16 level, uint256 price)",
+    "function setMaxLevel(uint16 m)"
+  ],
 
   // P2P_MARKET: [
   //   "function list(uint256 id, uint256 amount, uint256 pricePer) returns (uint256 lid)",

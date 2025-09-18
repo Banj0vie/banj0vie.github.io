@@ -13,7 +13,7 @@ import { useNotification } from "../../contexts/NotificationContext";
 import { ethers } from "ethers";
 const DexDialog = ({ onClose, label = "DEX", header = "" }) => {
   const { isConnected } = useWeb3();
-  const { swapETHForYield, getYieldAmount, loading, error } = useDex();
+  const { swapETHForYield, getYieldAmount, ethBalance, readyBalance, fetchBalances, loading, error } = useDex();
   
   const [isReversed, setIsReversed] = useState(false);
   const [swapInfo, setSwapInfo] = useState([]);
@@ -66,11 +66,21 @@ const DexDialog = ({ onClose, label = "DEX", header = "" }) => {
         showNotification('Swap successful! Check your Ready token balance.', 'success');
         setEthAmount('');
         setReadyAmount('0');
+        // Refresh balances after successful swap
+        await fetchBalances();
       }
     } catch (err) {
       console.error('Failed to swap:', err);
       showNotification(`Swap failed: ${err?.message || 'Unknown error'}`, 'error');
     }
+  };
+
+  const handleEthBalanceClick = (balance) => {
+    setEthAmount(balance);
+  };
+
+  const handleReadyBalanceClick = (balance) => {
+    setReadyAmount(balance);
   };
 
   useEffect(() => {
@@ -91,9 +101,10 @@ const DexDialog = ({ onClose, label = "DEX", header = "" }) => {
         >
           <TokenInputRow 
             token={"ETH"} 
-            balance={"0.00"} 
+            balance={ethBalance} 
             value={ethAmount}
             onChange={setEthAmount}
+            onBalanceClick={handleEthBalanceClick}
             disabled={loading}
           />
           <ExchangeButton
@@ -103,8 +114,9 @@ const DexDialog = ({ onClose, label = "DEX", header = "" }) => {
           ></ExchangeButton>
           <TokenInputRow 
             token={"Ready"} 
-            balance={isCalculating ? "Calculating..." : readyAmount}
+            balance={isCalculating ? "Calculating..." : readyBalance}
             value={readyAmount}
+            onBalanceClick={handleReadyBalanceClick}
             readOnly={true}
             disabled={true}
           />

@@ -27,6 +27,7 @@ const Farm = () => {
     getMaxPlots,
     getCrop,
     getGrowthTime,
+    loading: farmingLoading,
   } = useFarming(contracts);
   const { show } = useNotification();
   const [isFarmMenu, setIsFarmMenu] = useState(false);
@@ -912,6 +913,7 @@ const Farm = () => {
           onHarvest={handleHarvest}
           onPlantAll={plantAll}
           selectedSeed={selectedSeed}
+          loading={farmingLoading}
         />
       )}
       {isSelectCropDialog && (

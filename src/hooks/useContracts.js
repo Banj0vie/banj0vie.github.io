@@ -714,8 +714,11 @@ export const useBanker = () => {
 // Hook for DEX contract interactions
 export const useDex = () => {
   const { contracts } = useContracts();
+  const { account, provider } = useWeb3();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [ethBalance, setEthBalance] = useState('0.00');
+  const [readyBalance, setReadyBalance] = useState('0.00');
 
   const swapETHForYield = useCallback(async (ethAmount) => {
     if (!contracts.dex) {
@@ -758,9 +761,53 @@ export const useDex = () => {
     }
   }, [contracts.dex]);
 
+  // Fetch ETH balance
+  const fetchEthBalance = useCallback(async () => {
+    if (!account || !provider) return;
+
+    try {
+      const balance = await provider.getBalance(account);
+      const ethBalance = parseFloat(ethers.formatEther(balance));
+      setEthBalance(ethBalance.toFixed(2));
+    } catch (err) {
+      console.error('Failed to fetch ETH balance:', err);
+      setEthBalance('0.00');
+    }
+  }, [account, provider]);
+
+  // Fetch Ready token balance
+  const fetchReadyBalance = useCallback(async () => {
+    if (!account || !contracts.yield_token) return;
+
+    try {
+      const balance = await contracts.yield_token.balanceOf(account);
+      const readyBalance = parseFloat(ethers.formatEther(balance));
+      setReadyBalance(readyBalance.toFixed(2));
+    } catch (err) {
+      console.error('Failed to fetch Ready balance:', err);
+      setReadyBalance('0.00');
+    }
+  }, [account, contracts.yield_token]);
+
+  // Fetch both balances
+  const fetchBalances = useCallback(async () => {
+    await Promise.all([
+      fetchEthBalance(),
+      fetchReadyBalance()
+    ]);
+  }, [fetchEthBalance, fetchReadyBalance]);
+
+  // Auto-fetch balances when dependencies change
+  useEffect(() => {
+    fetchBalances();
+  }, [fetchBalances]);
+
   return {
     swapETHForYield,
     getYieldAmount,
+    ethBalance,
+    readyBalance,
+    fetchBalances,
     loading,
     error
   };
@@ -817,7 +864,7 @@ export const useLeaderboard = (epoch = null) => {
                   rank: i + 1,
                   name: username,
                   address: address,
-                  score: parseFloat(xp.toString()) / 1e18
+                  score: parseFloat(xp.toString())
                 });
               } catch (err) {
                 console.log(`Failed to get profile for address ${address}:`, err);
@@ -873,7 +920,7 @@ export const useLeaderboard = (epoch = null) => {
                     rank: i + 1,
                     name: username,
                     address: address,
-                    score: parseFloat(xp.toString()) / 1e18
+                    score: parseFloat(xp.toString())
                   });
                 } catch (err) {
                   console.log(`Failed to get profile for address ${address}:`, err);
@@ -924,7 +971,7 @@ export const useLeaderboard = (epoch = null) => {
       if (account && contracts.player_store) {
         try {
           const userXp = await contracts.player_store.xpOf(account);
-          setUserScore(parseFloat(userXp.toString()) / 1e18);
+          setUserScore(parseFloat(userXp.toString()));
         } catch (err) {
           console.log('Could not fetch user XP:', err);
           setUserScore(0);
@@ -1148,6 +1195,94 @@ export const useSage = () => {
     getTimeUntilNextHarvestUnlock,
     loading,
     error
+  };
+};
+
+// Hook for Gardener contract interactions
+export const useGardener = () => {
+  const { contracts } = useContracts();
+  const { account } = useWeb3();
+  const [gardenerData, setGardenerData] = useState({
+    currentLevel: 0,
+    maxLevel: 50,
+    levelUpCost: 0,
+    canLevelUp: false,
+    loading: false,
+    error: null
+  });
+
+  const fetchGardenerData = useCallback(async () => {
+    if (!contracts.gardener || !contracts.player_store || !contracts.game_token || !account) return;
+
+    setGardenerData(prev => ({ ...prev, loading: true, error: null }));
+
+    try {
+      // Get current player level
+      const [, currentLevel] = await contracts.player_store.profileOf(account);
+      
+      // Get max level from gardener contract
+      const maxLevel = await contracts.gardener.maxLevel();
+      
+      // Calculate cost to level up to next level
+      let levelUpCost = 0;
+      if (currentLevel < maxLevel) {
+        levelUpCost = await contracts.gardener.priceForLevel(Number(currentLevel) + 1);
+      }
+
+      // Check if player can afford to level up
+      const gameTokenBalance = await contracts.game_token.balanceOf(account);
+      const canLevelUp = currentLevel < maxLevel && gameTokenBalance >= levelUpCost;
+
+      setGardenerData({
+        currentLevel: Number(currentLevel),
+        maxLevel: Number(maxLevel),
+        levelUpCost: parseFloat(ethers.formatEther(levelUpCost)),
+        canLevelUp,
+        loading: false,
+        error: null
+      });
+    } catch (err) {
+      console.error('Failed to fetch Gardener data:', err);
+      setGardenerData(prev => ({
+        ...prev,
+        loading: false,
+        error: err.message
+      }));
+    }
+  }, [contracts.gardener, contracts.player_store, contracts.game_token, account]);
+
+  const levelUp = useCallback(async (targetLevel) => {
+    if (!contracts.gardener || !account) return;
+
+    setGardenerData(prev => ({ ...prev, loading: true, error: null }));
+
+    try {
+      const tx = await contracts.gardener.levelUp(targetLevel);
+      await tx.wait();
+
+      // Refresh data after successful level up
+      await fetchGardenerData();
+      return tx;
+    } catch (err) {
+      console.error('Failed to level up:', err);
+      setGardenerData(prev => ({
+        ...prev,
+        loading: false,
+        error: err.message
+      }));
+      throw err;
+    }
+  }, [contracts.gardener, account, fetchGardenerData]);
+
+  // Fetch data on mount and when dependencies change
+  useEffect(() => {
+    fetchGardenerData();
+  }, [fetchGardenerData]);
+
+  return {
+    ...gardenerData,
+    levelUp,
+    fetchGardenerData
   };
 };
 

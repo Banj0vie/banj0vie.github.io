@@ -110,6 +110,11 @@ const StakeReady = ({ onBack }) => {
     }
   }, [amount, readyBalance, stake, show, loadBalances]);
 
+  // Handle balance click to fill input
+  const handleBalanceClick = useCallback((balance) => {
+    setAmount(balance);
+  }, []);
+
   // Handle withdraw (unstake)
   const onWithdraw = useCallback(async () => {
     if (!amount || amount === "0") {
@@ -169,6 +174,12 @@ const StakeReady = ({ onBack }) => {
           ]
     );
   }, [isStaking, ratio, xReadyBalance, readyBalance, estRewards]);
+
+  // Clear input when switching between stake/unstake
+  useEffect(() => {
+    setAmount("0");
+  }, [isStaking]);
+
   return (
     <div className="stake-ready">
       <div className="stake-unstake-buttons">
@@ -190,6 +201,7 @@ const StakeReady = ({ onBack }) => {
         token={isStaking ? "Ready" : "XReady"}
         value={amount}
         onChange={setAmount}
+        onBalanceClick={handleBalanceClick}
       ></TokenInputRow>
       <CardListView data={data}></CardListView>
       <BaseButton

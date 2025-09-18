@@ -18,10 +18,7 @@ const LeaderboardDialog = ({ onClose, label = "LEADERBOARD", header = "" }) => {
     currentEpoch,
     fetchLeaderboardData,
     advanceEpoch,
-    loading,
-    error
-  } = useLeaderboard();
-  const [isTimer, setIsTimer] = useState(true);
+    loading  } = useLeaderboard();
   const [remainedTime, setRemainedTime] = useState(0);
   const [selectedEpoch, setSelectedEpoch] = useState(null);
   const [isRewardDlg, setIsRewardDlg] = useState(false);
