@@ -33,12 +33,45 @@ const TreeInput = ({ onBack, onSelect }) => {
   const toggleCheck = (node, isChecked) => {
     setChecked((s) => {
       const next = new Set(s);
-      const walk = (n, val) => {
-        if (val) next.add(n.id);
-        else next.delete(n.id);
-        if (n.children) n.children.forEach((c) => walk(c, val));
-      };
-      walk(node, isChecked);
+      
+      if (node.id === "ALL") {
+        // For "All" category, select/deselect all items
+        if (!itemsTree || itemsTree.length === 0) return s;
+        
+        const walk = (n) => {
+          if (n.items && n.items.length > 0) {
+            n.items.forEach(item => {
+              if (isChecked) next.add(item.id);
+              else next.delete(item.id);
+            });
+          } else if (!n.children && n.count !== undefined) {
+            if (isChecked) next.add(n.id);
+            else next.delete(n.id);
+          }
+          if (n.children) n.children.forEach((c) => walk(c));
+        };
+        itemsTree.forEach(walk);
+      } else {
+        // For other categories, use the existing logic
+        const walk = (n, val) => {
+          // If this node has items array (category nodes with user items), collect their IDs
+          if (n.items && n.items.length > 0) {
+            n.items.forEach(item => {
+              if (val) next.add(item.id);
+              else next.delete(item.id);
+            });
+          }
+          // If this is a leaf node with count (individual item), use its ID
+          else if (!n.children && n.count !== undefined) {
+            if (val) next.add(n.id);
+            else next.delete(n.id);
+          }
+          // For category nodes, recursively process children
+          if (n.children) n.children.forEach((c) => walk(c, val));
+        };
+        walk(node, isChecked);
+      }
+      
       return next;
     });
   };
@@ -48,6 +81,7 @@ const TreeInput = ({ onBack, onSelect }) => {
     setExpanded(new Set());
     setChecked(new Set());
   };
+
 
   const filtered = useMemo(() => {
     if (!itemsTree || loading) return [];
@@ -72,14 +106,45 @@ const TreeInput = ({ onBack, onSelect }) => {
     return itemsTree.map(filterNode).filter(Boolean);
   }, [search, itemsTree, loading]);
 
+  const isNodeChecked = (node) => {
+    if (node.id === "ALL") {
+      // For "All" category, check if all available items are selected
+      if (!itemsTree || itemsTree.length === 0) return false;
+      
+      const getAllItemIds = () => {
+        const allIds = new Set();
+        const walk = (n) => {
+          if (n.items && n.items.length > 0) {
+            n.items.forEach(item => allIds.add(item.id));
+          } else if (!n.children && n.count !== undefined) {
+            allIds.add(n.id);
+          }
+          if (n.children) n.children.forEach((c) => walk(c));
+        };
+        itemsTree.forEach(walk);
+        return allIds;
+      };
+      
+      const allItemIds = getAllItemIds();
+      return allItemIds.size > 0 && Array.from(allItemIds).every(id => checked.has(id));
+    } else if (node.items && node.items.length > 0) {
+      // For category nodes, check if any items are selected
+      return node.items.some(item => checked.has(item.id));
+    } else if (!node.children && node.count !== undefined) {
+      // For leaf nodes, check if the node itself is selected
+      return checked.has(node.id);
+    }
+    return false;
+  };
+
   const renderNode = (node, level = 0) => {
     const isExpanded = expanded.has(node.id);
-    const isChecked = checked.has(node.id);
     const hasChildren = node.children && node.children.length > 0;
+    const isChecked = isNodeChecked(node);
     return (
       <div
         className="tree-node"
-        key={node.id}
+        key={`${node.id}-${level}`}
         style={search.length > 0 ? {} : { paddingLeft: `${level * 12}px` }}
       >
         {(search.length === 0 || (search.length > 0 && !hasChildren)) && (

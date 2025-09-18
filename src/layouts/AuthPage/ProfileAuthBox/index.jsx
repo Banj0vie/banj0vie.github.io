@@ -20,7 +20,7 @@ const ProfileAuthBox = ({ onCreateProfile }) => {
     }
 
     try {
-      await createProfile(username.trim());
+      await createProfile(username.trim(), referralCode.trim());
       onCreateProfile(username.trim(), referralCode.trim());
     } catch (err) {
       console.error("Failed to create profile:", err);

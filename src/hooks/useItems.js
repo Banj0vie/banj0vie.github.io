@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useContracts } from './useContracts';
 import { useWeb3 } from '../contexts/Web3Context';
-import { ID_SEEDS, ID_PRODUCE_ITEMS, ID_BAIT_ITEMS, ID_FISH_ITEMS, ID_CHEST_ITEMS, ID_POTION_ITEMS, ID_CROP_CATEGORIES, ID_ITEM_CATEGORIES, ID_POTION_CATEGORIES, ID_POTIONS, ID_LOOT_CATEGORIES, ID_LOOTS } from '../constants/app_ids';
-import { ALL_ITEMS } from '../constants/item_data';
+import { ID_SEEDS, ID_PRODUCE_ITEMS, ID_BAIT_ITEMS, ID_FISH_ITEMS, ID_CHEST_ITEMS, ID_POTION_ITEMS, ID_CROP_CATEGORIES, ID_ITEM_CATEGORIES, ID_POTION_CATEGORIES, ID_POTIONS, ID_LOOT_CATEGORIES, ID_LOOTS, ID_RARE_TYPE } from '../constants/app_ids';
+import { ALL_ITEMS, IMAGE_URL_CROP } from '../constants/item_data';
 
 export const useItems = () => {
   const { contracts, isReady } = useContracts();
@@ -20,7 +20,6 @@ export const useItems = () => {
     ...Object.values(ID_CHEST_ITEMS),
     ...Object.values(ID_POTION_ITEMS),
   ], []);
-
   useEffect(() => {
     const fetchItems = async () => {
       if (!contracts.items_1155 || !account || !isReady) {
@@ -39,7 +38,6 @@ export const useItems = () => {
         const itemIdStrings = allItemIds.map(id => id.toString());
         // Fetch balances for all items at once
         const balances = await contracts.items_1155.balanceOfBatch(addresses, itemIdStrings);
-                
         // Filter out items with zero balance and map to item objects
         const userItems = [];
         balances.forEach((balance, index) => {
@@ -48,16 +46,68 @@ export const useItems = () => {
           if (balanceNum > 0) {
             const itemId = allItemIds[index];
             const itemData = ALL_ITEMS[itemId];
+            
             if (itemData) {
+              // Item exists in ALL_ITEMS, use its data
               userItems.push({
                 id: itemId,
                 count: balanceNum,
                 ...itemData
               });
+            } else {
+              // Item doesn't exist in ALL_ITEMS, create proper category structure
+              let category, subCategory;
+              
+              // Determine category and subcategory based on item ID or label
+              if (Object.values(ID_CHEST_ITEMS).includes(itemId)) {
+                category = ID_ITEM_CATEGORIES.LOOT;
+                subCategory = ID_LOOT_CATEGORIES.CHEST;
+              } else if (Object.values(ID_POTION_ITEMS).includes(itemId)) {
+                category = ID_ITEM_CATEGORIES.POTION;
+                // Determine potion subcategory based on the specific potion
+                if (itemId === ID_POTION_ITEMS.POTION_FERTILIZER) {
+                  subCategory = ID_POTION_CATEGORIES.FERTILIZER;
+                } else if (itemId === ID_POTION_ITEMS.POTION_GROWTH_ELIXIR) {
+                  subCategory = ID_POTION_CATEGORIES.GROWTH_ELIXIR;
+                } else if (itemId === ID_POTION_ITEMS.POTION_PESTICIDE) {
+                  subCategory = ID_POTION_CATEGORIES.PESTICIDE;
+                }
+              } else {
+                // Fallback for unknown items
+                category = ID_ITEM_CATEGORIES.LOOT;
+                subCategory = ID_LOOT_CATEGORIES.MISC;
+              }
+              
+              // Get proper label from constants
+              let label = itemId.toString();
+              if (Object.values(ID_CHEST_ITEMS).includes(itemId)) {
+                // Find the chest label from ID_CHEST_ITEMS
+                const chestEntry = Object.entries(ID_CHEST_ITEMS).find(([key, value]) => value === itemId);
+                if (chestEntry) {
+                  label = chestEntry[0]; // Use the key as label (e.g., "CHEST_WOOD")
+                }
+              } else if (Object.values(ID_POTION_ITEMS).includes(itemId)) {
+                // Find the potion label from ID_POTION_ITEMS
+                const potionEntry = Object.entries(ID_POTION_ITEMS).find(([key, value]) => value === itemId);
+                if (potionEntry) {
+                  label = potionEntry[0]; // Use the key as label (e.g., "POTION_FERTILIZER")
+                }
+              }
+              
+              // Create item data with proper categories
+              userItems.push({
+                id: itemId,
+                count: balanceNum,
+                category,
+                subCategory,
+                label,
+                type: ID_RARE_TYPE.COMMON,
+                image: IMAGE_URL_CROP,
+                pos: 0
+              });
             }
           }
         });
-
         setItems(userItems);
       } catch (err) {
         console.error('Failed to fetch items:', err);
@@ -85,6 +135,46 @@ export const useItems = () => {
               // Only include produce items, exclude seeds
               return item.category === ID_ITEM_CATEGORIES.PRODUCE;
             }
+            
+            // Handle potion items
+            if (node.id === ID_ITEM_CATEGORIES.POTION) {
+              return item.category === ID_ITEM_CATEGORIES.POTION;
+            }
+            
+            // Handle loot items (including chests with undefined category)
+            if (node.id === ID_ITEM_CATEGORIES.LOOT) {
+              // Include items with loot category or undefined category (like chests)
+              return item.category === ID_ITEM_CATEGORIES.LOOT || 
+                     item.category === undefined ||
+                     item.label?.includes('CHEST');
+            }
+            
+            // Handle crop subcategories (for crops that are organized by seed tier)
+            if (node.id === ID_CROP_CATEGORIES.PREMIUM_SEED || 
+                node.id === ID_CROP_CATEGORIES.BASIC_SEED || 
+                node.id === ID_CROP_CATEGORIES.PICO_SEED || 
+                node.id === ID_CROP_CATEGORIES.FEEBLE_SEED) {
+              // For crop subcategories, we need to match produce items that belong to this seed tier
+              // This is a bit tricky since produce items don't have subcategory, so we'll match by ID ranges
+              const tierItems = node.children?.map(child => child.id) || [];
+              return tierItems.includes(item.id);
+            }
+            
+            // Handle potion subcategories
+            if (node.id === ID_POTION_CATEGORIES.GROWTH_ELIXIR ||
+                node.id === ID_POTION_CATEGORIES.FERTILIZER ||
+                node.id === ID_POTION_CATEGORIES.PESTICIDE) {
+              return item.subCategory === node.id;
+            }
+            
+            // Handle loot subcategories
+            if (node.id === ID_LOOT_CATEGORIES.CHEST ||
+                node.id === ID_LOOT_CATEGORIES.BAIT ||
+                node.id === ID_LOOT_CATEGORIES.FISH ||
+                node.id === ID_LOOT_CATEGORIES.MISC) {
+              return item.subCategory === node.id;
+            }
+            
             return item.category === node.id;
           });
           
@@ -94,8 +184,17 @@ export const useItems = () => {
             items: categoryItems.length > 0 ? categoryItems : undefined
           };
         } else {
-          // This is a leaf node (individual item)
-          const userItem = userItems.find(item => item.id === node.id);
+          // This is a leaf node (individual item) - find by ID or label match
+          const userItem = userItems.find(item => {
+            // First try exact ID match
+            if (item.id === node.id) return true;
+            
+            // If no ID match, try label match for items with undefined IDs
+            if (item.label && node.label && item.label === node.label) return true;
+            
+            return false;
+          });
+          
           return {
             ...node,
             ...userItem,
@@ -117,7 +216,7 @@ export const useItems = () => {
             children: [
               {
                 id: ID_CROP_CATEGORIES.PICO_SEED,
-                label: "Pico",
+                label: "Pico Crops",
                 children: [
                   { id: ID_PRODUCE_ITEMS.POTATO, label: "Potato" },
                   { id: ID_PRODUCE_ITEMS.LETTUCE, label: "Lettuce" },
@@ -128,7 +227,7 @@ export const useItems = () => {
               },
               {
                 id: ID_CROP_CATEGORIES.BASIC_SEED,
-                label: "Basic",
+                label: "Basic Crops",
                 children: [
                   { id: ID_PRODUCE_ITEMS.WHEAT, label: "Wheat" },
                   { id: ID_PRODUCE_ITEMS.TOMATO, label: "Tomato" },
@@ -146,7 +245,7 @@ export const useItems = () => {
               },
               {
                 id: ID_CROP_CATEGORIES.PREMIUM_SEED,
-                label: "Premium",
+                label: "Premium Crops",
                 children: [
                   { id: ID_PRODUCE_ITEMS.BANANA, label: "Banana" },
                   { id: ID_PRODUCE_ITEMS.MANGO, label: "Mango" },

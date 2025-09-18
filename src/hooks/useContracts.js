@@ -1204,7 +1204,7 @@ export const useGardener = () => {
   const { account } = useWeb3();
   const [gardenerData, setGardenerData] = useState({
     currentLevel: 0,
-    maxLevel: 50,
+    maxLevel: 15,
     levelUpCost: 0,
     canLevelUp: false,
     loading: false,
@@ -1235,7 +1235,7 @@ export const useGardener = () => {
 
       setGardenerData({
         currentLevel: Number(currentLevel),
-        maxLevel: Number(maxLevel),
+        maxLevel: 15,
         levelUpCost: parseFloat(ethers.formatEther(levelUpCost)),
         canLevelUp,
         loading: false,
@@ -1283,6 +1283,257 @@ export const useGardener = () => {
     ...gardenerData,
     levelUp,
     fetchGardenerData
+  };
+};
+
+// Hook for ChestOpener contract interactions
+export const useChestOpener = () => {
+  const { contracts } = useContracts();
+  const { account } = useWeb3();
+  const [chestData, setChestData] = useState({
+    nextChestTime: 0,
+    canClaim: false,
+    currentLevel: 0,
+    chestType: 'WOOD', // WOOD, BRONZE, SILVER, GOLD
+    loading: false,
+    error: null
+  });
+
+  const fetchChestData = useCallback(async () => {
+    if (!contracts.chest_opener || !contracts.player_store || !account) return;
+
+    setChestData(prev => ({ ...prev, loading: true, error: null }));
+
+    try {
+      // Get player profile to check level and next chest time
+      const [, currentLevel, nextChestTime] = await contracts.player_store.profileOf(account);
+      
+      // Determine chest type based on level
+      let chestType = 'WOOD';
+      if (currentLevel >= 15) {
+        chestType = 'GOLD';
+      } else if (currentLevel >= 10) {
+        chestType = 'SILVER';
+      } else if (currentLevel >= 5) {
+        chestType = 'BRONZE';
+      }
+
+      // Check if can claim (current time >= next chest time)
+      const now = Math.floor(Date.now() / 1000);
+      const canClaim = now >= Number(nextChestTime);
+
+      setChestData({
+        nextChestTime: Number(nextChestTime),
+        canClaim,
+        currentLevel: Number(currentLevel),
+        chestType,
+        loading: false,
+        error: null
+      });
+    } catch (err) {
+      console.error('Failed to fetch chest data:', err);
+      setChestData(prev => ({
+        ...prev,
+        loading: false,
+        error: err.message
+      }));
+    }
+  }, [contracts.chest_opener, contracts.player_store, account]);
+
+  const claimDailyChest = useCallback(async () => {
+    if (!contracts.chest_opener || !account) return;
+
+    setChestData(prev => ({ ...prev, loading: true, error: null }));
+
+    try {
+      const tx = await contracts.chest_opener.claimDailyChest();
+      await tx.wait();
+
+      // Refresh data after successful claim
+      await fetchChestData();
+      return tx;
+    } catch (err) {
+      console.error('Failed to claim daily chest:', err);
+      setChestData(prev => ({
+        ...prev,
+        loading: false,
+        error: err.message
+      }));
+      throw err;
+    }
+  }, [contracts.chest_opener, account, fetchChestData]);
+
+  const openChest = useCallback(async (chestId) => {
+    if (!contracts.chest_opener || !account) return;
+
+    setChestData(prev => ({ ...prev, loading: true, error: null }));
+
+    try {
+      const tx = await contracts.chest_opener.openChest(chestId);
+      await tx.wait();
+
+      return tx;
+    } catch (err) {
+      console.error('Failed to open chest:', err);
+      setChestData(prev => ({
+        ...prev,
+        loading: false,
+        error: err.message
+      }));
+      throw err;
+    }
+  }, [contracts.chest_opener, account]);
+
+  // Calculate time until next chest claim
+  const getTimeUntilNextChest = useCallback(() => {
+    const now = Math.floor(Date.now() / 1000);
+    const timeLeft = Math.max(0, chestData.nextChestTime - now);
+    return timeLeft * 1000; // Convert to milliseconds for consistency
+  }, [chestData.nextChestTime]);
+
+  // Fetch data on mount and when dependencies change
+  useEffect(() => {
+    fetchChestData();
+  }, [fetchChestData]);
+
+  return {
+    ...chestData,
+    claimDailyChest,
+    openChest,
+    getTimeUntilNextChest,
+    fetchChestData
+  };
+};
+
+// Hook for Referral system interactions
+export const useReferral = () => {
+  const { contracts } = useContracts();
+  const { account } = useWeb3();
+  const [referralData, setReferralData] = useState({
+    myReferralCode: null,
+    sponsor: null,
+    canRegisterCode: false,
+    referralBpsByLevel: {},
+    currentLevel: 0,
+    loading: false,
+    error: null
+  });
+
+  const fetchReferralData = useCallback(async () => {
+    if (!contracts.player_store || !account) return;
+
+    setReferralData(prev => ({ ...prev, loading: true, error: null }));
+
+    try {
+      // Get player profile to check level
+      const [, currentLevel] = await contracts.player_store.profileOf(account);
+      
+      // Get user's referral code
+      const myReferralCode = await contracts.player_store.getMyReferralCode(account);
+      
+      // Get user's sponsor
+      const sponsor = await contracts.player_store.getSponsor(account);
+      // Check if user can register a referral code (level > 5 and no existing code)
+      const canRegisterCode = currentLevel > 5 && myReferralCode === "0x0000000000000000000000000000000000000000000000000000000000000000";
+      
+      // Get referral rates for different levels
+      const referralBps = {};
+      for (let level = 0; level <= 15; level++) {
+        try {
+          const bps = await contracts.player_store.referralBpsByLevel(level);
+          referralBps[level] = Number(bps);
+        } catch (err) {
+          referralBps[level] = 0;
+        }
+      }
+
+      setReferralData({
+        myReferralCode: myReferralCode === "0x0000000000000000000000000000000000000000000000000000000000000000" ? null : myReferralCode,
+        sponsor: sponsor === "0x0000000000000000000000000000000000000000" ? null : sponsor,
+        canRegisterCode,
+        referralBpsByLevel: referralBps,
+        currentLevel: Number(currentLevel),
+        loading: false,
+        error: null
+      });
+    } catch (err) {
+      console.error('Failed to fetch referral data:', err);
+      setReferralData(prev => ({
+        ...prev,
+        loading: false,
+        error: err.message
+      }));
+    }
+  }, [contracts.player_store, account]);
+
+  const registerReferralCode = useCallback(async (code) => {
+    if (!contracts.player_store || !account) return;
+
+    setReferralData(prev => ({ ...prev, loading: true, error: null }));
+
+    try {
+      // Convert string to bytes32
+      const codeBytes32 = ethers.encodeBytes32String(code);
+      
+      const tx = await contracts.player_store.registerMyReferralCode(codeBytes32);
+      await tx.wait();
+
+      // Refresh data after successful registration
+      await fetchReferralData();
+      return tx;
+    } catch (err) {
+      console.error('Failed to register referral code:', err);
+      setReferralData(prev => ({
+        ...prev,
+        loading: false,
+        error: err.message
+      }));
+      throw err;
+    }
+  }, [contracts.player_store, account, fetchReferralData]);
+
+  const createProfileWithReferral = useCallback(async (name, referralCode = 0) => {
+    if (!contracts.player_store || !account) return;
+
+    setReferralData(prev => ({ ...prev, loading: true, error: null }));
+
+    try {
+      // Convert referralCode to bytes32 if it's a string, otherwise use as-is
+      let referralCodeBytes32 = "0x0000000000000000000000000000000000000000000000000000000000000000";
+      if (referralCode && referralCode !== 0) {
+        if (typeof referralCode === 'string') {
+          referralCodeBytes32 = ethers.encodeBytes32String(referralCode);
+        } else {
+          referralCodeBytes32 = referralCode;
+        }
+      }
+      const tx = await contracts.player_store.createProfile(name, referralCodeBytes32);
+      await tx.wait();
+
+      // Refresh data after successful profile creation
+      await fetchReferralData();
+      return tx;
+    } catch (err) {
+      console.error('Failed to create profile with referral:', err);
+      setReferralData(prev => ({
+        ...prev,
+        loading: false,
+        error: err.message
+      }));
+      throw err;
+    }
+  }, [contracts.player_store, account, fetchReferralData]);
+
+  // Fetch data on mount and when dependencies change
+  useEffect(() => {
+    fetchReferralData();
+  }, [fetchReferralData]);
+
+  return {
+    ...referralData,
+    registerReferralCode,
+    createProfileWithReferral,
+    fetchReferralData
   };
 };
 

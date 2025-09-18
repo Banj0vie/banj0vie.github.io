@@ -4,17 +4,21 @@
 export const CONTRACT_ADDRESSES = {
   // Abstract Testnet (Chain ID: 11124)
   ABSTRACT_TESTNET: {
-    GAME_REGISTRY: "0xd1bFA43120B203176ad86f2E3694d944dcd09375",
-    YIELD_TOKEN: "0xd2F979c17D19e792b30fF164e12Ba853AF089404",
-    ITEMS_1155: "0x24f1eB0D4284a01CafFad1d923d4030A870AaBa3",
-    PLAYER_STORE: "0xEd5214ba9AA47fD5583BA99E077b41dA67f321D4",
-    RNG_HUB: "0x18c10E8CAd2095a41B27Dc98C01fbb9B2947A167",
-    BANKER: "0xa9Cd984166aab3ed67C64A983C32BF7D5cc3CCfB",
-    FARMING: "0xEDF24B728417e7387582Ca9c41f16C3B3BB785F7",
-    VENDOR: "0xA164614bb6063115bec06E0a5217F678cD183063",
-    SAGE: "0x305e49C1Cf818Acd93b409B1790d0441Db524Ee5",
-    DEX: "0x7bD77ef86f90E06462ff72b49687Cda0eCEAB3FB",
-    GARDENER: "0x81f4B77E7A485bE5F7a44469DE078A0ab482B71E",
+    GAME_REGISTRY: "0x6e9E9AE1D9244CA2FAD9f60c1725fEeE89E7F773", 
+    YIELD_TOKEN: "0xAf7C34AA7698b21e63602cb9316a28089529b0b5",   
+    ITEMS_1155: "0xA47F3DEEE416B5612ee9aaE9ECD83598857bE266",    
+    PLAYER_STORE: "0x24139dE3205f20178552A2c6dB12C648646aD2A2",  
+    RNG_HUB: "0x3b290C1386fC924D3574a05a33fCA91da0333309",       
+    BANKER: "0x8176108a63170461c54BFDF0a1767839afdA9786",        
+    FARMING: "0xC0074e112703e3465fc4D4EF7EeE266DB9E483E7",       
+    VENDOR: "0xcf6a6a39eaf3A386b4A5E6B8F9C448482a46Ce69",        
+    SAGE: "0x1D5ab9cd019aa218c2135e7E0FAAdA452561b806",
+    DEX: "0xE83FbD852883e46403E7983dc330f142B6C029C3",
+    GARDENER: "0x86F5dd38b3b7d04AEC6368F42190EAC00a3A1001",      
+    FISHING: "0xc5586e10343Ae74F15E84767195279b0182D13b6",       
+    CHEST_OPENER: "0x421EaE5C77Ff474B5CDaA2C2abb68537006c66b2",  
+    LEADERBOARD: "0xCC92D8746418852e0F3e805C11565456285D8D14",   
+  
   }
 };
 
@@ -114,7 +118,7 @@ export const CONTRACT_ABIS = {
   ],
 
   PLAYER_STORE: [
-    "function createProfile(string calldata name)",
+    "function createProfile(string calldata name, bytes32 referralCode)",
     "function profileOf(address) view returns (bool exists, uint16 level, uint64 nextChestAt, uint64 nextFishAt)",
     "function xpOf(address) view returns (uint256)",
     "function addXp(address, uint256)",
@@ -131,7 +135,14 @@ export const CONTRACT_ABIS = {
     "function getEpochTop5(uint64 epoch) view returns (address[5] memory top5Players, uint256[5] memory top5XpAmounts, uint64 epochNumber, uint64 timestamp)",
     "function getEpochTop5Player(uint64 epoch, uint256 position) view returns (address, uint256)",
     "function advanceEpochIfNeeded()",
-    "function gameEpoch() view returns (uint64)"
+    "function gameEpoch() view returns (uint64)",
+    // Referral system functions
+    "function registerMyReferralCode(bytes32 myCode)",
+    "function getMyReferralCode(address user) view returns (bytes32)",
+    "function getSponsor(address user) view returns (address)",
+    "function referralBpsByLevel(uint16) view returns (uint16)",
+    "function setGameToken(address token)",
+    "function setReferralBpsForLevel(uint16 level, uint16 bps)"
   ],
 
   ITEMS_1155: [
@@ -182,6 +193,12 @@ export const CONTRACT_ABIS = {
     "function maxLevel() view returns (uint16)",
     "function setPrice(uint16 level, uint256 price)",
     "function setMaxLevel(uint16 m)"
+  ],
+
+  CHEST_OPENER: [
+    "function claimDailyChest()",
+    "function openChest(uint256 chestId)",
+    "function setVrngSystem(address vrngSystem)"
   ],
 
   // P2P_MARKET: [

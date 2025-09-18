@@ -1,4 +1,4 @@
-import { baitImages, potionImages } from "./_baseimages";
+import { baitImages } from "./_baseimages";
 import { ID_SEEDS, ID_PRODUCE_ITEMS, ID_BAIT_ITEMS, ID_FISH_ITEMS, ID_CHEST_ITEMS, ID_POTION_ITEMS, ID_CROP_CATEGORIES, ID_RARE_TYPE, ID_ITEM_CATEGORIES, ID_POTION_CATEGORIES, ID_POTIONS, ID_LOOT_CATEGORIES, ID_LOOTS } from "./app_ids";
 
 export const IMAGE_URL_CROP = "/public/images/crops/seeds.png";
@@ -725,33 +725,60 @@ export const ALL_ITEMS = {
   // Chest items
   [ID_CHEST_ITEMS.CHEST_WOOD]: {
     label: "CHEST_WOOD",
-    category: ID_ITEM_CATEGORIES.CHEST,
+    category: ID_ITEM_CATEGORIES.LOOT,
+    subCategory: ID_LOOT_CATEGORIES.CHEST,
+    type: ID_RARE_TYPE.COMMON,
+    image: "chest", // Special identifier for CSS-generated chest
+    pos: 0, // Wood chest
+    ready: 0,
+    lockedReady: 0,
   },
   [ID_CHEST_ITEMS.CHEST_BRONZE]: {
     label: "CHEST_BRONZE",
-    category: ID_ITEM_CATEGORIES.CHEST,
+    category: ID_ITEM_CATEGORIES.LOOT,
+    subCategory: ID_LOOT_CATEGORIES.CHEST,
+    type: ID_RARE_TYPE.UNCOMMON,
+    image: "chest", // Special identifier for CSS-generated chest
+    pos: 1, // Bronze chest
+    ready: 0,
+    lockedReady: 0,
   },
   [ID_CHEST_ITEMS.CHEST_SILVER]: {
     label: "CHEST_SILVER",
-    category: ID_ITEM_CATEGORIES.CHEST,
+    category: ID_ITEM_CATEGORIES.LOOT,
+    subCategory: ID_LOOT_CATEGORIES.CHEST,
+    type: ID_RARE_TYPE.RARE,
+    image: "chest", // Special identifier for CSS-generated chest
+    pos: 2, // Silver chest
+    ready: 0,
+    lockedReady: 0,
   },
   [ID_CHEST_ITEMS.CHEST_GOLD]: {
     label: "CHEST_GOLD",
-    category: ID_ITEM_CATEGORIES.CHEST,
+    category: ID_ITEM_CATEGORIES.LOOT,
+    subCategory: ID_LOOT_CATEGORIES.CHEST,
+    type: ID_RARE_TYPE.EPIC,
+    image: "chest", // Special identifier for CSS-generated chest
+    pos: 3, // Gold chest
+    ready: 0,
+    lockedReady: 0,
   },
 
   // Potion items
   [ID_POTION_ITEMS.POTION_GROWTH_ELIXIR]: {
     label: "POTION_GROWTH_ELIXIR",
     category: ID_ITEM_CATEGORIES.POTION,
+    subCategory: ID_POTION_CATEGORIES.GROWTH_ELIXIR,
   },
   [ID_POTION_ITEMS.POTION_PESTICIDE]: {
     label: "POTION_PESTICIDE",
     category: ID_ITEM_CATEGORIES.POTION,
+    subCategory: ID_POTION_CATEGORIES.PESTICIDE,
   },
   [ID_POTION_ITEMS.POTION_FERTILIZER]: {
     label: "POTION_FERTILIZER",
     category: ID_ITEM_CATEGORIES.POTION,
+    subCategory: ID_POTION_CATEGORIES.FERTILIZER,
   },
 };
 

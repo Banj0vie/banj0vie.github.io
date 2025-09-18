@@ -140,7 +140,7 @@ export const Web3Provider = ({ children }) => {
   };
 
   // Create user profile
-  const createProfile = async (username) => {
+  const createProfile = async (username, referralCode = "") => {
     if (!contractService || !account) {
       throw new Error('Wallet not connected or contract service not initialized');
     }
@@ -156,7 +156,8 @@ export const Web3Provider = ({ children }) => {
     setError(null);
 
     try {
-      await contractService.createProfile(username);
+      // Pass referral code as string to contractService
+      await contractService.createProfile(username, referralCode);
       setHasProfile(true);
       return true;
     } catch (err) {

@@ -31,7 +31,7 @@ class ContractService {
   }
 
   // Player Store functions
-  async createProfile(username) {
+  async createProfile(username, referralCode = "") {
     try {
       const playerStore = this.getContract('PLAYER_STORE');
       
@@ -41,14 +41,20 @@ class ContractService {
         throw new Error(`Wrong network. Expected Abstract Testnet (11124), got ${network.chainId}`);
       }
 
+      // Convert referralCode to bytes32
+      let referralCodeBytes32 = "0x0000000000000000000000000000000000000000000000000000000000000000";
+      if (referralCode && referralCode.toString().trim() !== "") {
+        referralCodeBytes32 = ethers.encodeBytes32String(referralCode.toString().trim());
+      }
+
       // Estimate gas first to avoid high fees
-      const gasEstimate = await playerStore.createProfile.estimateGas(username);
+      const gasEstimate = await playerStore.createProfile.estimateGas(username, referralCodeBytes32);
       console.log('Gas estimate:', gasEstimate.toString());
 
       // Add 20% buffer to gas estimate
       const gasLimit = gasEstimate * 120n / 100n;
 
-      const tx = await playerStore.createProfile(username, {
+      const tx = await playerStore.createProfile(username, referralCodeBytes32, {
         gasLimit: gasLimit
       });
       

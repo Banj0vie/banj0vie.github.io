@@ -5,28 +5,78 @@ import CardView from "../../components/boxes/CardView";
 import LabelValueBox from "../../components/boxes/LabelValueBox";
 import BaseButton from "../../components/buttons/BaseButton";
 import { formatDuration } from "../../utils/basic";
+import { useChestOpener } from "../../hooks/useContracts";
+import { useNotification } from "../../contexts/NotificationContext";
 
 const GoldChestDialog = ({ onClose, label = "DAILY CHEST", header = "" }) => {
-  const [remainedTime, setRemainedTime] = useState(183991000);
-  const [isClaimed, setIsClaimed] = useState(false);
+  const { 
+    canClaim, 
+    chestType, 
+    currentLevel, 
+    claimDailyChest, 
+    getTimeUntilNextChest, 
+    loading, 
+    error 
+  } = useChestOpener();
+  
+  const { show } = useNotification();
+  const [remainedTime, setRemainedTime] = useState(0);
+  const [isClaiming, setIsClaiming] = useState(false);
+
+  // Update timer every second
   useEffect(() => {
     const interval = setInterval(() => {
-      setRemainedTime((prev) => prev - 1000);
+      const timeLeft = getTimeUntilNextChest();
+      setRemainedTime(timeLeft);
     }, 1000);
+    
+    // Set initial time
+    setRemainedTime(getTimeUntilNextChest());
+    
     return () => clearInterval(interval);
-  }, []);
-  const onClaim = () => {
-    setIsClaimed(true);
+  }, [getTimeUntilNextChest]);
+
+  const handleClaim = async () => {
+    if (!canClaim || isClaiming) {
+      show('Cannot claim chest at this time', 'warning');
+      return;
+    }
+
+    setIsClaiming(true);
+    try {
+      show('Claiming daily chest...', 'info');
+      const tx = await claimDailyChest();
+      
+      if (tx) {
+        show(`Successfully claimed ${chestType} chest!`, 'success');
+        // Refresh data after successful claim
+        setRemainedTime(getTimeUntilNextChest());
+      } else {
+        show('Failed to claim chest', 'error');
+      }
+    } catch (err) {
+      console.error('Claim chest error:', err);
+      show(`Claim failed: ${err.message}`, 'error');
+    } finally {
+      setIsClaiming(false);
+    }
   };
   return (
     <BaseDialog onClose={onClose} title={label} header={header}>
       <div className="gold-chest">
         <CardView className="p-0">
           <div className="gold-chest-card">
-            <LabelValueBox label="Items Dropped" value="1"></LabelValueBox>
+            <LabelValueBox 
+              label="Chest Type" 
+              value={`${chestType} Chest`}
+            ></LabelValueBox>
+            <LabelValueBox 
+              label="Player Level" 
+              value={currentLevel}
+            ></LabelValueBox>
             <LabelValueBox
               label="Chest Status"
-              value={isClaimed ? "Claimed" : "Unclaimed"}
+              value={canClaim ? "Available" : "On Cooldown"}
             ></LabelValueBox>
             <LabelValueBox
               label="Next Chest In"
@@ -34,17 +84,31 @@ const GoldChestDialog = ({ onClose, label = "DAILY CHEST", header = "" }) => {
             ></LabelValueBox>
           </div>
         </CardView>
-        {isClaimed ? (
+        
+        {!canClaim ? (
           <CardView className="p-0 text-center">
             <br />
-            Already Claimed!
+            <div className="font-bold">Already Claimed!</div>
           </CardView>
         ) : (
           <BaseButton
             className="h-3rem"
-            label="Claim Chest"
-            onClick={onClaim}
+            label={isClaiming || loading ? "Claiming..." : "Claim Chest"}
+            onClick={handleClaim}
+            disabled={isClaiming || loading}
           ></BaseButton>
+        )}
+
+        {/* Error Display */}
+        {error && (
+          <div className="error-message" style={{ 
+            color: '#ff3b30', 
+            marginTop: '10px', 
+            textAlign: 'center',
+            fontSize: '14px'
+          }}>
+            {error}
+          </div>
         )}
       </div>
     </BaseDialog>
