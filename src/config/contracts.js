@@ -4,16 +4,16 @@
 export const CONTRACT_ADDRESSES = {
   // Abstract Testnet (Chain ID: 11124)
   ABSTRACT_TESTNET: {
-    GAME_REGISTRY: "0x1C50952d40874c5F464fE1E806B5Ba74398deEff",
-    YIELD_TOKEN: "0xc880a4d6D328A5a891166aCF9ae1Dfe61fFC2DBD",
-    ITEMS_1155: "0x18fD599f461eD1CE0950045aA18112C96e93c17C",
-    PLAYER_STORE: "0x0377a99f729119155b644ACfB878d2011B26D410",
-    RNG_HUB: "0x5278705609851Efd4dE68e37a56c48791f782dab",
-    BANKER: "0x3c5388eD39939232aE38CEE2dA1872BB99c4578A",
-    FARMING: "0x9E5b988857dFA4eCe8c27E9CFf150C5cBfcaA59d",
-    VENDOR: "0x0EBc8e7D621F0534223360942eFCb0f837046a6b",
-    SAGE: "0xd39527415694998138a10eb16f95A00110F10f1B",
-    DEX: "0xDa585272703f6515522aBb747AAd425Da07B08a8",
+    GAME_REGISTRY: "0x26CA4D0Fd43cd35A4bA7FcF4eF060693aCd1CF91",
+    YIELD_TOKEN: "0xB662E078FdF362A504377Bc4C4F60017F9b5ef48",
+    ITEMS_1155: "0xb544aeF440A9f5FD41aaad8fD99046375AB8c735",
+    PLAYER_STORE: "0xf43646Fb1Ef0CAB22C1296B24d030dafeeD42F02",
+    RNG_HUB: "0x8c479F74F3B58766E2d4ff73E7957Daf1144f14D",
+    BANKER: "0x45210e63dD3fF638690fC8f69384F8873Ca9F8f3",
+    FARMING: "0xfCBf096a96D6e3cdDC1E82044Ab065601CD51ead",
+    VENDOR: "0x7925e24a5230eF313fD9a7ed30A2728Def287F09",
+    SAGE: "0x78596D79A691E294dA2D0393E4e1BCaDb4F9278b",
+    DEX: "0xCa8189D9dEc8035B0f219e99DE6b91f5Bc0e2178",
   }
 };
 
@@ -47,7 +47,7 @@ export const CONTRACT_ABIS = {
     "function setXGameTokenVault(address)",
     "function setRngHub(address)"
   ],
-  
+
   VENDOR: [
     "function buySeedPack(uint8 tier, uint256 count) returns (uint256)",
     "function packPrice(uint8) view returns (uint256)",
@@ -62,7 +62,7 @@ export const CONTRACT_ABIS = {
     "event SeedPack(address indexed player, uint8 tier, uint256 requestId)",
     "event SeedsRevealed(address indexed player, uint256 requestId, uint256[] seedIds, uint8 tier, uint256 count)"
   ],
-  
+
   FARMING: [
     "function plant(uint256 seedId, uint8 plotNumber)",
     "function plantBatch(uint256[] calldata seedIds, uint8[] calldata plotNumbers)",
@@ -83,7 +83,7 @@ export const CONTRACT_ABIS = {
     "event Planted(address indexed user, uint256 indexed seedId, uint8 plotIndex, uint64 readyAt)",
     "event Harvested(address indexed user, uint8 plotIndex, uint256 productId, uint256 amount)"
   ],
-  
+
   BANKER: [
     "function stake(uint256 amount) returns (uint256 shares)",
     "function unstake(uint256 shares) returns (uint256 amount)",
@@ -96,7 +96,7 @@ export const CONTRACT_ABIS = {
     "function decimals() view returns (uint8)",
     "event FeeDeposited(address indexed depositor, uint256 amount)"
   ],
-  
+
   SAGE: [
     "function lockGameToken(address user, uint256 amount)",
     "function unlockWeeklyWage()",
@@ -106,12 +106,12 @@ export const CONTRACT_ABIS = {
     "function lastUnlockTimeHarvest(address) view returns (uint64)",
     "function getUnlockCost(uint16 level) pure returns (uint256)"
   ],
-  
+
   DEX: [
     "function depositNativeForGameToken(uint256 amount)",
     "function RATE_PER_ETH() view returns (uint256)"
   ],
-  
+
   PLAYER_STORE: [
     "function createProfile(string calldata name)",
     "function profileOf(address) view returns (bool exists, uint16 level, uint64 nextChestAt, uint64 nextFishAt)",
@@ -132,7 +132,7 @@ export const CONTRACT_ABIS = {
     "function advanceEpochIfNeeded()",
     "function gameEpoch() view returns (uint64)"
   ],
-  
+
   ITEMS_1155: [
     "function balanceOf(address, uint256) view returns (uint256)",
     "function balanceOfBatch(address[], uint256[]) view returns (uint256[])",
@@ -141,7 +141,7 @@ export const CONTRACT_ABIS = {
     "function safeTransferFrom(address, address, uint256, uint256, bytes)",
     "function safeBatchTransferFrom(address, address, uint256[], uint256[], bytes)"
   ],
-  
+
   YIELD_TOKEN: [
     "function balanceOf(address) view returns (uint256)",
     "function transfer(address, uint256) returns (bool)",
@@ -151,22 +151,22 @@ export const CONTRACT_ABIS = {
     "function mint(address, uint256)",
     "function burn(address, uint256)"
   ],
-  
+
   RNG_HUB: [
     "function fulfillRequest(uint256 requestId, uint256 randomNumber)"
   ],
-  
+
   // LEADERBOARD: [
   //   "function maybeReward()",
   //   "function lastRewardTs() view returns (uint64)"
   // ],
-  
+
   // CHEST_OPENER: [
   //   "function claimDailyChest()",
   //   "function openChest(uint256 chestId)",
   //   "function setVrngSystem(address vrngSystem)"
   // ],
-  
+
   // FISHING: [
   //   "function craftBait1(uint256 produceId, uint256 amount)",
   //   "function craftBait2(uint256 produceId, uint256 amount)",
@@ -174,7 +174,7 @@ export const CONTRACT_ABIS = {
   //   "function fish(uint256 baitId)",
   //   "function setVrngSystem(address vrngSystem)"
   // ],
-  
+
   // GARDENER: [
   //   "function levelUp(uint16 targetLevel)",
   //   "function priceForLevel(uint16) view returns (uint256)",
@@ -182,7 +182,7 @@ export const CONTRACT_ABIS = {
   //   "function setPrice(uint16 level, uint256 price)",
   //   "function setMaxLevel(uint16 m)"
   // ],
-  
+
   // P2P_MARKET: [
   //   "function list(uint256 id, uint256 amount, uint256 pricePer) returns (uint256 lid)",
   //   "function purchase(uint256 lid, uint256 amount)",
@@ -193,7 +193,7 @@ export const CONTRACT_ABIS = {
   //   "event Purchased(uint256 indexed lid, address indexed buyer, uint256 amount)",
   //   "event Canceled(uint256 indexed lid)"
   // ],
-  
+
   // POTION: [
   //   "function craftGrowthElixir(uint256 produceId, uint256 amount)",
   //   "function craftPesticide(uint256 produceId, uint256 amount)",
