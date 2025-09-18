@@ -5,6 +5,9 @@ import { ID_HOUSE_HOTSPOTS } from "../constants/app_ids";
 import GoldDialog from "../containers/House_Gold";
 import GardnerDialog from "../containers/House_Gardner";
 import ReferralDialog from "../containers/House_Referral";
+import GoldChestDialog from "../containers/House_Gold_Chest";
+import { dialogFrames } from "../constants/_baseimages";
+import AnglerDialog from "../containers/House_Angler";
 const House = () => {
   const { width, height } = HOUSE_VIEWPORT;
   const hotspots = HOUSE_HOTSPOTS;
@@ -23,6 +26,17 @@ const House = () => {
       id: ID_HOUSE_HOTSPOTS.REFERRALS,
       component: ReferralDialog,
       label: "REFERRAL",
+    },
+    {
+      id: ID_HOUSE_HOTSPOTS.GOLD_CHEST,
+      component: GoldChestDialog,
+      label: "DAILY CHEST",
+      header: dialogFrames.modalHeaderBox
+    },
+    {
+      id: ID_HOUSE_HOTSPOTS.ANGLER,
+      component: AnglerDialog,
+      label: "QUIET POND",
     },
   ];
   return (

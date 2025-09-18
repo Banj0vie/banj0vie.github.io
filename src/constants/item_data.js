@@ -1,4 +1,4 @@
-import { potionImages } from "./_baseimages";
+import { baitImages, potionImages } from "./_baseimages";
 import { ID_SEEDS, ID_PRODUCE_ITEMS, ID_BAIT_ITEMS, ID_FISH_ITEMS, ID_CHEST_ITEMS, ID_POTION_ITEMS, ID_CROP_CATEGORIES, ID_RARE_TYPE, ID_ITEM_CATEGORIES, ID_POTION_CATEGORIES, ID_POTIONS, ID_LOOT_CATEGORIES, ID_LOOTS } from "./app_ids";
 
 export const IMAGE_URL_CROP = "/public/images/crops/seeds.png";
@@ -681,16 +681,35 @@ export const ALL_ITEMS = {
 
   // Bait items
   [ID_BAIT_ITEMS.BAIT_1]: {
-    label: "BAIT_1",
-    category: ID_ITEM_CATEGORIES.BAIT,
+    id: ID_BAIT_ITEMS.BAIT_1,
+    label: "Bait I",
+    category: ID_ITEM_CATEGORIES.LOOT,
+    subCategory: ID_LOOT_CATEGORIES.BAIT,
+    type: ID_RARE_TYPE.COMMON,
+    image: baitImages.bait1,
+    pos: 0,
+    ready: 0,
+    lockedReady: 0,
   },
   [ID_BAIT_ITEMS.BAIT_2]: {
-    label: "BAIT_2",
-    category: ID_ITEM_CATEGORIES.BAIT,
+    label: "Bait II",
+    category: ID_ITEM_CATEGORIES.LOOT,
+    subCategory: ID_LOOT_CATEGORIES.BAIT,
+    type: ID_RARE_TYPE.UNCOMMON,
+    image: baitImages.bait2,
+    pos: 0,
+    ready: 0,
+    lockedReady: 0,
   },
   [ID_BAIT_ITEMS.BAIT_3]: {
-    label: "BAIT_3",
-    category: ID_ITEM_CATEGORIES.BAIT,
+    label: "Bait_III",
+    category: ID_ITEM_CATEGORIES.LOOT,
+    subCategory: ID_LOOT_CATEGORIES.BAIT,
+    type: ID_RARE_TYPE.RARE,
+    image: baitImages.bait3,
+    pos: 0,
+    ready: 0,
+    lockedReady: 0,
   },
 
   // Fish items
