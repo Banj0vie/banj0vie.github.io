@@ -767,7 +767,7 @@ export const useDex = () => {
 };
 
 // Hook for Leaderboard data
-export const useLeaderboard = () => {
+export const useLeaderboard = (epoch = null) => {
   const { contracts } = useContracts();
   const { account } = useWeb3();
   const [loading, setLoading] = useState(false);
@@ -775,54 +775,152 @@ export const useLeaderboard = () => {
   const [leaderboardData, setLeaderboardData] = useState([]);
   const [userScore, setUserScore] = useState(0);
   const [epochStart, setEpochStart] = useState(0);
+  const [currentEpoch, setCurrentEpoch] = useState(0);
 
-  const fetchLeaderboardData = useCallback(async () => {
+  const fetchLeaderboardData = useCallback(async (targetEpoch = null) => {
     if (!contracts.player_store) {
-      return;
+      return; 
     }
 
     try {
       setLoading(true);
       setError(null);
+      
+      // Get current epoch from contract
+      const contractCurrentEpoch = await contracts.player_store.gameEpoch();
+      const actualCurrentEpoch = Number(contractCurrentEpoch);
+      setCurrentEpoch(actualCurrentEpoch);
+      
+      // Use provided epoch or current epoch
+      const epochToFetch = targetEpoch !== null ? targetEpoch : actualCurrentEpoch;
+      const targetEpochNumber = Number(epochToFetch);
+      
       const leaderboardData = [];
       
-      // Fetch top 5 players and their XP
-      for (let i = 0; i < 5; i++) {
-        const address = await contracts.player_store.top5(i);
-        
-        if (address !== "0x0000000000000000000000000000000000000000") {
+      // Check if we're viewing the current epoch (real-time data)
+      const isCurrentEpoch = targetEpochNumber === actualCurrentEpoch;
+      console.log('Target epoch:', targetEpochNumber, 'Current epoch:', actualCurrentEpoch, 'Is current:', isCurrentEpoch);
+      
+      // Fetch top 5 players for the specified epoch
+      if (isCurrentEpoch) {
+        // For current epoch, use top5() and top5Xp() functions
+        for (let i = 0; i < 5; i++) {
           try {
-            // Get profile data for this address
-            const username = await contracts.player_store.usernameOf(address);
-            // Get XP using xpOf function
-            const xp = await contracts.player_store.xpOf(address);
-            leaderboardData.push({
-              rank: i + 1,
-              name: username,
-              address: address,
-              score: parseFloat(xp.toString()) / 1e18
-            });
+            const address = await contracts.player_store.top5(i);
+            const xp = await contracts.player_store.top5Xp(i);
+            
+            if (address !== "0x0000000000000000000000000000000000000000") {
+              try {
+                // Get profile data for this address
+                const username = await contracts.player_store.usernameOf(address);
+                leaderboardData.push({
+                  rank: i + 1,
+                  name: username,
+                  address: address,
+                  score: parseFloat(xp.toString()) / 1e18
+                });
+              } catch (err) {
+                console.log(`Failed to get profile for address ${address}:`, err);
+                // Fallback with empty data
+                leaderboardData.push({
+                  rank: i + 1,
+                  name: "Error",
+                  address: address,
+                  score: 0.0
+                });
+              }
+            } else {
+              leaderboardData.push({
+                rank: i + 1,
+                name: "Empty",
+                address: "0x0000000000000000000000000000000000000000",
+                score: 0.0
+              });
+            }
           } catch (err) {
-            console.log(`Failed to get profile for address ${address}:`, err);
-            // Fallback with empty data
+            console.log(`Failed to get player data for position ${i}:`, err);
             leaderboardData.push({
               rank: i + 1,
               name: "Error",
-              address: address,
+              address: "0x0000000000000000000000000000000000000000",
               score: 0.0
             });
           }
+        }
         } else {
-          leaderboardData.push({
-            rank: i + 1,
-            name: "Empty",
-            address: "0x0000000000000000000000000000000000000000",
-            score: 0.0
-          });
+          // For historical epochs, use getEpochTop5() to get all data at once
+          try {
+            const [top5Players, top5XpAmounts, epochNumber, timestamp] = await contracts.player_store.getEpochTop5(epochToFetch);
+            console.log(`getEpochTop5(${epochToFetch}) returned:`, {
+              top5Players,
+              top5XpAmounts,
+              epochNumber: Number(epochNumber),
+              timestamp: Number(timestamp),
+              targetEpoch: epochToFetch
+            });
+            
+            // Check if we got valid data (epochNumber should match targetEpoch)
+            if (Number(epochNumber) === targetEpochNumber && Number(timestamp) > 0) {
+            for (let i = 0; i < 5; i++) {
+              const address = top5Players[i];
+              const xp = top5XpAmounts[i];
+              
+              if (address !== "0x0000000000000000000000000000000000000000") {
+                try {
+                  // Get profile data for this address
+                  const username = await contracts.player_store.usernameOf(address);
+                  leaderboardData.push({
+                    rank: i + 1,
+                    name: username,
+                    address: address,
+                    score: parseFloat(xp.toString()) / 1e18
+                  });
+                } catch (err) {
+                  console.log(`Failed to get profile for address ${address}:`, err);
+                  // Fallback with empty data
+                  leaderboardData.push({
+                    rank: i + 1,
+                    name: "Error",
+                    address: address,
+                    score: 0.0
+                  });
+                }
+              } else {
+                leaderboardData.push({
+                  rank: i + 1,
+                  name: "Empty",
+                  address: "0x0000000000000000000000000000000000000000",
+                  score: 0.0
+                });
+              }
+            }
+            } else {
+              console.log(`No historical data found for epoch ${epochToFetch}, showing empty data. EpochNumber: ${Number(epochNumber)}, Timestamp: ${Number(timestamp)}`);
+              // No historical data available, show empty slots
+              for (let i = 0; i < 5; i++) {
+                leaderboardData.push({
+                  rank: i + 1,
+                  name: "Empty",
+                  address: "0x0000000000000000000000000000000000000000",
+                  score: 0.0
+                });
+              }
+            }
+          } catch (err) {
+            console.log(`Failed to get epoch ${epochToFetch} data:`, err);
+          // Fallback to empty data
+          for (let i = 0; i < 5; i++) {
+            leaderboardData.push({
+              rank: i + 1,
+              name: "Empty",
+              address: "0x0000000000000000000000000000000000000000",
+              score: 0.0
+            });
+          }
         }
       }
 
-      // Get user's XP if connected
+      // Get user's XP if connected (always use current total XP)
       if (account && contracts.player_store) {
         try {
           const userXp = await contracts.player_store.xpOf(account);
@@ -865,12 +963,34 @@ export const useLeaderboard = () => {
     }
   }, [contracts.player_store, account]);
 
+  const advanceEpoch = useCallback(async () => {
+    if (!contracts.player_store) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+      const tx = await contracts.player_store.advanceEpochIfNeeded();
+      await tx.wait();
+      // Refresh data after advancing epoch
+      await fetchLeaderboardData();
+    } catch (error) {
+      console.error('Failed to advance epoch:', error);
+      setError(error.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [contracts.player_store, fetchLeaderboardData]);
+
   return {
     leaderboardData,
     userScore,
     epochStart,
+    currentEpoch,
     fetchLeaderboardData,
     getUserRank,
+    advanceEpoch,
     loading,
     error
   };
@@ -885,7 +1005,7 @@ export const useSage = () => {
     lastUnlockTime: 0,
     unlockRate: 0,
     unlockAmount: 0,
-    canUnlock: false,
+    canUnlockWage: false,
     nextUnlockTime: 0
   });
   const [loading, setLoading] = useState(false);
@@ -906,12 +1026,12 @@ export const useSage = () => {
     setError(null);
 
     try {
-      // Get locked amount and last unlock time
-      const [lockedAmount, lastUnlockTime] = await Promise.all([
+      // Get locked amount and both unlock times
+      const [lockedAmount, lastUnlockTime, lastUnlockTimeHarvest] = await Promise.all([
         contracts.sage.lockedGameToken(account),
-        contracts.sage.lastUnlockTime(account)
+        contracts.sage.lastUnlockTime(account),
+        contracts.sage.lastUnlockTimeHarvest(account)
       ]);
-
       // Get player level from PlayerStore
       let playerLevel = 0;
       if (contracts.player_store) {
@@ -919,22 +1039,37 @@ export const useSage = () => {
         playerLevel = profile.level;
       }
 
-      // Calculate unlock rate and amount
-      const unlockRate = calculateUnlockRate(playerLevel);
-      const unlockAmount = (lockedAmount * BigInt(unlockRate)) / BigInt(10000);
+      // Calculate harvest unlock (percentage-based)
+      const harvestUnlockPercent = calculateUnlockRate(playerLevel);
+      const harvestUnlockAmount = (lockedAmount * BigInt(harvestUnlockPercent)) / BigInt(10000);
+      
+      // Calculate weekly wage amount using getUnlockCost (fixed amount)
+      const weeklyWageAmount = await contracts.sage.getUnlockCost(playerLevel);
 
-      // Check if user can unlock (cooldown check)
+      // Check cooldowns for both functions
       const now = Date.now();
-      const nextUnlockTime = Number(lastUnlockTime) * 1000 + SAGE_UNLOCK_COOLDOWN;
-      const canUnlock = lockedAmount > 0 && (lastUnlockTime === 0n || now >= nextUnlockTime);
+      const nextWageUnlockTime = Number(lastUnlockTime) * 1000 + SAGE_UNLOCK_COOLDOWN;
+      const nextHarvestUnlockTime = Number(lastUnlockTimeHarvest) * 1000 + SAGE_UNLOCK_COOLDOWN;
+      
+      // Check if there are enough locked tokens for wage unlock (needs getUnlockCost amount)
+      const canUnlockWage = (lastUnlockTime === 0n || now >= nextWageUnlockTime);
+      const canUnlockHarvest = lockedAmount > 0 && (lastUnlockTimeHarvest === 0n || now >= nextHarvestUnlockTime);
 
       setSageData({
         lockedAmount: parseFloat(ethers.formatEther(lockedAmount)),
         lastUnlockTime: Number(lastUnlockTime),
-        unlockRate: unlockRate / 100, // Convert to percentage
-        unlockAmount: parseFloat(ethers.formatEther(unlockAmount)),
-        canUnlock,
-        nextUnlockTime
+        lastUnlockTimeHarvest: Number(lastUnlockTimeHarvest),
+        harvestUnlockPercent: harvestUnlockPercent / 100, // Convert to percentage
+        harvestUnlockAmount: parseFloat(ethers.formatEther(harvestUnlockAmount)),
+        weeklyWageAmount: parseFloat(ethers.formatEther(weeklyWageAmount)),
+        canUnlockWage,
+        canUnlockHarvest,
+        nextWageUnlockTime,
+        nextHarvestUnlockTime,
+        // Legacy properties for backward compatibility
+        unlockRate: harvestUnlockPercent / 100,
+        unlockAmount: parseFloat(ethers.formatEther(harvestUnlockAmount)),
+        nextUnlockTime: nextHarvestUnlockTime
       });
     } catch (err) {
       console.error('Failed to fetch Sage data:', err);
@@ -942,43 +1077,75 @@ export const useSage = () => {
     } finally {
       setLoading(false);
     }
-  }, [contracts, account, calculateUnlockRate]);
+  }, [contracts.sage, contracts.player_store, account, calculateUnlockRate]);
 
-  // Unlock game tokens
-  const unlockGameTokens = useCallback(async () => {
-    if (!contracts.sage || !sageData.canUnlock) return;
+  // Unlock weekly harvest
+  const unlockWeeklyHarvest = useCallback(async () => {
+    if (!contracts.sage || !sageData.canUnlockHarvest) return;
 
     setLoading(true);
     setError(null);
 
     try {
-      const tx = await contracts.sage.unlockGameToken();
+      const tx = await contracts.sage.unlockWeeklyHarvest();
       await tx.wait();
 
       // Refresh data after successful unlock
       await fetchSageData();
       return tx;
     } catch (err) {
-      console.error('Failed to unlock game tokens:', err);
+      console.error('Failed to unlock weekly harvest:', err);
       setError(err.message);
       throw err;
     } finally {
       setLoading(false);
     }
-  }, [contracts.sage, sageData.canUnlock, fetchSageData]);
+  }, [contracts.sage, sageData.canUnlockHarvest, fetchSageData]);
 
-  // Format remaining time until next unlock
-  const getTimeUntilNextUnlock = useCallback(() => {
+  // Unlock weekly wage
+  const unlockWeeklyWage = useCallback(async () => {
+    if (!contracts.sage || !sageData.canUnlockWage) return;
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const tx = await contracts.sage.unlockWeeklyWage();
+      await tx.wait();
+
+      // Refresh data after successful unlock
+      await fetchSageData();
+      return tx;
+    } catch (err) {
+      console.error('Failed to unlock weekly wage:', err);
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, [contracts.sage, sageData.canUnlockWage, fetchSageData]);
+
+  // Format remaining time until next wage unlock
+  const getTimeUntilNextWageUnlock = useCallback(() => {
     const now = Date.now();
-    const remaining = sageData.nextUnlockTime - now;
+    const remaining = sageData.nextWageUnlockTime - now;
     return Math.max(0, remaining);
-  }, [sageData.nextUnlockTime]);
+  }, [sageData.nextWageUnlockTime]);
+
+  // Format remaining time until next harvest unlock
+  const getTimeUntilNextHarvestUnlock = useCallback(() => {
+    const now = Date.now();
+    const remaining = sageData.nextHarvestUnlockTime - now;
+    return Math.max(0, remaining);
+  }, [sageData.nextHarvestUnlockTime]);
 
   return {
     sageData,
     fetchSageData,
-    unlockGameTokens,
-    getTimeUntilNextUnlock,
+    unlockWeeklyHarvest,
+    unlockWeeklyWage,
+    getTimeUntilNextWageUnlock,
+    getTimeUntilNextHarvestUnlock,
     loading,
     error
   };

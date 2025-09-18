@@ -4,16 +4,16 @@
 export const CONTRACT_ADDRESSES = {
   // Abstract Testnet (Chain ID: 11124)
   ABSTRACT_TESTNET: {
-    GAME_REGISTRY: "0x141B6E1a88C0C3AAd6EC4d9df9c5438AdD092265",
-    YIELD_TOKEN: "0x79107afc310e9c712E63764Ee82BD3D1cd412784",
-    ITEMS_1155: "0xe8aD7B318C0CcAA72aa34De6A03BfBef451b1ec4",
-    PLAYER_STORE: "0xCF25Eb2A7c36cf6F196d13e4250c05AC2694bC9A",
-    RNG_HUB: "0xa47E0e674AD31280411d3f44969D98C76be283b8",
-    BANKER: "0x8Dbe88538728bEF02a829f9fcED8F3314f88B09E",
-    FARMING: "0x5822aC3e36F94227DAe366D6AB30FB5723041E66",
-    VENDOR: "0x48b2555A93E702F481f6318B5Edf308CC4E0e0e0",
-    SAGE: "0xc3Aa094e95e536303b5904094d70107B25f32f1e",
-    DEX: "0xDAD313AC6cFbD2632Ed4C795f460eb36Bfed261E",
+    GAME_REGISTRY: "0x1C50952d40874c5F464fE1E806B5Ba74398deEff",
+    YIELD_TOKEN: "0xc880a4d6D328A5a891166aCF9ae1Dfe61fFC2DBD",
+    ITEMS_1155: "0x18fD599f461eD1CE0950045aA18112C96e93c17C",
+    PLAYER_STORE: "0x0377a99f729119155b644ACfB878d2011B26D410",
+    RNG_HUB: "0x5278705609851Efd4dE68e37a56c48791f782dab",
+    BANKER: "0x3c5388eD39939232aE38CEE2dA1872BB99c4578A",
+    FARMING: "0x9E5b988857dFA4eCe8c27E9CFf150C5cBfcaA59d",
+    VENDOR: "0x0EBc8e7D621F0534223360942eFCb0f837046a6b",
+    SAGE: "0xd39527415694998138a10eb16f95A00110F10f1B",
+    DEX: "0xDa585272703f6515522aBb747AAd425Da07B08a8",
   }
 };
 
@@ -40,7 +40,12 @@ export const CONTRACT_ABIS = {
     "function gameToken() view returns (address)",
     "function playerStore() view returns (address)",
     "function xGameTokenVault() view returns (address)",
-    "function rngHub() view returns (address)"
+    "function rngHub() view returns (address)",
+    "function setGameItems(address)",
+    "function setGameToken(address)",
+    "function setPlayerStore(address)",
+    "function setXGameTokenVault(address)",
+    "function setRngHub(address)"
   ],
   
   VENDOR: [
@@ -50,6 +55,9 @@ export const CONTRACT_ABIS = {
     "function hasPendingRequests(address player) view returns (bool)",
     "function getAllPendingRequests(address player) view returns (uint256[] requestIds, uint8[] tiers, uint256[] counts)",
     "function getPendingRequest(address player) view returns (uint256 requestId, uint8 tier, uint256 count)",
+    "function setPackPrice(uint8 tier, uint256 price)",
+    "function setFeeBpsToVault(uint16 bps)",
+    "function setVrngSystem(address vrngSystem)",
     "function randomNumberCallback(uint256 requestId, uint256 randomNumber)",
     "event SeedPack(address indexed player, uint8 tier, uint256 requestId)",
     "event SeedsRevealed(address indexed player, uint256 requestId, uint256[] seedIds, uint8 tier, uint256 count)"
@@ -66,6 +74,12 @@ export const CONTRACT_ABIS = {
     "function crops(address, uint8) view returns (uint256 seedId, uint64 endTime)",
     "function count(address) view returns (uint8)",
     "function getGrowthTime(uint256 seedId) view returns (uint32)",
+    "function setSage(address sageAddr)",
+    "function tCommon() view returns (uint32)",
+    "function tUncommon() view returns (uint32)",
+    "function tRare() view returns (uint32)",
+    "function tEpic() view returns (uint32)",
+    "function tLegendary() view returns (uint32)",
     "event Planted(address indexed user, uint256 indexed seedId, uint8 plotIndex, uint64 readyAt)",
     "event Harvested(address indexed user, uint8 plotIndex, uint256 productId, uint256 amount)"
   ],
@@ -76,14 +90,20 @@ export const CONTRACT_ABIS = {
     "function balanceOf(address) view returns (uint256)",
     "function totalSupply() view returns (uint256)",
     "function totalGameToken() view returns (uint256)",
-    "function depositGameToken(uint256 amount)"
+    "function depositGameToken(uint256 amount)",
+    "function name() view returns (string)",
+    "function symbol() view returns (string)",
+    "function decimals() view returns (uint8)",
+    "event FeeDeposited(address indexed depositor, uint256 amount)"
   ],
   
   SAGE: [
     "function lockGameToken(address user, uint256 amount)",
-    "function unlockGameToken()",
+    "function unlockWeeklyWage()",
+    "function unlockWeeklyHarvest()",
     "function lockedGameToken(address) view returns (uint256)",
     "function lastUnlockTime(address) view returns (uint64)",
+    "function lastUnlockTimeHarvest(address) view returns (uint64)",
     "function getUnlockCost(uint16 level) pure returns (uint256)"
   ],
   
@@ -96,11 +116,21 @@ export const CONTRACT_ABIS = {
     "function createProfile(string calldata name)",
     "function profileOf(address) view returns (bool exists, uint16 level, uint64 nextChestAt, uint64 nextFishAt)",
     "function xpOf(address) view returns (uint256)",
-    "function addXP(address, uint256)",
+    "function addXp(address, uint256)",
     "function usernameOf(address) view returns (string)",
     "function top5(uint256) view returns (address)",
     "function top5Xp(uint256) view returns (uint256)",
-    "function epochStart() view returns (uint64)"
+    "function epochStart() view returns (uint64)",
+    "function setLevel(address user, uint16 newLevel)",
+    "function setChestTime(address user, uint64 whenTs)",
+    "function setFishTime(address user, uint64 whenTs)",
+    "function setLeaderboardHook(address hook)",
+    "function getXpRequiredForLevel(uint16 level) pure returns (uint256)",
+    "function getXpRequiredForNextLevel(address user) view returns (uint256)",
+    "function getEpochTop5(uint64 epoch) view returns (address[5] memory top5Players, uint256[5] memory top5XpAmounts, uint64 epochNumber, uint64 timestamp)",
+    "function getEpochTop5Player(uint64 epoch, uint256 position) view returns (address, uint256)",
+    "function advanceEpochIfNeeded()",
+    "function gameEpoch() view returns (uint64)"
   ],
   
   ITEMS_1155: [
@@ -124,7 +154,51 @@ export const CONTRACT_ABIS = {
   
   RNG_HUB: [
     "function fulfillRequest(uint256 requestId, uint256 randomNumber)"
-  ]
+  ],
+  
+  // LEADERBOARD: [
+  //   "function maybeReward()",
+  //   "function lastRewardTs() view returns (uint64)"
+  // ],
+  
+  // CHEST_OPENER: [
+  //   "function claimDailyChest()",
+  //   "function openChest(uint256 chestId)",
+  //   "function setVrngSystem(address vrngSystem)"
+  // ],
+  
+  // FISHING: [
+  //   "function craftBait1(uint256 produceId, uint256 amount)",
+  //   "function craftBait2(uint256 produceId, uint256 amount)",
+  //   "function craftBait3(uint256 produceId, uint256 amount)",
+  //   "function fish(uint256 baitId)",
+  //   "function setVrngSystem(address vrngSystem)"
+  // ],
+  
+  // GARDENER: [
+  //   "function levelUp(uint16 targetLevel)",
+  //   "function priceForLevel(uint16) view returns (uint256)",
+  //   "function maxLevel() view returns (uint16)",
+  //   "function setPrice(uint16 level, uint256 price)",
+  //   "function setMaxLevel(uint16 m)"
+  // ],
+  
+  // P2P_MARKET: [
+  //   "function list(uint256 id, uint256 amount, uint256 pricePer) returns (uint256 lid)",
+  //   "function purchase(uint256 lid, uint256 amount)",
+  //   "function cancel(uint256 lid)",
+  //   "function listings(uint256) view returns (address seller, uint256 id, uint256 amount, uint256 pricePer, bool active)",
+  //   "function nextId() view returns (uint256)",
+  //   "event Listed(uint256 indexed lid, address indexed seller, uint256 id, uint256 amount, uint256 pricePer)",
+  //   "event Purchased(uint256 indexed lid, address indexed buyer, uint256 amount)",
+  //   "event Canceled(uint256 indexed lid)"
+  // ],
+  
+  // POTION: [
+  //   "function craftGrowthElixir(uint256 produceId, uint256 amount)",
+  //   "function craftPesticide(uint256 produceId, uint256 amount)",
+  //   "function craftFertilizer(uint256 produceId, uint256 amount)"
+  // ]
 };
 
 // Seed pack tiers and prices (matching smart contract constants)
@@ -135,22 +209,6 @@ export const SEED_PACK_TIERS = {
   4: { name: "Premium", price: "250000000000000000000", priceLabel: "250 RDY" } // 250e18
 };
 
-// Growth times in seconds (matching smart contract)
-// export const GROWTH_TIMES = {
-//   COMMON: 3 * 60 * 60, // 3 hours
-//   UNCOMMON: 4 * 60 * 60, // 4 hours
-//   RARE: 8 * 60 * 60, // 8 hours
-//   EPIC: 12 * 60 * 60, // 12 hours
-//   LEGENDARY: 24 * 60 * 60 // 24 hours
-// };
-export const GROWTH_TIMES = {
-  COMMON: 30,
-  UNCOMMON: 40,
-  RARE: 80,
-  EPIC: 120,
-  LEGENDARY: 240
-};
-
 // Sage unlock rate constants (matching smart contract)
 export const SAGE_UNLOCK_RATES = {
   DEFAULT: 100,    // 1% (level < 10)
@@ -158,6 +216,7 @@ export const SAGE_UNLOCK_RATES = {
   LEVEL_15: 1500   // 15% (level >= 15)
 };
 
-// Sage unlock cooldown (matching smart contract)
-export const SAGE_UNLOCK_COOLDOWN = 7 * 60 * 1000; // 7 minutes in milliseconds (testnet)
+// =================TIME GLITCH=================
+// export const SAGE_UNLOCK_COOLDOWN = 7 * 24 * 60 * 60 * 1000;
+export const SAGE_UNLOCK_COOLDOWN = 7 * 60 * 1000;
 

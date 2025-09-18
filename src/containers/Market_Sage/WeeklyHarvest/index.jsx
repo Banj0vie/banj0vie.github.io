@@ -10,8 +10,8 @@ const WeeklyHarvest = ({onBack}) => {
   const {
     sageData,
     fetchSageData,
-    unlockGameTokens,
-    getTimeUntilNextUnlock,
+    unlockWeeklyHarvest,
+    getTimeUntilNextHarvestUnlock,
     loading,
     error
   } = useSage();
@@ -24,15 +24,15 @@ const WeeklyHarvest = ({onBack}) => {
     fetchSageData();
   }, [fetchSageData]);
 
-  // Update timer for next unlock
+  // Update timer for next harvest unlock
   useEffect(() => {
     const updateTimer = () => {
-      // Only update timer if unlock is not ready
-      if (!sageData.canUnlock) {
-        const remaining = getTimeUntilNextUnlock();
+      // Only update timer if there are locked tokens and harvest unlock is not ready
+      if (sageData.lockedAmount > 0 && !sageData.canUnlockHarvest) {
+        const remaining = getTimeUntilNextHarvestUnlock();
         setRemainedTime(remaining);
         
-        // If timer reached zero, refresh Sage data to update canUnlock state
+        // If timer reached zero, refresh Sage data to update canUnlockHarvest state
         if (remaining <= 0) {
           fetchSageData();
         }
@@ -42,33 +42,33 @@ const WeeklyHarvest = ({onBack}) => {
     updateTimer();
     const interval = setInterval(updateTimer, 1000);
     return () => clearInterval(interval);
-  }, [getTimeUntilNextUnlock, fetchSageData, sageData.canUnlock]);
+  }, [getTimeUntilNextHarvestUnlock, fetchSageData, sageData.canUnlockHarvest, sageData.lockedAmount]);
 
   const handleUnlock = useCallback(async () => {
     setIsUnlocking(true);
     try {
-      await unlockGameTokens();
+      await unlockWeeklyHarvest();
     } catch (err) {
       console.error('Failed to unlock:', err);
     } finally {
       setIsUnlocking(false);
     }
-  }, [unlockGameTokens]);
+  }, [unlockWeeklyHarvest]);
   return (
     <div className="weekly-harvest-wrapper">
       <CardView className="p-0">
         <div className="weekly-harvest-card">
           <LabelValueBox 
             label="Unlock Rate" 
-            value={loading ? "Loading..." : `${sageData.unlockRate.toFixed(2)}%`}
+            value={loading ? "Loading..." : `${sageData.harvestUnlockPercent?.toFixed(2) || 0}%`}
           />
           <LabelValueBox 
             label="Pending Locked Ready" 
-            value={loading ? "Loading..." : sageData.unlockAmount.toFixed(2)}
+            value={loading ? "Loading..." : sageData.harvestUnlockAmount?.toFixed(2) || 0}
           />
           <LabelValueBox
-            label="Next Season in"
-            value={sageData.canUnlock ? "Ready!" : formatDuration(remainedTime)}
+            label="Next Harvest in"
+            value={sageData.canUnlockHarvest ? "Ready!" : formatDuration(remainedTime)}
           />
           <div className="weekly-harvest-header">Weekly Harvest</div>
         </div>
@@ -82,9 +82,10 @@ const WeeklyHarvest = ({onBack}) => {
       
       {sageData.lockedAmount === 0 ? (
         <CardView className="p-0">
+          <br/>
           <div className="text-center">No locked tokens to unlock</div>
         </CardView>
-      ) : !sageData.canUnlock ? (
+      ) : !sageData.canUnlockHarvest ? (
         <CardView className="p-0">
           <br/>
           <div className="text-center">Already Claimed!</div>

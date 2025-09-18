@@ -50,7 +50,7 @@ const StakeReady = ({ onBack }) => {
         const tokenBalanceNum = parseFloat(ethers.formatEther(tokenBalance));
         console.log(totalSupplyNum, tokenBalanceNum);
         if (totalSupplyNum > 0 && tokenBalanceNum > 0) {
-          const ratioValue = totalSupplyNum / tokenBalanceNum;
+          const ratioValue = tokenBalanceNum / totalSupplyNum;
           setRatio(ratioValue); // Store as float
           
           // Calculate estimated rewards (XReady balance * ratio)
@@ -93,8 +93,7 @@ const StakeReady = ({ onBack }) => {
     try {
       const amountWei = ethers.parseEther(amount);
       
-      // Show initial message
-      show('Approving Ready tokens...', 'info');
+      show('Staking Ready tokens...', 'info');
       
       const result = await stake(amountWei);
       
