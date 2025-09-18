@@ -9,9 +9,19 @@
   border-image: var(--secondary-bg) 6 fill repeat;
   border-image-width: 0.5rem;
   font-size: 1.65rem;
+  transition: all 0.2s ease;
 }
 
 .token-box:hover {
   transform: scale(1.025);
   color: white;
+}
+
+.token-box.clickable:hover {
+  transform: scale(1.05);
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.token-box.clickable:active {
+  transform: scale(0.95);
 }

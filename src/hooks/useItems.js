@@ -37,7 +37,6 @@ export const useItems = () => {
         
         // Convert item IDs to strings for the contract call
         const itemIdStrings = allItemIds.map(id => id.toString());
-        
         // Fetch balances for all items at once
         const balances = await contracts.items_1155.balanceOfBatch(addresses, itemIdStrings);
                 

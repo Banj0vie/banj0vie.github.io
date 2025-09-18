@@ -6,7 +6,7 @@ import { useWeb3 } from "../../../../contexts/Web3Context";
 
 const ProfileView = () => {
   const [isWalletDlg, setIsWalletDlg] = useState(false);
-  const [username, setUsername] = useState("kcat"); // Default fallback
+  const [username, setUsername] = useState("");
   const { contractService, account } = useWeb3();
 
   useEffect(() => {

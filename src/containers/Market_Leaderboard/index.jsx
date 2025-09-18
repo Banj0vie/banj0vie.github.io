@@ -15,26 +15,50 @@ const LeaderboardDialog = ({ onClose, label = "LEADERBOARD", header = "" }) => {
     leaderboardData,
     userScore,
     epochStart,
+    currentEpoch,
     fetchLeaderboardData,
-    loading,
-    error
-  } = useLeaderboard();
-  const [isTimer, setIsTimer] = useState(true);
+    advanceEpoch,
+    loading  } = useLeaderboard();
   const [remainedTime, setRemainedTime] = useState(0);
-  const [currentEpoch, setCurrentEpoch] = useState(77);
+  const [selectedEpoch, setSelectedEpoch] = useState(null);
   const [isRewardDlg, setIsRewardDlg] = useState(false);
+  const [isNavigating, setIsNavigating] = useState(false);
 
   // Fetch data on component mount
   useEffect(() => {
     fetchLeaderboardData();
   }, [fetchLeaderboardData]);
 
+  // Update selected epoch when currentEpoch changes
+  useEffect(() => {
+    if (currentEpoch >= 0) {
+      setSelectedEpoch(currentEpoch);
+    }
+  }, [currentEpoch]);
+
+  // Handle epoch navigation
+  const handleEpochChange = useCallback((newEpoch) => {
+    if (isNavigating) {
+      return;
+    }
+    
+    if (newEpoch >= 0 && newEpoch <= currentEpoch) {
+      setIsNavigating(true);
+      setSelectedEpoch(newEpoch);
+      fetchLeaderboardData(newEpoch).finally(() => {
+        setIsNavigating(false);
+      });
+    }
+  }, [currentEpoch, fetchLeaderboardData, isNavigating]);
+
   // Update timer based on epochStart
   useEffect(() => {
     if (epochStart > 0) {
       const updateTimer = () => {
         const now = Math.floor(Date.now() / 1000); // Current timestamp in seconds
-        const epochDuration = 7 * 24 * 60 * 60; // 7 days in seconds
+        // =================TIME GLITCH=================
+        // const epochDuration = 7 * 24 * 60 * 60;
+        const epochDuration = 30 * 60;
         const epochEndTime = epochStart + epochDuration;
         const remaining = Math.max(0, (epochEndTime - now) * 1000); // Convert to milliseconds
         setRemainedTime(remaining);
@@ -71,8 +95,28 @@ const LeaderboardDialog = ({ onClose, label = "LEADERBOARD", header = "" }) => {
           Your score: <span className="highlight">{loading ? "Loading..." : userScore.toFixed(2)}</span>
         </div>
         <div className="text-center timer">
-          Ends in:{" "}
-          <span className="highlight">{formatDuration(remainedTime)}</span>
+          {(selectedEpoch !== null ? selectedEpoch : currentEpoch) === currentEpoch ? (
+            remainedTime <= 0 ? (
+              <div>
+                <div>Epoch Ended!</div>
+                <BaseButton
+                  label="Advance Epoch"
+                  onClick={advanceEpoch}
+                  className="h-3rem mt-1rem"
+                  disabled={loading}
+                />
+              </div>
+            ) : (
+              <>
+                Ends in:{" "}
+                <span className="highlight">{formatDuration(remainedTime)}</span>
+              </>
+            )
+          ) : (
+            <>
+              Historical Epoch: <span className="highlight">{selectedEpoch !== null ? selectedEpoch : currentEpoch}</span>
+            </>
+          )}
         </div>
         <BaseDivider />
         <div className="epoch-selector">
@@ -80,23 +124,42 @@ const LeaderboardDialog = ({ onClose, label = "LEADERBOARD", header = "" }) => {
             src={buttonFrames.leftTriangleButton}
             alt="left"
             className="triangle-button"
-            onClick={() => setCurrentEpoch((prev) => prev - 1)}
+            onClick={() => {
+              if (isNavigating) return;
+              const currentDisplayEpoch = selectedEpoch !== null ? selectedEpoch : currentEpoch;
+              const newEpoch = Math.max(0, currentDisplayEpoch - 1);
+              console.log('Left arrow clicked, new epoch:', newEpoch);
+              handleEpochChange(newEpoch);
+            }}
+            style={{ 
+              opacity: (selectedEpoch !== null ? selectedEpoch : currentEpoch) <= 0 || isNavigating ? 0.5 : 1, 
+              cursor: (selectedEpoch !== null ? selectedEpoch : currentEpoch) <= 0 || isNavigating ? 'not-allowed' : 'pointer' 
+            }}
           ></img>
           <div>
-            Epoch <span className="highlight">{currentEpoch}</span>
+            Epoch <span className="highlight">{selectedEpoch !== null ? selectedEpoch : currentEpoch}</span>
           </div>
           <img
             src={buttonFrames.rightTriangleButton}
             alt="right"
             className="triangle-button"
-            onClick={() => setCurrentEpoch((prev) => prev + 1)}
+            onClick={() => {
+              if (isNavigating) return;
+              const newEpoch = (selectedEpoch !== null ? selectedEpoch : currentEpoch) + 1;
+              console.log('Right arrow clicked, new epoch:', newEpoch);
+              handleEpochChange(newEpoch);
+            }}
+            style={{ 
+              opacity: (selectedEpoch !== null ? selectedEpoch : currentEpoch) >= currentEpoch || isNavigating ? 0.5 : 1, 
+              cursor: (selectedEpoch !== null ? selectedEpoch : currentEpoch) >= currentEpoch || isNavigating ? 'not-allowed' : 'pointer' 
+            }}
           ></img>
         </div>
         <BaseDivider />
         <div className="button-row">
           <BaseButton
             label="Refresh"
-            onClick={fetchLeaderboardData}
+            onClick={() => fetchLeaderboardData(selectedEpoch || currentEpoch)}
             className="h-4rem mt-1rem"
             disabled={loading}
           />

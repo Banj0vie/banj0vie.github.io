@@ -12,4 +12,14 @@
     -o-border-image: var(--secondary-bg) 6 repeat;
     border-image: var(--secondary-bg) 6 fill repeat;
     border-image-width: .5rem;
+    transition: all 0.2s ease;
+}
+
+.balance-box.clickable:hover {
+    background: rgba(0, 0, 0, .4);
+    transform: scale(1.05);
+}
+
+.balance-box.clickable:active {
+    transform: scale(0.95);
 }

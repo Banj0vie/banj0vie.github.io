@@ -9,7 +9,6 @@ import { useItems } from "../../../hooks/useItems";
 const SellDialog = ({ onBack, onClose }) => {
   const [checkedItemIds, setCheckedItemIds] = useState([]);
   const { all: allItems, loading, error } = useItems();
-
   // Filter items based on checked item IDs
   const filteredItems = useMemo(() => {
     if (!allItems || checkedItemIds.length === 0) {
