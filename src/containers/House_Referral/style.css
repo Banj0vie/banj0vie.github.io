@@ -1,0 +1,23 @@
+.referral-dialog {
+  width: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.sponsor-box {
+  padding: 1rem;
+}
+
+.your-referral-code {
+  padding: 1rem;
+}
+
+.share-code {
+  cursor: pointer;
+  transition: all 0.1s linear;
+}
+
+.share-code:hover {
+  transform: scale(1.05);
+}

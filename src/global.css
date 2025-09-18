@@ -171,6 +171,10 @@ a {
   font-size: 1.25rem;
 }
 
+.font-bold {
+  font-weight: 700;
+}
+
 .p-0 {
   padding: 0;
 }

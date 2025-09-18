@@ -15,6 +15,7 @@ import {
   sliderImages,
 } from "./constants/_baseimages.js";
 import Farm from "./router/farm.jsx";
+import House from "./router/house.jsx";
 
 const AppContent = () => {
   const { isConnected, account, hasProfile } = useWeb3();
@@ -43,7 +44,7 @@ const AppContent = () => {
       >
         <Routes>
           <Route path="/" element={<Market />} />
-          {/* <Route path="/house" element={<House />} /> */}
+          <Route path="/house" element={<House />} />
           <Route path="/market" element={<Market />} />
           <Route path="/farm" element={<Farm />} />
           {/* <Route

@@ -1,0 +1,35 @@
+.gardner-dialog-content {
+  width: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 1rem;
+  margin-top: 1.5rem;
+}
+
+.gardner-card {
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  position: relative;
+}
+
+.gardner-header {
+  position: absolute;
+  height: 3rem;
+  width: 50%;
+  min-height: 2rem;
+  top: -1rem;
+  cursor: pointer;
+  box-shadow: rgba(0, 0, 0, 0.25) 0px 0px 1rem;
+  user-select: none;
+  border-image: var(--profile-btn-bg) 6 fill / 1rem / 0 repeat;
+  transition: 0.1s ease-in;
+  padding: 0px 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  left: 50%;
+  transform: translateX(-50%);
+}
