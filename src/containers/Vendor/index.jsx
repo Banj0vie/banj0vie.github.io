@@ -8,13 +8,12 @@ import CustomSeedsDialog from "../CustomSeedsDialog";
 import { ID_SEED_SHOP_ITEMS, ID_SEED_SHOP_PAGES } from "../../constants/app_ids";
 import { SEED_PACK_STATUS } from "../../constants/item_seed";
 import SeedRollingDialog from "../SeedRollingDialog";
-import { useVendor, useFarming, useContracts } from "../../hooks/useContracts";
-import { useWeb3 } from "../../contexts/Web3Context";
+import { useVendor, useFarming } from "../../hooks/useContracts";
+import { useAgwEthersAndService } from "../../hooks/useAgwEthersAndService";
 const VendorDialog = ({ onClose, label = "VENDOR", header = "" }) => {
-  const { isConnected, account } = useWeb3();
-  const { contracts, isReady } = useContracts();
+  const { isConnected, account, contractService } = useAgwEthersAndService();
   const { buySeedPack, getPackPrice, checkPendingRequests, getAllPendingRequests, fulfillPendingRequest, listenForSeedsRevealed } = useVendor();
-  const { getMaxPlots } = useFarming(contracts);
+  const { getMaxPlots } = useFarming();
   
   const [pageIndex, setPageIndex] = useState(ID_SEED_SHOP_PAGES.SEED_PACK_LIST);
   const [availablePlots, setAvailablePlots] = useState(0);
@@ -67,7 +66,7 @@ const VendorDialog = ({ onClose, label = "VENDOR", header = "" }) => {
 
   // Load available plots - only when needed
   const loadAvailablePlots = useCallback(async () => {
-    if (!isConnected || !account || !isReady || !getMaxPlots) return;
+    if (!isConnected || !account || !contractService || !getMaxPlots) return;
     
     try {
       const maxPlots = await getMaxPlots(account);
@@ -78,7 +77,7 @@ const VendorDialog = ({ onClose, label = "VENDOR", header = "" }) => {
     } catch (err) {
       console.error('Failed to load available plots:', err);
     }
-  }, [isConnected, account, isReady, getMaxPlots]);
+  }, [isConnected, account, contractService, getMaxPlots]);
 
   // Load pending requests - only when needed
   const loadPendingRequests = useCallback(async () => {
@@ -121,7 +120,7 @@ const VendorDialog = ({ onClose, label = "VENDOR", header = "" }) => {
 
   // Main data loading effect - only runs when dialog opens or account changes
   useEffect(() => {
-    if (!isConnected || !account || !isReady || dataLoaded) return;
+    if (!isConnected || !account || !contractService || dataLoaded) return;
     
     const loadData = async () => {
       setIsLoadingData(true);
@@ -141,7 +140,7 @@ const VendorDialog = ({ onClose, label = "VENDOR", header = "" }) => {
     };
 
     loadData();
-  }, [isConnected, account, isReady, dataLoaded, loadAvailablePlots, loadPendingRequests]);
+  }, [isConnected, account, contractService, dataLoaded, loadAvailablePlots, loadPendingRequests]);
 
   // Load pack prices when user navigates to seed pack detail
   useEffect(() => {

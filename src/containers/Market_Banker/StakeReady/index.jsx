@@ -3,8 +3,8 @@ import "./style.css";
 import BaseButton from "../../../components/buttons/BaseButton";
 import TokenInputRow from "../../Market_Dex/TokenInputRow";
 import CardListView from "../../../components/boxes/CardListView";
-import { useBanker, useContracts } from "../../../hooks/useContracts";
-import { useWeb3 } from "../../../contexts/Web3Context";
+import { useBanker } from "../../../hooks/useContracts";
+import { useAgwEthersAndService } from "../../../hooks/useAgwEthersAndService";
 import { useNotification } from "../../../contexts/NotificationContext";
 import { ethers } from "ethers";
 
@@ -17,8 +17,7 @@ const StakeReady = ({ onBack }) => {
   const [ratio, setRatio] = useState(1.0); // Ratio as float
   const [estRewards, setEstRewards] = useState("0.000 Ready");
   
-  const { account } = useWeb3();
-  const { contracts } = useContracts();
+  const { account, contractService } = useAgwEthersAndService();
   const { stake, unstake, getBalance, loading, error } = useBanker();
   const { show } = useNotification();
 
@@ -32,18 +31,27 @@ const StakeReady = ({ onBack }) => {
       setXReadyBalance(ethers.formatEther(xReadyBal));
       
       // Get Ready balance from yield token contract
-      if (contracts.yield_token) {
-        const readyBal = await contracts.yield_token.balanceOf(account);
+      if (contractService) {
+        const readyBal = await contractService.getYieldBalance(account);
         setReadyBalance(ethers.formatEther(readyBal));
       } else {
         setReadyBalance("0.000");
       }
       
       // Calculate actual ratio from contract
-      if (contracts.banker) {
+      if (contractService) {
+        const banker = contractService.getContract('BANKER');
         const [totalSupply, tokenBalance] = await Promise.all([
-          contracts.banker.totalSupply(),
-          contracts.banker.totalGameToken()
+          contractService.publicClient.readContract({
+            address: banker.address,
+            abi: banker.abi,
+            functionName: 'totalSupply',
+          }),
+          contractService.publicClient.readContract({
+            address: banker.address,
+            abi: banker.abi,
+            functionName: 'totalGameToken',
+          })
         ]);
         
         const totalSupplyNum = parseFloat(ethers.formatEther(totalSupply));
@@ -66,8 +74,9 @@ const StakeReady = ({ onBack }) => {
         setEstRewards("0.000 Ready");
       }
     } catch (err) {
+      console.error('Failed to load balances:', err);
     }
-  }, [account, getBalance, contracts.yield_token, contracts.banker]);
+  }, [account, getBalance, contractService]);
 
   // Handle deposit (stake)
   const onDeposit = useCallback(async () => {

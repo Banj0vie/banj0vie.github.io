@@ -1,12 +1,20 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useContracts } from './useContracts';
-import { useWeb3 } from '../contexts/Web3Context';
+import { useAgwEthersAndService } from '../hooks/useAgwEthersAndService';
 import { ID_SEEDS, ID_PRODUCE_ITEMS, ID_BAIT_ITEMS, ID_FISH_ITEMS, ID_CHEST_ITEMS, ID_POTION_ITEMS } from '../constants/app_ids';
 import { ALL_ITEMS } from '../constants/item_data';
 
 export const useItems = () => {
-  const { contracts, isReady } = useContracts();
-  const { account } = useWeb3();
+  const { account, contractService } = useAgwEthersAndService();
+  const [items1155, setItems1155] = useState(null);
+  const [publicClient, setPublicClient] = useState(null);
+  const [isReady, setIsReady] = useState(false);
+
+  useEffect(() => {
+    if (!contractService) return;
+    setItems1155(contractService.getContract('ITEMS_1155'));
+    setPublicClient(contractService.publicClient);
+    setIsReady(true);
+  }, [contractService]);
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -23,7 +31,7 @@ export const useItems = () => {
 
   useEffect(() => {
     const fetchItems = async () => {
-      if (!contracts.items_1155 || !account || !isReady) {
+      if (!items1155 || !account || !isReady || !publicClient) {
         setItems([]);
         return;
       }
@@ -42,7 +50,12 @@ export const useItems = () => {
         console.log('Item IDs:', itemIdStrings.slice(0, 5), '... (showing first 5)');
         
         // Fetch balances for all items at once
-        const balances = await contracts.items_1155.balanceOfBatch(addresses, itemIdStrings);
+        const balances = await publicClient.readContract({
+          address: items1155.address,
+          abi: items1155.abi,
+          functionName: 'balanceOfBatch',
+          args: [addresses, itemIdStrings],
+        });
         
         console.log('Balances received:', balances.slice(0, 5), '... (showing first 5)');
         
@@ -76,7 +89,7 @@ export const useItems = () => {
     };
 
     fetchItems();
-  }, [contracts.items_1155, account, isReady, allItemIds]);
+  }, [items1155, account, isReady, publicClient, allItemIds]);
 
   // Filter items by category and return as JSON object
   const itemsByCategory = {
@@ -94,7 +107,7 @@ export const useItems = () => {
     loading,
     error,
     refetch: () => {
-      if (contracts.items_1155 && account && isReady) {
+      if (items1155 && account && isReady && publicClient) {
         const fetchItems = async () => {
           setLoading(true);
           setError(null);
@@ -102,7 +115,12 @@ export const useItems = () => {
           try {
             const addresses = new Array(allItemIds.length).fill(account);
             const itemIdStrings = allItemIds.map(id => id.toString());
-            const balances = await contracts.items_1155.balanceOfBatch(addresses, itemIdStrings);
+            const balances = await publicClient.readContract({
+              address: items1155.address,
+              abi: items1155.abi,
+              functionName: 'balanceOfBatch',
+              args: [addresses, itemIdStrings],
+            });
             
             const userItems = [];
             balances.forEach((balance, index) => {

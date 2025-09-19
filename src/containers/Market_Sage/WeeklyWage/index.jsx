@@ -24,6 +24,17 @@ const WeeklyWage = ({onBack}) => {
     fetchSageData();
   }, [fetchSageData]);
 
+  // Track state changes for debugging
+  useEffect(() => {
+    console.log('🔍 WeeklyWage: State changed:', { 
+      lockedAmount: sageData.lockedAmount,
+      canUnlockWage: sageData.canUnlockWage,
+      weeklyWageAmount: sageData.weeklyWageAmount,
+      loading,
+      isUnlocking
+    });
+  }, [sageData.lockedAmount, sageData.canUnlockWage, sageData.weeklyWageAmount, loading, isUnlocking]);
+
   // Update timer for next wage unlock
   useEffect(() => {
     const updateTimer = () => {
@@ -45,15 +56,20 @@ const WeeklyWage = ({onBack}) => {
   }, [getTimeUntilNextWageUnlock, fetchSageData, sageData.canUnlockWage, sageData.lockedAmount]);
 
   const handleUnlock = useCallback(async () => {
+    console.log('🚀 WeeklyWage: Starting unlock process');
+    console.log('🔍 WeeklyWage: Current sageData before unlock:', sageData);
+    
     setIsUnlocking(true);
     try {
       await unlockWeeklyWage();
+      console.log('✅ WeeklyWage: Unlock successful, checking state after...');
+      console.log('🔍 WeeklyWage: State after unlock:', sageData);
     } catch (err) {
       console.error('Failed to unlock:', err);
     } finally {
       setIsUnlocking(false);
     }
-  }, [unlockWeeklyWage]);
+  }, [unlockWeeklyWage, sageData]);
   return (
     <div className="weekly-wage-wrapper">
       <CardView className="p-0">

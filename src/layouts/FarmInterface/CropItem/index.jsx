@@ -22,7 +22,7 @@ const CropItem = ({
   isPlanting = true,
   cropArray,
   isDisabled = false,
-  maxPlots = 12,
+  maxPlots = 15,
 }) => {
   const [highlighted, setHighlighted] = useState(false);
   const [growthProgress, setGrowthProgress] = useState(0);
@@ -31,6 +31,18 @@ const CropItem = ({
   // tooltipRef removed; portal rendering handled by CropTooltip
   const rootRef = useRef(null);
   const [portalContainer, setPortalContainer] = useState(null);
+
+  // Debug logging for crop data
+  if (data && data.seedId && data.seedId !== "0") {
+    console.log(`🌱 CropItem ${index} data:`, {
+      seedId: data.seedId,
+      growStatus: data.growStatus,
+      plantedAt: data.plantedAt,
+      growthTime: data.growthTime,
+      isDisabled,
+      maxPlots
+    });
+  }
 
   useEffect(() => {
     if (isPlanting) {

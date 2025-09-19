@@ -1,24 +1,12 @@
 import React from "react";
 import "./style.css";
 import BaseButton from "../../../components/buttons/BaseButton";
-import { useWeb3 } from "../../../contexts/Web3Context";
+import { useAgwEthersAndService } from "../../../hooks/useAgwEthersAndService";
+import { useLoginWithAbstract } from "@abstract-foundation/agw-react";
 
 const ConnectWalletAuthBox = () => {
-  const { 
-    account, 
-    isConnected, 
-    isConnecting, 
-    error, 
-    connect
-  } = useWeb3();
-  const handleConnect = async () => {
-    try {
-      const connectedAccount = await connect();
-      console.log(connectedAccount);
-    } catch (err) {
-      console.error('Wallet connection failed:', err);
-    }
-  };
+  const { account, isConnected, isConnecting, error, connect } = useAgwEthersAndService();
+  const { login } = useLoginWithAbstract();
 
   if (isConnected && account) {
     return (
@@ -45,7 +33,7 @@ const ConnectWalletAuthBox = () => {
       <BaseButton
         label={isConnecting ? "Connecting..." : "Connect Wallet"}
         className="h-4rem auth-wallet-connect-button"
-        onClick={handleConnect}
+        onClick={login}
         disabled={isConnecting}
       ></BaseButton>
     </div>

@@ -5,12 +5,12 @@ import ProfileButton from "../../../components/buttons/ProfileButton";
 import { profileAssets } from "../../../constants/_baseimages";
 import ProfileView from "./ProfileView";
 import { useGameState } from "../../../contexts/GameStateContext";
-import { useWeb3 } from "../../../contexts/Web3Context";
+import { useAgwEthersAndService } from "../../../hooks/useAgwEthersAndService";
 import { formatNumber } from "../../../utils/basic";
 
 const ProfileBar = () => {
   const { balances, formatBalance } = useGameState();
-  const { contractService, account } = useWeb3();
+  const { contractService, account } = useAgwEthersAndService();
   const [lockedReady, setLockedReady] = useState("0.0");
   const [readyBalance, setReadyBalance] = useState("0.0");
 

@@ -3,13 +3,15 @@ import "./style.css";
 import BaseDivider from "../../../components/dividers/BaseDivider";
 import BaseInput from "../../../components/inputs/BaseInput";
 import BaseButton from "../../../components/buttons/BaseButton";
-import { useWeb3 } from "../../../contexts/Web3Context";
+import { useAgwEthersAndService } from "../../../hooks/useAgwEthersAndService";
 import { useNotification } from "../../../contexts/NotificationContext";
 
 const ProfileAuthBox = ({ onCreateProfile }) => {
   const [username, setUsername] = useState("");
   const [referralCode, setReferralCode] = useState("");
-  const { createProfile, isCreatingProfile, error } = useWeb3();
+  const { contractService, refreshProfileStatus } = useAgwEthersAndService();
+  const [isCreatingProfile, setIsCreatingProfile] = useState(false);
+  const [error, setError] = useState(null);
 
   const { show } = useNotification();
 
@@ -19,12 +21,30 @@ const ProfileAuthBox = ({ onCreateProfile }) => {
       return;
     }
 
+    console.log('🚀 Creating profile:', { username: username.trim(), referralCode: referralCode.trim() });
+    setIsCreatingProfile(true);
+    setError(null);
     try {
-      await createProfile(username.trim(), referralCode.trim());
+      const txHash = await contractService.createProfile(username.trim(), referralCode.trim());
+      console.log('✅ Profile creation transaction:', txHash);
+      
+      // Add a delay to allow blockchain state to update
+      console.log('⏳ Waiting for blockchain state to update...');
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      
+      // Refresh profile status after creation
+      console.log('🔄 Refreshing profile status...');
+      const hasProfile = await refreshProfileStatus();
+      console.log('🔍 Profile status after refresh:', hasProfile);
+      
       onCreateProfile(username.trim(), referralCode.trim());
+      show("Profile created successfully!", 'success');
     } catch (err) {
       console.error("Failed to create profile:", err);
-      // Error is already handled by Web3Context
+      setError(err.message);
+      show(`Failed to create profile: ${err.message}`, 'error');
+    } finally {
+      setIsCreatingProfile(false);
     }
   };
 

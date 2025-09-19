@@ -3,14 +3,19 @@ import "./style.css";
 import BaseDialog from "../BaseDialog";
 import BaseButton from "../../components/buttons/BaseButton";
 import { formatAddress } from "../../utils/basic";
-import { useWeb3 } from "../../contexts/Web3Context";
+import { useAgwEthersAndService } from "../../hooks/useAgwEthersAndService";
 
 const WalletDialog = ({onClose}) => {
-  const { account, disconnect } = useWeb3();
+  const { account, disconnect } = useAgwEthersAndService();
 
   const onDisconnect = () => {
-    disconnect();
-    onClose();
+    try {
+      disconnect();
+      onClose();
+    } catch (error) {
+      console.error('Failed to disconnect wallet:', error);
+      onClose();
+    }
   };
 
   return (

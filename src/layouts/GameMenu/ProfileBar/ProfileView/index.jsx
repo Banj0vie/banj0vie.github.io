@@ -2,19 +2,19 @@ import React, { useState, useEffect } from "react";
 import "./style.css";
 import WalletButton from "../../../../components/buttons/WalletButton";
 import WalletDialog from "../../../../containers/WalletDialog";
-import { useWeb3 } from "../../../../contexts/Web3Context";
+import { useAgwEthersAndService } from "../../../../hooks/useAgwEthersAndService";
 
 const ProfileView = () => {
   const [isWalletDlg, setIsWalletDlg] = useState(false);
   const [username, setUsername] = useState("");
-  const { contractService, account } = useWeb3();
+  const { contractService, account } = useAgwEthersAndService();
 
   useEffect(() => {
     const loadUsername = async () => {
       if (contractService && account) {
         try {
-          const playerStore = contractService.getContract('PLAYER_STORE');
-          const profileUsername = await playerStore.usernameOf(account);
+          const username = contractService.getUsername(account);
+          const profileUsername = await username;
           setUsername(profileUsername || "Player");
         } catch (error) {
           console.error('Failed to load username:', error);

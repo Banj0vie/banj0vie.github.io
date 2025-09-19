@@ -8,11 +8,11 @@ import LabelValueBox from "../../components/boxes/LabelValueBox";
 import DividerLink from "../../components/links/DividerLink";
 import { generateId } from "../../utils/basic";
 import { useDex } from "../../hooks/useContracts";
-import { useWeb3 } from "../../contexts/Web3Context";
+import { useAgwEthersAndService } from "../../hooks/useAgwEthersAndService";
 import { useNotification } from "../../contexts/NotificationContext";
 import { ethers } from "ethers";
 const DexDialog = ({ onClose, label = "DEX", header = "" }) => {
-  const { isConnected } = useWeb3();
+  const { isConnected } = useAgwEthersAndService();
   const { swapETHForYield, getYieldAmount, ethBalance, readyBalance, fetchBalances, loading, error } = useDex();
   
   const [isReversed, setIsReversed] = useState(false);
@@ -29,11 +29,12 @@ const DexDialog = ({ onClose, label = "DEX", header = "" }) => {
         setReadyAmount('0');
         return;
       }
-
+      
       try {
         setIsCalculating(true);
         const ethWei = ethers.parseEther(ethAmount);
         const readyAmount = await getYieldAmount(ethWei);
+        console.log("🚀 ~ calculateReady ~ ethAmount:", readyAmount)
         setReadyAmount(ethers.formatEther(readyAmount));
       } catch (err) {
         console.error('Failed to calculate ready:', err);

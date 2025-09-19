@@ -10,14 +10,15 @@ import FarmInterface from "../layouts/FarmInterface";
 import FarmMenu from "../layouts/FarmInterface/FarmMenu";
 import SelectSeedDialog from "../containers/SelectSeedDialog";
 import { useItems } from "../hooks/useItems";
-import { useContracts, useFarming } from "../hooks/useContracts";
+import { useFarming } from "../hooks/useContracts";
+import { useAgwEthersAndService } from "../hooks/useAgwEthersAndService";
 import { useNotification } from "../contexts/NotificationContext";
 import { CropItemArrayClass } from "../models/crop";
 const Farm = () => {
   const { width, height } = FARM_VIEWPORT;
   const hotspots = FARM_HOTSPOTS;
   const { seeds: currentSeeds, refetch: refetchSeeds } = useItems();
-  const { contracts, isReady } = useContracts();
+  const { account, contractService } = useAgwEthersAndService();
   const {
     plant,
     plantBatch,
@@ -28,7 +29,7 @@ const Farm = () => {
     getCrop,
     getGrowthTime,
     loading: farmingLoading,
-  } = useFarming(contracts);
+  } = useFarming();
   const { show } = useNotification();
   const [isFarmMenu, setIsFarmMenu] = useState(false);
   const [isPlanting, setIsPlanting] = useState(true);
@@ -48,6 +49,17 @@ const Farm = () => {
   const [usedSeedsInPreview, setUsedSeedsInPreview] = useState({}); // Track seeds used in preview
 
   // Arrays are always 30 plots (15 per side), but maxPlots determines which are enabled
+
+  // Debug maxPlots changes
+  useEffect(() => {
+console.log("🚀 maxPlots changed to:", maxPlots);
+  }, [maxPlots]);
+
+  // Force re-render when crop array changes
+  useEffect(() => {
+    console.log("🌱 Crop array changed, forcing re-render");
+    setPreviewUpdateKey(prev => prev + 1);
+  }, [cropArray]);
 
   // Get growth time for different seed types
   const getGrowthTimeForSeed = useCallback(
@@ -81,6 +93,7 @@ const Farm = () => {
       try {
         console.log("Loading crops for address:", address);
         setUserCropsLoaded(false);
+        console.log("Set userCropsLoaded to false");
 
         // Read all plots directly to avoid gaps from contract count(), in parallel
         const totalPlotsToCheck = 30;
@@ -130,16 +143,39 @@ const Farm = () => {
           }
         }
 
+        // Force state updates to trigger re-renders
         setCropArray(newCropArray);
         setPreviewCropArray(newCropArray);
         setUserCropsLoaded(true);
         console.log("Final crop array (full scan):", newCropArray);
+        console.log("Set userCropsLoaded to true");
+        
+        // Force a re-render by updating the preview key
+        setPreviewUpdateKey(prev => prev + 1);
+        console.log("🔄 Forced re-render after crop loading");
+        
+        // Debug: Log how many crops are actually planted
+        const plantedCrops = newCropArray.arrays.filter(crop => crop && crop.seedId && crop.seedId !== "0");
+        console.log(`🌱 Found ${plantedCrops.length} planted crops after refresh`);
+        
+        // Additional debugging for crop structure
+        console.log("🌱 Crop array structure:", {
+          totalPlots: newCropArray.getLength(),
+          arrays: newCropArray.arrays,
+          plantedCrops: plantedCrops.map(crop => ({
+            seedId: crop.seedId,
+            growStatus: crop.growStatus,
+            plantedAt: crop.plantedAt,
+            growthTime: crop.growthTime
+          }))
+        });
       } catch (error) {
         console.error("Failed to load crops from contract:", error);
         const emptyArray = new CropItemArrayClass(30);
         setCropArray(emptyArray);
         setPreviewCropArray(emptyArray);
         setUserCropsLoaded(true);
+        console.log("Set userCropsLoaded to true (error case)");
       }
     },
     [getCrop, getGrowthTimeForSeed]
@@ -149,47 +185,58 @@ const Farm = () => {
   useEffect(() => {
     const loadUserData = async () => {
       try {
-        // Get user address from wallet
-        if (window.ethereum) {
-          const accounts = await window.ethereum.request({
-            method: "eth_accounts",
-          });
-          if (accounts.length > 0) {
-            setUserAddress(accounts[0]);
-
-            // Only proceed if contracts are ready
-            if (!isReady) {
-              console.log("Contracts not ready yet, skipping data load");
-              return;
-            }
-
-            // Get max plots for this user
-            try {
-              const userMaxPlots = await getMaxPlots(accounts[0]);
-              console.log("Max plots for user:", userMaxPlots);
-              if (userMaxPlots && userMaxPlots > 0) {
-                setMaxPlots(Number(userMaxPlots));
-              } else {
-                console.warn(
-                  "No max plots returned, user has no plots available"
-                );
-                setMaxPlots(0);
-              }
-            } catch (error) {
-              console.error("Failed to get max plots:", error);
-              setMaxPlots(0); // No plots available
-            }
-
-            await loadCropsFromContract(accounts[0]);
-          }
+        // Use account from AGW service
+        if (!account) {
+          console.log("No account connected yet");
+          return;
         }
+        
+        setUserAddress(account);
+
+        // Only proceed if contract service is ready
+        if (!contractService) {
+          console.log("Contract service not ready yet, skipping data load");
+          return;
+        }
+
+        // Get max plots for this user
+        try {
+          // First check if user has a profile
+          const profile = await contractService.getProfile(account);
+          console.log("🚀 ~ loadUserData ~ profile:", profile);
+          
+          if (!profile || !profile.exists) {
+            // User doesn't have a profile, set default max plots for level 0
+            console.log("User has no profile, setting default max plots for level 0");
+            setMaxPlots(15);
+          } else {
+            // User has a profile, get actual max plots
+            console.log("User has profile, getting max plots from contract");
+            const userMaxPlots = await getMaxPlots(account);
+            console.log("Max plots for user:", userMaxPlots);
+            
+            if (userMaxPlots && userMaxPlots > 0) {
+              setMaxPlots(Number(userMaxPlots));
+              console.log("Set max plots to:", Number(userMaxPlots));
+            } else {
+              console.warn("No max plots returned from contract, using default");
+              setMaxPlots(15); // Default for level 0
+            }
+          }
+        } catch (error) {
+          console.error("Failed to get max plots:", error);
+          console.log("Using default max plots due to error");
+          setMaxPlots(15); // Default fallback for level 0
+        }
+
+        await loadCropsFromContract(account);
       } catch (error) {
         console.error("Failed to load user data:", error);
       }
     };
 
     loadUserData();
-  }, [loadCropsFromContract, getMaxPlots, isReady]);
+  }, [account, contractService, loadCropsFromContract, getMaxPlots]);
 
   // Growth timer effect
   useEffect(() => {
@@ -411,9 +458,9 @@ const Farm = () => {
   };
 
   const handleHarvestAll = async () => {
-    if (!isReady) {
+    if (!contractService) {
       show(
-        "Contracts not ready yet. Please wait a moment and try again.",
+        "Contract service not ready yet. Please wait a moment and try again.",
         "warning"
       );
       return;
@@ -464,7 +511,11 @@ const Farm = () => {
 
       // Reload crops from contract to sync state
       if (userAddress) {
+        console.log("🔄 Refreshing crops after harvest all...");
+        // Small delay to ensure blockchain state is updated
+        await new Promise(resolve => setTimeout(resolve, 1000));
         await loadCropsFromContract(userAddress);
+        console.log("✅ Crops refreshed after harvest all");
       }
 
       show(`✅ Successfully harvested ${readySlots.length} crops!`, "success");
@@ -480,9 +531,9 @@ const Farm = () => {
   };
 
   const handlePlant = async () => {
-    if (!isReady) {
+    if (!contractService) {
       show(
-        "Contracts not ready yet. Please wait a moment and try again.",
+        "Contract service not ready yet. Please wait a moment and try again.",
         "warning"
       );
       return;
@@ -592,7 +643,7 @@ const Farm = () => {
 
       // Reload crops and seeds concurrently to reduce total wait time
       if (userAddress) {
-        console.log("Reloading crops and seeds concurrently...");
+        console.log("🔄 Reloading crops and seeds concurrently...");
         await Promise.all([
           loadCropsFromContract(userAddress),
           (async () => {
@@ -605,6 +656,11 @@ const Farm = () => {
             }
           })(),
         ]);
+        console.log("✅ Crops and seeds reloaded successfully");
+        
+        // Force a re-render by updating the preview update key
+        setPreviewUpdateKey(prev => prev + 1);
+        console.log("🔄 Forced re-render with new preview key");
       }
 
       // Confirm planting in preview array (transition -1 to 1)
@@ -612,6 +668,7 @@ const Farm = () => {
         const newPreviewCropArray = new CropItemArrayClass(30);
         newPreviewCropArray.copyFrom(prevPreviewCropArray);
         newPreviewCropArray.confirmPlanting();
+        console.log("🔄 Preview array updated with confirmed planting");
         return newPreviewCropArray;
       });
 
@@ -627,9 +684,9 @@ const Farm = () => {
   };
 
   const handleHarvest = async () => {
-    if (!isReady) {
+    if (!contractService) {
       show(
-        "Contracts not ready yet. Please wait a moment and try again.",
+        "Contract service not ready yet. Please wait a moment and try again.",
         "warning"
       );
       return;
@@ -710,7 +767,11 @@ const Farm = () => {
 
       // Reload crops from contract to sync state
       if (userAddress) {
+        console.log("🔄 Refreshing crops after harvest...");
+        // Small delay to ensure blockchain state is updated
+        await new Promise(resolve => setTimeout(resolve, 1000));
         await loadCropsFromContract(userAddress);
+        console.log("✅ Crops refreshed after harvest");
       }
 
       if (successCount > 0) {
@@ -904,6 +965,13 @@ const Farm = () => {
           totalPlots={30}
           userCropsLoaded={userCropsLoaded}
         />
+        {/* Debug info */}
+        {console.log("🚀 FarmInterface props:", {
+          maxPlots,
+          userCropsLoaded,
+          isFarmMenu,
+          isPlanting
+        })}
       </PanZoomViewport>
       {isFarmMenu && (
         <FarmMenu

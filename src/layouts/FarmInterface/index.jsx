@@ -2,7 +2,18 @@ import React from "react";
 import "./style.css";
 import CropItem from "./CropItem";
 
-const FarmInterface = ({cropArray, onClickCrop, isFarmMenu, isPlanting, maxPlots = 0, totalPlots = 30, userCropsLoaded = true}) => {
+const FarmInterface = ({cropArray, onClickCrop, isFarmMenu, isPlanting, maxPlots = 15, totalPlots = 30, userCropsLoaded = true}) => {
+  
+  // Debug logging
+  console.log("🌱 FarmInterface render:", {
+    maxPlots,
+    userCropsLoaded,
+    isFarmMenu,
+    isPlanting,
+    cropArrayLength: cropArray?.getLength?.() || 0,
+    cropArrays: cropArray?.arrays?.length || 0,
+    plantedCrops: cropArray?.arrays?.filter(crop => crop && crop.seedId && crop.seedId !== "0").length || 0
+  });
   
   if (maxPlots === 0) {
     return (

@@ -5,27 +5,41 @@ import SocialLink from "../../components/links/SocialLink";
 import ConnectWalletAuthBox from "./ConnectWalletAuthBox";
 import { ID_AUTH_PAGES } from "../../constants/app_ids";
 import ProfileAuthBox from "./ProfileAuthBox";
-import { useWeb3 } from "../../contexts/Web3Context";
+import { useAgwEthersAndService } from "../../hooks/useAgwEthersAndService";
 
 const AuthPage = () => {
-  const { isConnected, hasProfile } = useWeb3();
-  console.log(isConnected);
+  const { isConnected, hasProfile, account } = useAgwEthersAndService();
   const [pageId, setPageId] = useState(ID_AUTH_PAGES.CONNECT_WALLET);
 
   useEffect(() => {
+    console.log('🔍 AuthPage state:', { isConnected, hasProfile, pageId, account });
+    
     if(!isConnected) {
       if (pageId !== ID_AUTH_PAGES.CONNECT_WALLET) {
+        console.log('🔄 Switching to CONNECT_WALLET page');
         setPageId(ID_AUTH_PAGES.CONNECT_WALLET);
       }
     } else if (isConnected && !hasProfile) {
       if (pageId !== ID_AUTH_PAGES.PROFILE) {
+        console.log('🔄 Switching to PROFILE page');
         setPageId(ID_AUTH_PAGES.PROFILE);
       }
+    } else if (isConnected && hasProfile) {
+      console.log('✅ User is connected and has profile - should proceed to game', account);
     }
-  }, [isConnected, pageId, hasProfile]);
+  }, [isConnected, pageId, hasProfile, account]);
+
+  // Track hasProfile changes specifically
+  useEffect(() => {
+    console.log('🔍 AuthPage: hasProfile changed to:', hasProfile);
+  }, [hasProfile]);
 
   const onCreateProfile = (username, referralCode) => {
     console.log("Created Profile!", username, referralCode);
+    // Force a small delay to ensure state has updated
+    setTimeout(() => {
+      console.log('🔄 AuthPage: Checking state after profile creation...');
+    }, 1000);
   };
   return (
     <div className="auth-page">

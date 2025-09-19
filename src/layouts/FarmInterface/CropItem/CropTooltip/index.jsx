@@ -5,11 +5,10 @@ import { TYPE_LABEL_COLOR, SEED_PACK_LIST, GROW_STATUS } from "../../../../const
 import { ALL_ITEMS } from "../../../../constants/item_data";
 import BaseDivider from "../../../../components/dividers/BaseDivider";
 import GrowStatusBox from "../../../../components/boxes/GrowStatusBox";
-import { useWeb3 } from "../../../../contexts/Web3Context";
+import { useAgwEthersAndService } from "../../../../hooks/useAgwEthersAndService";
 import CropCircleIcon from "../../../../components/boxes/CropCircleIcon";
-
 const CropTooltip = ({ container, pos = { x: 0, y: 0 }, data = {}, growthProgress = 0 }) => {
-  const { account, contractService } = useWeb3();
+  const { account, contractService } = useAgwEthersAndService();
   const [timeLeft, setTimeLeft] = useState(0);
   const [locked, setLocked] = useState("0");
   const [unlocked, setUnlocked] = useState("0");

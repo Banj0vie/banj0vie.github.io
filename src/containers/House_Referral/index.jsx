@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import "./style.css";
 import BaseDialog from "../BaseDialog";
 import CardView from "../../components/boxes/CardView";
@@ -22,6 +22,18 @@ const ReferralDialog = ({ onClose, label = "REFERRAL", header = "" }) => {
     registerReferralCode,
     loading
   } = useReferral();
+
+  // Track state changes for debugging
+  useEffect(() => {
+    console.log('🔍 ReferralDialog: State changed:', { 
+      myReferralCode, 
+      sponsor, 
+      currentLevel, 
+      loading,
+      canRegisterCode: currentLevel >= 6 && !myReferralCode
+    });
+  }, [myReferralCode, sponsor, currentLevel, loading]);
+
   const onRegister = async () => {
     if (!code.trim()) {
       show("Please enter a referral code", 'warning');
@@ -33,8 +45,23 @@ const ReferralDialog = ({ onClose, label = "REFERRAL", header = "" }) => {
       return;
     }
 
+    console.log('🚀 ReferralDialog: Starting registration for code:', code.trim());
+    console.log('🔍 ReferralDialog: Current state before registration:', { 
+      myReferralCode, 
+      sponsor, 
+      currentLevel, 
+      loading 
+    });
+
     try {
       await registerReferralCode(code.trim());
+      console.log('✅ ReferralDialog: Registration successful, checking state after...');
+      console.log('🔍 ReferralDialog: State after registration:', { 
+        myReferralCode, 
+        sponsor, 
+        currentLevel, 
+        loading 
+      });
       show("Referral code registered successfully!", 'success');
     } catch (err) {
       console.error("Failed to register referral code:", err);

@@ -4,27 +4,26 @@ import CardListView from "../../../components/boxes/CardListView";
 import BaseDivider from "../../../components/dividers/BaseDivider";
 import Slider from "../../../components/inputs/Slider";
 import BaseButton from "../../../components/buttons/BaseButton";
-import { useContracts, useROIData } from "../../../hooks/useContracts";
-import { useWeb3 } from "../../../contexts/Web3Context";
+import { useROIData } from "../../../hooks/useContracts";
+import { useAgwEthersAndService } from "../../../hooks/useAgwEthersAndService";
 
 const RollChances = ({ onBack }) => {
-  const { contracts } = useContracts();
-  const { account } = useWeb3();
-  const { roiData, getROIData, loading } = useROIData(contracts);
+  const { account, contractService } = useAgwEthersAndService();
+  const { roiData, getROIData, loading } = useROIData();
   const [currentFarmLevel, setCurrentFarmLevel] = useState(0);
 
   // Get user's farm level from PlayerStore
   const getUserFarmLevel = useCallback(async () => {
-    if (!contracts || !contracts.player_store || !account) return 0;
+    if (!contractService || !account) return 0;
     
     try {
-      const profile = await contracts.player_store.profileOf(account);
+      const profile = await contractService.getProfile(account);
       return Number(profile[1]) || 0; // level is the second element
     } catch (err) {
       console.error('Failed to get farm level:', err);
       return 0;
     }
-  }, [contracts, account]);
+  }, [contractService, account]);
 
   // Load initial data
   useEffect(() => {
@@ -34,10 +33,10 @@ const RollChances = ({ onBack }) => {
       await getROIData(level);
     };
     
-    if (contracts && account) {
+    if (contractService && account) {
       loadData();
     }
-  }, [contracts, account, getUserFarmLevel, getROIData]);
+  }, [contractService, account, getUserFarmLevel, getROIData]);
 
   // Update ROI data when farm level changes
   const handleFarmLevelChange = async (newLevel) => {

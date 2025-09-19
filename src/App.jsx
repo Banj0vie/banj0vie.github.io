@@ -1,10 +1,9 @@
 import React, { useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import { Web3Provider, useWeb3 } from "./contexts/Web3Context";
+import { useAgwEthersAndService } from "./hooks/useAgwEthersAndService";
 import { GameStateProvider } from "./contexts/GameStateContext";
 import { NotificationProvider } from "./contexts/NotificationContext";
 import AuthPage from "./layouts/AuthPage";
-// ...existing imports
 import Market from "./router/market.jsx";
 import {
   baseFrames,
@@ -16,9 +15,11 @@ import {
 } from "./constants/_baseimages.js";
 import Farm from "./router/farm.jsx";
 import House from "./router/house.jsx";
+import { AbstractWalletProvider } from "@abstract-foundation/agw-react";
+import { abstractTestnet } from "viem/chains";
 
 const AppContent = () => {
-  const { isConnected, account, hasProfile } = useWeb3();
+  const { isConnected, account, hasProfile } = useAgwEthersAndService();
 
   // Show AuthPage if not connected, no account, or no profile
   if (!isConnected || !account || !hasProfile) {
@@ -132,15 +133,15 @@ const App = () => {
   }, []);
 
   return (
-    <Web3Provider>
-      <GameStateProvider>
-        <NotificationProvider>
-          <Router>
-            <AppContent />
-          </Router>
-        </NotificationProvider>
-      </GameStateProvider>
-    </Web3Provider>
+    <AbstractWalletProvider chain={abstractTestnet}>
+        <GameStateProvider>
+          <NotificationProvider>
+            <Router>
+              <AppContent />
+            </Router>
+          </NotificationProvider>
+        </GameStateProvider>
+    </AbstractWalletProvider>
   );
 };
 

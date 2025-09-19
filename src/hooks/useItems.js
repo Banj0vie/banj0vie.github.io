@@ -1,12 +1,20 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useContracts } from './useContracts';
-import { useWeb3 } from '../contexts/Web3Context';
+import { useAgwEthersAndService } from '../hooks/useAgwEthersAndService';
 import { ID_SEEDS, ID_PRODUCE_ITEMS, ID_BAIT_ITEMS, ID_FISH_ITEMS, ID_CHEST_ITEMS, ID_POTION_ITEMS, ID_CROP_CATEGORIES, ID_ITEM_CATEGORIES, ID_POTION_CATEGORIES, ID_POTIONS, ID_LOOT_CATEGORIES, ID_LOOTS, ID_RARE_TYPE } from '../constants/app_ids';
 import { ALL_ITEMS, IMAGE_URL_CROP } from '../constants/item_data';
 
 export const useItems = () => {
-  const { contracts, isReady } = useContracts();
-  const { account } = useWeb3();
+  const { account, contractService } = useAgwEthersAndService();
+  const [items1155, setItems1155] = useState(null);
+  const [publicClient, setPublicClient] = useState(null);
+  const [isReady, setIsReady] = useState(false);
+
+  useEffect(() => {
+    if (!contractService) return;
+    setItems1155(contractService.getContract('ITEMS_1155'));
+    setPublicClient(contractService.publicClient);
+    setIsReady(true);
+  }, [contractService]);
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -22,7 +30,7 @@ export const useItems = () => {
   ], []);
   useEffect(() => {
     const fetchItems = async () => {
-      if (!contracts.items_1155 || !account || !isReady) {
+      if (!items1155 || !account || !isReady || !publicClient) {
         setItems([]);
         return;
       }
@@ -37,7 +45,12 @@ export const useItems = () => {
         // Convert item IDs to strings for the contract call
         const itemIdStrings = allItemIds.map(id => id.toString());
         // Fetch balances for all items at once
-        const balances = await contracts.items_1155.balanceOfBatch(addresses, itemIdStrings);
+        const balances = await publicClient.readContract({
+          address: items1155.address,
+          abi: items1155.abi,
+          functionName: 'balanceOfBatch',
+          args: [addresses, itemIdStrings],
+        });
         // Filter out items with zero balance and map to item objects
         const userItems = [];
         balances.forEach((balance, index) => {
@@ -119,7 +132,7 @@ export const useItems = () => {
     };
 
     fetchItems();
-  }, [contracts.items_1155, account, isReady, allItemIds]);
+  }, [items1155, account, isReady, publicClient, allItemIds]);
 
   // Organize items into tree structure like ALL_ITEM_TREE but exclude seeds
   const itemsTree = useMemo(() => {
@@ -370,7 +383,7 @@ export const useItems = () => {
     loading,
     error,
     refetch: () => {
-      if (contracts.items_1155 && account && isReady) {
+      if (items1155 && account && isReady && publicClient) {
         const fetchItems = async () => {
           setLoading(true);
           setError(null);
@@ -378,7 +391,12 @@ export const useItems = () => {
           try {
             const addresses = new Array(allItemIds.length).fill(account);
             const itemIdStrings = allItemIds.map(id => id.toString());
-            const balances = await contracts.items_1155.balanceOfBatch(addresses, itemIdStrings);
+            const balances = await publicClient.readContract({
+              address: items1155.address,
+              abi: items1155.abi,
+              functionName: 'balanceOfBatch',
+              args: [addresses, itemIdStrings],
+            });
             
             const userItems = [];
             balances.forEach((balance, index) => {

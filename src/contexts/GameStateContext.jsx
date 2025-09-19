@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { useWeb3 } from './Web3Context';
-import { useContracts } from '../hooks/useContracts';
+import { useAgwEthersAndService } from '../hooks/useAgwEthersAndService';
 import { ethers } from 'ethers';
 
 const GameStateContext = createContext();
@@ -14,8 +13,7 @@ export const useGameState = () => {
 };
 
 export const GameStateProvider = ({ children }) => {
-  const { account, isConnected, provider } = useWeb3();
-  const { contracts, isReady } = useContracts();
+  const { account, isConnected, contractService } = useAgwEthersAndService();
   
   // Player data state
   const [playerData, setPlayerData] = useState({
@@ -60,19 +58,19 @@ export const GameStateProvider = ({ children }) => {
 
   // Load player profile data
   const loadPlayerData = useCallback(async () => {
-    if (!isConnected || !account || !contracts.player_store) return;
+    if (!isConnected || !account || !contractService) return;
 
     setLoading(prev => ({ ...prev, playerData: true }));
     setErrors(prev => ({ ...prev, playerData: null }));
 
     try {
-      const profile = await contracts.player_store.profileOf(account);
-      const maxPlots = contracts.farming ? await contracts.farming.getMaxPlots(account) : 0;
+      const profile = await contractService.getProfile(account);
+      const maxPlots = await contractService.getMaxPlots(account);
       
       setPlayerData({
         level: Number(profile.level),
         xp: Number(profile.xp),
-        lastAction: Number(profile.lastAction),
+        lastAction: Number(profile.nextChestAt), // Use nextChestAt as lastAction
         maxPlots: Number(maxPlots),
         exists: profile.exists
       });
@@ -81,11 +79,11 @@ export const GameStateProvider = ({ children }) => {
     } finally {
       setLoading(prev => ({ ...prev, playerData: false }));
     }
-  }, [isConnected, account, contracts.player_store, contracts.farming]);
+  }, [isConnected, account, contractService]);
 
   // Load token balances
   const loadBalances = useCallback(async () => {
-    if (!isConnected || !account || !isReady) return;
+    if (!isConnected || !account || !contractService) return;
 
     setLoading(prev => ({ ...prev, balances: true }));
     setErrors(prev => ({ ...prev, balances: null }));
@@ -94,9 +92,9 @@ export const GameStateProvider = ({ children }) => {
       const balancePromises = [];
 
       // Load Ready token balance
-      if (contracts.yield_token) {
+      if (contractService) {
         balancePromises.push(
-          contracts.yield_token.balanceOf(account).then(balance => ({
+          contractService.getYieldBalance(account).then(balance => ({
             type: 'yield',
             balance: balance.toString()
           })).catch(err => {
@@ -106,9 +104,9 @@ export const GameStateProvider = ({ children }) => {
       }
 
       // Load staked Yield balance
-      if (contracts.banker) {
+      if (contractService) {
         balancePromises.push(
-          contracts.banker.balanceOf(account).then(balance => ({
+          contractService.getStakedBalance(account).then(balance => ({
             type: 'stakedYield',
             balance: balance.toString()
           })).catch(() => {
@@ -118,9 +116,9 @@ export const GameStateProvider = ({ children }) => {
       }
 
       // Load ETH balance
-      if (provider) {
+      if (contractService) {
         balancePromises.push(
-          provider.getBalance(account).then(balance => ({
+          contractService.getEthBalance(account).then(balance => ({
             type: 'eth',
             balance: balance.toString()
           })).catch(err => {
@@ -154,19 +152,19 @@ export const GameStateProvider = ({ children }) => {
     } finally {
       setLoading(prev => ({ ...prev, balances: false }));
     }
-  }, [isConnected, account, isReady, contracts, provider]);
+  }, [isConnected, account, contractService]);
 
 
   // Load farming data
   const loadFarmingData = useCallback(async () => {
-    if (!isConnected || !account || !contracts.farming) return;
+    if (!isConnected || !account || !contractService) return;
 
     setLoading(prev => ({ ...prev, farming: true }));
     setErrors(prev => ({ ...prev, farming: null }));
 
     try {
       // Check if playerStore is available
-      if (!contracts.player_store) {
+      if (!contractService) {
         console.warn('PlayerStore contract not available, using default farming data');
         setFarmingData({
           crops: [],
@@ -176,8 +174,8 @@ export const GameStateProvider = ({ children }) => {
       }
 
       // Check if user has a profile first
-      const [hasProfile] = await contracts.player_store.profileOf(account);
-      if (!hasProfile) {
+      const profile = await contractService.getProfile(account);
+      if (!profile.exists) {
         // User doesn't have a profile, set default farming data
         setFarmingData({
           crops: [],
@@ -186,11 +184,11 @@ export const GameStateProvider = ({ children }) => {
         return;
       }
 
-      const maxPlots = await contracts.farming.getMaxPlots(account);
+      const maxPlots = await contractService.getMaxPlots(account);
       const crops = [];
 
       for (let i = 0; i < maxPlots; i++) {
-        const crop = await contracts.farming.crops(account, i);
+        const crop = await contractService.getCrops(account, i);
         crops.push({
           seedId: crop.seedId.toString(),
           endTime: Number(crop.endTime),
@@ -207,7 +205,7 @@ export const GameStateProvider = ({ children }) => {
     } finally {
       setLoading(prev => ({ ...prev, farming: false }));
     }
-  }, [isConnected, account, contracts.farming, contracts.player_store]);
+  }, [isConnected, account, contractService]);
 
   // Refresh all data
   const refreshAll = useCallback(async () => {
@@ -220,7 +218,7 @@ export const GameStateProvider = ({ children }) => {
 
   // Auto-refresh when account changes
   useEffect(() => {
-    if (isConnected && account && isReady) {
+    if (isConnected && account && contractService) {
       refreshAll();
     } else {
       // Reset state when disconnected
@@ -242,7 +240,7 @@ export const GameStateProvider = ({ children }) => {
         maxPlots: 0
       });
     }
-  }, [isConnected, account, isReady, refreshAll]);
+  }, [isConnected, account, contractService, refreshAll]);
 
   // Auto-refresh balances every 30 seconds
   useEffect(() => {

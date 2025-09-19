@@ -3,6 +3,10 @@
   "version": "1.0.0",
   "private": true,
   "dependencies": {
+    "@abstract-foundation/agw-client": "^1.9.1",
+    "@abstract-foundation/agw-react": "^1.9.1",
+    "@privy-io/cross-app-connect": "^0.2.3",
+    "@tanstack/react-query": "^5.89.0",
     "@web3modal/ethereum": "^2.7.1",
     "@web3modal/react": "^2.7.1",
     "ajv": "^8.12.0",
