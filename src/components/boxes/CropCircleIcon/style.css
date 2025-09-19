@@ -1,0 +1,17 @@
+.crop-circle-icon-bg {
+  display: flex;
+  justify-content: center;
+  flex-direction: column;
+  gap: 0.25rem;
+  align-items: center;
+  background: var(--crop-circle-bg);
+  background-size: 100% 100%;
+  position: relative;
+}
+
+.crop-circle-icon-bg .crop-icon {
+  background: url(/public/images/crops/seeds.png);
+  width: 64px;
+  height: 64px;
+  scale: 0.8;
+}

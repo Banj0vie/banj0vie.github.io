@@ -133,7 +133,7 @@ export const SEED_PACK_STATUS = {
 
 export const ALL_SEED_IMAGE_HEIGHT = 2176;
 export const ONE_SEED_HEIGHT = 64;
-export const SEED_CATEGORIES = {
+export const TYPE_LABEL_COLOR = {
     [ID_RARE_TYPE.COMMON]: {
         label: "COMMON",
         color: "#f7efec"

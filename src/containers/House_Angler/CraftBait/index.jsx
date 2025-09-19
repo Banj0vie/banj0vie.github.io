@@ -5,9 +5,11 @@ import BaseButton from "../../../components/buttons/BaseButton";
 import { ITEM_BAITS } from "../../../constants/item_bait";
 import ItemCardView from "../../../components/boxes/ItemCardView";
 import ItemCardList from "../../../components/boxes/ItemCardList";
+import ItemCombinationBox from "../../../components/boxes/ItemCombinationBox";
+import { ID_BAIT_ITEMS } from "../../../constants/app_ids";
 
 const CraftBait = ({ onBack }) => {
-  const [selectedBaitId, setSelectedBaitId] = useState("");
+  const [selectedBaitId, setSelectedBaitId] = useState(ID_BAIT_ITEMS.BAIT_1);
   const onItemClicked = (id) => {
     setSelectedBaitId(id);
   };
@@ -28,7 +30,7 @@ const CraftBait = ({ onBack }) => {
         <BaseButton label="Back" onClick={onBack}></BaseButton>
       </CardView>
       <CardView className="right-panel">
-        
+        <ItemCombinationBox itemId={selectedBaitId}></ItemCombinationBox>
       </CardView>
     </div>
   );

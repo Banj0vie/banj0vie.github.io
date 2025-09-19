@@ -3,7 +3,7 @@ import "./style.css";
 import {
   ALL_SEED_IMAGE_HEIGHT,
   ONE_SEED_HEIGHT,
-  SEED_CATEGORIES,
+  TYPE_LABEL_COLOR,
 } from "../../../constants/item_seed";
 import { ALL_ITEMS } from "../../../constants/item_data";
 import { getRandomSeedEntry } from "../../../utils/basic";
@@ -79,13 +79,13 @@ const SeedRollingBox = ({ seedPackId, delay = 0 }) => {
         <p
           style={{
             color: selectedSeed.type
-              ? SEED_CATEGORIES[selectedSeed.type].color
+              ? TYPE_LABEL_COLOR[selectedSeed.type].color
               : "white",
           }}
         >
           {isRolling
             ? "ROLLING"
-            : selectedSeed.type && SEED_CATEGORIES[selectedSeed.type].label}
+            : selectedSeed.type && TYPE_LABEL_COLOR[selectedSeed.type].label}
         </p>
       </div>
     </div>

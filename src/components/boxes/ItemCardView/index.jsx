@@ -2,7 +2,7 @@ import React from "react";
 import "./style.css";
 import { ALL_ITEMS } from "../../../constants/item_data";
 import CardView from "../CardView";
-import { SEED_CATEGORIES } from "../../../constants/item_seed";
+import { TYPE_LABEL_COLOR } from "../../../constants/item_seed";
 
 const ItemCardView = ({
   itemId,
@@ -24,7 +24,7 @@ const ItemCardView = ({
           <div></div>
         )}
       </div>
-      <div className="" style={{ color: SEED_CATEGORIES[itemData.type].color }}>
+      <div className="" style={{ color: TYPE_LABEL_COLOR[itemData.type].color }}>
         {itemData.label}
       </div>
     </CardView>

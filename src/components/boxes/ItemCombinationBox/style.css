@@ -1,0 +1,31 @@
+.item-combination-box {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.item-combination-box .controller {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  width: calc(100% - 1.5rem);
+  justify-content: center;
+  padding: 0.75rem;
+  min-height: unset;
+}
+
+.item-combination-box .controller .controller-button {
+  width: 1.75rem;
+  height: 1.75rem;
+  cursor: pointer;
+  line-height: 1.75rem;
+}
+
+.item-combination-box .controller .controller-button:hover {
+  filter: brightness(1.2);
+}
+
+.item-combination-box .button-wrapper {
+  display: flex;
+  gap: 0.5rem;
+}

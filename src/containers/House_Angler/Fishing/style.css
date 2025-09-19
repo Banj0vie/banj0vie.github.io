@@ -1,0 +1,52 @@
+.fishing-wrapper {
+  width: 300px;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.fishing-wrapper .loading {
+  position: relative;
+}
+
+.fishing-wrapper .loading .background {
+  width: 100%;
+}
+
+.fishing-wrapper .loading .pin {
+  position: absolute;
+  width: 32px;
+  height: 32px;
+  top: 55%;
+  transform: translate(-50%, -50%);
+  left: 20%;
+  animation: pinMove 3s ease-in-out infinite;
+}
+
+@keyframes pinMove {
+  0% {
+    left: 20%;
+    transform: translate(-50%, -50%) scaleX(1);
+  }
+  45% {
+    left: 80%;
+    transform: translate(-50%, -50%) scaleX(1);
+  }
+  50% {
+    left: 80%;
+    transform: translate(-50%, -50%) scaleX(-1);
+  }
+  95% {
+    left: 20%;
+    transform: translate(-50%, -50%) scaleX(-1);
+  }
+  100% {
+    left: 20%;
+    transform: translate(-50%, -50%) scaleX(1);
+  }
+}
+
+.fishing-wrapper .button {
+  width: 80%;
+  margin: auto;
+}

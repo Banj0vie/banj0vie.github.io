@@ -1,0 +1,46 @@
+.multi-combi-item-wrapper {
+  display: flex;
+}
+.multi-combi-item-wrapper .crop-icon {
+  margin: -2rem;
+  position: relative;
+}
+.multi-combi-item-wrapper .crop-icon .counter {
+  position: absolute;
+  top: 55%;
+  right: 25%;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+.crop-mini-selection {
+  display: flex;
+  align-items: center;
+  gap: 0.1rem;
+}
+.crop-mini-selection .red-down {
+  margin-top: 3px;
+  width: 1rem;
+  height: 1rem;
+  cursor: pointer;
+  background-image: var(--red-down-button);
+  background-size: contain;
+  z-index: 10;
+}
+
+.crop-mini-selection .red-down:hover {
+  filter: brightness(1.2);
+}
+
+.crop-mini-selection .green-up {
+  width: 1rem;
+  height: 1rem;
+  cursor: pointer;
+  background-image: var(--green-down-button);
+  background-size: contain;
+  transform: scaleY(-1);
+  z-index: 10;
+}
+
+.crop-mini-selection .green-up:hover {
+  filter: brightness(1.2);
+}

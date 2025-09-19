@@ -51,7 +51,7 @@
   right: -3rem;
   top: 1rem;
   cursor: pointer;
-  z-index: 10003;
+  z-index: 9999;
   background: var(--dialog-close) 0% 0% / 100% 100%;
 }
 

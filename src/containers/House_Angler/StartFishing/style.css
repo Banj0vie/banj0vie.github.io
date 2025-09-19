@@ -1,0 +1,19 @@
+.start-fishing {
+  width: 350px;
+}
+
+.start-fishing .tool-bar {
+  display: flex;
+  flex-direction: row;
+  flex: auto;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+}
+
+.start-fishing .button-wrapper {
+  display: flex;
+  gap: 1rem;
+}
