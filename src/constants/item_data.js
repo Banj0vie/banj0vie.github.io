@@ -1,5 +1,5 @@
-import { baitImages } from "./_baseimages";
-import { ID_SEEDS, ID_PRODUCE_ITEMS, ID_BAIT_ITEMS, ID_FISH_ITEMS, ID_CHEST_ITEMS, ID_POTION_ITEMS, ID_CROP_CATEGORIES, ID_RARE_TYPE, ID_ITEM_CATEGORIES, ID_POTION_CATEGORIES, ID_POTIONS, ID_LOOT_CATEGORIES, ID_LOOTS } from "./app_ids";
+import { baitImages, fishImages, fishingRodImages } from "./_baseimages";
+import { ID_SEEDS, ID_PRODUCE_ITEMS, ID_BAIT_ITEMS, ID_FISH_ITEMS, ID_CHEST_ITEMS, ID_POTION_ITEMS, ID_CROP_CATEGORIES, ID_RARE_TYPE, ID_ITEM_CATEGORIES, ID_POTION_CATEGORIES, ID_POTIONS, ID_LOOT_CATEGORIES, ID_LOOTS, ID_FISHING_RODS } from "./app_ids";
 
 export const IMAGE_URL_CROP = "/public/images/crops/seeds.png";
 // All items data with categories
@@ -721,6 +721,11 @@ export const ALL_ITEMS = {
     label: "FISH_LARGE",
     category: ID_ITEM_CATEGORIES.FISH,
   },
+  [ID_LOOTS.CATFISH]: {
+    label: "Catfish",
+    type: ID_RARE_TYPE.EPIC,
+    image: fishImages.catfish,
+  },
 
   // Chest items
   [ID_CHEST_ITEMS.CHEST_WOOD]: {
@@ -752,6 +757,37 @@ export const ALL_ITEMS = {
   [ID_POTION_ITEMS.POTION_FERTILIZER]: {
     label: "POTION_FERTILIZER",
     category: ID_ITEM_CATEGORIES.POTION,
+  },
+
+  [ID_FISHING_RODS.LVL1]: {
+    label: "Fishing Rod 1",
+    type: ID_RARE_TYPE.COMMON,
+    image: fishingRodImages.lvl5,
+    pos: -1,
+  },
+  [ID_FISHING_RODS.LVL2]: {
+    label: "Fishing Rod 2",
+    type: ID_RARE_TYPE.UNCOMMON,
+    image: fishingRodImages.lvl5,
+    pos: -1,
+  },
+  [ID_FISHING_RODS.LVL3]: {
+    label: "Fishing Rod 3",
+    type: ID_RARE_TYPE.RARE,
+    image: fishingRodImages.lvl5,
+    pos: -1,
+  },
+  [ID_FISHING_RODS.LVL4]: {
+    label: "Fishing Rod 4",
+    type: ID_RARE_TYPE.EPIC,
+    image: fishingRodImages.lvl5,
+    pos: -1,
+  },
+  [ID_FISHING_RODS.LVL5]: {
+    label: "Fishing Rod 5",
+    type: ID_RARE_TYPE.LEGENDARY,
+    image: fishingRodImages.lvl5,
+    pos: -1,
   },
 };
 
