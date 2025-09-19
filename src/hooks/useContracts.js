@@ -1212,7 +1212,7 @@ export const useGardener = () => {
   });
 
   const fetchGardenerData = useCallback(async () => {
-    if (!contracts.gardener || !contracts.player_store || !contracts.game_token || !account) return;
+    if (!contracts.gardener || !contracts.player_store || !contracts.yield_token || !account) return;
 
     setGardenerData(prev => ({ ...prev, loading: true, error: null }));
 
@@ -1230,7 +1230,7 @@ export const useGardener = () => {
       }
 
       // Check if player can afford to level up
-      const gameTokenBalance = await contracts.game_token.balanceOf(account);
+      const gameTokenBalance = await contracts.yield_token.balanceOf(account);
       const canLevelUp = currentLevel < maxLevel && gameTokenBalance >= levelUpCost;
 
       setGardenerData({
@@ -1249,7 +1249,7 @@ export const useGardener = () => {
         error: err.message
       }));
     }
-  }, [contracts.gardener, contracts.player_store, contracts.game_token, account]);
+  }, [contracts.gardener, contracts.player_store, contracts.yield_token, account]);
 
   const levelUp = useCallback(async (targetLevel) => {
     if (!contracts.gardener || !account) return;
