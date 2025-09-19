@@ -1,5 +1,5 @@
-import { baitImages } from "./_baseimages";
-import { ID_SEEDS, ID_PRODUCE_ITEMS, ID_BAIT_ITEMS, ID_FISH_ITEMS, ID_CHEST_ITEMS, ID_POTION_ITEMS, ID_CROP_CATEGORIES, ID_RARE_TYPE, ID_ITEM_CATEGORIES, ID_POTION_CATEGORIES, ID_POTIONS, ID_LOOT_CATEGORIES, ID_LOOTS } from "./app_ids";
+import { baitImages, fishImages, fishingRodImages } from "./_baseimages";
+import { ID_SEEDS, ID_PRODUCE_ITEMS, ID_BAIT_ITEMS, ID_FISH_ITEMS, ID_CHEST_ITEMS, ID_POTION_ITEMS, ID_CROP_CATEGORIES, ID_RARE_TYPE, ID_ITEM_CATEGORIES, ID_POTION_CATEGORIES, ID_POTIONS, ID_LOOT_CATEGORIES, ID_LOOTS, ID_FISHING_RODS } from "./app_ids";
 
 export const IMAGE_URL_CROP = "/public/images/crops/seeds.png";
 // All items data with categories
@@ -372,7 +372,7 @@ export const ALL_ITEMS = {
   // Produce items
   [ID_PRODUCE_ITEMS.POTATO]: {
     id: ID_PRODUCE_ITEMS.POTATO,
-    label: "POTATO",
+    label: "Potato",
     category: ID_ITEM_CATEGORIES.PRODUCE,
     subCategory: ID_CROP_CATEGORIES.PICO_SEED,
     type: ID_RARE_TYPE.COMMON,
@@ -383,7 +383,7 @@ export const ALL_ITEMS = {
   },
   [ID_PRODUCE_ITEMS.LETTUCE]: {
     id: ID_PRODUCE_ITEMS.LETTUCE,
-    label: "LETTUCE",
+    label: "Lettuce",
     category: ID_ITEM_CATEGORIES.PRODUCE,
     subCategory: ID_CROP_CATEGORIES.PICO_SEED,
     type: ID_RARE_TYPE.UNCOMMON,
@@ -394,7 +394,7 @@ export const ALL_ITEMS = {
   },
   [ID_PRODUCE_ITEMS.CABBAGE]: {
     id: ID_PRODUCE_ITEMS.CABBAGE,
-    label: "CABBAGE",
+    label: "Cabbage",
     category: ID_ITEM_CATEGORIES.PRODUCE,
     subCategory: ID_CROP_CATEGORIES.PICO_SEED,
     type: ID_RARE_TYPE.RARE,
@@ -405,7 +405,7 @@ export const ALL_ITEMS = {
   },
   [ID_PRODUCE_ITEMS.ONION]: {
     id: ID_PRODUCE_ITEMS.ONION,
-    label: "ONION",
+    label: "Onion",
     category: ID_ITEM_CATEGORIES.PRODUCE,
     subCategory: ID_CROP_CATEGORIES.PICO_SEED,
     type: ID_RARE_TYPE.EPIC,
@@ -416,7 +416,7 @@ export const ALL_ITEMS = {
   },
   [ID_PRODUCE_ITEMS.RADISH]: {
     id: ID_PRODUCE_ITEMS.RADISH,
-    label: "RADISH",
+    label: "Radish",
     category: ID_ITEM_CATEGORIES.PRODUCE,
     subCategory: ID_CROP_CATEGORIES.PICO_SEED,
     type: ID_RARE_TYPE.LEGENDARY,
@@ -427,7 +427,7 @@ export const ALL_ITEMS = {
   },
   [ID_PRODUCE_ITEMS.WHEAT]: {
     id: ID_PRODUCE_ITEMS.WHEAT,
-    label: "WHEAT",
+    label: "Wheat",
     category: ID_ITEM_CATEGORIES.PRODUCE,
     subCategory: ID_CROP_CATEGORIES.BASIC_SEED,
     type: ID_RARE_TYPE.COMMON,
@@ -438,7 +438,7 @@ export const ALL_ITEMS = {
   },
   [ID_PRODUCE_ITEMS.TOMATO]: {
     id: ID_PRODUCE_ITEMS.TOMATO,
-    label: "TOMATO",
+    label: "Tomato",
     category: ID_ITEM_CATEGORIES.PRODUCE,
     subCategory: ID_CROP_CATEGORIES.BASIC_SEED,
     type: ID_RARE_TYPE.COMMON,
@@ -449,7 +449,7 @@ export const ALL_ITEMS = {
   },
   [ID_PRODUCE_ITEMS.CARROT]: {
     id: ID_PRODUCE_ITEMS.CARROT,
-    label: "CARROT",
+    label: "Carrot",
     category: ID_ITEM_CATEGORIES.PRODUCE,
     subCategory: ID_CROP_CATEGORIES.BASIC_SEED,
     type: ID_RARE_TYPE.COMMON,
@@ -460,7 +460,7 @@ export const ALL_ITEMS = {
   },
   [ID_PRODUCE_ITEMS.CORN]: {
     id: ID_PRODUCE_ITEMS.CORN,
-    label: "CORN",
+    label: "Corn",
     category: ID_ITEM_CATEGORIES.PRODUCE,
     subCategory: ID_CROP_CATEGORIES.BASIC_SEED,
     type: ID_RARE_TYPE.COMMON,
@@ -471,7 +471,7 @@ export const ALL_ITEMS = {
   },
   [ID_PRODUCE_ITEMS.PUMPKIN]: {
     id: ID_PRODUCE_ITEMS.PUMPKIN,
-    label: "PUMPKIN",
+    label: "Pumpkin",
     category: ID_ITEM_CATEGORIES.PRODUCE,
     subCategory: ID_CROP_CATEGORIES.BASIC_SEED,
     type: ID_RARE_TYPE.UNCOMMON,
@@ -482,7 +482,7 @@ export const ALL_ITEMS = {
   },
   [ID_PRODUCE_ITEMS.CHILI]: {
     id: ID_PRODUCE_ITEMS.CHILI,
-    label: "CHILI",
+    label: "Chili",
     category: ID_ITEM_CATEGORIES.PRODUCE,
     subCategory: ID_CROP_CATEGORIES.BASIC_SEED,
     type: ID_RARE_TYPE.UNCOMMON,
@@ -493,7 +493,7 @@ export const ALL_ITEMS = {
   },
   [ID_PRODUCE_ITEMS.PARSNAP]: {
     id: ID_PRODUCE_ITEMS.PARSNAP,
-    label: "PARSNAP",
+    label: "Parnship",
     category: ID_ITEM_CATEGORIES.PRODUCE,
     subCategory: ID_CROP_CATEGORIES.BASIC_SEED,
     type: ID_RARE_TYPE.UNCOMMON,
@@ -504,7 +504,7 @@ export const ALL_ITEMS = {
   },
   [ID_PRODUCE_ITEMS.CELERY]: {
     id: ID_PRODUCE_ITEMS.CELERY,
-    label: "CELERY",
+    label: "Celery",
     category: ID_ITEM_CATEGORIES.PRODUCE,
     subCategory: ID_CROP_CATEGORIES.BASIC_SEED,
     type: ID_RARE_TYPE.RARE,
@@ -515,7 +515,7 @@ export const ALL_ITEMS = {
   },
   [ID_PRODUCE_ITEMS.BROCCOLI]: {
     id: ID_PRODUCE_ITEMS.BROCCOLI,
-    label: "BROCCOLI",
+    label: "Broccoli",
     category: ID_ITEM_CATEGORIES.PRODUCE,
     subCategory: ID_CROP_CATEGORIES.BASIC_SEED,
     type: ID_RARE_TYPE.RARE,
@@ -526,7 +526,7 @@ export const ALL_ITEMS = {
   },
   [ID_PRODUCE_ITEMS.CAULIFLOWER]: {
     id: ID_PRODUCE_ITEMS.CAULIFLOWER,
-    label: "CAULIFLOWER",
+    label: "Cauliflower",
     category: ID_ITEM_CATEGORIES.PRODUCE,
     subCategory: ID_CROP_CATEGORIES.BASIC_SEED,
     type: ID_RARE_TYPE.EPIC,
@@ -537,7 +537,7 @@ export const ALL_ITEMS = {
   },
   [ID_PRODUCE_ITEMS.BERRY]: {
     id: ID_PRODUCE_ITEMS.BERRY,
-    label: "BERRY",
+    label: "Berry",
     category: ID_ITEM_CATEGORIES.PRODUCE,
     subCategory: ID_CROP_CATEGORIES.BASIC_SEED,
     type: ID_RARE_TYPE.EPIC,
@@ -548,7 +548,7 @@ export const ALL_ITEMS = {
   },
   [ID_PRODUCE_ITEMS.GRAPES]: {
     id: ID_PRODUCE_ITEMS.GRAPES,
-    label: "GRAPES",
+    label: "Grapes",
     category: ID_ITEM_CATEGORIES.PRODUCE,
     subCategory: ID_CROP_CATEGORIES.BASIC_SEED,
     type: ID_RARE_TYPE.LEGENDARY,
@@ -559,7 +559,7 @@ export const ALL_ITEMS = {
   },
   [ID_PRODUCE_ITEMS.BANANA]: {
     id: ID_PRODUCE_ITEMS.BANANA,
-    label: "BANANA",
+    label: "Banana",
     category: ID_ITEM_CATEGORIES.PRODUCE,
     subCategory: ID_CROP_CATEGORIES.PREMIUM_SEED,
     type: ID_RARE_TYPE.COMMON,
@@ -570,7 +570,7 @@ export const ALL_ITEMS = {
   },
   [ID_PRODUCE_ITEMS.MANGO]: {
     id: ID_PRODUCE_ITEMS.MANGO,
-    label: "MANGO",
+    label: "Mango",
     category: ID_ITEM_CATEGORIES.PRODUCE,
     subCategory: ID_CROP_CATEGORIES.PREMIUM_SEED,
     type: ID_RARE_TYPE.COMMON,
@@ -581,7 +581,7 @@ export const ALL_ITEMS = {
   },
   [ID_PRODUCE_ITEMS.AVOCADO]: {
     id: ID_PRODUCE_ITEMS.AVOCADO,
-    label: "AVOCADO",
+    label: "Avocado",
     category: ID_ITEM_CATEGORIES.PRODUCE,
     subCategory: ID_CROP_CATEGORIES.PREMIUM_SEED,
     type: ID_RARE_TYPE.COMMON,
@@ -592,7 +592,7 @@ export const ALL_ITEMS = {
   },
   [ID_PRODUCE_ITEMS.PINEAPPLE]: {
     id: ID_PRODUCE_ITEMS.PINEAPPLE,
-    label: "PINEAPPLE",
+    label: "Pineapple",
     category: ID_ITEM_CATEGORIES.PRODUCE,
     subCategory: ID_CROP_CATEGORIES.PREMIUM_SEED,
     type: ID_RARE_TYPE.UNCOMMON,
@@ -603,7 +603,7 @@ export const ALL_ITEMS = {
   },
   [ID_PRODUCE_ITEMS.BLUEBERRY]: {
     id: ID_PRODUCE_ITEMS.BLUEBERRY,
-    label: "BLUEBERRY",
+    label: "Blueberry",
     category: ID_ITEM_CATEGORIES.PRODUCE,
     subCategory: ID_CROP_CATEGORIES.PREMIUM_SEED,
     type: ID_RARE_TYPE.UNCOMMON,
@@ -614,7 +614,7 @@ export const ALL_ITEMS = {
   },
   [ID_PRODUCE_ITEMS.ARTICHOKE]: {
     id: ID_PRODUCE_ITEMS.ARTICHOKE,
-    label: "ARTICHOKE",
+    label: "Artichoke",
     category: ID_ITEM_CATEGORIES.PRODUCE,
     subCategory: ID_CROP_CATEGORIES.PREMIUM_SEED,
     type: ID_RARE_TYPE.UNCOMMON,
@@ -625,7 +625,7 @@ export const ALL_ITEMS = {
   },
   [ID_PRODUCE_ITEMS.PAPAYA]: {
     id: ID_PRODUCE_ITEMS.PAPAYA,
-    label: "PAPAYA",
+    label: "Papaya",
     category: ID_ITEM_CATEGORIES.PRODUCE,
     subCategory: ID_CROP_CATEGORIES.PREMIUM_SEED,
     type: ID_RARE_TYPE.RARE,
@@ -636,7 +636,7 @@ export const ALL_ITEMS = {
   },
   [ID_PRODUCE_ITEMS.FIG]: {
     id: ID_PRODUCE_ITEMS.FIG,
-    label: "FIG",
+    label: "Fig",
     category: ID_ITEM_CATEGORIES.PRODUCE,
     subCategory: ID_CROP_CATEGORIES.PREMIUM_SEED,
     type: ID_RARE_TYPE.RARE,
@@ -647,7 +647,7 @@ export const ALL_ITEMS = {
   },
   [ID_PRODUCE_ITEMS.LYCHEE]: {
     id: ID_PRODUCE_ITEMS.LYCHEE,
-    label: "LYCHEE",
+    label: "Lichi",
     category: ID_ITEM_CATEGORIES.PRODUCE,
     subCategory: ID_CROP_CATEGORIES.PREMIUM_SEED,
     type: ID_RARE_TYPE.EPIC,
@@ -658,7 +658,7 @@ export const ALL_ITEMS = {
   },
   [ID_PRODUCE_ITEMS.LAVENDER]: {
     id: ID_PRODUCE_ITEMS.LAVENDER,
-    label: "LAVENDER",
+    label: "Lavender",
     category: ID_ITEM_CATEGORIES.PRODUCE,
     subCategory: ID_CROP_CATEGORIES.PREMIUM_SEED,
     type: ID_RARE_TYPE.EPIC,
@@ -669,7 +669,7 @@ export const ALL_ITEMS = {
   },
   [ID_PRODUCE_ITEMS.DRAGONFRUIT]: {
     id: ID_PRODUCE_ITEMS.DRAGONFRUIT,
-    label: "DRAGONFRUIT",
+    label: "Dragon Fruit",
     category: ID_ITEM_CATEGORIES.PRODUCE,
     subCategory: ID_CROP_CATEGORIES.PREMIUM_SEED,
     type: ID_RARE_TYPE.LEGENDARY,
@@ -720,6 +720,11 @@ export const ALL_ITEMS = {
   [ID_FISH_ITEMS.FISH_LARGE]: {
     label: "FISH_LARGE",
     category: ID_ITEM_CATEGORIES.FISH,
+  },
+  [ID_LOOTS.CATFISH]: {
+    label: "Catfish",
+    type: ID_RARE_TYPE.EPIC,
+    image: fishImages.catfish,
   },
 
   // Chest items
@@ -779,6 +784,37 @@ export const ALL_ITEMS = {
     label: "POTION_FERTILIZER",
     category: ID_ITEM_CATEGORIES.POTION,
     subCategory: ID_POTION_CATEGORIES.FERTILIZER,
+  },
+
+  [ID_FISHING_RODS.LVL1]: {
+    label: "Fishing Rod 1",
+    type: ID_RARE_TYPE.COMMON,
+    image: fishingRodImages.lvl5,
+    pos: -1,
+  },
+  [ID_FISHING_RODS.LVL2]: {
+    label: "Fishing Rod 2",
+    type: ID_RARE_TYPE.UNCOMMON,
+    image: fishingRodImages.lvl5,
+    pos: -1,
+  },
+  [ID_FISHING_RODS.LVL3]: {
+    label: "Fishing Rod 3",
+    type: ID_RARE_TYPE.RARE,
+    image: fishingRodImages.lvl5,
+    pos: -1,
+  },
+  [ID_FISHING_RODS.LVL4]: {
+    label: "Fishing Rod 4",
+    type: ID_RARE_TYPE.EPIC,
+    image: fishingRodImages.lvl5,
+    pos: -1,
+  },
+  [ID_FISHING_RODS.LVL5]: {
+    label: "Fishing Rod 5",
+    type: ID_RARE_TYPE.LEGENDARY,
+    image: fishingRodImages.lvl5,
+    pos: -1,
   },
 };
 

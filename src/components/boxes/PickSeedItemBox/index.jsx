@@ -2,7 +2,7 @@ import React from "react";
 import "./style.css";
 import {
   ONE_SEED_HEIGHT,
-  SEED_CATEGORIES,
+  TYPE_LABEL_COLOR,
 } from "../../../constants/item_seed";
 import { ALL_ITEMS } from "../../../constants/item_data";
 
@@ -15,7 +15,7 @@ const PickSeedItemBox = ({ seedId, count = 1, onClick }) => {
         style={{ backgroundPositionY: 0 - selectedSeed.pos * ONE_SEED_HEIGHT }}
       ></div>
       <div className="pick-seed-item-label" style={{
-        color: SEED_CATEGORIES[selectedSeed.type].color,
+        color: TYPE_LABEL_COLOR[selectedSeed.type].color,
       }}>{selectedSeed.label}</div>
       <div className="pick-seed-item-badge">x{count}</div>
     </div>

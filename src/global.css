@@ -128,6 +128,10 @@ a {
   color: rgb(223, 84, 74);
 }
 
+.success {
+  color: #66e46a;
+}
+
 .h-2\.5rem {
   height: 2.5rem;
 }

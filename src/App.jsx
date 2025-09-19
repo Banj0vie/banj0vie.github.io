@@ -110,6 +110,14 @@ const App = () => {
       `url(${buttonFrames.baseButtonActiveBg})`
     );
     document.documentElement.style.setProperty(
+      "--red-down-button",
+      `url(${buttonFrames.redDown})`
+    );
+    document.documentElement.style.setProperty(
+      "--green-down-button",
+      `url(${buttonFrames.greenDown})`
+    );
+    document.documentElement.style.setProperty(
       "--slider-bg",
       `url(${sliderImages.sliderBg})`
     );

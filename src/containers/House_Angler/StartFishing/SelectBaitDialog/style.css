@@ -1,0 +1,29 @@
+.select-bait-dialog .bait-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1.25rem;
+}
+
+.select-bait-dialog .bait-list .bait-list-item {
+  display: flex;
+  gap: 0.75rem;
+  padding: 1rem;
+}
+
+.select-bait-dialog .bait-list .bait-list-item .icon {
+  width: 64px;
+  height: 64px;
+}
+
+.select-bait-dialog .bait-list .bait-list-item .icon img {
+  scale: 0.5;
+}
+
+.select-bait-dialog .bait-list .bait-list-item .label {
+  width: 100px;
+}
+
+.select-bait-dialog .bait-list .bait-list-item .button {
+  width: 130px;
+}

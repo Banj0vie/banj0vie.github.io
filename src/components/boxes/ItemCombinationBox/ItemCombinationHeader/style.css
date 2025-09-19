@@ -1,0 +1,32 @@
+.item-combination-header .header-wrapper {
+  padding: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.item-combination-header .header-icon {
+  width: 6rem;
+  height: 6rem;
+  display: flex;
+  justify-content: center;
+  flex-direction: column;
+  gap: 0.25rem;
+  align-items: center;
+  background: var(--crop-circle-bg);
+  background-size: 100% 100%;
+  position: relative;
+  cursor: pointer;
+}
+
+.item-combination-header .header-icon img {
+  height: 50%;
+  width: 50%;
+  image-rendering: pixelated;
+  transform-origin: 32px 64px;
+}
+
+.item-combination-header .header-wrapper div {
+  font-size: 2rem;
+  font-weight: 600;
+}

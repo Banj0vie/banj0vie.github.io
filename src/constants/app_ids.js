@@ -25,7 +25,8 @@ export const ID_SAGE_PAGES = {
 export const ID_ANGLER_PAGES = {
     ANGLER_MENU: "ID_ANGLER_MENU",
     START_FISHING: "ID_ANGLER_START_FISHING",
-    CRAFT_BAIT: "ID_CRAFT_BAIT",
+    CRAFT_BAIT: "ID_ANGLER_CRAFT_BAIT",
+    FISHING: "ID_ANGLER_FISHING"
 }
 
 export const ID_MARKET_HOTSPOTS = {
@@ -90,12 +91,12 @@ export const ID_CROP_CATEGORIES = {
     BASIC_SEED: "ID_CROP_BASIC_SEED",
     PREMIUM_SEED: "ID_CROP_PREMIUM_SEED",
 }
-const CAT_FEEBLE_SEED   = 1n << 248n;
-const CAT_PICO_SEED     = 2n << 248n;
-const CAT_BASIC_SEED    = 3n << 248n;
-const CAT_PREMIUM_SEED  = 4n << 248n;
-const CAT_PICO_PRODUCE   = 5n << 248n;
-const CAT_BASIC_PRODUCE  = 6n << 248n;
+const CAT_FEEBLE_SEED = 1n << 248n;
+const CAT_PICO_SEED = 2n << 248n;
+const CAT_BASIC_SEED = 3n << 248n;
+const CAT_PREMIUM_SEED = 4n << 248n;
+const CAT_PICO_PRODUCE = 5n << 248n;
+const CAT_BASIC_PRODUCE = 6n << 248n;
 const CAT_PREMIUM_PRODUCE = 7n << 248n;
 const CAT_BAIT = 8n << 248n;
 const CAT_FISH = 9n << 248n;
@@ -241,4 +242,12 @@ export const ID_LOOTS = {
     CATFISH: "ID_LOOT_CATFISH",
     SMALL_SHARK: "ID_LOOT_SMALL_SHARK",
     LIFE_BUD: "ID_LOOT_LIFE_BUD",
+}
+
+export const ID_FISHING_RODS = {
+    LVL1: "ID_FISHING_ROD_1",
+    LVL2: "ID_FISHING_ROD_2",
+    LVL3: "ID_FISHING_ROD_3",
+    LVL4: "ID_FISHING_ROD_4",
+    LVL5: "ID_FISHING_ROD_5",
 }

@@ -1,11 +1,12 @@
 import React, { useEffect, useMemo, useState } from "react";
 import ReactDOM from "react-dom";
 import "./style.css";
-import { ONE_SEED_HEIGHT, SEED_CATEGORIES, SEED_PACK_LIST, GROW_STATUS } from "../../../../constants/item_seed";
+import { TYPE_LABEL_COLOR, SEED_PACK_LIST, GROW_STATUS } from "../../../../constants/item_seed";
 import { ALL_ITEMS } from "../../../../constants/item_data";
 import BaseDivider from "../../../../components/dividers/BaseDivider";
 import GrowStatusBox from "../../../../components/boxes/GrowStatusBox";
 import { useWeb3 } from "../../../../contexts/Web3Context";
+import CropCircleIcon from "../../../../components/boxes/CropCircleIcon";
 
 const CropTooltip = ({ container, pos = { x: 0, y: 0 }, data = {}, growthProgress = 0 }) => {
   const { account, contractService } = useWeb3();
@@ -161,16 +162,11 @@ const CropTooltip = ({ container, pos = { x: 0, y: 0 }, data = {}, growthProgres
   const content = (
     <div className="crop-tooltip" style={styleState}>
       <div className="content-info">
-        <div className="crop-icon-bg">
-          <div
-            className="crop-icon"
-            style={{ backgroundPositionY: -ALL_ITEMS[data.seedId]?.pos * ONE_SEED_HEIGHT }}
-          ></div>
-        </div>
+        <CropCircleIcon seedId={data.seedId} size={104}></CropCircleIcon>
         <div className="crop-info-name">
           <div className="">{ALL_ITEMS[data.seedId]?.label || `Seed ${data.seedId}`}</div>
-          <div style={{ color: SEED_CATEGORIES[ALL_ITEMS[data.seedId]?.type]?.color }}>
-            {SEED_CATEGORIES[ALL_ITEMS[data.seedId]?.type]?.label}&nbsp;
+          <div style={{ color: TYPE_LABEL_COLOR[ALL_ITEMS[data.seedId]?.type]?.color }}>
+            {TYPE_LABEL_COLOR[ALL_ITEMS[data.seedId]?.type]?.label}&nbsp;
             {SEED_PACK_LIST[ALL_ITEMS[data.seedId]?.subCategory]?.label}
           </div>
         </div>

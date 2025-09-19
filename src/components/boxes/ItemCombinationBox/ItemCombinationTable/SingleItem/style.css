@@ -1,0 +1,12 @@
+.single-combi-item-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.single-combi-item-wrapper .crop-icon {
+  margin: -2rem;
+}
+
+.single-combi-item-wrapper .crop-label {
+  font-size: 1.25rem;
+}

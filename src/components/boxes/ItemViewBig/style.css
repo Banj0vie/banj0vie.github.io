@@ -1,0 +1,42 @@
+.item-big-view {
+  flex-direction: column;
+  display: flex;
+  align-items: center;
+  justify-content: space-evenly;
+}
+
+.item-big-view .icon {
+  border-image: var(--primary-bg) 6 fill repeat;
+  border-image-width: 0.5rem;
+  min-width: 5.5rem;
+  min-height: 5.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.item-big-view .icon:hover {
+  filter: brightness(1.2);
+}
+
+.item-big-view .icon img {
+  height: 64px;
+  width: 64px;
+  image-rendering: pixelated;
+  transform-origin: 32px 64px;
+}
+
+.item-big-view .label {
+  width: 9rem;
+  height: 2.5rem;
+  -o-border-image: var(--profile-btn-bg) 6 repeat;
+  border-image: var(--profile-btn-bg) 6 fill repeat;
+  border-image-width: 12px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.item-big-view .label div {
+  font-size: 1.25rem;
+}
