@@ -4,6 +4,7 @@ import Avatar from "./Avatar";
 import ProfileButton from "../../../components/buttons/ProfileButton";
 import { profileAssets } from "../../../constants/_baseimages";
 import ProfileView from "./ProfileView";
+import { useProfile } from "../../../contexts/ProfileContext";
 import { useGameState } from "../../../contexts/GameStateContext";
 import { useAgwEthersAndService } from "../../../hooks/useAgwEthersAndService";
 import { formatNumber } from "../../../utils/basic";
@@ -11,45 +12,47 @@ import { formatNumber } from "../../../utils/basic";
 const ProfileBar = () => {
   const { balances, formatBalance } = useGameState();
   const { contractService, account } = useAgwEthersAndService();
-  const [lockedReady, setLockedReady] = useState("0.0");
-  const [readyBalance, setReadyBalance] = useState("0.0");
+  
+  // Persistent local state for instant display
+  const [lockedReady, setLockedReady] = useState("0.00");
+  const [readyBalance, setReadyBalance] = useState("0.00");
 
+  // Format balance helper
+  const formatBalanceForDisplay = (balance) => {
+    if (!balance) return "0.00";
+    const formatted = formatBalance(balance);
+    return formatNumber(formatted);
+  };
+
+  // Update ready balance whenever GameState balances change
   useEffect(() => {
-    const loadBalances = async () => {
-      if (balances && contractService && account) {
+    if (balances?.yield) {
+      const formatted = formatBalanceForDisplay(balances.yield);
+      setReadyBalance(formatted);
+    }
+  }, [balances?.yield, formatBalance]);
+
+  // Load locked ready balance and update when needed
+  useEffect(() => {
+    const loadLockedReady = async () => {
+      if (contractService && account) {
         try {
-          // Get locked ready from Sage contract
-          const lockedReadyAmount = await contractService.getLockedGameToken(
-            account
-          );
-
-          // Format the balances to show k notation for large numbers
-          const formatBalanceForDisplay = (balance) => {
-            const formatted = formatBalance(balance);
-            return formatNumber(formatted);
-          };
-
-          setLockedReady(formatBalanceForDisplay(lockedReadyAmount.toString()));
-          setReadyBalance(formatBalanceForDisplay(balances.yield));
+          const lockedReadyAmount = await contractService.getLockedGameToken(account);
+          const formatted = formatBalanceForDisplay(lockedReadyAmount.toString());
+          setLockedReady(formatted);
         } catch (error) {
           console.error("Failed to load locked ready:", error);
           // Fallback to staked yield if Sage contract fails
-          const formatBalanceForDisplay = (balance) => {
-            const formatted = formatBalance(balance);
-            const num = parseFloat(formatted);
-            if (num >= 1000) {
-              return (num / 1000).toFixed(2) + "k";
-            }
-            return formatted;
-          };
-          setLockedReady(formatBalanceForDisplay(balances.stakedYield));
-          setReadyBalance(formatBalanceForDisplay(balances.yield));
+          if (balances?.stakedYield) {
+            const formatted = formatBalanceForDisplay(balances.stakedYield);
+            setLockedReady(formatted);
+          }
         }
       }
     };
 
-    loadBalances();
-  }, [balances, formatBalance, contractService, account]);
+    loadLockedReady();
+  }, [contractService, account, balances?.stakedYield, formatBalance]);
 
   return (
     <div className="profile-bar">

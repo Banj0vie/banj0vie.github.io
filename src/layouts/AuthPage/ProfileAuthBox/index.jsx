@@ -39,6 +39,11 @@ const ProfileAuthBox = ({ onCreateProfile }) => {
       
       onCreateProfile(username.trim(), referralCode.trim());
       show("Profile created successfully!", 'success');
+      
+      // Refresh the current page after successful profile creation
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
     } catch (err) {
       console.error("Failed to create profile:", err);
       setError(err.message);

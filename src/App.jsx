@@ -1,9 +1,11 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { useAgwEthersAndService } from "./hooks/useAgwEthersAndService";
 import { GameStateProvider } from "./contexts/GameStateContext";
 import { NotificationProvider } from "./contexts/NotificationContext";
+import { ProfileProvider } from "./contexts/ProfileContext";
 import AuthPage from "./layouts/AuthPage";
+import LoadingPage from "./layouts/LoadingPage";
 import Market from "./router/market.jsx";
 import {
   baseFrames,
@@ -19,7 +21,24 @@ import { AbstractWalletProvider } from "@abstract-foundation/agw-react";
 import { abstractTestnet } from "viem/chains";
 
 const AppContent = () => {
-  const { isConnected, account, hasProfile } = useAgwEthersAndService();
+  const { isConnected, account, hasProfile, isConnecting, contractService } = useAgwEthersAndService();
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+
+  useEffect(() => {
+    // Only stop showing loading page when we have determined the connection and profile status
+    if (!isConnecting && contractService !== null) {
+      const timer = setTimeout(() => {
+        setIsInitialLoad(false);
+      }, 500); // Small delay to ensure smooth transition
+
+      return () => clearTimeout(timer);
+    }
+  }, [isConnecting, contractService]);
+
+  // Show loading page during initial load or while connecting
+  if (isInitialLoad || isConnecting) {
+    return <LoadingPage />;
+  }
 
   // Show AuthPage if not connected, no account, or no profile
   if (!isConnected || !account || !hasProfile) {
@@ -136,9 +155,11 @@ const App = () => {
     <AbstractWalletProvider chain={abstractTestnet}>
         <GameStateProvider>
           <NotificationProvider>
-            <Router>
-              <AppContent />
-            </Router>
+            <ProfileProvider>
+              <Router>
+                <AppContent />
+              </Router>
+            </ProfileProvider>
           </NotificationProvider>
         </GameStateProvider>
     </AbstractWalletProvider>
