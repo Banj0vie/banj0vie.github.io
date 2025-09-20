@@ -1,4 +1,4 @@
-import { ID_BAIT_ITEMS, ID_PRODUCE_ITEMS } from "./app_ids";
+import { ID_BAIT_ITEMS, ID_POTION_ITEMS, ID_PRODUCE_ITEMS } from "./app_ids";
 
 export const ITEM_COMBI = {
     [ID_BAIT_ITEMS.BAIT_1]: {
@@ -66,5 +66,67 @@ export const ITEM_COMBI = {
             extra_bonus: "Fishing power bonuse: ",
             extra_point: "3"
         }
-    }
+    },
+    [ID_POTION_ITEMS.POTION_GROWTH_ELIXIR]: {
+        simple: true,
+        list: [
+            {
+                ids: [ID_PRODUCE_ITEMS.RADISH],
+                count: 2,
+            },
+            {
+                ids: [ID_PRODUCE_ITEMS.ONION],
+                count: 8,
+            },
+        ],
+        description: {
+            summary: "Speeds up the growth process of a plant.",
+            extra_bonus: "Tier bonuses: ",
+            extra_point: "3H / 6H / 12H"
+        }
+    },
+    [ID_POTION_ITEMS.POTION_PESTICIDE]: {
+        simple: true,
+        list: [
+            {
+                ids: [ID_PRODUCE_ITEMS.GRAPES],
+                count: 2,
+            },
+            {
+                ids: [ID_PRODUCE_ITEMS.BERRY],
+                count: 3,
+            },
+            {
+                ids: [ID_PRODUCE_ITEMS.CAULIFLOWER],
+                count: 3,
+            },
+        ],
+        description: {
+            summary: "Boosts the amount of produce you receive upon harvest.",
+            extra_bonus: "Tier bonuses: ",
+            extra_point: "2X / 3X /4X"
+        }
+    },
+    [ID_POTION_ITEMS.POTION_FERTILIZER]: {
+        simple: true,
+        list: [
+            {
+                ids: [ID_PRODUCE_ITEMS.DRAGONFRUIT],
+                count: 2,
+            },
+            {
+                ids: [ID_PRODUCE_ITEMS.LAVENDER],
+                count: 2,
+            },
+            {
+                ids: [ID_PRODUCE_ITEMS.LYCHEE],
+                count: 2,
+            },
+        ],
+        description: {
+            summary: "Increases the amount of tokens you receive upon harvest.",
+            extra_bonus: "Tier bonuses: ",
+            extra_point: "4% / 6% / 8%",
+        }
+    },
 }

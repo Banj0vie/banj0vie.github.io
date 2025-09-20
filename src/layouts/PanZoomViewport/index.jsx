@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "./style.css";
 import TooltipButton from "../../components/buttons/TooltipButton";
 import GameMenu from "../GameMenu";
@@ -21,18 +22,20 @@ const PanZoomViewport = ({
   height,
   hideMenu = false,
   children,
+  isBig = false,
 }) => {
   const containerRef = useRef(null);
+  const navigate = useNavigate();
 
   // Center the layer in the viewport: (viewportWidth - layerWidth) / 2
   const computeInitialTx = useCallback(() => {
-    if (typeof width === 'number') {
+    if (typeof width === "number") {
       return (window?.innerWidth || 0) / 2 - width / 2;
     }
     return 0;
   }, [width]);
   const computeInitialTy = useCallback(() => {
-    if (typeof height === 'number') {
+    if (typeof height === "number") {
       return (window?.innerHeight || 0) / 2 - height / 2;
     }
     return 0;
@@ -77,7 +80,6 @@ const PanZoomViewport = ({
     [scale, tx, ty, activeModal]
   );
 
-
   // Add wheel event listener with preventDefault capability
   useEffect(() => {
     const container = containerRef.current;
@@ -93,10 +95,10 @@ const PanZoomViewport = ({
     };
 
     // Add event listener with passive: false to allow preventDefault
-    container.addEventListener('wheel', handleWheel, { passive: false });
+    container.addEventListener("wheel", handleWheel, { passive: false });
 
     return () => {
-      container.removeEventListener('wheel', handleWheel);
+      container.removeEventListener("wheel", handleWheel);
     };
   }, [scale, setScaleAroundPoint, activeModal]);
 
@@ -151,12 +153,12 @@ const PanZoomViewport = ({
       setTx(computeInitialTx());
       setTy(computeInitialTy());
     };
-    window.addEventListener('resize', handleResize);
+    window.addEventListener("resize", handleResize);
     return () => {
       window.removeEventListener("pointerup", handleUp);
       window.removeEventListener("pointercancel", handleUp);
       window.removeEventListener("keydown", handleEsc);
-      window.removeEventListener('resize', handleResize);
+      window.removeEventListener("resize", handleResize);
     };
   }, [endPan, computeInitialTx, computeInitialTy]);
 
@@ -199,12 +201,19 @@ const PanZoomViewport = ({
               <TooltipButton
                 key={h.id}
                 data-hotspot="true"
-                className="map-btn"
+                className={`map-btn ${isBig ? "map-big-btn" : ""}`}
                 label={h.label}
                 style={{ left: h.x, top: h.y, animationDelay: `${h.delay}s` }}
-                onClick={() =>
-                  setActiveModal(dialogs.find((d) => d.id === h.id) || dialogs[0])
-                }
+                onClick={() => {
+                  if (h.link) {
+                    // Navigate based on link content
+                    navigate(h.link);
+                  } else {
+                    setActiveModal(
+                      dialogs.find((d) => d.id === h.id) || dialogs[0]
+                    );
+                  }
+                }}
               />
             ))}
             <div className="panzoom-children">{children}</div>

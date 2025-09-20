@@ -1,4 +1,11 @@
 .item-combination-description {
-    padding: 0.5rem;
-    font-size: 1.4rem;
+  padding: 0.5rem;
+  height: 118px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.item-combination-description div {
+  font-size: 1.4rem;
 }

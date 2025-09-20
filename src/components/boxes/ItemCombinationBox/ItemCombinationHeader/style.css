@@ -30,3 +30,12 @@
   font-size: 2rem;
   font-weight: 600;
 }
+
+.item-combination-header .header-wrapper .experience {
+  margin-left: auto;
+  opacity: 0.9;
+  color: #9f7cf1;
+  margin-right: 0.5rem;
+  text-align: start;
+  font-size: 1.45rem;
+}

@@ -2,6 +2,7 @@ import React from "react";
 import "./style.css";
 import CropCircleIcon from "../../../CropCircleIcon";
 import { ALL_ITEMS } from "../../../../../constants/item_data";
+import { TYPE_LABEL_COLOR } from "../../../../../constants/item_seed";
 
 const SingleItem = ({ itemId }) => {
   return (
@@ -9,7 +10,12 @@ const SingleItem = ({ itemId }) => {
       <div className="crop-icon">
         <CropCircleIcon seedId={itemId} size={104} scale={0.5}></CropCircleIcon>
       </div>
-      <div className="crop-label">{ALL_ITEMS[itemId].label}</div>
+      <div
+        className="crop-label"
+        style={{ color: TYPE_LABEL_COLOR[ALL_ITEMS[itemId].type].color }}
+      >
+        {ALL_ITEMS[itemId].label}
+      </div>
     </div>
   );
 };

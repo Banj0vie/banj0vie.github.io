@@ -48,6 +48,16 @@
   will-change: transform;
 }
 
+.map-big-btn {
+  min-width: 20rem !important;
+  height: 4.5rem !important;
+  font-size: 2rem !important;
+}
+
+.map-big-btn span {
+  margin-top: 12px !important;
+}
+
 .img-scene {
   display: block;
   user-select: none;

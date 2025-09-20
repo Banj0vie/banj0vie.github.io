@@ -1,4 +1,4 @@
-import { baitImages, fishImages, fishingRodImages } from "./_baseimages";
+import { baitImages, fishImages, fishingRodImages, potionImages } from "./_baseimages";
 import { ID_SEEDS, ID_PRODUCE_ITEMS, ID_BAIT_ITEMS, ID_FISH_ITEMS, ID_CHEST_ITEMS, ID_POTION_ITEMS, ID_CROP_CATEGORIES, ID_RARE_TYPE, ID_ITEM_CATEGORIES, ID_POTION_CATEGORIES, ID_POTIONS, ID_LOOT_CATEGORIES, ID_LOOTS, ID_FISHING_RODS } from "./app_ids";
 
 export const IMAGE_URL_CROP = "/public/images/crops/seeds.png";
@@ -771,19 +771,37 @@ export const ALL_ITEMS = {
 
   // Potion items
   [ID_POTION_ITEMS.POTION_GROWTH_ELIXIR]: {
-    label: "POTION_GROWTH_ELIXIR",
+    label: "Growth Elixir",
     category: ID_ITEM_CATEGORIES.POTION,
     subCategory: ID_POTION_CATEGORIES.GROWTH_ELIXIR,
+    type: ID_RARE_TYPE.COMMON,
+    image: potionImages.growthElixir,
+    pos: -1,
+    ready: 0,
+    lockedReady: 0,
+    exp: 75,
   },
   [ID_POTION_ITEMS.POTION_PESTICIDE]: {
-    label: "POTION_PESTICIDE",
+    label: "Pesticide",
     category: ID_ITEM_CATEGORIES.POTION,
     subCategory: ID_POTION_CATEGORIES.PESTICIDE,
+    type: ID_RARE_TYPE.UNCOMMON,
+    image: potionImages.pesticide,
+    pos: -1,
+    ready: 0,
+    lockedReady: 0,
+    exp: 250,
   },
   [ID_POTION_ITEMS.POTION_FERTILIZER]: {
-    label: "POTION_FERTILIZER",
+    label: "Fertilizer",
     category: ID_ITEM_CATEGORIES.POTION,
     subCategory: ID_POTION_CATEGORIES.FERTILIZER,
+    type: ID_RARE_TYPE.RARE,
+    image: potionImages.fertilizer,
+    pos: -1,
+    ready: 0,
+    lockedReady: 0,
+    exp: 2000,
   },
 
   [ID_FISHING_RODS.LVL1]: {

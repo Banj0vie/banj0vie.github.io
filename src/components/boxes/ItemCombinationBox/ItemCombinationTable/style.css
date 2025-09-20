@@ -1,5 +1,6 @@
 .item-combination-table {
   padding: 0;
+  min-height: 175px;
 }
 
 .item-combination-table .wrapper {

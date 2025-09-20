@@ -152,6 +152,7 @@ const ItemCombinationBox = ({
       <ItemCombinationHeader
         image={itemData.image}
         label={itemData.label}
+        exp={itemData.exp}
       ></ItemCombinationHeader>
       <ItemCombinationController
         limitedController={limitedController}
