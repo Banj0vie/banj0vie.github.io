@@ -221,10 +221,10 @@ export const CONTRACT_ABIS = {
 
 // Seed pack tiers and prices (matching smart contract constants)
 export const SEED_PACK_TIERS = {
-  1: { name: "Feeble", price: "1000000000000000000", priceLabel: "1 RDY" }, // 1e18
-  2: { name: "Pico", price: "20000000000000000000", priceLabel: "20 RDY" }, // 20e18
-  3: { name: "Basic", price: "100000000000000000000", priceLabel: "100 RDY" }, // 100e18
-  4: { name: "Premium", price: "250000000000000000000", priceLabel: "250 RDY" } // 250e18
+  1: { name: "Feeble", price: "1000000000000000000", priceLabel: "1 HNY" }, // 1e18
+  2: { name: "Pico", price: "20000000000000000000", priceLabel: "20 HNY" }, // 20e18
+  3: { name: "Basic", price: "100000000000000000000", priceLabel: "100 HNY" }, // 100e18
+  4: { name: "Premium", price: "250000000000000000000", priceLabel: "250 HNY" } // 250e18
 };
 
 // Sage unlock rate constants (matching smart contract)

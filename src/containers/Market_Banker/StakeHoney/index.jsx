@@ -8,14 +8,14 @@ import { useAgwEthersAndService } from "../../../hooks/useAgwEthersAndService";
 import { useNotification } from "../../../contexts/NotificationContext";
 import { ethers } from "ethers";
 
-const StakeReady = ({ onBack }) => {
+const StakeHoney = ({ onBack }) => {
   const [isStaking, setIsStaking] = useState(true);
   const [amount, setAmount] = useState("0");
   const [data, setData] = useState([]);
-  const [readyBalance, setReadyBalance] = useState("0");
-  const [xReadyBalance, setXReadyBalance] = useState("0");
+  const [honeyBalance, setHoneyBalance] = useState("0");
+  const [xHoneyBalance, setXHoneyBalance] = useState("0");
   const [ratio, setRatio] = useState(1.0); // Ratio as float
-  const [estRewards, setEstRewards] = useState("0.000 Ready");
+  const [estRewards, setEstRewards] = useState("0.000 Honey");
   
   const { account, contractService } = useAgwEthersAndService();
   const { stake, unstake, getBalance, loading, error } = useBanker();
@@ -26,16 +26,16 @@ const StakeReady = ({ onBack }) => {
     if (!account) return;
     
     try {
-      // Get XReady balance (staked balance)
-      const xReadyBal = await getBalance(account);
-      setXReadyBalance(ethers.formatEther(xReadyBal));
+      // Get XHoney balance (staked balance)
+      const xHoneyBal = await getBalance(account);
+      setXHoneyBalance(ethers.formatEther(xHoneyBal));
       
-      // Get Ready balance from yield token contract
+      // Get Honey balance from yield token contract
       if (contractService) {
-        const readyBal = await contractService.getYieldBalance(account);
-        setReadyBalance(ethers.formatEther(readyBal));
+        const honeyBal = await contractService.getYieldBalance(account);
+        setHoneyBalance(ethers.formatEther(honeyBal));
       } else {
-        setReadyBalance("0.000");
+        setHoneyBalance("0.000");
       }
       
       // Calculate actual ratio from contract
@@ -61,17 +61,17 @@ const StakeReady = ({ onBack }) => {
           const ratioValue = tokenBalanceNum / totalSupplyNum;
           setRatio(ratioValue); // Store as float
           
-          // Calculate estimated rewards (XReady balance * ratio)
-          const xReadyBalanceNum = parseFloat(ethers.formatEther(xReadyBal));
-          const estimatedRewards = xReadyBalanceNum * ratioValue;
-          setEstRewards(`${estimatedRewards.toFixed(3)} Ready`);
+          // Calculate estimated rewards (XHoney balance * ratio)
+          const xHoneyBalanceNum = parseFloat(ethers.formatEther(xHoneyBal));
+          const estimatedRewards = xHoneyBalanceNum * ratioValue;
+          setEstRewards(`${estimatedRewards.toFixed(3)} Honey`);
         } else {
           setRatio(1.0); // Default ratio as float
-          setEstRewards("0.000 Ready");
+          setEstRewards("0.000 Honey");
         }
       } else {
         setRatio(1.0); // Default ratio as float
-        setEstRewards("0.000 Ready");
+        setEstRewards("0.000 Honey");
       }
     } catch (err) {
       console.error('Failed to load balances:', err);
@@ -93,21 +93,21 @@ const StakeReady = ({ onBack }) => {
     }
 
     // Check if user has enough balance
-    const userReadyBalance = parseFloat(readyBalance);
-    if (amountNum > userReadyBalance) {
-      show(`Insufficient Ready balance. You have ${readyBalance} Ready`, 'warning');
+    const userhoneyBalance = parseFloat(honeyBalance);
+    if (amountNum > userhoneyBalance) {
+      show(`Insufficient Honey balance. You have ${honeyBalance} Honey`, 'warning');
       return;
     }
 
     try {
       const amountWei = ethers.parseEther(amount);
       
-      show('Staking Ready tokens...', 'info');
+      show('Staking Honey tokens...', 'info');
       
       const result = await stake(amountWei);
       
       if (result) {
-        show(`Successfully staked ${amount} Ready!`, 'success');
+        show(`Successfully staked ${amount} Honey!`, 'success');
         setAmount("0");
         await loadBalances(); // Refresh balances
       } else {
@@ -117,7 +117,7 @@ const StakeReady = ({ onBack }) => {
       console.error('Stake error:', err);
       show(`Stake failed: ${err.message}`, 'error');
     }
-  }, [amount, readyBalance, stake, show, loadBalances]);
+  }, [amount, honeyBalance, stake, show, loadBalances]);
 
   // Handle balance click to fill input
   const handleBalanceClick = useCallback((balance) => {
@@ -138,10 +138,10 @@ const StakeReady = ({ onBack }) => {
       return;
     }
 
-    // Check if user has enough XReady balance
-    const userXReadyBalance = parseFloat(xReadyBalance);
-    if (amountNum > userXReadyBalance) {
-      show(`Insufficient XReady balance. You have ${xReadyBalance} XReady`, 'warning');
+    // Check if user has enough XHoney balance
+    const userxHoneyBalance = parseFloat(xHoneyBalance);
+    if (amountNum > userxHoneyBalance) {
+      show(`Insufficient XHoney balance. You have ${xHoneyBalance} XHoney`, 'warning');
       return;
     }
 
@@ -150,7 +150,7 @@ const StakeReady = ({ onBack }) => {
       const result = await unstake(amountWei);
       
       if (result) {
-        show(`Successfully unstaked ${amount} XReady!`, 'success');
+        show(`Successfully unstaked ${amount} XHoney!`, 'success');
         setAmount("0");
         await loadBalances(); // Refresh balances
       } else {
@@ -160,7 +160,7 @@ const StakeReady = ({ onBack }) => {
       console.error('Unstake error:', err);
       show(`Unstake failed: ${err.message}`, 'error');
     }
-  }, [amount, xReadyBalance, unstake, show, loadBalances]);
+  }, [amount, xHoneyBalance, unstake, show, loadBalances]);
 
   // Load balances on mount and when account changes
   useEffect(() => {
@@ -171,18 +171,18 @@ const StakeReady = ({ onBack }) => {
     setData(
       isStaking
         ? [
-            { label: "Ratio", value: `1 XREADY - ${ratio.toFixed(3)} READY` },
-            { label: "XReady Balance", value: `${parseFloat(xReadyBalance).toFixed(3)} XReady` },
-            { label: "Est. Ready Rewards", value: estRewards },
+            { label: "Ratio", value: `1 XHONEY - ${ratio.toFixed(3)} HONEY` },
+            { label: "XHoney Balance", value: `${parseFloat(xHoneyBalance).toFixed(3)} XHoney` },
+            { label: "Est. Honey Rewards", value: estRewards },
           ]
         : [
-            { label: "Ratio", value: `1 XREADY - ${ratio.toFixed(3)} READY` },
-            { label: "XReady Balance", value: `${parseFloat(xReadyBalance).toFixed(3)} XReady` },
-            { label: "Ready Balance", value: `${parseFloat(readyBalance).toFixed(3)} Ready` },
-            { label: "Est. Ready Rewards", value: estRewards },
+            { label: "Ratio", value: `1 XHONEY - ${ratio.toFixed(3)} HONEY` },
+            { label: "XHoney Balance", value: `${parseFloat(xHoneyBalance).toFixed(3)} XHoney` },
+            { label: "Honey Balance", value: `${parseFloat(honeyBalance).toFixed(3)} Honey` },
+            { label: "Est. Honey Rewards", value: estRewards },
           ]
     );
-  }, [isStaking, ratio, xReadyBalance, readyBalance, estRewards]);
+  }, [isStaking, ratio, xHoneyBalance, honeyBalance, estRewards]);
 
   // Clear input when switching between stake/unstake
   useEffect(() => {
@@ -190,7 +190,7 @@ const StakeReady = ({ onBack }) => {
   }, [isStaking]);
 
   return (
-    <div className="stake-ready">
+    <div className="stake-honey">
       <div className="stake-unstake-buttons">
         <BaseButton
           className="h-4rem"
@@ -206,8 +206,8 @@ const StakeReady = ({ onBack }) => {
         ></BaseButton>
       </div>
       <TokenInputRow
-        balance={isStaking ? readyBalance : xReadyBalance}
-        token={isStaking ? "Ready" : "XReady"}
+        balance={isStaking ? honeyBalance : xHoneyBalance}
+        token={isStaking ? "Honey" : "XHoney"}
         value={amount}
         onChange={setAmount}
         onBalanceClick={handleBalanceClick}
@@ -240,4 +240,4 @@ const StakeReady = ({ onBack }) => {
     </div>
   );
 };
-export default StakeReady;
+export default StakeHoney;

@@ -82,11 +82,11 @@ const GrowStatusBox = ({
         <div className="reward-display">
           <div className="reward-item">
             <span className="reward-label">Unlocked:</span>
-            <span className="reward-amount">{formatAmount(unlockedAmount)} $RDY</span>
+            <span className="reward-amount">{formatAmount(unlockedAmount)} $HNY</span>
           </div>
           <div className="reward-item">
             <span className="reward-label">Locked:</span>
-            <span className="reward-amount">{formatAmount(lockedAmount)} $RDY</span>
+            <span className="reward-amount">{formatAmount(lockedAmount)} $HNY</span>
           </div>
         </div>
       )}

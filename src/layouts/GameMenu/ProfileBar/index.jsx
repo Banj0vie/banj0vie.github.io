@@ -4,7 +4,6 @@ import Avatar from "./Avatar";
 import ProfileButton from "../../../components/buttons/ProfileButton";
 import { profileAssets } from "../../../constants/_baseimages";
 import ProfileView from "./ProfileView";
-import { useProfile } from "../../../contexts/ProfileContext";
 import { useGameState } from "../../../contexts/GameStateContext";
 import { useAgwEthersAndService } from "../../../hooks/useAgwEthersAndService";
 import { formatNumber } from "../../../utils/basic";
@@ -14,8 +13,8 @@ const ProfileBar = () => {
   const { contractService, account } = useAgwEthersAndService();
   
   // Persistent local state for instant display
-  const [lockedReady, setLockedReady] = useState("0.00");
-  const [readyBalance, setReadyBalance] = useState("0.00");
+  const [lockedHoney, setLockedHoney] = useState("0.00");
+  const [honeyBalance, setHoneyBalance] = useState("0.00");
 
   // Format balance helper
   const formatBalanceForDisplay = (balance) => {
@@ -24,34 +23,36 @@ const ProfileBar = () => {
     return formatNumber(formatted);
   };
 
-  // Update ready balance whenever GameState balances change
+  // Update honey balance whenever GameState balances change
   useEffect(() => {
     if (balances?.yield) {
       const formatted = formatBalanceForDisplay(balances.yield);
-      setReadyBalance(formatted);
+      setHoneyBalance(formatted);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [balances?.yield, formatBalance]);
 
-  // Load locked ready balance and update when needed
+  // Load locked honey balance and update when needed
   useEffect(() => {
-    const loadLockedReady = async () => {
+    const loadlockedHoney = async () => {
       if (contractService && account) {
         try {
-          const lockedReadyAmount = await contractService.getLockedGameToken(account);
-          const formatted = formatBalanceForDisplay(lockedReadyAmount.toString());
-          setLockedReady(formatted);
+          const lockedHoneyAmount = await contractService.getLockedGameToken(account);
+          const formatted = formatBalanceForDisplay(lockedHoneyAmount.toString());
+          setLockedHoney(formatted);
         } catch (error) {
           console.error("Failed to load locked ready:", error);
           // Fallback to staked yield if Sage contract fails
           if (balances?.stakedYield) {
             const formatted = formatBalanceForDisplay(balances.stakedYield);
-            setLockedReady(formatted);
+            setLockedHoney(formatted);
           }
         }
       }
     };
 
-    loadLockedReady();
+    loadlockedHoney();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [contractService, account, balances?.stakedYield, formatBalance]);
 
   return (
@@ -79,17 +80,17 @@ const ProfileBar = () => {
         <ProfileButton
           icon={
             <img
-              alt="Locked Ready Balance"
-              src={profileAssets.btnLockedReady}
+              alt="Locked Honey Balance"
+              src={profileAssets.btnLockedHoney}
             />
           }
-          text={lockedReady}
-          title="Locked Ready Balance"
+          text={lockedHoney}
+          title="Locked Honey Balance"
         />
         <ProfileButton
-          icon={<img alt="Ready Balance" src={profileAssets.btnReady} />}
-          text={readyBalance}
-          title="Ready Balance"
+          icon={<img alt="Honey Balance" src={profileAssets.btnHoney} />}
+          text={honeyBalance}
+          title="Honey Balance"
         />
       </div>
     </div>

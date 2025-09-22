@@ -113,7 +113,7 @@ const WeeklyWage = ({onBack}) => {
       ) : (
         <BaseButton 
           className="h-3rem" 
-          label={isUnlocking ? "Unlocking..." : "Unlock Ready"} 
+          label={isUnlocking ? "Unlocking..." : "Unlock Honey"} 
           onClick={handleUnlock}
           disabled={isUnlocking}
         />

@@ -104,7 +104,7 @@ const GardnerDialog = ({ onClose, label = "GARDENER", header = "" }) => {
               </LabelValueBox>
               <LabelValueBox
                 label="Cost"
-                value={`${levelUpCost.toFixed(2)} Ready`}
+                value={`${levelUpCost.toFixed(2)} Honey`}
               ></LabelValueBox>
               <div className="gardner-header">Valley Lvl. {currentLevel + 1}</div>
             </div>

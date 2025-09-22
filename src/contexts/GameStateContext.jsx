@@ -91,7 +91,7 @@ export const GameStateProvider = ({ children }) => {
     try {
       const balancePromises = [];
 
-      // Load Ready token balance
+      // Load Honey token balance
       if (contractService) {
         balancePromises.push(
           contractService.getYieldBalance(account).then(balance => ({

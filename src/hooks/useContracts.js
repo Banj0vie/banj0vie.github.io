@@ -739,7 +739,7 @@ export const useBanker = () => {
         args: [account],
       });
       if (userBalance < amount) {
-        throw new Error(`Insufficient Ready balance. You have ${ethers.formatEther(userBalance)} Ready, trying to stake ${ethers.formatEther(amount)}`);
+        throw new Error(`Insufficient Honey balance. You have ${ethers.formatEther(userBalance)} Honey, trying to stake ${ethers.formatEther(amount)}`);
       }
       
       const txHash = await agwClient.writeContract({
@@ -819,7 +819,7 @@ export const useDex = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [ethBalance, setEthBalance] = useState('0.00');
-  const [readyBalance, setReadyBalance] = useState('0.00');
+  const [honeyBalance, setHoneyBalance] = useState('0.00');
   const [dex, setDex] = useState(null);
   const [agwClient, setAgwClient] = useState(null);
   const [publicClient, setPublicClient] = useState(null);
@@ -894,28 +894,28 @@ export const useDex = () => {
     }
   }, [account, publicClient]);
 
-  // Fetch Ready token balance
-  const fetchReadyBalance = useCallback(async () => {
+  // Fetch Honey token balance
+  const fetchHoneyBalance = useCallback(async () => {
     if (!account || !publicClient) {
-      console.log('🔍 useDex fetchReadyBalance: Missing account or publicClient', { account, publicClient: !!publicClient });
+      console.log('🔍 useDex fetchHoneyBalance: Missing account or publicClient', { account, publicClient: !!publicClient });
       return;
     }
     
     const yieldToken = contractService.getContract('YIELD_TOKEN');
     try {
-      console.log('🔍 useDex: Fetching Ready balance for account:', account);
+      console.log('🔍 useDex: Fetching Honey balance for account:', account);
       const balance = await publicClient.readContract({
         address: yieldToken.address,
         abi: yieldToken.abi,
         functionName: 'balanceOf',
         args: [account],
       });
-      const readyBalance = parseFloat(ethers.formatEther(balance));
-      setReadyBalance(readyBalance.toFixed(2));
-      console.log('✅ useDex: Ready balance fetched:', readyBalance.toFixed(2));
+      const honeyBalance = parseFloat(ethers.formatEther(balance));
+      setHoneyBalance(honeyBalance.toFixed(2));
+      console.log('✅ useDex: Honey balance fetched:', honeyBalance.toFixed(2));
     } catch (err) {
-      console.error('Failed to fetch Ready balance:', err);
-      setReadyBalance('0.00');
+      console.error('Failed to fetch Honey balance:', err);
+      setHoneyBalance('0.00');
     }
   }, [account, publicClient, contractService]);
 
@@ -928,9 +928,9 @@ export const useDex = () => {
     
     await Promise.all([
       fetchEthBalance(),
-      fetchReadyBalance()
+      fetchHoneyBalance()
     ]);
-  }, [account, publicClient, fetchEthBalance, fetchReadyBalance]);
+  }, [account, publicClient, fetchEthBalance, fetchHoneyBalance]);
 
   // Auto-fetch balances when dependencies change
   useEffect(() => {
@@ -944,7 +944,7 @@ export const useDex = () => {
     swapETHForYield,
     getYieldAmount,
     ethBalance,
-    readyBalance,
+    honeyBalance,
     fetchBalances,
     loading,
     error

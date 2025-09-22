@@ -189,15 +189,15 @@ const CropTooltip = ({ container, pos = { x: 0, y: 0 }, data = {}, growthProgres
       </div>
       <div className="flex-text">
         <div>Total Harvest</div>
-        <div>{((Number(locked) + Number(unlocked)) / 1e18).toFixed(2)} $RDY</div>
+        <div>{((Number(locked) + Number(unlocked)) / 1e18).toFixed(2)} $HNY</div>
       </div>
       <div className="flex-text">
         <div className="error text-1.25">locked</div>
-        <div className="error text-1.25">{(Number(locked) / 1e18).toFixed(2)} $RDY</div>
+        <div className="error text-1.25">{(Number(locked) / 1e18).toFixed(2)} $HNY</div>
       </div>
       <div className="flex-text">
         <div className="highlight text-1.25">unlocked</div>
-        <div className="highlight text-1.25">{(Number(unlocked) / 1e18).toFixed(2)} $RDY</div>
+        <div className="highlight text-1.25">{(Number(unlocked) / 1e18).toFixed(2)} $HNY</div>
       </div>
       <BaseDivider/>
       <div className="active-effect">No Active Effect</div>

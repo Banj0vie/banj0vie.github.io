@@ -63,12 +63,12 @@ const WeeklyHarvest = ({onBack}) => {
             value={loading ? "Loading..." : `${sageData.harvestUnlockPercent?.toFixed(2) || 0}%`}
           />
           <LabelValueBox 
-            label="Pending Locked Ready" 
+            label="Pending Locked Honey" 
             value={loading ? "Loading..." : sageData.harvestUnlockAmount?.toFixed(2) || 0}
           />
           <LabelValueBox
             label="Next Harvest in"
-            value={sageData.canUnlockHarvest ? "Ready!" : formatDuration(remainedTime)}
+            value={sageData.canUnlockHarvest ? "Honey!" : formatDuration(remainedTime)}
           />
           <div className="weekly-harvest-header">Weekly Harvest</div>
         </div>
@@ -93,7 +93,7 @@ const WeeklyHarvest = ({onBack}) => {
       ) : (
         <BaseButton 
           className="h-3rem" 
-          label={isUnlocking ? "Unlocking..." : "Unlock Ready"} 
+          label={isUnlocking ? "Unlocking..." : "Unlock Honey"} 
           onClick={handleUnlock}
           disabled={isUnlocking}
         />
