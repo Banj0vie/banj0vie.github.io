@@ -225,25 +225,163 @@ export const useVendor = () => {
   }, [rngHub, agwClient]);
 
   const listenForSeedsRevealed = useCallback(async (requestId, onSeedsRevealed, fromBlock) => {
-    if (!vendor || !publicClient) {
-      console.error('Vendor contract not available');
+    if (!vendor || !publicClient || !account) {
+      console.error('Vendor contract, publicClient, or account not available');
       return;
     }
+    
     try {
-      // Note: Event listening with viem publicClient is different from ethers
-      // This is a simplified version - you may need to implement proper event listening
-      // based on your specific requirements
-      console.log('Event listening setup for SeedsRevealed event');
+      console.log('Setting up SeedsRevealed listener for requestId:', requestId);
       
-      // For now, return a no-op cleanup function
-      // You'll need to implement proper event listening with viem
+      // Use a recent block number instead of 'latest' for better reliability
+      let startBlock = fromBlock;
+      if (!startBlock || startBlock === 'latest') {
+        try {
+          const currentBlock = await publicClient.getBlockNumber();
+          startBlock = BigInt(currentBlock) - BigInt(10); // Look back 10 blocks to be safe
+          console.log('Using block', startBlock.toString(), 'as start block (current:', currentBlock.toString(), ')');
+        } catch (err) {
+          console.error('Failed to get current block number:', err);
+          startBlock = 'earliest';
+        }
+      }
+      
+      // Event handler function
+      const handleEvent = (eventData) => {
+        try {
+          console.log('SeedsRevealed event received:', eventData);
+          
+          // Extract event data
+          const eventRequestId = eventData.args.requestId.toString();
+          const seedIds = eventData.args.seedIds.map(id => id.toString());
+          const tier = eventData.args.tier;
+          const count = eventData.args.count.toString();
+          
+          console.log('Event requestId:', eventRequestId, 'Expected:', requestId.toString());
+        
+        // Only process if this is the request we're waiting for
+        if (eventRequestId === requestId.toString()) {
+            console.log('✅ Found matching SeedsRevealed event!');
+          if (onSeedsRevealed) {
+              onSeedsRevealed({ 
+                requestId: eventRequestId, 
+                seedIds, 
+                tier, 
+                count 
+              });
+            }
+          // Clean up the listener after processing the event
+          console.log('Cleaning up SeedsRevealed listener after successful event');
+          unwatch();
+          }
+        } catch (err) {
+          console.error('Error processing SeedsRevealed event:', err);
+          // Clean up the listener on error
+          console.log('Cleaning up SeedsRevealed listener after error');
+          unwatch();
+        }
+      };
+      
+      // Set up real-time event listener using watchContractEvent
+      console.log('Setting up watchContractEvent for SeedsRevealed');
+      const unwatch = publicClient.watchContractEvent({
+        address: vendor.address,
+        abi: vendor.abi,
+        eventName: 'SeedsRevealed',
+        args: {
+          player: account
+        },
+        onLogs: (logs) => {
+          console.log('Received SeedsRevealed events via watchContractEvent:', logs);
+          logs.forEach(log => {
+            console.log('Processing log from watchContractEvent:', log);
+            handleEvent(log);
+          });
+        },
+        onError: (error) => {
+          console.error('Error in SeedsRevealed event listener:', error);
+          // Clean up the listener on error
+          console.log('Cleaning up SeedsRevealed listener after watchContractEvent error');
+          unwatch();
+        }
+      });
+      
+      console.log('watchContractEvent setup complete');
+      
+      // Also query for any events that might have already happened
+      const queryExistingEvents = async () => {
+        try {
+          console.log('Querying existing SeedsRevealed events from block:', startBlock);
+          
+          // Use the contract ABI directly for event filtering
+          const logs = await publicClient.getLogs({
+            address: vendor.address,
+            event: {
+              type: 'event',
+              name: 'SeedsRevealed',
+              inputs: [
+                { name: 'player', type: 'address', indexed: true },
+                { name: 'requestId', type: 'uint256', indexed: false },
+                { name: 'seedIds', type: 'uint256[]', indexed: false },
+                { name: 'tier', type: 'uint8', indexed: false },
+                { name: 'count', type: 'uint256', indexed: false }
+              ]
+            },
+            args: {
+              player: account
+            },
+            fromBlock: startBlock,
+            toBlock: 'latest'
+          });
+          
+          console.log('Found', logs.length, 'existing SeedsRevealed events');
+          console.log('Logs:', logs);
+          
+          // Process existing events
+          for (const log of logs) {
+            try {
+              console.log('Processing log:', log);
+              
+              // The log is already decoded by getLogs, we can use it directly
+              const eventData = {
+                args: log.args,
+                eventName: log.eventName,
+                address: log.address,
+                blockNumber: log.blockNumber,
+                transactionHash: log.transactionHash
+              };
+              
+              console.log('Event data ready:', eventData);
+              handleEvent(eventData);
+            } catch (parseErr) {
+              console.error('Error processing existing event:', parseErr);
+              // Clean up the listener on error
+              console.log('Cleaning up SeedsRevealed listener after parsing error');
+              unwatch();
+            }
+          }
+        } catch (err) {
+          console.error('Error querying existing SeedsRevealed events:', err);
+          // Clean up the listener on error
+          console.log('Cleaning up SeedsRevealed listener after query error');
+          unwatch();
+        }
+      };
+      
+      // Query existing events
+      queryExistingEvents();
+      
+      // Return cleanup function
       return () => {
         console.log('Cleaning up SeedsRevealed listener');
+        unwatch();
       };
+      
     } catch (err) {
       console.error('Failed to set up SeedsRevealed listener:', err);
+      return () => {}; // Return no-op cleanup function
     }
-  }, [vendor, publicClient]);
+  }, [vendor, publicClient, account]);
 
   return {
     buySeedPack,
@@ -510,9 +648,9 @@ export const useFarming = () => {
       
       // Handle case where crop is an object
       if (crop.seedId !== undefined && crop.endTime !== undefined) {
-        return {
-          seedId: crop.seedId.toString(),
-          endTime: Number(crop.endTime)
+      return {
+        seedId: crop.seedId.toString(),
+        endTime: Number(crop.endTime)
         };
       }
       

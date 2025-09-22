@@ -52,7 +52,7 @@ const ProfileBar = () => {
       }
     };
 
-    loadLockedReady();
+    loadlockedHoney();
   }, [contractService, account, balances?.stakedYield, formatBalance, formatBalanceForDisplay]);
 
   return (

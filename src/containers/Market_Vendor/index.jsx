@@ -100,6 +100,20 @@ const VendorDialog = ({ onClose, label = "VENDOR", header = "" }) => {
     }
   }, [isConnected, account, checkPendingRequests, getAllPendingRequests]);
 
+  // Refresh function to reload pending requests and available plots
+  const refreshVendorData = useCallback(async () => {
+    if (!isConnected || !account) return;
+    
+    try {
+      await Promise.all([
+        loadAvailablePlots(),
+        loadPendingRequests(),
+      ]);
+    } catch (err) {
+      console.error('Failed to refresh vendor data:', err);
+    }
+  }, [isConnected, account, loadAvailablePlots, loadPendingRequests]);
+
   // Load pack prices - only when needed (lazy loading)
   const loadPackPrices = useCallback(async () => {
     if (!getPackPrice) return;
@@ -143,6 +157,13 @@ const VendorDialog = ({ onClose, label = "VENDOR", header = "" }) => {
 
     loadData();
   }, [isConnected, account, contractService, dataLoaded, loadAvailablePlots, loadPendingRequests]);
+
+  // Refresh data on every render to ensure it's up to date
+  useEffect(() => {
+    if (dataLoaded && isConnected && account) {
+      refreshVendorData();
+    }
+  }, [dataLoaded, isConnected, account, refreshVendorData]);
 
   // Load pack prices when user navigates to seed pack detail
   useEffect(() => {

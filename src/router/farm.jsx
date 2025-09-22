@@ -669,6 +669,9 @@ const Farm = () => {
         return newCropArray;
       });
 
+      // Reset any selection state after successful planting
+      setSelectedIndexes([]);
+
       // Reload crops and seeds concurrently to reduce total wait time
       if (userAddress) {
         console.log("🔄 Reloading crops and seeds concurrently...");
@@ -689,9 +692,6 @@ const Farm = () => {
         // Force a re-render by updating the preview update key
         setPreviewUpdateKey(prev => prev + 1);
         console.log("🔄 Forced re-render with new preview key");
-        
-        // Reset any selection state after successful planting
-        setSelectedIndexes([]);
       }
 
       // Confirm planting in preview array (transition -1 to 1)
@@ -706,8 +706,11 @@ const Farm = () => {
       // Reset used seeds tracking after successful planting
       setUsedSeedsInPreview({});
 
-      console.log("Planting complete - closing farm menu");
-      setIsFarmMenu(false);
+      // Reset planting state and close farm menu
+      setIsPlanting(true); // Keep in planting mode for next time
+      setIsFarmMenu(false); // Close the farm menu to show planted items
+      
+      console.log("Planting complete - farm menu closed, planted items should be visible");
     } catch (error) {
       const { message } = handleContractError(error, 'planting crops');
       console.error("Failed to plant crops:", message);
