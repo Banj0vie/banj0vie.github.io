@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import BaseDialog from "../BaseDialog";
+import BaseDialog from "../_BaseDialog";
 import "./style.css";
 import TokenInputRow from "./TokenInputRow";
 import ExchangeButton from "../../components/buttons/ExchangeButton";

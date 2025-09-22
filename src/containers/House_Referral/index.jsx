@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import "./style.css";
-import BaseDialog from "../BaseDialog";
+import BaseDialog from "../_BaseDialog";
 import CardView from "../../components/boxes/CardView";
 import BaseInput from "../../components/inputs/BaseInput";
 import BaseButton from "../../components/buttons/BaseButton";

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import "./style.css";
-import BaseDialog from "../BaseDialog";
+import BaseDialog from "../_BaseDialog";
 import SageMenu from "./SageMenu";
 import { ID_SAGE_PAGES } from "../../constants/app_ids";
 import WeeklyWage from "./WeeklyWage";

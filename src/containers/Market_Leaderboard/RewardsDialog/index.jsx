@@ -1,6 +1,6 @@
 import React from "react";
 import "./style.css";
-import BaseDialog from "../../BaseDialog";
+import BaseDialog from "../../_BaseDialog";
 import { PRIZES } from "../../../constants/scene_market";
 import CardView from "../../../components/boxes/CardView";
 

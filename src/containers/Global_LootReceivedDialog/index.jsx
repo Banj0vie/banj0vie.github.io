@@ -1,6 +1,6 @@
 import React from "react";
 import "./style.css";
-import BaseDialog from "../BaseDialog";
+import BaseDialog from "../_BaseDialog";
 import BaseDivider from "../../components/dividers/BaseDivider";
 import ItemSmallView from "../../components/boxes/ItemViewSmall";
 

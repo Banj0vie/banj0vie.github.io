@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import "./style.css";
-import BaseDialog from "../BaseDialog";
+import BaseDialog from "../_BaseDialog";
 import { ID_ANGLER_PAGES } from "../../constants/app_ids";
 import AnglerMenu from "./AnglerMenu";
 import CraftBait from "./CraftBait";

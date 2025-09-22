@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 import "./style.css";
-import BaseDialog from "../BaseDialog";
-import Slider from "../../components/inputs/Slider";
-import BaseDivider from "../../components/dividers/BaseDivider";
-import BaseButton from "../../components/buttons/BaseButton";
+import BaseDialog from "../../_BaseDialog";
+import Slider from "../../../components/inputs/Slider";
+import BaseDivider from "../../../components/dividers/BaseDivider";
+import BaseButton from "../../../components/buttons/BaseButton";
 
 const CustomSeedsDialog = ({ price = 1, onConfirm, onClose }) => {
   const [seedCount, setSeedCount] = useState("1");

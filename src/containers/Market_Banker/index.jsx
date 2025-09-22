@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import "./style.css";
-import BaseDialog from "../BaseDialog";
+import BaseDialog from "../_BaseDialog";
 import BankerMenu from "./BankerMenu";
 import { ID_BANKER_PAGES } from "../../constants/app_ids";
 import StakeHoney from "./StakeHoney";

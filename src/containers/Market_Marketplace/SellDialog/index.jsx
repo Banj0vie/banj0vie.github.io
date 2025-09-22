@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useCallback } from "react";
 import "./style.css";
-import BaseDialog from "../../BaseDialog";
+import BaseDialog from "../../_BaseDialog";
 import CardView from "../../../components/boxes/CardView";
 import TreeInput from "../../../components/inputs/TreeInputs";
 import SellItemBox from "../../../components/boxes/SellItemBox";

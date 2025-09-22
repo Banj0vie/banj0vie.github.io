@@ -1,0 +1,22 @@
+.nft-box .nft-card {
+  width: 8rem;
+  height: 8rem;
+  padding: 5px;
+}
+
+.nft-box .nft-card img {
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+}
+
+.nft-box .name {
+  text-align: center;
+  min-height: 2rem;
+  line-height: 2rem;
+  font-size: 1.5rem;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 0.5rem;
+  min-width: 8rem;
+  margin-top: 0.5rem;
+}

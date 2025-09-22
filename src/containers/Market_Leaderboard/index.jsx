@@ -1,7 +1,7 @@
 /* eslint-disable no-unused-vars */
 import React, { useEffect, useState, useCallback } from "react";
 import "./style.css";
-import BaseDialog from "../BaseDialog";
+import BaseDialog from "../_BaseDialog";
 import BaseDivider from "../../components/dividers/BaseDivider";
 import CardView from "../../components/boxes/CardView";
 import { formatDuration } from "../../utils/basic";

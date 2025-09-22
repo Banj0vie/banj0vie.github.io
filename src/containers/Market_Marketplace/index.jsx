@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import "./style.css";
-import BaseDialog from "../BaseDialog";
+import BaseDialog from "../_BaseDialog";
 import BaseButton from "../../components/buttons/BaseButton";
 import { ID_MARKETPLACE_PAGES } from "../../constants/app_ids";
 import BaseDivider from "../../components/dividers/BaseDivider";

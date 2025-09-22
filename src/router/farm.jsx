@@ -8,7 +8,7 @@ import FarmerDialog from "../containers/Farm_Farmer";
 import { dialogFrames } from "../constants/_baseimages";
 import FarmInterface from "../layouts/FarmInterface";
 import FarmMenu from "../layouts/FarmInterface/FarmMenu";
-import SelectSeedDialog from "../containers/SelectSeedDialog";
+import SelectSeedDialog from "../containers/Farm_SelectSeedDialog";
 import { useItems } from "../hooks/useItems";
 import { useFarming } from "../hooks/useContracts";
 import { useAgwEthersAndService } from "../hooks/useAgwEthersAndService";

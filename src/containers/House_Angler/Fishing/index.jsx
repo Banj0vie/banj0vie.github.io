@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import "./style.css";
 import { fishImages, fishingPanelImages } from "../../../constants/_baseimages";
 import BaseButton from "../../../components/buttons/BaseButton";
-import LootReceivedDialog from "../../LootReceivedDialog";
+import LootReceivedDialog from "../../Global_LootReceivedDialog";
 import { ID_POTION_ITEMS, ID_CHEST_ITEMS } from "../../../constants/app_ids";
 import { useFishing } from "../../../hooks/useContracts";
 import { useItems } from "../../../hooks/useItems";

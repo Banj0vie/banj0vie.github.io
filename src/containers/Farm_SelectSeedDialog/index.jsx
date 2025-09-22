@@ -1,6 +1,6 @@
 import React from "react";
 import "./style.css";
-import BaseDialog from "../BaseDialog";
+import BaseDialog from "../_BaseDialog";
 import PickSeedItemBox from "../../components/boxes/PickSeedItemBox";
 import { useItems } from "../../hooks/useItems";
 

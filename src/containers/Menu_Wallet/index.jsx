@@ -1,6 +1,6 @@
 import React from "react";
 import "./style.css";
-import BaseDialog from "../BaseDialog";
+import BaseDialog from "../_BaseDialog";
 import BaseButton from "../../components/buttons/BaseButton";
 import { formatAddress } from "../../utils/basic";
 import { useAgwEthersAndService } from "../../hooks/useAgwEthersAndService";

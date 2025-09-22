@@ -1,8 +1,8 @@
 import React from "react";
 import "./style.css";
-import BaseDialog from "../BaseDialog";
-import BaseButton from "../../components/buttons/BaseButton";
-import SeedRollingBox from "../../components/boxes/SeedRollingBox";
+import BaseDialog from "../../_BaseDialog";
+import BaseButton from "../../../components/buttons/BaseButton";
+import SeedRollingBox from "../../../components/boxes/SeedRollingBox";
 
 const SeedRollingDialog = ({ rollingInfo, onClose, onBack, onBuyAgain }) => {
   return (

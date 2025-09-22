@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import "./style.css";
 import WalletButton from "../../../../components/buttons/WalletButton";
-import WalletDialog from "../../../../containers/WalletDialog";
+import WalletDialog from "../../../../containers/Menu_Wallet";
 import { useProfile } from "../../../../contexts/ProfileContext";
 
 const ProfileView = () => {

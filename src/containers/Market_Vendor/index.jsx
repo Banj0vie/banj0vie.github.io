@@ -1,16 +1,16 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import BaseDialog from "../BaseDialog";
+import BaseDialog from "../_BaseDialog";
 import "./style.css";
 import VendorMenu from "./VendorMenu";
 import BuySeeds from "./BuySeeds";
 import RollChances from "./RollChances";
-import CustomSeedsDialog from "../CustomSeedsDialog";
 import { ID_CROP_CATEGORIES, ID_SEED_SHOP_PAGES } from "../../constants/app_ids";
 import { SEED_PACK_STATUS } from "../../constants/item_seed";
-import SeedRollingDialog from "../SeedRollingDialog";
 import { useVendor, useFarming } from "../../hooks/useContracts";
 import { useAgwEthersAndService } from "../../hooks/useAgwEthersAndService";
 import { useNotification } from "../../contexts/NotificationContext";
+import CustomSeedsDialog from "./CustomSeedsDialog";
+import SeedRollingDialog from "./SeedRollingDialog";
 const VendorDialog = ({ onClose, label = "VENDOR", header = "" }) => {
   const { isConnected, account, contractService } = useAgwEthersAndService();
   const { buySeedPack, getPackPrice, checkPendingRequests, getAllPendingRequests, fulfillPendingRequest, listenForSeedsRevealed } = useVendor();

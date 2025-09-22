@@ -1,6 +1,6 @@
 import React from "react";
 import "./style.css";
-import BaseDialog from "../BaseDialog";
+import BaseDialog from "../_BaseDialog";
 import ScrollButton from "../../components/buttons/ScrollButton";
 
 const FarmerDialog = ({

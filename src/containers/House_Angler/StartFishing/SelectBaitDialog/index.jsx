@@ -1,6 +1,6 @@
 import React from "react";
 import "./style.css";
-import BaseDialog from "../../../BaseDialog";
+import BaseDialog from "../../../_BaseDialog";
 import { ID_BAIT_ITEMS } from "../../../../constants/app_ids";
 import CardView from "../../../../components/boxes/CardView";
 import { TYPE_LABEL_COLOR } from "../../../../constants/item_seed";
