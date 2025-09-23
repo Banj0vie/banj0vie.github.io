@@ -5,8 +5,9 @@ import BaseButton from "../../buttons/BaseButton";
 import { useItems } from "../../../hooks/useItems";
 import CardView from "../../boxes/CardView";
 import BaseCheckBox from "../BaseCheckBox";
+import BaseSelect from "../BaseSelect";
 
-const TreeInput = ({ onBack, onSelect }) => {
+const TreeInput = ({ onBack, onSelect, sortable = false }) => {
   const [search, setSearch] = useState("");
   const [expanded, setExpanded] = useState(() => new Set());
   const [checked, setChecked] = useState(() => new Set());
@@ -25,11 +26,11 @@ const TreeInput = ({ onBack, onSelect }) => {
   useEffect(() => {
     if (itemsTree && itemsTree.length > 0 && !loading && checked.size === 0) {
       const allItemIds = new Set();
-      
+
       const walk = (n) => {
         // Add items from category nodes that have items arrays
         if (n.items && n.items.length > 0) {
-          n.items.forEach(item => allItemIds.add(item.id));
+          n.items.forEach((item) => allItemIds.add(item.id));
         }
         // Add leaf nodes that have count (user owns these items)
         else if (!n.children && n.count !== undefined && n.count > 0) {
@@ -38,7 +39,7 @@ const TreeInput = ({ onBack, onSelect }) => {
         // Recursively process children
         if (n.children) n.children.forEach((c) => walk(c));
       };
-      
+
       itemsTree.forEach(walk);
       setChecked(allItemIds);
     }
@@ -56,14 +57,14 @@ const TreeInput = ({ onBack, onSelect }) => {
   const toggleCheck = (node, isChecked) => {
     setChecked((s) => {
       const next = new Set(s);
-      
+
       if (node.id === "ALL") {
         // For "All" category, select/deselect all items
         if (!itemsTree || itemsTree.length === 0) return s;
-        
+
         const walk = (n) => {
           if (n.items && n.items.length > 0) {
-            n.items.forEach(item => {
+            n.items.forEach((item) => {
               if (isChecked) next.add(item.id);
               else next.delete(item.id);
             });
@@ -79,7 +80,7 @@ const TreeInput = ({ onBack, onSelect }) => {
         const walk = (n, val) => {
           // If this node has items array (category nodes with user items), collect their IDs
           if (n.items && n.items.length > 0) {
-            n.items.forEach(item => {
+            n.items.forEach((item) => {
               if (val) next.add(item.id);
               else next.delete(item.id);
             });
@@ -94,7 +95,7 @@ const TreeInput = ({ onBack, onSelect }) => {
         };
         walk(node, isChecked);
       }
-      
+
       return next;
     });
   };
@@ -102,20 +103,20 @@ const TreeInput = ({ onBack, onSelect }) => {
   const onReset = () => {
     setSearch("");
     setExpanded(new Set());
-    
+
     // Select all items instead of clearing
     if (itemsTree && itemsTree.length > 0) {
       const allItemIds = new Set();
-      
+
       const walk = (n) => {
         if (n.items && n.items.length > 0) {
-          n.items.forEach(item => allItemIds.add(item.id));
+          n.items.forEach((item) => allItemIds.add(item.id));
         } else if (!n.children && n.count !== undefined && n.count > 0) {
           allItemIds.add(n.id);
         }
         if (n.children) n.children.forEach((c) => walk(c));
       };
-      
+
       itemsTree.forEach(walk);
       setChecked(allItemIds);
     } else {
@@ -123,11 +124,12 @@ const TreeInput = ({ onBack, onSelect }) => {
     }
   };
 
+  const onApply = () => {};
 
   const filtered = useMemo(() => {
     if (!itemsTree || loading) return [];
     if (!search) return itemsTree;
-    
+
     const matchesSearch = (node, q) => {
       if (!q) return true;
       const lower = q.toLowerCase();
@@ -151,12 +153,12 @@ const TreeInput = ({ onBack, onSelect }) => {
     if (node.id === "ALL") {
       // For "All" category, check if all available items are selected
       if (!itemsTree || itemsTree.length === 0) return false;
-      
+
       const getAllItemIds = () => {
         const allIds = new Set();
         const walk = (n) => {
           if (n.items && n.items.length > 0) {
-            n.items.forEach(item => allIds.add(item.id));
+            n.items.forEach((item) => allIds.add(item.id));
           } else if (!n.children && n.count !== undefined) {
             allIds.add(n.id);
           }
@@ -165,12 +167,15 @@ const TreeInput = ({ onBack, onSelect }) => {
         itemsTree.forEach(walk);
         return allIds;
       };
-      
+
       const allItemIds = getAllItemIds();
-      return allItemIds.size > 0 && Array.from(allItemIds).every(id => checked.has(id));
+      return (
+        allItemIds.size > 0 &&
+        Array.from(allItemIds).every((id) => checked.has(id))
+      );
     } else if (node.items && node.items.length > 0) {
       // For category nodes, check if any items are selected
-      return node.items.some(item => checked.has(item.id));
+      return node.items.some((item) => checked.has(item.id));
     } else if (!node.children && node.count !== undefined) {
       // For leaf nodes, check if the node itself is selected
       return checked.has(node.id);
@@ -230,6 +235,24 @@ const TreeInput = ({ onBack, onSelect }) => {
     );
   }
 
+  const sortOptions = [
+    {
+      label: "Price - ASC",
+      value: "price-asc",
+    },
+    {
+      label: "Price - DESC",
+      value: "price-desc",
+    },
+    {
+      label: "Date - Oldest",
+      value: "date-oldest",
+    },
+    {
+      label: "Date - Newest",
+      value: "date-newest",
+    },
+  ];
   return (
     <div className="tree-input">
       <BaseInput
@@ -238,10 +261,18 @@ const TreeInput = ({ onBack, onSelect }) => {
         setValue={(v) => setSearch(v)}
         placeholder="Search Filters"
       />
+      {sortable && <BaseSelect options={sortOptions}></BaseSelect>}
       <div className="tree-list">{filtered.map((n) => renderNode(n))}</div>
 
       <div className="tree-actions">
-        <BaseButton label="Reset" onClick={onReset} />
+        {sortable ? (
+          <div className="button-row">
+            <BaseButton label="Reset" onClick={onReset} />
+            <BaseButton label="Apply" onClick={onApply} />
+          </div>
+        ) : (
+          <BaseButton label="Reset" onClick={onReset} />
+        )}
         <BaseButton label="Back" onClick={onBack} />
       </div>
     </div>

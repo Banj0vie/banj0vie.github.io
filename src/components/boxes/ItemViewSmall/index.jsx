@@ -8,9 +8,8 @@ import {
 } from "../../../constants/item_seed";
 
 const ItemSmallView = ({ itemId, count }) => {
-  const item = ALL_ITEMS[itemId];
 
-  return (
+  return (itemId ? 
     <div className="item-small-view">
       <CardView className="icon">
         {ALL_ITEMS[itemId].pos === undefined ? (
@@ -26,12 +25,12 @@ const ItemSmallView = ({ itemId, count }) => {
       </CardView>
       <div
         className="label"
-        style={{ color: TYPE_LABEL_COLOR[item.type].color }}
+        style={{ color: TYPE_LABEL_COLOR[ALL_ITEMS[itemId].type].color }}
       >
-        {item.label}
+        {ALL_ITEMS[itemId].label}
       </div>
       <div className="count">x{count}</div>
-    </div>
+    </div> : <></>
   );
 };
 

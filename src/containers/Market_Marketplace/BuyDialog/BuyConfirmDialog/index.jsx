@@ -5,15 +5,15 @@ import BaseInput from "../../../../components/inputs/BaseInput";
 import BaseDivider from "../../../../components/dividers/BaseDivider";
 import BaseButton from "../../../../components/buttons/BaseButton";
 
-const BatchBuyConfirmDialog = ({ onClose, item }) => {
+const BuyConfirmDialog = ({ onClose, item }) => {
   const [price, setPrice] = useState(0);
   const [budget, setBudget] = useState(0);
 
   const handleConfirm = () => {};
 
   return (
-    <BaseDialog onClose={onClose} title="BATCH BUY">
-      <div className="batch-buy-confirm-dialog">
+    <BaseDialog onClose={onClose} title="BUY ITEMS">
+      <div className="buy-confirm-dialog">
         <div className="text-center">
           Floor price: {0}
         </div>
@@ -40,4 +40,4 @@ const BatchBuyConfirmDialog = ({ onClose, item }) => {
   );
 };
 
-export default BatchBuyConfirmDialog;
+export default BuyConfirmDialog;

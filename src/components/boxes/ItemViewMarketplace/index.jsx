@@ -13,7 +13,10 @@ const ItemViewMarketplace = ({
   onSend = () => {},
   onSell = () => {},
   onBatchBuy = () => {},
+  onBuy = () => {},
   isBatchBuy = false,
+  isBuy = false,
+  price = 0,
 }) => {
   // Try to get item data from ALL_ITEMS, fallback to item data from contract
   const itemData = ALL_ITEMS[item.id] || item;
@@ -84,26 +87,32 @@ const ItemViewMarketplace = ({
           </div>
         </CardView>
 
-        {/* Item Name and Quantity */}
+        {/* Item Name and Quantity/Price */}
         <div
           className="item-details"
           style={{ color: TYPE_LABEL_COLOR[item.type].color }}
         >
-          {itemLabel} ({item.count})
+          {itemLabel} {isBuy ? `(${price} tokens)` : `(${item.count})`}
         </div>
 
         {/* Action Buttons */}
         <div className="item-actions">
-          {!isBatchBuy && (
+          {!isBatchBuy && !isBuy && (
             <BaseButton label="Send" onClick={() => onSend(item)}></BaseButton>
           )}
-          {!isBatchBuy && (
+          {!isBatchBuy && !isBuy && (
             <BaseButton label="Sell" onClick={() => onSell(item)}></BaseButton>
           )}
           {isBatchBuy && (
             <BaseButton
               label="Batch Buy"
               onClick={() => onBatchBuy(item)}
+            ></BaseButton>
+          )}
+          {isBuy && (
+            <BaseButton
+              label="Buy"
+              onClick={() => onBuy(item)}
             ></BaseButton>
           )}
         </div>
