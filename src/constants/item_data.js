@@ -731,7 +731,6 @@ export const ALL_ITEMS = {
     subCategory: ID_LOOT_CATEGORIES.CHEST,
     type: ID_RARE_TYPE.COMMON,
     image: chestImages.wood,
-    pos: 0, // Wood chest
     honey: 0,
     lockedHoney: 0,
   },
@@ -741,7 +740,6 @@ export const ALL_ITEMS = {
     subCategory: ID_LOOT_CATEGORIES.CHEST,
     type: ID_RARE_TYPE.UNCOMMON,
     image: chestImages.bronze,
-    pos: 1, // Bronze chest
     honey: 0,
     lockedHoney: 0,
   },
@@ -751,7 +749,6 @@ export const ALL_ITEMS = {
     subCategory: ID_LOOT_CATEGORIES.CHEST,
     type: ID_RARE_TYPE.RARE,
     image: chestImages.silver,
-    pos: 2, // Silver chest
     honey: 0,
     lockedHoney: 0,
   },
@@ -761,7 +758,6 @@ export const ALL_ITEMS = {
     subCategory: ID_LOOT_CATEGORIES.CHEST,
     type: ID_RARE_TYPE.EPIC,
     image: chestImages.gold,
-    pos: 3, // Gold chest
     honey: 0,
     lockedHoney: 0,
   },
