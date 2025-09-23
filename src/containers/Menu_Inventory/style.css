@@ -63,4 +63,5 @@
   flex-direction: column;
   gap: 0.75rem;
   padding: 1.25rem;
+  width: 100%;
 }
