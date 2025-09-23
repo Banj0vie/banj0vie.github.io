@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useAgwEthersAndService } from '../hooks/useAgwEthersAndService';
-import { ID_SEEDS, ID_PRODUCE_ITEMS, ID_BAIT_ITEMS, ID_FISH_ITEMS, ID_CHEST_ITEMS, ID_POTION_ITEMS, ID_CROP_CATEGORIES, ID_ITEM_CATEGORIES, ID_POTION_CATEGORIES, ID_POTIONS, ID_LOOT_CATEGORIES, ID_LOOTS, ID_RARE_TYPE } from '../constants/app_ids';
+import { ID_SEEDS, ID_PRODUCE_ITEMS, ID_BAIT_ITEMS, ID_FISH_ITEMS, ID_CHEST_ITEMS, ID_POTION_ITEMS, ID_CROP_CATEGORIES, ID_ITEM_CATEGORIES, ID_POTION_CATEGORIES, ID_LOOT_CATEGORIES, ID_RARE_TYPE } from '../constants/app_ids';
 import { ALL_ITEMS, IMAGE_URL_CROP } from '../constants/item_data';
 
 export const useItems = () => {
@@ -42,7 +42,7 @@ export const useItems = () => {
       try {
         // Create array of user addresses (same address for all items)
         const addresses = new Array(allItemIds.length).fill(account);
-        
+
         // Convert item IDs to strings for the contract call
         const itemIdStrings = allItemIds.map(id => id.toString());
         // Fetch balances for all items at once
@@ -59,7 +59,7 @@ export const useItems = () => {
           const balanceNum = typeof balance === 'object' && balance.toNumber ? balance.toNumber() : Number(balance);
           const itemId = allItemIds[index];
           const itemData = ALL_ITEMS[itemId];
-          
+
           if (itemData) {
             // Item exists in ALL_ITEMS, use its data
             userItems.push({
@@ -70,7 +70,7 @@ export const useItems = () => {
           } else {
             // Item doesn't exist in ALL_ITEMS, create proper category structure
             let category, subCategory;
-            
+
             // Determine category and subcategory based on item ID or label
             if (Object.values(ID_CHEST_ITEMS).includes(itemId)) {
               category = ID_ITEM_CATEGORIES.LOOT;
@@ -86,7 +86,7 @@ export const useItems = () => {
                 subCategory = ID_POTION_CATEGORIES.PESTICIDE;
               }
             }
-            
+
             // Get proper label from constants
             let label = itemId.toString();
             if (Object.values(ID_CHEST_ITEMS).includes(itemId)) {
@@ -102,7 +102,7 @@ export const useItems = () => {
                 label = potionEntry[0]; // Use the key as label (e.g., "POTION_FERTILIZER")
               }
             }
-            
+
             // Create item data with proper categories
             userItems.push({
               id: itemId,
@@ -136,54 +136,54 @@ export const useItems = () => {
         if (node.children) {
           // This is a category node - recursively process children
           const processedChildren = createTreeWithItems(node.children, userItems);
-          
+
           // Add items property to category nodes (exclude seeds, include all items even with 0 count for crafting)
           const categoryItems = userItems.filter(item => {
             if (node.id === ID_ITEM_CATEGORIES.CROP) {
               // Only include produce items, exclude seeds
               return item.category === ID_ITEM_CATEGORIES.PRODUCE;
             }
-            
+
             // Handle potion items
             if (node.id === ID_ITEM_CATEGORIES.POTION) {
               return item.category === ID_ITEM_CATEGORIES.POTION;
             }
-            
+
             // Handle loot items (including chests with undefined category)
             if (node.id === ID_ITEM_CATEGORIES.LOOT) {
               // Include items with loot category or undefined category (like chests)
-              return item.category === ID_ITEM_CATEGORIES.LOOT || 
-                     item.category === undefined ||
-                     item.label?.includes('CHEST');
+              return item.category === ID_ITEM_CATEGORIES.LOOT ||
+                item.category === undefined ||
+                item.label?.includes('CHEST');
             }
-            
+
             // Handle crop subcategories (for crops that are organized by seed tier)
-            if (node.id === ID_CROP_CATEGORIES.PREMIUM_SEED || 
-                node.id === ID_CROP_CATEGORIES.BASIC_SEED || 
-                node.id === ID_CROP_CATEGORIES.PICO_SEED || 
-                node.id === ID_CROP_CATEGORIES.FEEBLE_SEED) {
+            if (node.id === ID_CROP_CATEGORIES.PREMIUM_SEED ||
+              node.id === ID_CROP_CATEGORIES.BASIC_SEED ||
+              node.id === ID_CROP_CATEGORIES.PICO_SEED ||
+              node.id === ID_CROP_CATEGORIES.FEEBLE_SEED) {
               // For crop subcategories, we need to match produce items that belong to this seed tier
               // This is a bit tricky since produce items don't have subcategory, so we'll match by ID ranges
               const tierItems = node.children?.map(child => child.id) || [];
               return tierItems.includes(item.id);
             }
-            
+
             // Handle potion subcategories
             if (node.id === ID_POTION_CATEGORIES.GROWTH_ELIXIR ||
-                node.id === ID_POTION_CATEGORIES.FERTILIZER ||
-                node.id === ID_POTION_CATEGORIES.PESTICIDE) {
+              node.id === ID_POTION_CATEGORIES.FERTILIZER ||
+              node.id === ID_POTION_CATEGORIES.PESTICIDE) {
               return item.subCategory === node.id;
             }
-            
+
             // Handle loot subcategories
             if (node.id === ID_LOOT_CATEGORIES.CHEST ||
-                node.id === ID_LOOT_CATEGORIES.BAIT) {
+              node.id === ID_LOOT_CATEGORIES.BAIT) {
               return item.subCategory === node.id;
             }
-            
+
             return item.category === node.id;
           });
-          
+
           return {
             ...node,
             children: processedChildren,
@@ -194,13 +194,13 @@ export const useItems = () => {
           const userItem = userItems.find(item => {
             // First try exact ID match
             if (item.id === node.id) return true;
-            
+
             // If no ID match, try label match for items with undefined IDs
             if (item.label && node.label && item.label === node.label) return true;
-            
+
             return false;
           });
-          
+
           return {
             ...node,
             ...userItem,
@@ -276,27 +276,27 @@ export const useItems = () => {
                 id: ID_POTION_CATEGORIES.GROWTH_ELIXIR,
                 label: "Growth Elixirs",
                 children: [
-                  { id: ID_POTIONS.GROWTH_ELIXIR, label: "Growth Elixir I" },
-                  { id: ID_POTIONS.GROWTH_ELIXIR_II, label: "Growth Elixir II" },
-                  { id: ID_POTIONS.GROWTH_ELIXIR_III, label: "Growth Elixir III" },
+                  { id: ID_POTION_ITEMS.GROWTH_ELIXIR, label: "Growth Elixir I" },
+                  { id: ID_POTION_ITEMS.GROWTH_ELIXIR_II, label: "Growth Elixir II" },
+                  { id: ID_POTION_ITEMS.GROWTH_ELIXIR_III, label: "Growth Elixir III" },
                 ]
               },
               {
                 id: ID_POTION_CATEGORIES.FERTILIZER,
                 label: "Fertilizers",
                 children: [
-                  { id: ID_POTIONS.FERTILIZER, label: "Fertilizer" },
-                  { id: ID_POTIONS.FERTILIZER_II, label: "Fertilizer II" },
-                  { id: ID_POTIONS.FERTILIZER_III, label: "Fertilizer III" },
+                  { id: ID_POTION_ITEMS.FERTILIZER, label: "Fertilizer" },
+                  { id: ID_POTION_ITEMS.FERTILIZER_II, label: "Fertilizer II" },
+                  { id: ID_POTION_ITEMS.FERTILIZER_III, label: "Fertilizer III" },
                 ]
               },
               {
                 id: ID_POTION_CATEGORIES.PESTICIDE,
                 label: "Pesticides",
                 children: [
-                  { id: ID_POTIONS.PESTICIDE, label: "Pesticide" },
-                  { id: ID_POTIONS.PESTICIDE_II, label: "Pesticide II" },
-                  { id: ID_POTIONS.PESTICIDE_III, label: "Pesticide III" },
+                  { id: ID_POTION_ITEMS.PESTICIDE, label: "Pesticide" },
+                  { id: ID_POTION_ITEMS.PESTICIDE_II, label: "Pesticide II" },
+                  { id: ID_POTION_ITEMS.PESTICIDE_III, label: "Pesticide III" },
                 ]
               }
             ]
@@ -309,20 +309,20 @@ export const useItems = () => {
                 id: ID_LOOT_CATEGORIES.CHEST,
                 label: "Chests",
                 children: [
-                  { id: ID_LOOTS.WOODEN_CHEST, label: "Wooden Chest" },
-                  { id: ID_LOOTS.BRONZE_CHEST, label: "Bronze Chest" },
-                  { id: ID_LOOTS.SILVER_CHEST, label: "Silver Chest" },
-                  { id: ID_LOOTS.GOLDEN_CHEST, label: "Golden Chest" },
-                  { id: ID_LOOTS.PLATINUM_CHEST, label: "Platinum Chest" },
+                  { id: ID_CHEST_ITEMS.WOODEN_CHEST, label: "Wooden Chest" },
+                  { id: ID_CHEST_ITEMS.BRONZE_CHEST, label: "Bronze Chest" },
+                  { id: ID_CHEST_ITEMS.SILVER_CHEST, label: "Silver Chest" },
+                  { id: ID_CHEST_ITEMS.GOLDEN_CHEST, label: "Golden Chest" },
+                  { id: ID_CHEST_ITEMS.PLATINUM_CHEST, label: "Platinum Chest" },
                 ]
               },
               {
                 id: ID_LOOT_CATEGORIES.BAIT,
                 label: "Baits",
                 children: [
-                  { id: ID_LOOTS.BAIT_I, label: "Bait I" },
-                  { id: ID_LOOTS.BAIT_II, label: "Bait II" },
-                  { id: ID_LOOTS.BAIT_III, label: "Bait III" }
+                  { id: ID_BAIT_ITEMS.BAIT_I, label: "Bait I" },
+                  { id: ID_BAIT_ITEMS.BAIT_II, label: "Bait II" },
+                  { id: ID_BAIT_ITEMS.BAIT_III, label: "Bait III" }
                 ]
               }
             ]
@@ -367,7 +367,7 @@ export const useItems = () => {
             functionName: 'balanceOfBatch',
             args: [addresses, itemIdStrings],
           });
-          
+
           // Include ALL items (even with 0 balance) for crafting interface
           const userItems = [];
           balances.forEach((balance, index) => {
@@ -375,7 +375,7 @@ export const useItems = () => {
             const balanceNum = typeof balance === 'object' && balance.toNumber ? balance.toNumber() : Number(balance);
             const itemId = allItemIds[index];
             const itemData = ALL_ITEMS[itemId];
-            
+
             if (itemData) {
               // Item exists in ALL_ITEMS, use its data
               userItems.push({
@@ -386,7 +386,7 @@ export const useItems = () => {
             } else {
               // Item doesn't exist in ALL_ITEMS, create proper category structure
               let category, subCategory;
-              
+
               // Determine category and subcategory based on item ID or label
               if (Object.values(ID_CHEST_ITEMS).includes(itemId)) {
                 category = ID_ITEM_CATEGORIES.LOOT;
@@ -402,7 +402,7 @@ export const useItems = () => {
                   subCategory = ID_POTION_CATEGORIES.PESTICIDE;
                 }
               }
-              
+
               // Get proper label from constants
               let label = itemId.toString();
               if (Object.values(ID_CHEST_ITEMS).includes(itemId)) {
@@ -418,7 +418,7 @@ export const useItems = () => {
                   label = potionEntry[0]; // Use the key as label (e.g., "POTION_FERTILIZER")
                 }
               }
-              
+
               // Create item data with proper categories
               userItems.push({
                 id: itemId,

@@ -1,0 +1,27 @@
+.batch-buy-confirm-dialog {
+  width: 300px;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.batch-buy-confirm-dialog .row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.batch-buy-confirm-dialog .row .input {
+  min-width: 70%;
+  width: 70%;
+  height: 3rem;
+}
+
+.batch-buy-confirm-dialog .row .slider {
+  width: 70%;
+}
+
+.batch-buy-confirm-dialog .count-label {
+  margin-top: -1.25rem;
+  text-align: right;
+}

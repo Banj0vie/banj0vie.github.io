@@ -1,5 +1,5 @@
 import { baitImages, chestImages, fishImages, fishingRodImages, potionImages } from "./_baseimages";
-import { ID_SEEDS, ID_PRODUCE_ITEMS, ID_BAIT_ITEMS, ID_FISH_ITEMS, ID_CHEST_ITEMS, ID_POTION_ITEMS, ID_CROP_CATEGORIES, ID_RARE_TYPE, ID_ITEM_CATEGORIES, ID_POTION_CATEGORIES, ID_POTIONS, ID_LOOT_CATEGORIES, ID_LOOTS, ID_FISHING_RODS } from "./app_ids";
+import { ID_SEEDS, ID_PRODUCE_ITEMS, ID_BAIT_ITEMS, ID_FISH_ITEMS, ID_CHEST_ITEMS, ID_POTION_ITEMS, ID_CROP_CATEGORIES, ID_RARE_TYPE, ID_ITEM_CATEGORIES, ID_POTION_CATEGORIES, ID_LOOT_CATEGORIES, ID_FISHING_RODS } from "./app_ids";
 
 export const IMAGE_URL_CROP = "/public/images/crops/seeds.png";
 // All items data with categories
@@ -7,7 +7,7 @@ export const ALL_ITEMS = {
   // Seeds
   [ID_SEEDS.F_POTATO]: {
     id: ID_SEEDS.F_POTATO,
-    label: "F.POTATO",
+    label: "F.Potato",
     category: ID_ITEM_CATEGORIES.SEED,
     subCategory: ID_CROP_CATEGORIES.FEEBLE_SEED,
     type: ID_RARE_TYPE.COMMON,
@@ -18,7 +18,7 @@ export const ALL_ITEMS = {
   },
   [ID_SEEDS.F_LETTUCE]: {
     id: ID_SEEDS.F_LETTUCE,
-    label: "F.LETTUCE",
+    label: "F.Lettuce",
     category: ID_ITEM_CATEGORIES.SEED,
     subCategory: ID_CROP_CATEGORIES.FEEBLE_SEED,
     type: ID_RARE_TYPE.UNCOMMON,
@@ -29,7 +29,7 @@ export const ALL_ITEMS = {
   },
   [ID_SEEDS.F_CABBAGE]: {
     id: ID_SEEDS.F_CABBAGE,
-    label: "F.CABBAGE",
+    label: "F.Cabbage",
     category: ID_ITEM_CATEGORIES.SEED,
     subCategory: ID_CROP_CATEGORIES.FEEBLE_SEED,
     type: ID_RARE_TYPE.RARE,
@@ -40,7 +40,7 @@ export const ALL_ITEMS = {
   },
   [ID_SEEDS.F_ONION]: {
     id: ID_SEEDS.F_ONION,
-    label: "F.ONION",
+    label: "F.Onion",
     category: ID_ITEM_CATEGORIES.SEED,
     subCategory: ID_CROP_CATEGORIES.FEEBLE_SEED,
     type: ID_RARE_TYPE.EPIC,
@@ -51,7 +51,7 @@ export const ALL_ITEMS = {
   },
   [ID_SEEDS.F_RADISH]: {
     id: ID_SEEDS.F_RADISH,
-    label: "F.RADISH",
+    label: "F.Radish",
     category: ID_ITEM_CATEGORIES.SEED,
     subCategory: ID_CROP_CATEGORIES.FEEBLE_SEED,
     type: ID_RARE_TYPE.LEGENDARY,
@@ -712,21 +712,85 @@ export const ALL_ITEMS = {
   // Fish items
   [ID_FISH_ITEMS.FISH_SMALL]: {
     label: "FISH_SMALL",
-    category: ID_ITEM_CATEGORIES.FISH,
+    category: ID_ITEM_CATEGORIES.LOOT,
+    subCategory: ID_LOOT_CATEGORIES.FISH,
+    type: ID_RARE_TYPE.EPIC,
+    image: fishImages.catfish,
   },
   [ID_FISH_ITEMS.FISH_LARGE]: {
     label: "FISH_LARGE",
-    category: ID_ITEM_CATEGORIES.FISH,
-  },
-  [ID_LOOTS.CATFISH]: {
-    label: "Catfish",
+    category: ID_ITEM_CATEGORIES.LOOT,
+    subCategory: ID_LOOT_CATEGORIES.FISH,
     type: ID_RARE_TYPE.EPIC,
     image: fishImages.catfish,
+  },
+  [ID_FISH_ITEMS.ANCHOVY]: {
+    label: "Anchovy",
+    category: ID_ITEM_CATEGORIES.LOOT,
+    subCategory: ID_LOOT_CATEGORIES.FISH,
+    type: ID_RARE_TYPE.COMMON,
+    image: fishImages.anchovy,
+  },
+  [ID_FISH_ITEMS.SARDINE]: {
+    label: "Sardin",
+    category: ID_ITEM_CATEGORIES.LOOT,
+    subCategory: ID_LOOT_CATEGORIES.FISH,
+    type: ID_RARE_TYPE.COMMON,
+    image: fishImages.sardine,
+  },
+  [ID_FISH_ITEMS.HERRING]: {
+    label: "Herring",
+    category: ID_ITEM_CATEGORIES.LOOT,
+    subCategory: ID_LOOT_CATEGORIES.FISH,
+    type: ID_RARE_TYPE.UNCOMMON,
+    image: fishImages.herring,
+  },
+  [ID_FISH_ITEMS.SMALL_TROUT]: {
+    label: "Small Trout",
+    category: ID_ITEM_CATEGORIES.LOOT,
+    subCategory: ID_LOOT_CATEGORIES.FISH,
+    type: ID_RARE_TYPE.UNCOMMON,
+    image: fishImages.smallTrout,
+  },
+  [ID_FISH_ITEMS.YELLOW_PERCH]: {
+    label: "Yellow Perch",
+    category: ID_ITEM_CATEGORIES.LOOT,
+    subCategory: ID_LOOT_CATEGORIES.FISH,
+    type: ID_RARE_TYPE.RARE,
+    image: fishImages.yellowPerch,
+  },
+  [ID_FISH_ITEMS.SALMON]: {
+    label: "Salmon",
+    category: ID_ITEM_CATEGORIES.LOOT,
+    subCategory: ID_LOOT_CATEGORIES.FISH,
+    type: ID_RARE_TYPE.RARE,
+    image: fishImages.salmon,
+  },
+  [ID_FISH_ITEMS.ORANGE_ROUGHY]: {
+    label: "Orange Roughy",
+    category: ID_ITEM_CATEGORIES.LOOT,
+    subCategory: ID_LOOT_CATEGORIES.FISH,
+    type: ID_RARE_TYPE.EPIC,
+    image: fishImages.orangeRoughy,
+  },
+  [ID_FISH_ITEMS.CATFISH]: {
+    label: "Catfish",
+    category: ID_ITEM_CATEGORIES.LOOT,
+    subCategory: ID_LOOT_CATEGORIES.FISH,
+    type: ID_RARE_TYPE.EPIC,
+    image: fishImages.catfish,
+  },
+  [ID_FISH_ITEMS.SMALL_SHARK]: {
+    label: "Small Shark",
+    category: ID_ITEM_CATEGORIES.LOOT,
+    subCategory: ID_LOOT_CATEGORIES.FISH,
+    type: ID_RARE_TYPE.LEGENDARY,
+    image: fishImages.smallShark,
   },
 
   // Chest items
   [ID_CHEST_ITEMS.CHEST_WOOD]: {
-    label: "CHEST WOOD",
+    label: "Wooden Chest",
     category: ID_ITEM_CATEGORIES.LOOT,
     subCategory: ID_LOOT_CATEGORIES.CHEST,
     type: ID_RARE_TYPE.COMMON,
@@ -735,28 +799,37 @@ export const ALL_ITEMS = {
     lockedHoney: 0,
   },
   [ID_CHEST_ITEMS.CHEST_BRONZE]: {
-    label: "CHEST BRONZE",
+    label: "Bronze Chest",
     category: ID_ITEM_CATEGORIES.LOOT,
     subCategory: ID_LOOT_CATEGORIES.CHEST,
-    type: ID_RARE_TYPE.UNCOMMON,
+    type: ID_RARE_TYPE.RARE,
     image: chestImages.bronze,
     honey: 0,
     lockedHoney: 0,
   },
   [ID_CHEST_ITEMS.CHEST_SILVER]: {
-    label: "CHEST SILVER",
+    label: "Silver Chest",
     category: ID_ITEM_CATEGORIES.LOOT,
     subCategory: ID_LOOT_CATEGORIES.CHEST,
-    type: ID_RARE_TYPE.RARE,
+    type: ID_RARE_TYPE.EPIC,
     image: chestImages.silver,
     honey: 0,
     lockedHoney: 0,
   },
   [ID_CHEST_ITEMS.CHEST_GOLD]: {
-    label: "CHEST GOLD",
+    label: "Golden Chest",
     category: ID_ITEM_CATEGORIES.LOOT,
     subCategory: ID_LOOT_CATEGORIES.CHEST,
-    type: ID_RARE_TYPE.EPIC,
+    type: ID_RARE_TYPE.LEGENDARY,
+    image: chestImages.gold,
+    honey: 0,
+    lockedHoney: 0,
+  },
+  [ID_CHEST_ITEMS.PLATINUM_CHEST]: {
+    label: "Platinum Chest",
+    category: ID_ITEM_CATEGORIES.LOOT,
+    subCategory: ID_LOOT_CATEGORIES.CHEST,
+    type: ID_RARE_TYPE.LEGENDARY,
     image: chestImages.gold,
     honey: 0,
     lockedHoney: 0,
@@ -773,15 +846,25 @@ export const ALL_ITEMS = {
     lockedHoney: 0,
     exp: 75,
   },
-  [ID_POTION_ITEMS.POTION_PESTICIDE]: {
-    label: "Pesticide",
+  [ID_POTION_ITEMS.POTION_GROWTH_ELIXIR_II]: {
+    label: "Growth Elixir II",
     category: ID_ITEM_CATEGORIES.POTION,
-    subCategory: ID_POTION_CATEGORIES.PESTICIDE,
+    subCategory: ID_POTION_CATEGORIES.GROWTH_ELIXIR,
     type: ID_RARE_TYPE.UNCOMMON,
-    image: potionImages.pesticide,
+    image: potionImages.growthElixir_II,
     honey: 0,
     lockedHoney: 0,
-    exp: 250,
+    exp: 75,
+  },
+  [ID_POTION_ITEMS.POTION_GROWTH_ELIXIR_III]: {
+    label: "Growth Elixir III",
+    category: ID_ITEM_CATEGORIES.POTION,
+    subCategory: ID_POTION_CATEGORIES.GROWTH_ELIXIR,
+    type: ID_RARE_TYPE.RARE,
+    image: potionImages.growthElixir_III,
+    honey: 0,
+    lockedHoney: 0,
+    exp: 75,
   },
   [ID_POTION_ITEMS.POTION_FERTILIZER]: {
     label: "Fertilizer",
@@ -793,7 +876,56 @@ export const ALL_ITEMS = {
     lockedHoney: 0,
     exp: 2000,
   },
-
+  [ID_POTION_ITEMS.POTION_FERTILIZER_II]: {
+    label: "Fertilizer II",
+    category: ID_ITEM_CATEGORIES.POTION,
+    subCategory: ID_POTION_CATEGORIES.FERTILIZER,
+    type: ID_RARE_TYPE.EPIC,
+    image: potionImages.fertilizer_II,
+    honey: 0,
+    lockedHoney: 0,
+    exp: 2000,
+  },
+  [ID_POTION_ITEMS.POTION_FERTILIZER_III]: {
+    label: "Fertilizer",
+    category: ID_ITEM_CATEGORIES.POTION,
+    subCategory: ID_POTION_CATEGORIES.FERTILIZER,
+    type: ID_RARE_TYPE.LEGENDARY,
+    image: potionImages.fertilizer_III,
+    honey: 0,
+    lockedHoney: 0,
+    exp: 2000,
+  },
+  [ID_POTION_ITEMS.POTION_PESTICIDE]: {
+    label: "Pesticide",
+    category: ID_ITEM_CATEGORIES.POTION,
+    subCategory: ID_POTION_CATEGORIES.PESTICIDE,
+    type: ID_RARE_TYPE.UNCOMMON,
+    image: potionImages.pesticide,
+    honey: 0,
+    lockedHoney: 0,
+    exp: 250,
+  },
+  [ID_POTION_ITEMS.POTION_PESTICIDE_II]: {
+    label: "Pesticide II",
+    category: ID_ITEM_CATEGORIES.POTION,
+    subCategory: ID_POTION_CATEGORIES.PESTICIDE,
+    type: ID_RARE_TYPE.RARE,
+    image: potionImages.pesticide_II,
+    honey: 0,
+    lockedHoney: 0,
+    exp: 250,
+  },
+  [ID_POTION_ITEMS.POTION_PESTICIDE_III]: {
+    label: "Pesticide III",
+    category: ID_ITEM_CATEGORIES.POTION,
+    subCategory: ID_POTION_CATEGORIES.PESTICIDE,
+    type: ID_RARE_TYPE.EPIC,
+    image: potionImages.pesticide_III,
+    honey: 0,
+    lockedHoney: 0,
+    exp: 250,
+  },
   [ID_FISHING_RODS.LVL1]: {
     label: "Fishing Rod 1",
     type: ID_RARE_TYPE.COMMON,
@@ -879,23 +1011,23 @@ export const ALL_ITEM_TREE = [
         children: [
           {
             id: ID_POTION_CATEGORIES.GROWTH_ELIXIR, label: "Growth Elixirs", children: [
-              { id: ID_POTIONS.GROWTH_ELIXIR, label: "Growth Elixir I" },
-              { id: ID_POTIONS.GROWTH_ELIXIR_II, label: "Growth Elixir II" },
-              { id: ID_POTIONS.GROWTH_ELIXIR_III, label: "Growth Elixir III" },
+              { id: ID_POTION_ITEMS.GROWTH_ELIXIR, label: "Growth Elixir I" },
+              { id: ID_POTION_ITEMS.GROWTH_ELIXIR_II, label: "Growth Elixir II" },
+              { id: ID_POTION_ITEMS.GROWTH_ELIXIR_III, label: "Growth Elixir III" },
             ]
           },
           {
             id: ID_POTION_CATEGORIES.FERTILIZER, label: "Fertilizers", children: [
-              { id: ID_POTIONS.FERTILIZER, label: "Fertilizer" },
-              { id: ID_POTIONS.FERTILIZER_II, label: "Fertilizer II" },
-              { id: ID_POTIONS.FERTILIZER_III, label: "Fertilizer III" },
+              { id: ID_POTION_ITEMS.FERTILIZER, label: "Fertilizer" },
+              { id: ID_POTION_ITEMS.FERTILIZER_II, label: "Fertilizer II" },
+              { id: ID_POTION_ITEMS.FERTILIZER_III, label: "Fertilizer III" },
             ]
           },
           {
             id: ID_POTION_CATEGORIES.PESTICIDE, label: "Pesticides", children: [
-              { id: ID_POTIONS.PESTICIDE, label: "Pesticide" },
-              { id: ID_POTIONS.PESTICIDE_II, label: "Pesticide II" },
-              { id: ID_POTIONS.PESTICIDE_III, label: "Pesticide III" },
+              { id: ID_POTION_ITEMS.PESTICIDE, label: "Pesticide" },
+              { id: ID_POTION_ITEMS.PESTICIDE_II, label: "Pesticide II" },
+              { id: ID_POTION_ITEMS.PESTICIDE_III, label: "Pesticide III" },
             ]
           }
         ]
@@ -906,18 +1038,18 @@ export const ALL_ITEM_TREE = [
         children: [
           {
             id: ID_LOOT_CATEGORIES.CHEST, label: "Chests", children: [
-              { id: ID_LOOTS.WOODEN_CHEST, label: "Wooden Chest" },
-              { id: ID_LOOTS.BRONZE_CHEST, label: "Bronze Chest" },
-              { id: ID_LOOTS.SILVER_CHEST, label: "Silver Chest" },
-              { id: ID_LOOTS.GOLDEN_CHEST, label: "Golden Chest" },
-              { id: ID_LOOTS.PLATINUM_CHEST, label: "Platinum Chest" },
+              { id: ID_CHEST_ITEMS.WOODEN_CHEST, label: "Wooden Chest" },
+              { id: ID_CHEST_ITEMS.BRONZE_CHEST, label: "Bronze Chest" },
+              { id: ID_CHEST_ITEMS.SILVER_CHEST, label: "Silver Chest" },
+              { id: ID_CHEST_ITEMS.GOLDEN_CHEST, label: "Golden Chest" },
+              { id: ID_CHEST_ITEMS.PLATINUM_CHEST, label: "Platinum Chest" },
             ]
           },
           {
             id: ID_LOOT_CATEGORIES.BAIT, label: "Baits", children: [
-              { id: ID_LOOTS.BAIT_I, label: "Bait I" },
-              { id: ID_LOOTS.BAIT_II, label: "Bait II" },
-              { id: ID_LOOTS.BAIT_III, label: "Bait III" }
+              { id: ID_BAIT_ITEMS.BAIT_I, label: "Bait I" },
+              { id: ID_BAIT_ITEMS.BAIT_II, label: "Bait II" },
+              { id: ID_BAIT_ITEMS.BAIT_III, label: "Bait III" }
             ]
           }
         ]

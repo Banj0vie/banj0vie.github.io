@@ -1,0 +1,21 @@
+.send-nft-dialog {
+  width: 300px;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.send-nft-dialog .row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.send-nft-dialog .row .input {
+  width: 70%;
+  height: 3rem;
+}
+
+.send-nft-dialog .row .slider {
+  width: 70%;
+}

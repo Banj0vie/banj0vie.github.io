@@ -6,6 +6,7 @@ import { ID_MARKETPLACE_PAGES } from "../../constants/app_ids";
 import BaseDivider from "../../components/dividers/BaseDivider";
 import CardListView from "../../components/boxes/CardListView";
 import SellDialog from "./SellDialog";
+import BatchBuyDialog from "./BatchBuyDialog";
 
 const MarketPlaceDialog = ({ onClose, label = "VENDOR", header = "" }) => {
   const [pageIndex, setPageIndex] = useState(
@@ -26,6 +27,13 @@ const MarketPlaceDialog = ({ onClose, label = "VENDOR", header = "" }) => {
           onClose={onClose}
           onBack={() => setPageIndex(ID_MARKETPLACE_PAGES.MARKET_PLACE_MENU)}
         />
+      );
+    case ID_MARKETPLACE_PAGES.BATCH_BUY:
+      return (
+        <BatchBuyDialog
+          onClose={onClose}
+          onBack={() => setPageIndex(ID_MARKETPLACE_PAGES.MARKET_PLACE_MENU)}
+        ></BatchBuyDialog>
       );
     default:
       return (

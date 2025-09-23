@@ -4,41 +4,43 @@ import BaseDialog from "../../_BaseDialog";
 import CardView from "../../../components/boxes/CardView";
 import TreeInput from "../../../components/inputs/TreeInputs";
 import ItemViewMarketplace from "../../../components/boxes/ItemViewMarketplace";
-import { useItems } from "../../../hooks/useItems";
-import SendNFTDialog from "./SendNFTDialog";
-import SellConfirmDialog from "./SellConfirmDialog";
+import { ALL_ITEMS } from "../../../constants/item_data";
+import BatchBuyConfirmDialog from "./BatchBuyConfirmDialog";
 
-const SellDialog = ({ onBack, onClose }) => {
-  const [isSendNFTDialog, setIsSendNFTDialog] = useState(false);
-  const [isSellConfirmDialog, setIsSellConfirmDialog] = useState(false);
+const BatchBuyDialog = ({ onBack, onClose }) => {
+  const [isBatchBuyConfirmDialog, setIsBatchBuyConfirmDialog] = useState(false);
   const [selectedItem, setSelectedItem] = useState({});
 
   const [checkedItemIds, setCheckedItemIds] = useState([]);
-  const { all: allItems, loading } = useItems();
-  // Filter items based on checked item IDs and only show owned items
+  
+  // Convert ALL_ITEMS to array format for filtering
+  const allItems = useMemo(() => {
+    return Object.entries(ALL_ITEMS).map(([id, itemData]) => ({
+      id,
+      ...itemData,
+      count: 0 // Set count to 0 since these are items available for purchase
+    }));
+  }, []);
+
+  // Filter items based on checked item IDs
   const filteredItems = useMemo(() => {
     if (!allItems || checkedItemIds.length === 0) {
       return [];
     }
 
     return allItems.filter((item) => {
-      return checkedItemIds.includes(item.id) && item.count > 0;
+      return checkedItemIds.includes(item.id);
     });
   }, [allItems, checkedItemIds]);
 
-  const handleSend = (item) => {
+  const handleBatchBuy = (item) => {
     setSelectedItem(item);
-    setIsSendNFTDialog(true);
-  };
-
-  const handleSell = (item) => {
-    setSelectedItem(item);
-    setIsSellConfirmDialog(true);
+    setIsBatchBuyConfirmDialog(true);
   };
 
   return (
-    <BaseDialog onClose={onClose} title="SELL ITEMS">
-      <div className="sell-dialog-content">
+    <BaseDialog onClose={onClose} title="BUY ITEMS">
+      <div className="batch-buy-dialog-content">
         <CardView className="left-panel">
           <TreeInput
             onBack={onBack}
@@ -49,15 +51,14 @@ const SellDialog = ({ onBack, onClose }) => {
           ></TreeInput>
         </CardView>
         <CardView className="right-panel">
-          {loading && <div className="items-header">Loading items... </div>}
           <div className="items-list">
             {filteredItems.length > 0 ? (
               filteredItems.map((item) => (
                 <ItemViewMarketplace
                   key={item.id}
                   item={item}
-                  onSend={handleSend}
-                  onSell={handleSell}
+                  onBatchBuy={handleBatchBuy}
+                  isBatchBuy
                 />
               ))
             ) : (
@@ -68,20 +69,14 @@ const SellDialog = ({ onBack, onClose }) => {
           </div>
         </CardView>
       </div>
-      {isSendNFTDialog && (
-        <SendNFTDialog
-          onClose={() => setIsSendNFTDialog(false)}
+      {isBatchBuyConfirmDialog && (
+        <BatchBuyConfirmDialog
+          onClose={() => setIsBatchBuyConfirmDialog(false)}
           item={selectedItem}
-        ></SendNFTDialog>
-      )}
-      {isSellConfirmDialog && (
-        <SellConfirmDialog
-          onClose={() => setIsSellConfirmDialog(false)}
-          item={selectedItem}
-        ></SellConfirmDialog>
+        ></BatchBuyConfirmDialog>
       )}
     </BaseDialog>
   );
 };
 
-export default SellDialog;
+export default BatchBuyDialog;
