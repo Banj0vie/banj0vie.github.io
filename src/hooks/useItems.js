@@ -30,6 +30,7 @@ export const useItems = () => {
   ], []);
   useEffect(() => {
     const fetchItems = async () => {
+      console.log('fetchItems');
       if (!items1155 || !account || !isReady || !publicClient) {
         setItems([]);
         return;

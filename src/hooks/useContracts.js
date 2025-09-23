@@ -2148,7 +2148,7 @@ export const useReferral = () => {
 // Hook for Fishing contract interactions
 export const useFishing = () => {
   const { account } = useAgwEthersAndService();
-  const { agwClient, publicClient, getContract, handleContractCall } = useContractBase(['FISHING']);
+  const { agwClient, publicClient, getContract, handleContractCall, executeWrite } = useContractBase(['FISHING']);
   const fishing = getContract('FISHING');
   
   const [fishingData, setFishingData] = useState({
@@ -2225,28 +2225,30 @@ export const useFishing = () => {
   }, [fishing, agwClient]);
 
   const fish = useCallback(async (baitId, amount = 1) => {
-    if (!fishing || !agwClient) return;
+    if (!fishing || !agwClient || !publicClient) return;
 
     setFishingData(prev => ({ ...prev, loading: true, error: null }));
 
     try {
       console.log('Calling fish function with:', { baitId, amount, address: fishing.address });
       
-      const txHash = await agwClient.writeContract({
+      const result = await executeWrite({
         abi: fishing.abi,
         address: fishing.address,
         functionName: 'fish',
         args: [baitId, amount],
+        confirmations: 3,
+        pollingInterval: 1000,
+        timeout: 120000
       });
-      
-      console.log('Fish function successful, txHash:', txHash);
       
       setFishingData(prev => ({ ...prev, loading: false }));
       return { 
-        txHash, 
+        txHash: result.txHash, 
+        receipt: result.receipt,
         baitId, 
         amount,
-        isPending: true 
+        isPending: false 
       };
     } catch (err) {
       console.error('Fish function failed:', err);
@@ -2258,7 +2260,7 @@ export const useFishing = () => {
       }));
       throw new Error(message);
     }
-  }, [fishing, agwClient]);
+  }, [fishing, agwClient, publicClient, executeWrite]);
 
   const listenForFishingResults = useCallback(async (requestId, onFishingResults, fromBlock) => {
     if (!fishing || !publicClient || !account) {

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAgwEthersAndService } from './useAgwEthersAndService';
+import { executeContractWrite, waitForTransactionConfirmation } from '../utils/transactionUtils';
 
 /**
  * Base hook that provides common contract interaction functionality
@@ -63,6 +64,15 @@ export const useContractBase = (contractNames = []) => {
     );
   }, [contracts, agwClient, publicClient, contractNames]);
   
+  // Transaction utilities
+  const executeWrite = useCallback(async (contractConfig, onProgress = null) => {
+    return executeContractWrite(agwClient, publicClient, contractConfig, onProgress);
+  }, [agwClient, publicClient]);
+  
+  const waitForConfirmation = useCallback(async (txHash, options = {}, onProgress = null) => {
+    return waitForTransactionConfirmation(publicClient, txHash, { ...options, onProgress });
+  }, [publicClient]);
+  
   return {
     // State
     loading,
@@ -78,6 +88,10 @@ export const useContractBase = (contractNames = []) => {
     // Helpers
     getContract,
     areContractsReady,
-    handleContractCall
+    handleContractCall,
+    
+    // Transaction utilities
+    executeWrite,
+    waitForConfirmation
   };
 };
