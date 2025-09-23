@@ -115,7 +115,11 @@ const ItemCombinationBox = ({
     
     // For each combination group, try to fill up to the required amount
     combiItems.list.forEach((combi) => {
-      const availableItems = combi.ids.filter(cropId => (inventory[cropId] || 0) > 0);
+      // Filter available items based on user's inventory
+      const availableItems = combi.ids.filter(cropId => {
+        const userItem = userItems?.find(item => item.id.toString() === cropId.toString());
+        return userItem && userItem.count > 0;
+      });
       
       if (availableItems.length === 0) return; // No available items
       
@@ -123,25 +127,34 @@ const ItemCombinationBox = ({
       const totalRequired = combi.count * multiplier;
       
       // Calculate how much we already have from this group
-      const currentTotal = combi.ids.reduce((sum, id) => sum + (newCropCounts[id] || 0), 0);
+      const currentTotal = combi.ids.reduce((sum, id) => sum + (newCropCounts[id.toString()] || 0), 0);
       const stillNeeded = Math.max(0, totalRequired - currentTotal);
       
       if (stillNeeded <= 0) return; // Already have enough
       
       // Distribute the remaining needed amount among available items
       let remainingToAllocate = stillNeeded;
-      const sortedByAvailability = availableItems.sort((a, b) => (inventory[b] || 0) - (inventory[a] || 0));
       
-      sortedByAvailability.forEach((cropId, index) => {
+      // Sort by availability (most available first)
+      const sortedByAvailability = availableItems.sort((a, b) => {
+        const userItemA = userItems?.find(item => item.id.toString() === a.toString());
+        const userItemB = userItems?.find(item => item.id.toString() === b.toString());
+        return (userItemB?.count || 0) - (userItemA?.count || 0);
+      });
+      
+      sortedByAvailability.forEach((cropId) => {
         if (remainingToAllocate <= 0) return;
         
-        const currentCount = newCropCounts[cropId] || 0;
-        const maxCanTake = (inventory[cropId] || 0) - currentCount;
+        const userItem = userItems?.find(item => item.id.toString() === cropId.toString());
+        if (!userItem) return;
+        
+        const currentCount = newCropCounts[cropId.toString()] || 0;
+        const maxCanTake = userItem.count - currentCount;
         
         if (maxCanTake <= 0) return;
         
         const toTake = Math.min(remainingToAllocate, maxCanTake);
-        newCropCounts[cropId] = currentCount + toTake;
+        newCropCounts[cropId.toString()] = currentCount + toTake;
         remainingToAllocate -= toTake;
       });
     });
@@ -251,12 +264,12 @@ const ItemCombinationBox = ({
     
     const newCropCounts = {};
     
-    // For each item in the combination, get the user's current inventory
+    // For each item in the combination, initialize with zero (not full inventory)
     combiItems.list.forEach(combi => {
       combi.ids.forEach(cropId => {
         const userItem = userItems.find(item => item.id.toString() === cropId.toString());
         if (userItem && userItem.count > 0) {
-          newCropCounts[cropId.toString()] = userItem.count;
+          newCropCounts[cropId.toString()] = 0; // Start with zero, not full inventory
         }
       });
     });
