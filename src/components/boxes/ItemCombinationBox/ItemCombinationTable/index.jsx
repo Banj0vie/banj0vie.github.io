@@ -44,7 +44,7 @@ const ItemCombinationTable = ({
             >
               {data.simple
                 ? `x${combi.count * multiplier} (${inventory[combi.ids[0]] || 0})`
-                : `Any x${combi.count * multiplier} (${combi.ids.map(id => inventory[id] || 0).join(', ')})`}
+                : `Any x${combi.count * multiplier}`}
             </div>
           </div>
         ))}
