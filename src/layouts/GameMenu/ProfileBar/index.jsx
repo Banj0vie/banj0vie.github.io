@@ -8,11 +8,13 @@ import { useGameState } from "../../../contexts/GameStateContext";
 import { useAgwEthersAndService } from "../../../hooks/useAgwEthersAndService";
 import { formatNumber } from "../../../utils/basic";
 import InventoryDialog from "../../../containers/Menu_Inventory";
+import SettingsDialog from "../../../containers/Menu_Settings";
 
 const ProfileBar = () => {
   const { balances, formatBalance } = useGameState();
   const { contractService, account } = useAgwEthersAndService();
   const [isInventoryDialog, setIsInventoryDialog] = useState(false);
+  const [isSettingsDialog, setIsSettingsDialog] = useState(false);
 
   // Persistent local state for instant display
   const [lockedHoney, setLockedHoney] = useState("0.00");
@@ -73,6 +75,7 @@ const ProfileBar = () => {
       <ProfileButton
         icon={<img alt="Settings" src={profileAssets.btnSettings} />}
         title="Settings"
+        onClick={() => setIsSettingsDialog(true)}
       />
       <ProfileButton
         icon={<img alt="Inventory" src={profileAssets.btnInventory} />}
@@ -100,7 +103,16 @@ const ProfileBar = () => {
           title="Honey Balance"
         />
       </div>
-      {isInventoryDialog && <InventoryDialog onClose={() => setIsInventoryDialog(false)}></InventoryDialog>}
+      {isInventoryDialog && (
+        <InventoryDialog
+          onClose={() => setIsInventoryDialog(false)}
+        ></InventoryDialog>
+      )}
+      {isSettingsDialog && (
+        <SettingsDialog
+          onClose={() => setIsSettingsDialog(false)}
+        ></SettingsDialog>
+      )}
     </div>
   );
 };
