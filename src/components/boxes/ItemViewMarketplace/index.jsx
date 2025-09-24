@@ -14,8 +14,10 @@ const ItemViewMarketplace = ({
   onSell = () => {},
   onBatchBuy = () => {},
   onBuy = () => {},
+  onCancel = () => {},
   isBatchBuy = false,
   isBuy = false,
+  isMyListing = false,
   price = 0,
 }) => {
   // Try to get item data from ALL_ITEMS, fallback to item data from contract
@@ -92,7 +94,7 @@ const ItemViewMarketplace = ({
           className="item-details"
           style={{ color: TYPE_LABEL_COLOR[item.type].color }}
         >
-          {itemLabel} {isBuy ? `(${price} tokens)` : `(${item.count})`}
+          {itemLabel} {isBatchBuy ? '' : isBuy ? `(${price} HNY)` : `(${item.count})`}
         </div>
 
         {/* Action Buttons */}
@@ -109,7 +111,13 @@ const ItemViewMarketplace = ({
               onClick={() => onBatchBuy(item)}
             ></BaseButton>
           )}
-          {isBuy && (
+          {isBuy && isMyListing && onCancel && (
+            <BaseButton
+              label="Cancel"
+              onClick={() => onCancel(item)}
+            ></BaseButton>
+          )}
+          {isBuy && !isMyListing && onBuy && (
             <BaseButton
               label="Buy"
               onClick={() => onBuy(item)}

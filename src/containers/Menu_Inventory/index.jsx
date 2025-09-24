@@ -19,7 +19,6 @@ const menus = [
 const InventoryDialog = ({ onClose }) => {
   const [selectedMenu, setSelectedMenu] = useState(ID_INVENTORY_MENUS.SEEDS);
   const { all: allItems } = useItems();
-  console.log("allItems", allItems);
   const [list, setList] = useState([]);
 
   const onUseItem = (itemId) => {

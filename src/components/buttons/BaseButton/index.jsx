@@ -13,7 +13,7 @@ const BaseButton = ({
       <div
         className={`base-button ${disabled && "base-button-disabled"} ${focused && "base-button-focused"}`}
         onClick={(e) => {
-          if (!disabled) {
+          if (!disabled && typeof onClick === 'function') {
             onClick();
           }
         }}

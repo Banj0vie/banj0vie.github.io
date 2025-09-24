@@ -116,32 +116,3 @@ export const executeContractWrite = async (agwClient, publicClient, contractConf
     throw error;
   }
 };
-
-/**
- * Execute a contract write operation with custom success callback
- * @param {Object} agwClient - Abstract SDK client for writing
- * @param {Object} publicClient - Viem public client for confirmation
- * @param {Object} contractConfig - Contract configuration
- * @param {Function} onSuccess - Success callback with receipt data
- * @param {Function} onProgress - Progress callback
- * @returns {Promise<Object>} Result with txHash, receipt, and metadata
- */
-export const executeContractWriteWithCallback = async (
-  agwClient, 
-  publicClient, 
-  contractConfig, 
-  onSuccess = null,
-  onProgress = null
-) => {
-  try {
-    const result = await executeContractWrite(agwClient, publicClient, contractConfig, onProgress);
-    
-    if (onSuccess && result.success) {
-      await onSuccess(result.receipt, result.txHash);
-    }
-    
-    return result;
-  } catch (error) {
-    throw error;
-  }
-};

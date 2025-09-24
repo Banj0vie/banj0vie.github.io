@@ -8,6 +8,7 @@ import CardListView from "../../components/boxes/CardListView";
 import SellDialog from "./SellDialog";
 import BatchBuyDialog from "./BatchBuyDialog";
 import BuyDialog from "./BuyDialog";
+import { useAgwEthersAndService } from "../../hooks/useAgwEthersAndService";
 
 const MarketPlaceDialog = ({ onClose, label = "VENDOR", header = "" }) => {
   const [pageIndex, setPageIndex] = useState(
@@ -20,6 +21,8 @@ const MarketPlaceDialog = ({ onClose, label = "VENDOR", header = "" }) => {
     { label: "Total Sales", value: "0" },
     { label: "Volume", value: "0" },
   ];
+
+  const { account } = useAgwEthersAndService();
 
   switch (pageIndex) {
     case ID_MARKETPLACE_PAGES.SELL:
@@ -39,6 +42,7 @@ const MarketPlaceDialog = ({ onClose, label = "VENDOR", header = "" }) => {
     case ID_MARKETPLACE_PAGES.BATCH_BUY:
       return (
         <BatchBuyDialog
+          excludeSeller={account}
           onClose={onClose}
           onBack={() => setPageIndex(ID_MARKETPLACE_PAGES.MARKET_PLACE_MENU)}
         ></BatchBuyDialog>

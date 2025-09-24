@@ -218,7 +218,6 @@ export const ID_CHEST_ITEMS = {
     CHEST_BRONZE: CAT_CHEST | 2n,
     CHEST_SILVER: CAT_CHEST | 3n,
     CHEST_GOLD: CAT_CHEST | 4n,
-    PLATINUM_CHEST: CAT_CHEST | 5n,
 }
 
 export const ID_POTION_ITEMS = {

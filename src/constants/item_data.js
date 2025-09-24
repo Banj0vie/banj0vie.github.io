@@ -825,15 +825,6 @@ export const ALL_ITEMS = {
     honey: 0,
     lockedHoney: 0,
   },
-  [ID_CHEST_ITEMS.PLATINUM_CHEST]: {
-    label: "Platinum Chest",
-    category: ID_ITEM_CATEGORIES.LOOT,
-    subCategory: ID_LOOT_CATEGORIES.CHEST,
-    type: ID_RARE_TYPE.LEGENDARY,
-    image: chestImages.gold,
-    honey: 0,
-    lockedHoney: 0,
-  },
 
   // Potion items
   [ID_POTION_ITEMS.POTION_GROWTH_ELIXIR]: {
@@ -960,7 +951,7 @@ export const ALL_ITEM_TREE = [
     label: "All",
     children: [
       {
-        id: ID_ITEM_CATEGORIES.CROP,
+        id: ID_ITEM_CATEGORIES.PRODUCE,
         label: "Crops",
         children: [
           {
@@ -1042,7 +1033,6 @@ export const ALL_ITEM_TREE = [
               { id: ID_CHEST_ITEMS.BRONZE_CHEST, label: "Bronze Chest" },
               { id: ID_CHEST_ITEMS.SILVER_CHEST, label: "Silver Chest" },
               { id: ID_CHEST_ITEMS.GOLDEN_CHEST, label: "Golden Chest" },
-              { id: ID_CHEST_ITEMS.PLATINUM_CHEST, label: "Platinum Chest" },
             ]
           },
           {

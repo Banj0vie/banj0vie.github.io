@@ -12,7 +12,7 @@ const ScrollButton = ({
       <div
         className={`scroll-button ${disabled && "scroll-button-disabled"}`}
         onClick={(e) => {
-          if (!disabled) {
+          if (!disabled && typeof onClick === 'function') {
             onClick();
           }
         }}

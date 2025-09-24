@@ -22,29 +22,14 @@ const TreeInput = ({ onBack, onSelect, sortable = false }) => {
     onSelectRef.current(Array.from(checked));
   }, [checked]);
 
-  // Auto-select all items when component loads
+  // Call reset once when component loads to select all items by default
   useEffect(() => {
-    if (itemsTree && itemsTree.length > 0 && !loading && checked.size === 0) {
-      const allItemIds = new Set();
-
-      const walk = (n) => {
-        // Add items from category nodes that have items arrays
-        if (n.items && n.items.length > 0) {
-          n.items.forEach((item) => allItemIds.add(item.id));
-        }
-        // Add leaf nodes that have count (user owns these items)
-        else if (!n.children && n.count !== undefined && n.count > 0) {
-          allItemIds.add(n.id);
-        }
-        // Recursively process children
-        if (n.children) n.children.forEach((c) => walk(c));
-      };
-
-      itemsTree.forEach(walk);
-      setChecked(allItemIds);
+    if (itemsTree && itemsTree.length > 0 && !loading) {
+      onReset();
     }
-  }, [itemsTree, loading, checked.size]);
-
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [itemsTree, loading]);
+  
   const toggleExpand = (id) => {
     setExpanded((s) => {
       const next = new Set(s);
@@ -55,47 +40,73 @@ const TreeInput = ({ onBack, onSelect, sortable = false }) => {
   };
 
   const toggleCheck = (node, isChecked) => {
+    console.log(`TreeInput: Toggling ${node.id} to ${isChecked}`);
     setChecked((s) => {
       const next = new Set(s);
 
       if (node.id === "ALL") {
+        console.log('TreeInput: Toggling ALL category');
         // For "All" category, select/deselect all items
         if (!itemsTree || itemsTree.length === 0) return s;
 
-        const walk = (n) => {
-          if (n.items && n.items.length > 0) {
-            n.items.forEach((item) => {
-              if (isChecked) next.add(item.id);
-              else next.delete(item.id);
-            });
-          } else if (!n.children && n.count !== undefined) {
-            if (isChecked) next.add(n.id);
-            else next.delete(n.id);
-          }
-          if (n.children) n.children.forEach((c) => walk(c));
+        // Get all available item IDs from the tree (all items, regardless of ownership)
+        const getAllItemIds = () => {
+          const allIds = new Set();
+          const walk = (n) => {
+            // If this node has items array (category nodes with items), collect their IDs
+            if (n.items && n.items.length > 0) {
+              n.items.forEach((item) => allIds.add(item.id));
+            }
+            // If this is a leaf node representing an actual item (all items, regardless of count/ownership)
+            else if (!n.children && n.id && typeof n.id === 'string' && n.id !== 'ALL') {
+              allIds.add(n.id);
+            }
+            // Recursively process children
+            if (n.children) n.children.forEach((c) => walk(c));
+          };
+          itemsTree.forEach(walk);
+          return allIds;
         };
-        itemsTree.forEach(walk);
-      } else {
-        // For other categories, use the existing logic
-        const walk = (n, val) => {
-          // If this node has items array (category nodes with user items), collect their IDs
-          if (n.items && n.items.length > 0) {
-            n.items.forEach((item) => {
-              if (val) next.add(item.id);
-              else next.delete(item.id);
-            });
-          }
-          // If this is a leaf node with count (individual item), use its ID
-          else if (!n.children && n.count !== undefined) {
-            if (val) next.add(n.id);
-            else next.delete(n.id);
-          }
-          // For category nodes, recursively process children
-          if (n.children) n.children.forEach((c) => walk(c, val));
-        };
-        walk(node, isChecked);
-      }
 
+        const allItemIds = getAllItemIds();
+        
+        // Add or remove all item IDs based on isChecked
+        allItemIds.forEach((id) => {
+          if (isChecked) {
+            next.add(id);
+          } else {
+            next.delete(id);
+          }
+        });
+      } else {
+        console.log(`TreeInput: Toggling category ${node.id}`);
+        // For category nodes, get all items in this category and toggle them (all items, regardless of ownership)
+        const getCategoryItemIds = (categoryNode) => {
+          const itemIds = new Set();
+          const walk = (n) => {
+            if (n.items && n.items.length > 0) {
+              n.items.forEach((item) => itemIds.add(item.id));
+            } else if (!n.children && n.id && typeof n.id === 'string' && n.id !== 'ALL') {
+              itemIds.add(n.id);
+            }
+            if (n.children) n.children.forEach((c) => walk(c));
+          };
+          walk(categoryNode);
+          return itemIds;
+        };
+        
+        const categoryItemIds = getCategoryItemIds(node);
+        console.log(`TreeInput: Category ${node.id} item IDs:`, Array.from(categoryItemIds));
+        
+        // Toggle all items in this category
+        categoryItemIds.forEach((id) => {
+          if (isChecked) {
+            next.add(id);
+          } else {
+            next.delete(id);
+          }
+        });
+      }
       return next;
     });
   };
@@ -104,14 +115,14 @@ const TreeInput = ({ onBack, onSelect, sortable = false }) => {
     setSearch("");
     setExpanded(new Set());
 
-    // Select all items instead of clearing
+    // Reset button selects all items (all items, regardless of ownership)
     if (itemsTree && itemsTree.length > 0) {
       const allItemIds = new Set();
 
       const walk = (n) => {
         if (n.items && n.items.length > 0) {
           n.items.forEach((item) => allItemIds.add(item.id));
-        } else if (!n.children && n.count !== undefined && n.count > 0) {
+        } else if (!n.children && n.id && typeof n.id === 'string' && n.id !== 'ALL') {
           allItemIds.add(n.id);
         }
         if (n.children) n.children.forEach((c) => walk(c));
@@ -124,7 +135,7 @@ const TreeInput = ({ onBack, onSelect, sortable = false }) => {
     }
   };
 
-  const onApply = () => {};
+  // const onApply = () => {}; // Reserved for future use
 
   const filtered = useMemo(() => {
     if (!itemsTree || loading) return [];
@@ -154,14 +165,19 @@ const TreeInput = ({ onBack, onSelect, sortable = false }) => {
       // For "All" category, check if all available items are selected
       if (!itemsTree || itemsTree.length === 0) return false;
 
+      // Get all available item IDs from the tree (all items, regardless of ownership)
       const getAllItemIds = () => {
         const allIds = new Set();
         const walk = (n) => {
+          // If this node has items array (category nodes with items), collect their IDs
           if (n.items && n.items.length > 0) {
             n.items.forEach((item) => allIds.add(item.id));
-          } else if (!n.children && n.count !== undefined) {
+          }
+          // If this is a leaf node representing an actual item (all items, regardless of count/ownership)
+          else if (!n.children && n.id && typeof n.id === 'string' && n.id !== 'ALL') {
             allIds.add(n.id);
           }
+          // Recursively process children
           if (n.children) n.children.forEach((c) => walk(c));
         };
         itemsTree.forEach(walk);
@@ -169,18 +185,33 @@ const TreeInput = ({ onBack, onSelect, sortable = false }) => {
       };
 
       const allItemIds = getAllItemIds();
-      return (
-        allItemIds.size > 0 &&
-        Array.from(allItemIds).every((id) => checked.has(id))
-      );
-    } else if (node.items && node.items.length > 0) {
-      // For category nodes, check if any items are selected
-      return node.items.some((item) => checked.has(item.id));
-    } else if (!node.children && node.count !== undefined) {
-      // For leaf nodes, check if the node itself is selected
-      return checked.has(node.id);
+      
+      // Return true only if there are items available AND all of them are checked
+      return allItemIds.size > 0 && Array.from(allItemIds).every((id) => checked.has(id));
+    } else {
+      // For category nodes, check if all items in this category are selected (all items, regardless of ownership)
+      const getCategoryItemIds = (categoryNode) => {
+        const itemIds = new Set();
+        const walk = (n) => {
+          if (n.items && n.items.length > 0) {
+            n.items.forEach((item) => itemIds.add(item.id));
+          } else if (!n.children && n.id && typeof n.id === 'string' && n.id !== 'ALL') {
+            itemIds.add(n.id);
+          }
+          if (n.children) n.children.forEach((c) => walk(c));
+        };
+        walk(categoryNode);
+        return itemIds;
+      };
+      
+      const categoryItemIds = getCategoryItemIds(node);
+      
+      // If no items in this category, return false
+      if (categoryItemIds.size === 0) return false;
+      
+      // Return true only if ALL items in this category are checked
+      return Array.from(categoryItemIds).every((id) => checked.has(id));
     }
-    return false;
   };
 
   const renderNode = (node, level = 0) => {
@@ -245,35 +276,36 @@ const TreeInput = ({ onBack, onSelect, sortable = false }) => {
       value: "price-desc",
     },
     {
-      label: "Date - Oldest",
-      value: "date-oldest",
+      label: "Name - ASC",
+      value: "name-asc",
     },
     {
-      label: "Date - Newest",
-      value: "date-newest",
+      label: "Name - DESC",
+      value: "name-desc",
     },
   ];
+
   return (
     <div className="tree-input">
-      <BaseInput
-        className="h-2.5rem"
-        value={search}
-        setValue={(v) => setSearch(v)}
-        placeholder="Search Filters"
-      />
-      {sortable && <BaseSelect options={sortOptions}></BaseSelect>}
-      <div className="tree-list">{filtered.map((n) => renderNode(n))}</div>
-
-      <div className="tree-actions">
-        {sortable ? (
-          <div className="button-row">
-            <BaseButton label="Reset" onClick={onReset} />
-            <BaseButton label="Apply" onClick={onApply} />
-          </div>
-        ) : (
-          <BaseButton label="Reset" onClick={onReset} />
+      <div className="tree-header">
+        <BaseInput
+          className="h-2.5rem"
+          placeholder="Search items..."
+          value={search}
+          setValue={setSearch}
+        />
+        {sortable && (
+          <BaseSelect
+            options={sortOptions}
+            value="price-asc"
+            setValue={() => {}}
+          />
         )}
+        <BaseButton label="Reset" onClick={onReset} />
         <BaseButton label="Back" onClick={onBack} />
+      </div>
+      <div className="tree-content">
+        {filtered.map((node) => renderNode(node))}
       </div>
     </div>
   );

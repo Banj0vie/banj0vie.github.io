@@ -568,14 +568,19 @@ export const useFarming = () => {
       
       console.log('Got user crops from contract:', crops);
       
-      // Convert crops to the expected format (seedId as BigInt, endTime as Number)
+      // Convert crops to the expected format with new struct fields
       const formattedCrops = crops.map((crop, index) => {
         const seedIdBig = BigInt(crop.seedId);
         const endTimeNum = Number(crop.endTime);
+        const produceMultiplier = Number(crop.produceMultiplierX1000 || 1000);
+        const tokenMultiplier = Number(crop.tokenMultiplierX1000 || 1000);
+        
         return ({
           plotNumber: index,
           seedId: seedIdBig,
           endTime: endTimeNum,
+          produceMultiplierX1000: produceMultiplier,
+          tokenMultiplierX1000: tokenMultiplier,
           isReady: seedIdBig !== 0n && endTimeNum <= Math.floor(Date.now() / 1000)
         });
       });
@@ -627,23 +632,29 @@ export const useFarming = () => {
         console.warn('Crop is undefined for plot:', plotIndex);
         return {
           seedId: "0",
-          endTime: 0
+          endTime: 0,
+          produceMultiplierX1000: 1000,
+          tokenMultiplierX1000: 1000
         };
       }
       
-      // Handle case where crop is an array (tuple format)
+      // Handle case where crop is an array (tuple format) - new struct with 4 fields
       if (Array.isArray(crop)) {
         return {
           seedId: crop[0] ? crop[0].toString() : "0",
-          endTime: crop[1] ? Number(crop[1]) : 0
+          endTime: crop[1] ? Number(crop[1]) : 0,
+          produceMultiplierX1000: crop[2] ? Number(crop[2]) : 1000,
+          tokenMultiplierX1000: crop[3] ? Number(crop[3]) : 1000
         };
       }
       
-      // Handle case where crop is an object
+      // Handle case where crop is an object with new struct fields
       if (crop.seedId !== undefined && crop.endTime !== undefined) {
-      return {
-        seedId: crop.seedId.toString(),
-        endTime: Number(crop.endTime)
+        return {
+          seedId: crop.seedId.toString(),
+          endTime: Number(crop.endTime),
+          produceMultiplierX1000: crop.produceMultiplierX1000 ? Number(crop.produceMultiplierX1000) : 1000,
+          tokenMultiplierX1000: crop.tokenMultiplierX1000 ? Number(crop.tokenMultiplierX1000) : 1000
         };
       }
       
@@ -651,11 +662,19 @@ export const useFarming = () => {
       console.warn('Unexpected crop structure:', crop);
       return {
         seedId: "0",
-        endTime: 0
+        endTime: 0,
+        produceMultiplierX1000: 1000,
+        tokenMultiplierX1000: 1000
       };
     } catch (err) {
       console.error('Failed to get crop:', err);
-      return null;
+      // Return a default crop structure instead of null to prevent further errors
+      return {
+        seedId: "0",
+        endTime: 0,
+        produceMultiplierX1000: 1000,
+        tokenMultiplierX1000: 1000
+      };
     }
   }, [farming, publicClient]);
 
@@ -1430,7 +1449,7 @@ export const useSage = () => {
         weeklyWageAmount = 0n;
       }
 
-      // Check cooldowns for both functions
+      // Check cooldown for both functions
       const now = Date.now();
       const nextWageUnlockTime = Number(safeLastUnlockTime) * 1000 + SAGE_UNLOCK_COOLDOWN;
       const nextHarvestUnlockTime = Number(safeLastUnlockTimeHarvest) * 1000 + SAGE_UNLOCK_COOLDOWN;
@@ -2646,6 +2665,186 @@ export const useProduceSeeder = () => {
   return {
     produceSeederData,
     seedAllProduce
+  };
+};
+
+// Hook for P2PMarket contract interactions
+export const useP2PMarket = () => {
+  const { account } = useAgwEthersAndService();
+  const { agwClient, publicClient, getContract, executeWrite } = useContractBase(['P2P_MARKET']);
+  const p2pMarket = getContract('P2P_MARKET');
+  
+  const [marketData, setMarketData] = useState({
+    listings: [],
+    nextId: 0,
+    loading: false,
+    error: null
+  });
+
+  // Get all marketplace listings
+  const getAllListings = useCallback(async () => {
+    if (!p2pMarket || !publicClient) {
+      return [];
+    }
+
+    setMarketData(prev => ({ ...prev, loading: true, error: null }));
+
+    try {
+      console.log('Fetching all marketplace listings...');
+      
+      // Get nextId to know how many listings exist
+      const nextIdResult = await publicClient.readContract({
+        address: p2pMarket.address,
+        abi: p2pMarket.abi,
+        functionName: 'nextId'
+      });
+      
+      const currentNextId = Number(nextIdResult);
+      console.log('Next ID:', currentNextId);
+
+      const allListings = [];
+
+      // Fetch all active listings
+      for (let i = 1; i <= currentNextId; i++) {
+        try {
+          const listing = await publicClient.readContract({
+            address: p2pMarket.address,
+            abi: p2pMarket.abi,
+            functionName: 'listings',
+            args: [i]
+          });
+          // Only include active listings
+          if (listing[4]) {
+            allListings.push({
+              lid: i,
+              seller: listing[0],
+              id: listing[1],
+              amount: Number(listing[2]),
+              pricePer: Number(listing[3]) / (10 ** 18),
+              active: listing[4]
+            });
+          }
+        } catch (err) {
+          console.warn(`Failed to fetch listing ${i}:`, err);
+        }
+      }
+      console.log('All listings:', allListings);
+      setMarketData(prev => ({ 
+        ...prev, 
+        listings: allListings, 
+        nextId: currentNextId,
+        loading: false 
+      }));
+      return allListings;
+    } catch (err) {
+      console.error('Failed to fetch listings:', err);
+      const { message } = handleContractError(err, 'fetching marketplace listings');
+      setMarketData(prev => ({ 
+        ...prev, 
+        loading: false, 
+        error: message 
+      }));
+      return [];
+    }
+  }, [p2pMarket, publicClient]);
+
+  // Purchase items from a listing
+  const purchase = useCallback(async (lid, amount) => {
+    if (!p2pMarket || !agwClient || !account) {
+      throw new Error('P2P Market contract, AGW Client, or account not available');
+    }
+
+    return executeWrite({
+      abi: p2pMarket.abi,
+      address: p2pMarket.address,
+      functionName: 'purchase',
+      args: [lid, amount],
+      confirmations: 1,
+      timeout: 120000,
+      pollingInterval: 1000
+    });
+  }, [p2pMarket, agwClient, account, executeWrite]);
+
+  // List items for sale
+  const list = useCallback(async (id, amount, pricePer) => {
+    if (!p2pMarket || !agwClient || !account) {
+      throw new Error('P2P Market contract, AGW Client, or account not available');
+    }
+
+    const pricePerInWei = BigInt(pricePer) * BigInt(10 ** 18);
+    return executeWrite({
+      abi: p2pMarket.abi,
+      address: p2pMarket.address,
+      functionName: 'list',
+      args: [id, amount, pricePerInWei],
+      confirmations: 1,
+      timeout: 120000,
+      pollingInterval: 1000
+    });
+  }, [p2pMarket, agwClient, account, executeWrite]);
+
+  // Cancel a listing
+  const cancel = useCallback(async (lid) => {
+    if (!p2pMarket || !agwClient || !account) {
+      throw new Error('P2P Market contract, AGW Client, or account not available');
+    }
+    return executeWrite({
+      abi: p2pMarket.abi,
+      address: p2pMarket.address,
+      functionName: 'cancel',
+      args: [lid],
+      confirmations: 1,
+      timeout: 120000,
+      pollingInterval: 1000
+    });
+  }, [p2pMarket, agwClient, account, executeWrite]);
+
+  // Batch buy items
+  const batchBuy = useCallback(async (id, maxPricePer, totalBudget) => {
+    if (!p2pMarket || !agwClient || !account) {
+      throw new Error('P2P Market contract, AGW Client, or account not available');
+    }
+
+    // Convert amounts to wei (18 decimals)
+    const maxPricePerInWei = BigInt(maxPricePer) * BigInt(10 ** 18);
+    const totalBudgetInWei = BigInt(totalBudget) * BigInt(10 ** 18);
+    
+    return executeWrite({
+      abi: p2pMarket.abi,
+      address: p2pMarket.address,
+      functionName: 'batchBuy',
+      args: [id, maxPricePerInWei, totalBudgetInWei],
+      confirmations: 1,
+      timeout: 120000,
+      pollingInterval: 1000
+    });
+  }, [p2pMarket, agwClient, account, executeWrite]);
+
+  // Send items to another address
+  const send = useCallback(async (id, to, amount) => {
+    if (!p2pMarket || !agwClient || !account) {
+      throw new Error('P2P Market contract, AGW Client, or account not available');
+    }
+
+    return executeWrite({
+      abi: p2pMarket.abi,
+      address: p2pMarket.address,
+      functionName: 'send',
+      args: [id, to, amount],
+      confirmations: 1,
+      timeout: 120000,
+      pollingInterval: 1000
+    });
+  }, [p2pMarket, agwClient, account, executeWrite]);
+
+  return {
+    marketData,
+    getAllListings,
+    purchase,
+    list,
+    cancel,
+    batchBuy,
+    send
   };
 };
 

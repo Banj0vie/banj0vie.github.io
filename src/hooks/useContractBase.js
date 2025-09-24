@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAgwEthersAndService } from './useAgwEthersAndService';
-import { executeContractWrite, waitForTransactionConfirmation } from '../utils/transactionUtils';
+import { executeContractWrite } from '../utils/transactionUtils';
+import { handleContractError } from '../utils/errorHandler';
 
 /**
  * Base hook that provides common contract interaction functionality
@@ -43,10 +44,11 @@ export const useContractBase = (contractNames = []) => {
       setLoading(false);
       return result;
     } catch (err) {
-      const errorMessage = err.message || 'An unexpected error occurred';
-      setError(errorMessage);
+      const { message } = handleContractError(err, errorContext);
+      setError(message);
       setLoading(false);
-      throw err;
+      // Throw a new error with the processed message instead of the original error
+      throw new Error(message);
     }
   }, []);
   
@@ -55,23 +57,10 @@ export const useContractBase = (contractNames = []) => {
     return contracts[name.toLowerCase()];
   }, [contracts]);
   
-  // Helper to check if all required contracts are available
-  const areContractsReady = useCallback(() => {
-    return contractNames.every(name => 
-      contracts[name.toLowerCase()] && 
-      agwClient && 
-      publicClient
-    );
-  }, [contracts, agwClient, publicClient, contractNames]);
-  
   // Transaction utilities
   const executeWrite = useCallback(async (contractConfig, onProgress = null) => {
     return executeContractWrite(agwClient, publicClient, contractConfig, onProgress);
   }, [agwClient, publicClient]);
-  
-  const waitForConfirmation = useCallback(async (txHash, options = {}, onProgress = null) => {
-    return waitForTransactionConfirmation(publicClient, txHash, { ...options, onProgress });
-  }, [publicClient]);
   
   return {
     // State
@@ -87,11 +76,9 @@ export const useContractBase = (contractNames = []) => {
     
     // Helpers
     getContract,
-    areContractsReady,
     handleContractCall,
     
     // Transaction utilities
     executeWrite,
-    waitForConfirmation
   };
 };
