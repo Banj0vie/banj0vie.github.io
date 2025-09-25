@@ -1306,20 +1306,16 @@ export const useLeaderboard = (epoch = null) => {
         }
       }
 
-      // Get user's XP if connected (always use current total XP)
-      if (account && playerStore) {
-        try {
-          const userXp = await publicClient.readContract({
-            address: playerStore.address,
-            abi: playerStore.abi,
-            functionName: 'xpOf',
-            args: [account],
-          });
-          setUserScore(parseFloat(userXp.toString()));
-        } catch (err) {
-          console.log('Could not fetch user XP:', err);
-          setUserScore(0);
+      // Get user's score for the selected epoch (only if they're in top 5)
+      if (account) {
+        let userScoreForEpoch = 0;
+        for (const player of leaderboardData) {
+          if (player.address.toLowerCase() === account.toLowerCase()) {
+            userScoreForEpoch = player.score;
+            break;
+          }
         }
+        setUserScore(userScoreForEpoch);
       }
 
       // Get epoch start time
