@@ -1028,6 +1028,7 @@ const Farm = () => {
           maxPlots={maxPlots}
           totalPlots={30}
           selectedIndexes={selectedIndexes}
+          crops={cropArray}
         />
       </PanZoomViewport>
       {isFarmMenu && (

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useMemo } from "react";
 import "./style.css";
 import {
   FARM_CROP_HEIGHT,
@@ -21,6 +21,7 @@ const CropItem = ({
   jiggling = false,
   isPlanting = true,
   cropArray,
+  crops,
   isDisabled = false,
   maxPlots = 15,
   selectedIndexes = [], // Add selectedIndexes prop to sync with parent state
@@ -32,6 +33,10 @@ const CropItem = ({
   // tooltipRef removed; portal rendering handled by CropTooltip
   const rootRef = useRef(null);
   const [portalContainer, setPortalContainer] = useState(null);
+  const isPreview = useMemo(() => {
+    if(!crops || !data?.seedId || index >= crops.getLength()) return false;
+    return crops.getItem(index).seedId !== data.seedId;
+  }, [crops, data?.seedId, index]);
 
   useEffect(() => {
     if (isPlanting) {
@@ -169,7 +174,7 @@ const CropItem = ({
       )}
 
       {/* Tooltip rendered into portal container so it aligns with transformed parents */}
-      {tooltipVisible && data.seedId && data.seedId !== 0n && portalContainer && (
+      {tooltipVisible && data.seedId && data.seedId !== 0n && !isPreview && portalContainer && (
         <CropTooltip container={portalContainer} pos={tooltipPos} data={data} growthProgress={growthProgress} />
       )}
 

@@ -2,7 +2,7 @@ import React from "react";
 import "./style.css";
 import CropItem from "./CropItem";
 
-const FarmInterface = ({cropArray, onClickCrop, isFarmMenu, isPlanting, maxPlots = 15, totalPlots = 30, selectedIndexes = []}) => {
+const FarmInterface = ({crops, cropArray, onClickCrop, isFarmMenu, isPlanting, maxPlots = 15, totalPlots = 30, selectedIndexes = []}) => {
   
   return (
     <div className="farm-interface">
@@ -29,6 +29,7 @@ const FarmInterface = ({cropArray, onClickCrop, isFarmMenu, isPlanting, maxPlots
           jiggling={isFarmMenu}
           isPlanting={isPlanting}
           cropArray={cropArray}
+          crops={crops}
           isDisabled={index >= maxPlots}
           maxPlots={maxPlots}
           totalPlots={totalPlots}
