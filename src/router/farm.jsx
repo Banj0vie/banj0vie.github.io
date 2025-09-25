@@ -579,12 +579,12 @@ const Farm = () => {
         return;
       }
 
-      // Show loading message
+      // Show loading message that persists until transaction completes
       const loadingMessage =
         cropsToPlant.length === 1
           ? "Planting seed..."
           : `Planting ${cropsToPlant.length} seeds...`;
-      show(loadingMessage, "info");
+      const loadingNotification = show(loadingMessage, "info", 300000); // 5 minutes timeout
 
       // Call contract to plant all crops
       if (cropsToPlant.length === 1) {
@@ -594,12 +594,17 @@ const Farm = () => {
           cropsToPlant[0].plotNumber
         );
         if (result) {
+          // Dismiss loading notification
+          loadingNotification.dismiss();
           show(
             `✅ Successfully planted seed at plot ${cropsToPlant[0].plotNumber}!`,
-            "success"
+            "success",
+            3000 // 3 seconds timeout
           );
         } else {
-          show("❌ Failed to plant seed. Please try again.", "error");
+          // Dismiss loading notification
+          loadingNotification.dismiss();
+          show("❌ Failed to plant seed. Please try again.", "error", 3000);
           return;
         }
       } else {
@@ -608,12 +613,17 @@ const Farm = () => {
         const plotNumbers = cropsToPlant.map((crop) => crop.plotNumber);
         const result = await plantBatch(seedIds, plotNumbers);
         if (result) {
+          // Dismiss loading notification
+          loadingNotification.dismiss();
           show(
             `✅ Successfully planted ${cropsToPlant.length} seeds!`,
-            "success"
+            "success",
+            3000 // 3 seconds timeout
           );
         } else {
-          show("❌ Failed to plant seeds. Please try again.", "error");
+          // Dismiss loading notification
+          loadingNotification.dismiss();
+          show("❌ Failed to plant seeds. Please try again.", "error", 3000);
           return;
         }
       }

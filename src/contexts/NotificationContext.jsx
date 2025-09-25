@@ -9,10 +9,28 @@ export const NotificationProvider = ({ children }) => {
   const show = (message, kind = 'info', timeout = 4000) => {
     const id = generateId();
     setToasts((t) => [...t, { id, message, kind }]);
-    setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), timeout);
+    
+    let timeoutId;
+    if (timeout > 0) {
+      timeoutId = setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), timeout);
+    }
+    
+    return {
+      id,
+      dismiss: () => {
+        setToasts((t) => t.filter((x) => x.id !== id));
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+        }
+      }
+    };
   };
 
-  const value = { show, toasts };
+  const dismiss = (id) => {
+    setToasts((t) => t.filter((x) => x.id !== id));
+  };
+
+  const value = { show, dismiss, toasts };
   return (
     <NotificationContext.Provider value={value}>
       {children}

@@ -380,27 +380,46 @@ const VendorDialog = ({ onClose, label = "VENDOR", header = "" }) => {
         },
       }));
 
-      try {
-        const tier = tierMap[selectedSeed];
-        const result = await buySeedPack(tier, item.count);
-        console.log("Seed pack purchase result:", result);
-        if (result) {
-          setSeedStatus((prev) => ({
-            ...prev,
-            [selectedSeed]: {
-              ...prev[selectedSeed],
-              status: SEED_PACK_STATUS.COMMITED,
-            },
-          }));
-          console.log("Seed pack purchase successful:", result);
+       // Show loading message that persists until transaction completes
+       const loadingMessage = item.count === 1 
+         ? "Buying seed pack..." 
+         : `Buying ${item.count} seed packs...`;
+       show(loadingMessage, "info", 300000); // 5 minutes timeout
+       
+       try {
+         
+         const tier = tierMap[selectedSeed];
+         const result = await buySeedPack(tier, item.count);
+         console.log("Seed pack purchase result:", result);
+         
+         // Show success message (loading notification will auto-dismiss after 5 minutes)
+         
+         if (result) {
+           setSeedStatus((prev) => ({
+             ...prev,
+             [selectedSeed]: {
+               ...prev[selectedSeed],
+               status: SEED_PACK_STATUS.COMMITED,
+             },
+           }));
+           console.log("Seed pack purchase successful:", result);
+           
+           // Show success message
+           const successMessage = item.count === 1 
+             ? "✅ Successfully bought seed pack!" 
+             : `✅ Successfully bought ${item.count} seed packs!`;
+           show(successMessage, "success");
 
-          // Refresh pending requests after successful purchase
-          await loadPendingRequests();
+           // Refresh pending requests after successful purchase
+           await loadPendingRequests();
         } else {
           throw new Error("Purchase failed");
         }
       } catch (err) {
         console.error("Failed to buy seed pack:", err);
+        
+         // Show error message (loading notification will auto-dismiss after 5 minutes)
+        
         setSeedStatus((prev) => ({
           ...prev,
           [selectedSeed]: {
