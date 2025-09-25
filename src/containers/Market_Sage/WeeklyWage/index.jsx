@@ -1,12 +1,14 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import "./style.css";
 import CardView from "../../../components/boxes/CardView";
 import LabelValueBox from "../../../components/boxes/LabelValueBox";
 import { formatDuration } from "../../../utils/basic";
 import BaseButton from "../../../components/buttons/BaseButton";
 import { useSage } from "../../../hooks/useContracts";
+import { useNotification } from "../../../contexts/NotificationContext";
+import { isTransactionRejection } from "../../../utils/errorUtils";
 
-const WeeklyWage = ({onBack}) => {
+const WeeklyWage = ({ onBack }) => {
   const {
     sageData,
     fetchSageData,
@@ -15,10 +17,27 @@ const WeeklyWage = ({onBack}) => {
     loading,
     error
   } = useSage();
-    console.log(sageData);
+  console.log(sageData);
   const [remainedTime, setRemainedTime] = useState(0);
   const [isUnlocking, setIsUnlocking] = useState(false);
+  const { show: showNotification } = useNotification();
 
+  // Monitor errors and show notifications with duplicate prevention
+  const lastNotificationTime = useRef(0);
+  useEffect(() => {
+    if (error) {
+      const now = Date.now();
+      // Only show notification if it's been more than 2 seconds since last notification
+      if (now - lastNotificationTime.current > 2000) {
+        lastNotificationTime.current = now;
+        if (isTransactionRejection(error)) {
+          showNotification('Transaction was rejected by user.', 'error');
+        } else {
+          showNotification(`Sage operation failed!`, 'error');
+        }
+      }
+    }
+  }, [error, showNotification]);
   // Fetch Sage data on component mount
   useEffect(() => {
     fetchSageData();
@@ -26,7 +45,7 @@ const WeeklyWage = ({onBack}) => {
 
   // Track state changes for debugging
   useEffect(() => {
-    console.log('🔍 WeeklyWage: State changed:', { 
+    console.log('🔍 WeeklyWage: State changed:', {
       lockedAmount: sageData.lockedAmount,
       canUnlockWage: sageData.canUnlockWage,
       weeklyWageAmount: sageData.weeklyWageAmount,
@@ -42,7 +61,7 @@ const WeeklyWage = ({onBack}) => {
       if (sageData.lockedAmount > 0 && !sageData.canUnlockWage) {
         const remaining = getTimeUntilNextWageUnlock();
         setRemainedTime(remaining);
-        
+
         // If timer reached zero, refresh Sage data to update canUnlockWage state
         if (remaining <= 0) {
           fetchSageData();
@@ -58,7 +77,7 @@ const WeeklyWage = ({onBack}) => {
   const handleUnlock = useCallback(async () => {
     console.log('🚀 WeeklyWage: Starting unlock process');
     console.log('🔍 WeeklyWage: Current sageData before unlock:', sageData);
-    
+
     setIsUnlocking(true);
     try {
       await unlockWeeklyWage();
@@ -74,16 +93,16 @@ const WeeklyWage = ({onBack}) => {
     <div className="weekly-wage-wrapper">
       <CardView className="p-0">
         <div className="weekly-wage-card">
-          <LabelValueBox 
-            label="Unlock Amount" 
+          <LabelValueBox
+            label="Unlock Amount"
             value={loading ? "Loading..." : `${sageData.weeklyWageAmount?.toFixed(0) || 0} (${sageData.weeklyWageAmount?.toFixed(0) || 0})`}
           />
-          <LabelValueBox 
-            label="Bonus Per Level" 
+          <LabelValueBox
+            label="Bonus Per Level"
             value="2.5"
           />
-          <LabelValueBox 
-            label="Maximum Rate" 
+          <LabelValueBox
+            label="Maximum Rate"
             value="30"
           />
           <LabelValueBox
@@ -93,27 +112,21 @@ const WeeklyWage = ({onBack}) => {
           <div className="weekly-wage-header">Weekly Wage</div>
         </div>
       </CardView>
-      
-      {error && (
-        <CardView className="p-0">
-          <div className="text-center text-red-500">Error: {error}</div>
-        </CardView>
-      )}
-      
+
       {sageData.lockedAmount === 0 ? (
         <CardView className="p-0">
-          <br/>
-          <div className="text-center">No locked tokens to unlock</div>
+          <br />
+          <div className="text-center">{loading ? "Loading ..." : "No locked tokens to unlock"}</div>
         </CardView>
       ) : !sageData.canUnlockWage ? (
         <CardView className="p-0">
-          <br/>
+          <br />
           <div className="text-center">Already Claimed!</div>
         </CardView>
       ) : (
-        <BaseButton 
-          className="h-3rem" 
-          label={isUnlocking ? "Unlocking..." : "Unlock Honey"} 
+        <BaseButton
+          className="h-3rem"
+          label={isUnlocking ? "Unlocking..." : "Unlock Honey"}
           onClick={handleUnlock}
           disabled={isUnlocking}
         />
