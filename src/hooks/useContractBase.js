@@ -112,7 +112,6 @@ export const useContractBase = (contractNames = []) => {
     
     const newContracts = {};
     contractNames.forEach(name => {
-      console.log(name);
       newContracts[name.toLowerCase()] = contractService.getContract(name);
     });
     

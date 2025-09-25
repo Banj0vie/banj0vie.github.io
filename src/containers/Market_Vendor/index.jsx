@@ -15,7 +15,7 @@ const VendorDialog = ({ onClose, label = "VENDOR", header = "" }) => {
   const { isConnected, account, contractService } = useAgwEthersAndService();
   const { buySeedPack, checkPendingRequests, getAllPendingRequests, listenForSeedsRevealed } = useVendor();
   const { fulfillRequest } = useRngHub();
-  const { getMaxPlots } = useFarming();
+  const { getMaxPlots, getUserCrops } = useFarming();
   const { show } = useNotification();
   
   const [pageIndex, setPageIndex] = useState(ID_SEED_SHOP_PAGES.SEED_PACK_LIST);
@@ -69,18 +69,23 @@ const VendorDialog = ({ onClose, label = "VENDOR", header = "" }) => {
 
   // Load available plots - only when needed
   const loadAvailablePlots = useCallback(async () => {
-    if (!isConnected || !account || !contractService || !getMaxPlots) return;
+    if (!isConnected || !account || !getMaxPlots || !getUserCrops) return;
     
     try {
       const maxPlots = await getMaxPlots(account);
-      if (maxPlots !== null) {
-        setAvailablePlots(Number(maxPlots));
-        console.log('Available plots:', maxPlots);
-      }
+      const userCrops = await getUserCrops(account);
+      
+      // Count only crops that actually have seeds planted (seedId !== 0n)
+      const plantedCount = userCrops.filter(crop => crop.seedId && crop.seedId !== 0n).length;
+      
+      const availablePlotsCount = maxPlots - plantedCount;
+      setAvailablePlots(Math.max(0, availablePlotsCount)); // Ensure it's not negative
+      console.log('Max plots:', maxPlots, 'Planted plots:', plantedCount, 'Available plots:', availablePlotsCount);
+      console.log('User crops:', userCrops);
     } catch (err) {
       console.error('Failed to load available plots:', err);
     }
-  }, [isConnected, account, contractService, getMaxPlots]);
+  }, [isConnected, account, getMaxPlots, getUserCrops]);
 
   // Load pending requests - only when needed
   const loadPendingRequests = useCallback(async () => {

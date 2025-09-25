@@ -15,14 +15,14 @@ const BuyConfirmDialog = ({ onClose, onPurchaseSuccess, item }) => {
   const { show } = useNotification();
 
   const handleConfirm = async () => {
-    if (!item || !item.id || !amount || amount <= 0) {
+    if (!item || !amount || amount <= 0) {
       show('Invalid purchase parameters', 'error');
       return;
     }
 
     setLoading(true);
     try {
-      const result = await purchase(item.id, amount);
+      const result = await purchase(item.listingId, amount);
       show(`Purchase successful! Transaction: ${result.txHash}`, 'success');
       if (onPurchaseSuccess) {
         onPurchaseSuccess();

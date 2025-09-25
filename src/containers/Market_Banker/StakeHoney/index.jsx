@@ -18,7 +18,7 @@ const StakeHoney = ({ onBack }) => {
   const [estRewards, setEstRewards] = useState("0.000 Honey");
   
   const { account, contractService } = useAgwEthersAndService();
-  const { stake, unstake, getBalance, getBankerData, loading, error } = useBanker();
+  const { stake, unstake, getBalance, getBankerData, loading } = useBanker();
   const { show } = useNotification();
 
   // Load balances

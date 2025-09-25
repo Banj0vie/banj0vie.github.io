@@ -1,5 +1,3 @@
-/* eslint-disable react-hooks/exhaustive-deps */
-/* global BigInt */
 import React, { useState, useEffect, useCallback } from "react";
 import PanZoomViewport from "../layouts/PanZoomViewport";
 import { FARM_HOTSPOTS, FARM_VIEWPORT } from "../constants/scene_farm";
@@ -29,7 +27,7 @@ const Farm = () => {
     harvestMany,
     harvestAll,
     getMaxPlots,
-    getCrop,
+    getUserCrops,
     getGrowthTime,
     applyGrowthElixir,
     applyPesticide,
@@ -115,25 +113,17 @@ const Farm = () => {
       try {
         setUserCropsLoaded(false);
 
-        // Read all plots directly to avoid gaps from contract count(), in parallel
-        const totalPlotsToCheck = 30;
-        const indices = Array.from({ length: totalPlotsToCheck }, (_, i) => i);
-        const crops = await Promise.all(
-          indices.map((i) =>
-            getCrop(address, i)
-              .then((c) => ({ index: i, crop: c }))
-              .catch((e) => ({ index: i, error: e }))
-          )
-        );
+        // Get all user crops in a single call
+        const crops = await getUserCrops(address);
 
         // Collect unique seedIds to fetch growth times once per seed type
         const uniqueSeedIds = Array.from(
           new Set(
             crops
-              .map((r) => r.crop?.seedId)
-              .filter((sid) => sid && sid !== "0")
+              .map((crop) => crop.seedId)
+              .filter((sid) => sid && sid !== 0n)
           )
-        ).map((sid) => BigInt(sid));
+        );
 
         const growthTimeCache = new Map();
         await Promise.all(
@@ -144,14 +134,14 @@ const Farm = () => {
         );
 
         const nowSec = Math.floor(Date.now() / 1000);
-        const newCropArray = new CropItemArrayClass(totalPlotsToCheck);
-        for (const r of crops) {
-          if (r.crop && r.crop.seedId && r.crop.seedId !== "0") {
-            const item = newCropArray.getItem(r.index);
+        const newCropArray = new CropItemArrayClass(30);
+        for (const crop of crops) {
+          if (crop.seedId && crop.seedId !== 0n) {
+            const item = newCropArray.getItem(crop.plotNumber);
             if (item) {
-              const seedIdBig = BigInt(r.crop.seedId);
+              const seedIdBig = crop.seedId;
               item.seedId = seedIdBig;
-              const endTime = Number(r.crop.endTime);
+              const endTime = crop.endTime;
               const growthTime = growthTimeCache.get(seedIdBig.toString()) ?? 60;
               
               // Calculate plantedAt based on original growth time and current endTime
@@ -173,11 +163,11 @@ const Farm = () => {
               item.growStatus = isReady ? 2 : 1;
               
               // Store potion effect multipliers for display
-              item.produceMultiplierX1000 = r.crop.produceMultiplierX1000 || 1000;
-              item.tokenMultiplierX1000 = r.crop.tokenMultiplierX1000 || 1000;
+              item.produceMultiplierX1000 = crop.produceMultiplierX1000 || 1000;
+              item.tokenMultiplierX1000 = crop.tokenMultiplierX1000 || 1000;
             }
           } else {
-            newCropArray.removeCropAt(r.index);
+            newCropArray.removeCropAt(crop.plotNumber);
           }
         }
 
@@ -201,7 +191,7 @@ const Farm = () => {
         setUserCropsLoaded(true);
       }
     },
-    [getCrop, getGrowthTimeForSeed]
+    [getGrowthTimeForSeed, getUserCrops]
   );
 
   // Load user address and crops from contract
@@ -422,17 +412,7 @@ const Farm = () => {
       show("No seeds were planted. All plots may already be occupied.", "info");
       return;
     }
-  }, [
-    currentSeeds,
-    maxPlots,
-    previewCropArray,
-    userCropsLoaded,
-    isFarmMenu,
-    cropArray,
-    usedSeedsInPreview,
-    getAvailableSeeds,
-    getGrowthTimeForSeed,
-  ]);
+  }, [userCropsLoaded, maxPlots, isFarmMenu, cropArray, currentSeeds, usedSeedsInPreview, show, getGrowthTimeForSeed]);
 
   const startHarvesting = () => {
     setPreviewCropArray(cropArray);
