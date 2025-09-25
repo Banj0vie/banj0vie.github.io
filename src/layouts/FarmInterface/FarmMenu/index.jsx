@@ -28,29 +28,26 @@ const FarmMenu = ({
           </p>
         )}
       </div>
-      {!loading && (
-        <div className="buttons">
-          <BaseButton label="Cancel" onClick={onCancel}></BaseButton>
-          {isUsingPotion ? (
-            <BaseButton
-              label="Use Item"
-              onClick={onPotionUse}
-            ></BaseButton>
-          ) : (
-            <BaseButton
-              label={isPlant ? "Plant" : "Harvest"}
-              onClick={isPlant ? onPlant : onHarvest}
-            ></BaseButton>
-          )}
-        </div>
-      )}
-      {loading && (
-        <div className="loading-message">
-          <p className="ghost-text">
-            {isUsingPotion ? "Using potion..." : (isPlant ? "Planting..." : "Harvesting...")}
-          </p>
-        </div>
-      )}
+      <div className="buttons">
+        <BaseButton 
+          label="Cancel" 
+          onClick={onCancel}
+          disabled={loading}
+        ></BaseButton>
+        {isUsingPotion ? (
+          <BaseButton
+            label="Use Item"
+            onClick={onPotionUse}
+            disabled={loading}
+          ></BaseButton>
+        ) : (
+          <BaseButton
+            label={isPlant ? "Plant" : "Harvest"}
+            onClick={isPlant ? onPlant : onHarvest}
+            disabled={loading}
+          ></BaseButton>
+        )}
+      </div>
     </div>
   );
 };
