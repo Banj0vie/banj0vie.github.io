@@ -1,11 +1,14 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import "./style.css";
 import CardView from "../../../components/boxes/CardView";
 import LabelValueBox from "../../../components/boxes/LabelValueBox";
 import { formatDuration } from "../../../utils/basic";
 import BaseButton from "../../../components/buttons/BaseButton";
 import { useSage } from "../../../hooks/useContracts";
-
+import { handleContractError } from "../../../utils/errorHandler";
+import { useNotification } from "../../../contexts/NotificationContext";
+import { isTransactionRejection } from "../../../utils/errorUtils";
+  
 const WeeklyHarvest = ({onBack}) => {
   const {
     sageData,
@@ -18,12 +21,28 @@ const WeeklyHarvest = ({onBack}) => {
   
   const [remainedTime, setRemainedTime] = useState(0);
   const [isUnlocking, setIsUnlocking] = useState(false);
+  const { show } = useNotification();
 
   // Fetch Sage data on component mount
   useEffect(() => {
     fetchSageData();
   }, [fetchSageData]);
 
+  const lastNotificationTime = useRef(0);
+  useEffect(() => {
+    if (error) {
+      const now = Date.now();
+      // Only show notification if it's been more than 2 seconds since last notification
+      if (now - lastNotificationTime.current > 2000) {
+        lastNotificationTime.current = now;
+        if (isTransactionRejection(error)) {
+          show('Transaction was rejected by user.', 'error');
+        } else {
+          show(`Sage operation failed!`, 'error');
+        }
+      }
+    }
+  }, [error, show]);
   // Update timer for next harvest unlock
   useEffect(() => {
     const updateTimer = () => {
@@ -49,7 +68,9 @@ const WeeklyHarvest = ({onBack}) => {
     try {
       await unlockWeeklyHarvest();
     } catch (err) {
-      console.error('Failed to unlock:', err);
+      const { message } = handleContractError(err, 'unlocking weekly harvest');
+      console.error('Failed to unlock:', message);
+      // show(`❌ ${message}`, "error");
     } finally {
       setIsUnlocking(false);
     }
@@ -74,16 +95,10 @@ const WeeklyHarvest = ({onBack}) => {
         </div>
       </CardView>
       
-      {error && (
-        <CardView className="p-0">
-          <div className="text-center text-red-500">Error: {error}</div>
-        </CardView>
-      )}
-      
       {sageData.lockedAmount === 0 ? (
         <CardView className="p-0">
           <br/>
-          <div className="text-center">No locked tokens to unlock</div>
+          <div className="text-center">{loading ? "Loading ..." : "No locked tokens to unlock"}</div>
         </CardView>
       ) : !sageData.canUnlockHarvest ? (
         <CardView className="p-0">

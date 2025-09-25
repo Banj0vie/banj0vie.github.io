@@ -408,11 +408,7 @@ export const useFarming = () => {
       return txHash;
     } catch (err) {
       console.error('Failed to plant seed:', err);
-      setError(err.message);
-      setTimeout(() => {
-        setError(null);
-      }, 2000);
-      return null;
+      throw new Error(err);
     } finally {
       setLoading(false);
     }
@@ -481,7 +477,7 @@ export const useFarming = () => {
       setTimeout(() => {
         setError(null);
       }, 2000);
-      return null;
+      throw new Error(err);
     } finally {
       setLoading(false);
     }
@@ -515,7 +511,7 @@ export const useFarming = () => {
       setTimeout(() => {
         setError(null);
       }, 2000);
-      return null;
+      throw new Error(err);
     } finally {
       setLoading(false);
     }
@@ -548,7 +544,7 @@ export const useFarming = () => {
       setTimeout(() => {
         setError(null);
       }, 2000);
-      return null;
+      throw new Error(err);
     } finally {
       setLoading(false);
     }

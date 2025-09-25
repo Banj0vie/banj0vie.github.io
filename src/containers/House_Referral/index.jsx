@@ -8,6 +8,7 @@ import BaseDivider from "../../components/dividers/BaseDivider";
 import { useNotification } from "../../contexts/NotificationContext";
 import { useReferral } from "../../hooks/useContracts";
 import { ethers } from "ethers";
+import { handleContractError } from "../../utils/errorHandler";
 
 const ReferralDialog = ({ onClose, label = "REFERRAL", header = "" }) => {
   const [code, setCode] = useState("");
@@ -67,7 +68,8 @@ const ReferralDialog = ({ onClose, label = "REFERRAL", header = "" }) => {
       show("Referral code registered successfully!", 'success');
     } catch (err) {
       console.error("Failed to register referral code:", err);
-      show(err.message || "Failed to register referral code", 'error');
+      const { message } = handleContractError(err, 'registering referral code');
+      show(message, "error");
     } finally {
       setIsRegistering(false);
     }

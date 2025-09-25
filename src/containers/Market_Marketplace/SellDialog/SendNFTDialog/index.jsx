@@ -36,7 +36,7 @@ const SendNFTDialog = ({ onClose, onSendSuccess, item }) => {
     setLoading(true);
     try {
       const result = await send(item.id, address, count);
-      show(`Items sent successfully! Transaction: ${result.txHash}`, "success");
+      show(`Items sent successfully!`, "success");
       if (onSendSuccess) {
         onSendSuccess();
       } else {

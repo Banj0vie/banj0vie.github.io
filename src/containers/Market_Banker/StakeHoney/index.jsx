@@ -156,7 +156,7 @@ const StakeHoney = ({ onBack }) => {
         setAmount("0");
         await loadBalances(); // Refresh balances
       } else {
-        show("Failed to unstake tokens", "error");
+        // show("Failed to unstake tokens", "error");
       }
     } catch (err) {
       console.error("Unstake error:", err);

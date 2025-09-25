@@ -32,7 +32,7 @@ const SellConfirmDialog = ({ onClose, onSellSuccess, item }) => {
     try {
       const result = await list(item.id, amount, price);
       show(
-        `Items listed successfully! Transaction: ${result.txHash}`,
+        `Items listed successfully!`,
         "success"
       );
       if (onSellSuccess) {

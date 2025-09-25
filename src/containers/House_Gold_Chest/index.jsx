@@ -27,21 +27,7 @@ const GoldChestDialog = ({ onClose, label = "DAILY CHEST", header = "" }) => {
   const [isClaiming, setIsClaiming] = useState(false);
 
   // Monitor chest errors and show notifications with duplicate prevention
-  const lastNotificationTime = useRef(0);
-  useEffect(() => {
-    if (chestError) {
-      const now = Date.now();
-      // Only show notification if it's been more than 2 seconds since last notification
-      if (now - lastNotificationTime.current > 2000) {
-        lastNotificationTime.current = now;
-        if (isTransactionRejection(chestError)) {
-          show('Transaction was rejected by user.', 'error');
-        } else {
-          show(`Chest operation failed!`, 'error');
-        }
-      }
-    }
-  }, [chestError, show]);
+  
 
   // Update timer every second
   useEffect(() => {

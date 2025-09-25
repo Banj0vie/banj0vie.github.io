@@ -33,7 +33,7 @@ const BatchBuyConfirmDialog = ({ onClose, onPurchaseSuccess, item }) => {
     try {
       const result = await batchBuy(item.id, maxPricePer, totalBudget);
       show(
-        `Batch purchase successful! Transaction: ${result.txHash}`,
+        `Batch purchase successful!`,
         "success"
       );
       if (onPurchaseSuccess) {
