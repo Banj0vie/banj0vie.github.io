@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import BaseDialog from "../_BaseDialog";
 import "./style.css";
 import VendorMenu from "./VendorMenu";
@@ -9,14 +9,32 @@ import { SEED_PACK_STATUS } from "../../constants/item_seed";
 import { useVendor, useFarming, useRngHub } from "../../hooks/useContracts";
 import { useAgwEthersAndService } from "../../hooks/useContractBase";
 import { useNotification } from "../../contexts/NotificationContext";
+import { isTransactionRejection } from "../../utils/errorUtils";
 import CustomSeedsDialog from "./CustomSeedsDialog";
 import SeedRollingDialog from "./SeedRollingDialog";
 const VendorDialog = ({ onClose, label = "VENDOR", header = "" }) => {
   const { isConnected, account, contractService } = useAgwEthersAndService();
-  const { buySeedPack, checkPendingRequests, getAllPendingRequests, listenForSeedsRevealed } = useVendor();
+  const { buySeedPack, checkPendingRequests, getAllPendingRequests, listenForSeedsRevealed, error: vendorError } = useVendor();
   const { fulfillRequest } = useRngHub();
   const { getMaxPlots } = useFarming();
   const { show } = useNotification();
+
+  // Monitor vendor errors and show notifications with duplicate prevention
+  const lastNotificationTime = useRef(0);
+  useEffect(() => {
+    if (vendorError) {
+      const now = Date.now();
+      // Only show notification if it's been more than 2 seconds since last notification
+      if (now - lastNotificationTime.current > 2000) {
+        lastNotificationTime.current = now;
+        if (isTransactionRejection(vendorError)) {
+          show('Transaction was rejected by user.', 'error');
+        } else {
+          show(`Vendor operation failed: ${vendorError}`, 'error');
+        }
+      }
+    }
+  }, [vendorError, show]);
   
   const [pageIndex, setPageIndex] = useState(ID_SEED_SHOP_PAGES.SEED_PACK_LIST);
   const [availablePlots, setAvailablePlots] = useState(0);

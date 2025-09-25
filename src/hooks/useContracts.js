@@ -386,6 +386,9 @@ export const useFarming = () => {
     } catch (err) {
       console.error('Failed to plant seed:', err);
       setError(err.message);
+      setTimeout(() => {
+        setError(null);
+      }, 2000);
       return null;
     } finally {
       setLoading(false);
@@ -416,6 +419,9 @@ export const useFarming = () => {
     } catch (err) {
       console.error('Failed to plant seeds batch:', err);
       setError(err.message);
+      setTimeout(() => {
+        setError(null);
+      }, 2000);
       return null;
     } finally {
       setLoading(false);
@@ -443,6 +449,9 @@ export const useFarming = () => {
     } catch (err) {
       console.error('Failed to harvest:', err);
       setError(err.message);
+      setTimeout(() => {
+        setError(null);
+      }, 2000);
       return null;
     } finally {
       setLoading(false);
@@ -471,6 +480,9 @@ export const useFarming = () => {
     } catch (err) {
       console.error('Failed to harvest many:', err);
       setError(err.message);
+      setTimeout(() => {
+        setError(null);
+      }, 2000);
       return null;
     } finally {
       setLoading(false);
@@ -498,6 +510,9 @@ export const useFarming = () => {
     } catch (err) {
       console.error('Failed to harvest all:', err);
       setError(err.message);
+      setTimeout(() => {
+        setError(null);
+      }, 2000);
       return null;
     } finally {
       setLoading(false);
@@ -547,6 +562,9 @@ export const useFarming = () => {
     } catch (err) {
       console.error('Failed to get user crops:', err);
       setError(err.message);
+      setTimeout(() => {
+        setError(null);
+      }, 2000);
       return [];
     } finally {
       setLoading(false);
@@ -676,6 +694,9 @@ export const useFarming = () => {
     } catch (err) {
       console.error('Failed to apply Growth Elixir:', err);
       setError(err.message);
+      setTimeout(() => {
+        setError(null);
+      }, 2000);
       return null;
     } finally {
       setLoading(false);
@@ -705,6 +726,9 @@ export const useFarming = () => {
     } catch (err) {
       console.error('Failed to apply Pesticide:', err);
       setError(err.message);
+      setTimeout(() => {
+        setError(null);
+      }, 2000);
       return null;
     } finally {
       setLoading(false);
@@ -734,6 +758,9 @@ export const useFarming = () => {
     } catch (err) {
       console.error('Failed to apply Fertilizer:', err);
       setError(err.message);
+      setTimeout(() => {
+        setError(null);
+      }, 2000);
       return null;
     } finally {
       setLoading(false);
@@ -815,6 +842,9 @@ export const useROIData = () => {
     } catch (err) {
       console.error('Failed to get ROI data:', err);
       setError(err.message);
+      setTimeout(() => {
+        setError(null);
+      }, 2000);
     } finally {
       setLoading(false);
     }
@@ -879,6 +909,9 @@ export const useBanker = () => {
     } catch (err) {
       console.error('Failed to stake:', err);
       setError(err.message);
+      setTimeout(() => {
+        setError(null);
+      }, 2000);
       return null;
     } finally {
       setLoading(false);
@@ -906,6 +939,9 @@ export const useBanker = () => {
     } catch (err) {
       console.error('Failed to unstake:', err);
       setError(err.message);
+      setTimeout(() => {
+        setError(null);
+      }, 2000);
       return null;
     } finally {
       setLoading(false);
@@ -1007,6 +1043,9 @@ export const useDex = () => {
     } catch (err) {
       console.error('Failed to swap ETH for YLD:', err);
       setError(err.message);
+      setTimeout(() => {
+        setError(null);
+      }, 2000);
       return null;
     } finally {
       setLoading(false);
@@ -1542,6 +1581,9 @@ export const useSage = () => {
     } catch (err) {
       console.error('Failed to fetch Sage data:', err);
       setError(err.message);
+      setTimeout(() => {
+        setError(null);
+      }, 2000);
     } finally {
       setLoading(false);
     }
@@ -1567,6 +1609,9 @@ export const useSage = () => {
     } catch (err) {
       console.error('Failed to unlock weekly harvest:', err);
       setError(err.message);
+      setTimeout(() => {
+        setError(null);
+      }, 2000);
       throw err;
     } finally {
       setLoading(false);
@@ -1605,6 +1650,9 @@ export const useSage = () => {
     } catch (err) {
       console.error('Failed to unlock weekly wage:', err);
       setError(err.message);
+      setTimeout(() => {
+        setError(null);
+      }, 2000);
       throw err;
     } finally {
       setLoading(false);

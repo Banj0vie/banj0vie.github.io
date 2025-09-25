@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import BaseDialog from "../_BaseDialog";
 import "./style.css";
 import TokenInputRow from "./TokenInputRow";
@@ -11,6 +11,7 @@ import { useDex } from "../../hooks/useContracts";
 import { useAgwEthersAndService } from "../../hooks/useContractBase";
 import { useNotification } from "../../contexts/NotificationContext";
 import { useGameState } from "../../contexts/GameStateContext";
+import { isTransactionRejection } from "../../utils/errorUtils";
 import { ethers } from "ethers";
 const DexDialog = ({ onClose, label = "DEX", header = "" }) => {
   const { isConnected } = useAgwEthersAndService();
@@ -23,6 +24,23 @@ const DexDialog = ({ onClose, label = "DEX", header = "" }) => {
   const [honeyAmount, setHoneyAmount] = useState('0');
   const [isCalculating, setIsCalculating] = useState(false);
   const { show: showNotification } = useNotification();
+
+  // Monitor errors and show notifications with duplicate prevention
+  const lastNotificationTime = useRef(0);
+  useEffect(() => {
+    if (error) {
+      const now = Date.now();
+      // Only show notification if it's been more than 2 seconds since last notification
+      if (now - lastNotificationTime.current > 2000) {
+        lastNotificationTime.current = now;
+        if (isTransactionRejection(error)) {
+          showNotification('Transaction was rejected by user.', 'error');
+        } else {
+          showNotification(`DEX operation failed: ${error}`, 'error');
+        }
+      }
+    }
+  }, [error, showNotification]);
 
   // Calculate yield amount when ETH amount changes
   useEffect(() => {
@@ -134,11 +152,6 @@ const DexDialog = ({ onClose, label = "DEX", header = "" }) => {
           onClick={onSwap}
           disabled={loading || !ethAmount || parseFloat(ethAmount) <= 0 || !isConnected}
         ></BaseButton>
-        {error && (
-          <div style={{ color: '#ff3b30', fontSize: '14px', marginTop: '8px' }}>
-            {error}
-          </div>
-        )}
         {swapInfo.map((item) => (
           <LabelValueBox key={generateId()} label={item.label} value={item.value}></LabelValueBox>
         ))}

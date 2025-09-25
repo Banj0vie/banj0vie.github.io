@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import "./style.css";
 import BaseDialog from "../_BaseDialog";
 import CardView from "../../components/boxes/CardView";
@@ -8,6 +8,7 @@ import { formatDuration } from "../../utils/basic";
 import { useChestOpener } from "../../hooks/useContracts";
 import { useNotification } from "../../contexts/NotificationContext";
 import { handleContractError } from "../../utils/errorHandler";
+import { isTransactionRejection } from "../../utils/errorUtils";
 
 const GoldChestDialog = ({ onClose, label = "DAILY CHEST", header = "" }) => {
   const { 
@@ -18,11 +19,29 @@ const GoldChestDialog = ({ onClose, label = "DAILY CHEST", header = "" }) => {
     getTimeUntilNextChest, 
     fetchChestData,
     loading,
+    error: chestError,
   } = useChestOpener();
   
   const { show } = useNotification();
   const [remainedTime, setRemainedTime] = useState(0);
   const [isClaiming, setIsClaiming] = useState(false);
+
+  // Monitor chest errors and show notifications with duplicate prevention
+  const lastNotificationTime = useRef(0);
+  useEffect(() => {
+    if (chestError) {
+      const now = Date.now();
+      // Only show notification if it's been more than 2 seconds since last notification
+      if (now - lastNotificationTime.current > 2000) {
+        lastNotificationTime.current = now;
+        if (isTransactionRejection(chestError)) {
+          show('Transaction was rejected by user.', 'error');
+        } else {
+          show(`Chest operation failed: ${chestError}`, 'error');
+        }
+      }
+    }
+  }, [chestError, show]);
 
   // Update timer every second
   useEffect(() => {
