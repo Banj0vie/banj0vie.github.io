@@ -64,7 +64,8 @@ export const useVendor = () => {
       return { txHash: result.txHash, tier, isPending: false };
     } catch (err) {
       console.error('Failed to buy seed pack:', err);
-      setError(err.message);
+      const { message } = handleContractError(err, 'buying seed pack');
+      setError(message);
       return null;
     } finally {
       setLoading(false);
@@ -1305,20 +1306,16 @@ export const useLeaderboard = (epoch = null) => {
         }
       }
 
-      // Get user's XP if connected (always use current total XP)
-      if (account && playerStore) {
-        try {
-          const userXp = await publicClient.readContract({
-            address: playerStore.address,
-            abi: playerStore.abi,
-            functionName: 'xpOf',
-            args: [account],
-          });
-          setUserScore(parseFloat(userXp.toString()));
-        } catch (err) {
-          console.log('Could not fetch user XP:', err);
-          setUserScore(0);
+      // Get user's score for the selected epoch (only if they're in top 5)
+      if (account) {
+        let userScoreForEpoch = 0;
+        for (const player of leaderboardData) {
+          if (player.address.toLowerCase() === account.toLowerCase()) {
+            userScoreForEpoch = player.score;
+            break;
+          }
         }
+        setUserScore(userScoreForEpoch);
       }
 
       // Get epoch start time
@@ -1792,10 +1789,11 @@ export const useGardener = () => {
       });
     } catch (err) {
       console.error('Failed to fetch Gardener data:', err);
+      const { message } = handleContractError(err, 'fetching gardener data');
       setGardenerData(prev => ({
         ...prev,
         loading: false,
-        error: err.message
+        error: message
       }));
     }
   }, [gardener, playerStore, yieldToken, account, publicClient]);
@@ -1824,18 +1822,13 @@ export const useGardener = () => {
       return txHash;
     } catch (err) {
       console.error('Failed to level up:', err);
-      console.error('Error details:', {
-        targetLevel,
-        account,
-        gardenerAddress: gardener.address,
-        error: err.message
-      });
+      const { message } = handleContractError(err, 'leveling up valley');
       setGardenerData(prev => ({
         ...prev,
         loading: false,
-        error: err.message
+        error: message
       }));
-      throw err;
+      throw new Error(message);
     }
   }, [gardener, account, agwClient, fetchGardenerData]);
 

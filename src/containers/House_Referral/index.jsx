@@ -11,6 +11,7 @@ import { ethers } from "ethers";
 
 const ReferralDialog = ({ onClose, label = "REFERRAL", header = "" }) => {
   const [code, setCode] = useState("");
+  const [isRegistering, setIsRegistering] = useState(false);
   const { show } = useNotification();
   
   // Use referral hook
@@ -45,6 +46,7 @@ const ReferralDialog = ({ onClose, label = "REFERRAL", header = "" }) => {
       return;
     }
 
+    setIsRegistering(true);
     console.log('🚀 ReferralDialog: Starting registration for code:', code.trim());
     console.log('🔍 ReferralDialog: Current state before registration:', { 
       myReferralCode, 
@@ -66,6 +68,8 @@ const ReferralDialog = ({ onClose, label = "REFERRAL", header = "" }) => {
     } catch (err) {
       console.error("Failed to register referral code:", err);
       show(err.message || "Failed to register referral code", 'error');
+    } finally {
+      setIsRegistering(false);
     }
   };
 
@@ -114,9 +118,9 @@ const ReferralDialog = ({ onClose, label = "REFERRAL", header = "" }) => {
               ></BaseInput>
               <BaseButton
                 className="h-3rem mt-1rem"
-                label={loading ? "Registering..." : "Register Code"}
+                label={isRegistering ? "Registering..." : "Register Code"}
                 onClick={onRegister}
-                disabled={loading || currentLevel < 6 || !code.trim() || code.length > 32}
+                disabled={isRegistering || currentLevel < 6 || !code.trim() || code.length > 32}
               ></BaseButton>
             </div>
           )}

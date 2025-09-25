@@ -14,8 +14,6 @@ const GardnerDialog = ({ onClose, label = "GARDENER", header = "" }) => {
     levelUpCost, 
     canLevelUp, 
     levelUp, 
-    loading, 
-    error,
     fetchGardenerData 
   } = useGardener();
   
@@ -120,14 +118,14 @@ const GardnerDialog = ({ onClose, label = "GARDENER", header = "" }) => {
         ) : (
           <BaseButton
             className="h-3rem upgrade-valley-button"
-            label={isLevelingUp || loading ? "Processing..." : "Upgrade Valley"}
+            label={isLevelingUp ? "Processing..." : "Upgrade Valley"}
             onClick={handleLevelUp}
-            disabled={!canLevelUp || isLevelingUp || loading}
+            disabled={!canLevelUp || isLevelingUp}
           ></BaseButton>
         )}
 
         {/* Error Display */}
-        {error && (
+        {/* {error && (
           <div className="error-message" style={{ 
             color: '#ff3b30', 
             marginTop: '10px', 
@@ -136,7 +134,7 @@ const GardnerDialog = ({ onClose, label = "GARDENER", header = "" }) => {
           }}>
             {error}
           </div>
-        )}
+        )} */}
       </div>
     </BaseDialog>
   );

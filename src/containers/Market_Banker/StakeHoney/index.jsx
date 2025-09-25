@@ -201,7 +201,7 @@ const StakeHoney = ({ onBack }) => {
         onClick={onBack}
         disabled={loading}
       ></BaseButton>
-      {error && (
+      {/* {error && (
         <div className="error-message" style={{ 
           color: '#ff3b30', 
           marginTop: '10px', 
@@ -210,7 +210,7 @@ const StakeHoney = ({ onBack }) => {
         }}>
           {error}
         </div>
-      )}
+      )} */}
       <div className="hint">
         <span className="highlight">0.5%</span> of each gacha roll is
         <br /> redirected to the Bank!

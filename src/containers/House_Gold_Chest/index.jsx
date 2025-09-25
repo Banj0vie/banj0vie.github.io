@@ -17,8 +17,7 @@ const GoldChestDialog = ({ onClose, label = "DAILY CHEST", header = "" }) => {
     claimDailyChest, 
     getTimeUntilNextChest, 
     fetchChestData,
-    loading, 
-    error 
+    loading,
   } = useChestOpener();
   
   const { show } = useNotification();
@@ -103,7 +102,7 @@ const GoldChestDialog = ({ onClose, label = "DAILY CHEST", header = "" }) => {
         )}
 
         {/* Error Display */}
-        {error && (
+        {/* {error && (
           <div className="error-message" style={{ 
             color: '#ff3b30', 
             marginTop: '10px', 
@@ -112,7 +111,7 @@ const GoldChestDialog = ({ onClose, label = "DAILY CHEST", header = "" }) => {
           }}>
             {error}
           </div>
-        )}
+        )} */}
       </div>
     </BaseDialog>
   );
