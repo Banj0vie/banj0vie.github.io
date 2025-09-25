@@ -85,6 +85,8 @@ export const useVendor = () => {
       return price.toString();
     } catch (err) {
       console.error('Failed to get pack price:', err);
+      const { message } = handleContractError(err, 'getting pack price');
+      setError(message);
       return null;
     }
   }, [vendor, publicClient]);
@@ -103,6 +105,8 @@ export const useVendor = () => {
       return hasPending;
     } catch (err) {
       console.error('Failed to check pending requests:', err);
+      const { message } = handleContractError(err, 'checking pending requests');
+      setError(message);
       return false;
     }
   }, [vendor, account, publicClient]);
@@ -153,6 +157,8 @@ export const useVendor = () => {
         }];
       } catch (fallbackErr) {
         console.error('Failed to get pending requests (both methods):', fallbackErr);
+        const { message } = handleContractError(fallbackErr, 'getting pending requests');
+        setError(message);
         return [];
       }
     }
@@ -180,6 +186,8 @@ export const useVendor = () => {
       };
     } catch (err) {
       console.error('Failed to get pending request:', err);
+      const { message } = handleContractError(err, 'getting pending request');
+      setError(message);
       return null;
     }
   }, [vendor, account, publicClient]);
@@ -385,7 +393,8 @@ export const useFarming = () => {
       return txHash;
     } catch (err) {
       console.error('Failed to plant seed:', err);
-      setError(err.message);
+      const { message } = handleContractError(err, 'planting seed');
+      setError(message);
       return null;
     } finally {
       setLoading(false);
@@ -415,7 +424,8 @@ export const useFarming = () => {
       return txHash;
     } catch (err) {
       console.error('Failed to plant seeds batch:', err);
-      setError(err.message);
+      const { message } = handleContractError(err, 'planting seeds batch');
+      setError(message);
       return null;
     } finally {
       setLoading(false);
@@ -442,7 +452,8 @@ export const useFarming = () => {
       return txHash;
     } catch (err) {
       console.error('Failed to harvest:', err);
-      setError(err.message);
+      const { message } = handleContractError(err, 'harvesting');
+      setError(message);
       return null;
     } finally {
       setLoading(false);
@@ -470,7 +481,8 @@ export const useFarming = () => {
       return txHash;
     } catch (err) {
       console.error('Failed to harvest many:', err);
-      setError(err.message);
+      const { message } = handleContractError(err, 'harvesting many');
+      setError(message);
       return null;
     } finally {
       setLoading(false);
@@ -497,7 +509,8 @@ export const useFarming = () => {
       return txHash;
     } catch (err) {
       console.error('Failed to harvest all:', err);
-      setError(err.message);
+      const { message } = handleContractError(err, 'harvesting all');
+      setError(message);
       return null;
     } finally {
       setLoading(false);
@@ -527,10 +540,10 @@ export const useFarming = () => {
       
       // Convert crops to the expected format with new struct fields
       const formattedCrops = crops.map((crop, index) => {
-        const seedIdBig = BigInt(crop.seedId);
-        const endTimeNum = Number(crop.endTime);
-        const produceMultiplier = Number(crop.produceMultiplierX1000 || 1000);
-        const tokenMultiplier = Number(crop.tokenMultiplierX1000 || 1000);
+        const seedIdBig = BigInt(crop[0]);
+        const endTimeNum = Number(crop[1]);
+        const produceMultiplier = Number(crop[2]);
+        const tokenMultiplier = Number([3]);
         
         return ({
           plotNumber: index,
@@ -546,7 +559,8 @@ export const useFarming = () => {
       return formattedCrops;
     } catch (err) {
       console.error('Failed to get user crops:', err);
-      setError(err.message);
+      const { message } = handleContractError(err, 'getting user crops');
+      setError(message);
       return [];
     } finally {
       setLoading(false);
@@ -569,6 +583,30 @@ export const useFarming = () => {
       return Number(maxPlots);
     } catch (err) {
       console.error('Failed to get max plots:', err);
+      const { message } = handleContractError(err, 'getting max plots');
+      console.error('Max plots error:', message);
+      return 0;
+    }
+  }, [farming, publicClient]);
+
+  const getPlantedPlotsCount = useCallback(async (userAddress) => {
+    if (!farming || !publicClient) {
+      return 0;
+    }
+
+    try {
+      const plantedCount = await publicClient.readContract({
+        address: farming.address,
+        abi: farming.abi,
+        functionName: 'count',
+        args: [userAddress],
+      });
+      
+      return Number(plantedCount);
+    } catch (err) {
+      console.error('Failed to get planted plots count:', err);
+      const { message } = handleContractError(err, 'getting planted plots count');
+      console.error('Planted plots count error:', message);
       return 0;
     }
   }, [farming, publicClient]);
@@ -583,7 +621,6 @@ export const useFarming = () => {
         functionName: 'crops',
         args: [userAddress, plotIndex],
       });
-      
       // Handle case where crop is undefined or doesn't have expected structure
       if (!crop) {
         console.warn('Crop is undefined for plot:', plotIndex);
@@ -625,6 +662,8 @@ export const useFarming = () => {
       };
     } catch (err) {
       console.error('Failed to get crop:', err);
+      const { message } = handleContractError(err, 'getting crop');
+      console.error('Get crop error:', message);
       // Return a default crop structure instead of null to prevent further errors
       return {
         seedId: "0",
@@ -649,6 +688,8 @@ export const useFarming = () => {
       return Number(growthTime);
     } catch (err) {
       console.error('Failed to get growth time:', err);
+      const { message } = handleContractError(err, 'getting growth time');
+      console.error('Growth time error:', message);
       return 60; // Default fallback
     }
   }, [farming, publicClient]);
@@ -675,7 +716,8 @@ export const useFarming = () => {
       return txHash;
     } catch (err) {
       console.error('Failed to apply Growth Elixir:', err);
-      setError(err.message);
+      const { message } = handleContractError(err, 'applying Growth Elixir');
+      setError(message);
       return null;
     } finally {
       setLoading(false);
@@ -704,7 +746,8 @@ export const useFarming = () => {
       return txHash;
     } catch (err) {
       console.error('Failed to apply Pesticide:', err);
-      setError(err.message);
+      const { message } = handleContractError(err, 'applying Pesticide');
+      setError(message);
       return null;
     } finally {
       setLoading(false);
@@ -733,7 +776,8 @@ export const useFarming = () => {
       return txHash;
     } catch (err) {
       console.error('Failed to apply Fertilizer:', err);
-      setError(err.message);
+      const { message } = handleContractError(err, 'applying Fertilizer');
+      setError(message);
       return null;
     } finally {
       setLoading(false);
@@ -748,6 +792,7 @@ export const useFarming = () => {
     harvestAll,
     getUserCrops,
     getMaxPlots,
+    getPlantedPlotsCount,
     getCrop,
     getGrowthTime,
     applyGrowthElixir,
@@ -878,7 +923,8 @@ export const useBanker = () => {
       return txHash;
     } catch (err) {
       console.error('Failed to stake:', err);
-      setError(err.message);
+      const { message } = handleContractError(err, 'staking');
+      setError(message);
       return null;
     } finally {
       setLoading(false);
@@ -905,7 +951,8 @@ export const useBanker = () => {
       return txHash;
     } catch (err) {
       console.error('Failed to unstake:', err);
-      setError(err.message);
+      const { message } = handleContractError(err, 'unstaking');
+      setError(message);
       return null;
     } finally {
       setLoading(false);
@@ -925,6 +972,8 @@ export const useBanker = () => {
       
       return balance.toString();
     } catch (err) {
+      const { message } = handleContractError(err, 'getting balance');
+      console.error('Get balance error:', message);
       return "0";
     }
   }, [banker, publicClient]);
@@ -962,6 +1011,8 @@ export const useBanker = () => {
       };
     } catch (err) {
       console.error('Failed to get banker data:', err);
+      const { message } = handleContractError(err, 'getting banker data');
+      console.error('Banker data error:', message);
       return {
         totalSupply: 0,
         tokenBalance: 0,
@@ -1006,7 +1057,8 @@ export const useDex = () => {
       return txHash;
     } catch (err) {
       console.error('Failed to swap ETH for YLD:', err);
-      setError(err.message);
+      const { message } = handleContractError(err, 'swapping ETH for YLD');
+      setError(message);
       return null;
     } finally {
       setLoading(false);
@@ -1032,6 +1084,8 @@ export const useDex = () => {
       return yieldAmount.toString();
     } catch (err) {
       console.error('Failed to get yield amount:', err);
+      const { message } = handleContractError(err, 'getting yield amount');
+      console.error('Yield amount error:', message);
       return "0";
     }
   }, [dex, publicClient]);
@@ -1059,6 +1113,8 @@ export const useDex = () => {
       console.log('✅ useDex: ETH balance fetched:', ethBalance.toFixed(2));
     } catch (err) {
       console.error('Failed to fetch ETH balance:', err);
+      const { message } = handleContractError(err, 'fetching ETH balance');
+      console.error('ETH balance error:', message);
       setEthBalance('0.00');
     }
   }, [account, publicClient]);
@@ -1086,6 +1142,8 @@ export const useDex = () => {
       console.log('✅ useDex: Honey balance fetched:', honeyBalance.toFixed(2));
     } catch (err) {
       console.error('Failed to fetch Honey balance:', err);
+      const { message } = handleContractError(err, 'fetching Honey balance');
+      console.error('Honey balance error:', message);
       setHoneyBalance('0.00');
     }
   }, [account, publicClient, yieldToken]);
@@ -1334,7 +1392,8 @@ export const useLeaderboard = (epoch = null) => {
       setLeaderboardData(leaderboardData);
     } catch (error) {
       console.error('Failed to fetch leaderboard data:', error);
-      setError(error.message);
+      const { message } = handleContractError(error, 'fetching leaderboard data');
+      setError(message);
       // Fallback to empty data
       setLeaderboardData([
         { rank: 1, name: "Loading...", address: "0x0000000000000000000000000000000000000000", score: 0.0 },
@@ -1372,7 +1431,8 @@ export const useLeaderboard = (epoch = null) => {
       return txHash;
     } catch (error) {
       console.error('Failed to advance epoch:', error);
-      setError(error.message);
+      const { message } = handleContractError(error, 'advancing epoch');
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -1541,7 +1601,8 @@ export const useSage = () => {
       setSageData(finalSageData);
     } catch (err) {
       console.error('Failed to fetch Sage data:', err);
-      setError(err.message);
+      const { message } = handleContractError(err, 'fetching Sage data');
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -1566,7 +1627,8 @@ export const useSage = () => {
       return txHash;
     } catch (err) {
       console.error('Failed to unlock weekly harvest:', err);
-      setError(err.message);
+      const { message } = handleContractError(err, 'unlocking weekly harvest');
+      setError(message);
       throw err;
     } finally {
       setLoading(false);
@@ -1604,7 +1666,8 @@ export const useSage = () => {
       return txHash;
     } catch (err) {
       console.error('Failed to unlock weekly wage:', err);
-      setError(err.message);
+      const { message } = handleContractError(err, 'unlocking weekly wage');
+      setError(message);
       throw err;
     } finally {
       setLoading(false);
@@ -1910,10 +1973,11 @@ export const useChestOpener = () => {
       });
     } catch (err) {
       console.error('Failed to fetch chest data:', err);
+      const { message } = handleContractError(err, 'fetching chest data');
       setChestData(prev => ({
         ...prev,
         loading: false,
-        error: err.message
+        error: message
       }));
     }
   }, [chestOpener, playerStore, account, publicClient]);
@@ -2317,10 +2381,11 @@ export const useReferral = () => {
       setReferralData(finalData);
     } catch (err) {
       console.error('Failed to fetch referral data:', err);
+      const { message } = handleContractError(err, 'fetching referral data');
       setReferralData(prev => ({
         ...prev,
         loading: false,
-        error: err.message
+        error: message
       }));
     }
   }, [playerStore, account, publicClient]);
@@ -2353,10 +2418,11 @@ export const useReferral = () => {
       return txHash;
     } catch (err) {
       console.error('Failed to register referral code:', err);
+      const { message } = handleContractError(err, 'registering referral code');
       setReferralData(prev => ({
         ...prev,
         loading: false,
-        error: err.message
+        error: message
       }));
       throw err;
     }
@@ -2389,10 +2455,11 @@ export const useReferral = () => {
       return txHash;
     } catch (err) {
       console.error('Failed to create profile with referral:', err);
+      const { message } = handleContractError(err, 'creating profile with referral');
       setReferralData(prev => ({
         ...prev,
         loading: false,
-        error: err.message
+        error: message
       }));
       throw err;
     }
@@ -2705,6 +2772,8 @@ export const useFishing = () => {
       return hasPending;
     } catch (err) {
       console.error('Failed to check fishing pending requests:', err);
+      const { message } = handleContractError(err, 'checking fishing pending requests');
+      console.error('Fishing pending requests error:', message);
       return false;
     }
   }, [fishing, account, publicClient]);
@@ -2735,6 +2804,8 @@ export const useFishing = () => {
       return pendingRequests;
     } catch (err) {
       console.error('Failed to get fishing pending requests:', err);
+      const { message } = handleContractError(err, 'getting fishing pending requests');
+      console.error('Fishing pending requests error:', message);
       return [];
     }
   }, [fishing, account, publicClient]);
@@ -3076,7 +3147,7 @@ export const useP2PMarket = () => {
     if (!p2pMarket || !agwClient || !account) {
       throw new Error('P2P Market contract, AGW Client, or account not available');
     }
-
+    console.log(lid, amount);
     return await executeWrite({
       abi: p2pMarket.abi,
       address: p2pMarket.address,
@@ -3321,6 +3392,8 @@ export const useEquipmentRegistry = () => {
       };
     } catch (err) {
       console.error('Failed to fetch NFT metadata:', err);
+      const { message } = handleContractError(err, 'fetching NFT metadata');
+      console.error('NFT metadata error:', message);
       return null;
     }
   }, [equipmentRegistry, publicClient, getContract]);
@@ -3375,6 +3448,8 @@ export const useEquipmentRegistry = () => {
       return nfts;
     } catch (err) {
       console.error('Failed to fetch owned BoostNFTs:', err);
+      const { message } = handleContractError(err, 'fetching owned BoostNFTs');
+      console.error('Owned BoostNFTs error:', message);
       // Return empty array instead of null for better error handling
       return [];
     }
