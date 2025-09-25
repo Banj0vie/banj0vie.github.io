@@ -1,20 +1,19 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useAgwEthersAndService } from '../hooks/useAgwEthersAndService';
+import { useAgwEthersAndService } from '../hooks/useContractBase';
 import { ID_SEEDS, ID_PRODUCE_ITEMS, ID_BAIT_ITEMS, ID_FISH_ITEMS, ID_CHEST_ITEMS, ID_POTION_ITEMS, ID_CROP_CATEGORIES, ID_ITEM_CATEGORIES, ID_POTION_CATEGORIES, ID_LOOT_CATEGORIES, ID_RARE_TYPE } from '../constants/app_ids';
 import { ALL_ITEMS, IMAGE_URL_CROP } from '../constants/item_data';
+import { useContractBase } from './useContractBase';
 
 export const useItems = () => {
-  const { account, contractService } = useAgwEthersAndService();
-  const [items1155, setItems1155] = useState(null);
-  const [publicClient, setPublicClient] = useState(null);
+  const { account } = useAgwEthersAndService();
   const [isReady, setIsReady] = useState(false);
+  const { getContract, publicClient } = useContractBase(['ITEMS_1155']);
+  const items1155 = getContract('ITEMS_1155');
 
   useEffect(() => {
-    if (!contractService) return;
-    setItems1155(contractService.getContract('ITEMS_1155'));
-    setPublicClient(contractService.publicClient);
+    if (!items1155) return;
     setIsReady(true);
-  }, [contractService]);
+  }, [items1155]);
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -30,7 +29,6 @@ export const useItems = () => {
   ], []);
   useEffect(() => {
     const fetchItems = async () => {
-      console.log('fetchItems');
       if (!items1155 || !account || !isReady || !publicClient) {
         setItems([]);
         return;
@@ -57,16 +55,15 @@ export const useItems = () => {
         balances.forEach((balance, index) => {
           // Convert balance to number for comparison
           const balanceNum = typeof balance === 'object' && balance.toNumber ? balance.toNumber() : Number(balance);
-            const itemId = allItemIds[index];
-            const itemData = ALL_ITEMS[itemId];
-
-            if (itemData) {
-            // Item exists in ALL_ITEMS, use its data
-              userItems.push({
-                id: itemId,
-                count: balanceNum,
-                ...itemData
-              });
+          const itemId = allItemIds[index];
+          const itemData = ALL_ITEMS[itemId];
+          if (itemData) {
+          // Item exists in ALL_ITEMS, use its data
+            userItems.push({
+              id: itemId,
+              count: balanceNum,
+              ...itemData
+            });
           } else {
             // Item doesn't exist in ALL_ITEMS, create proper category structure
             let category, subCategory;

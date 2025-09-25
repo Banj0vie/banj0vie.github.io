@@ -1,10 +1,9 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import "./style.css";
 import BaseDialog from "../../_BaseDialog";
 import CardView from "../../../components/boxes/CardView";
 import ItemViewMarketplace from "../../../components/boxes/ItemViewMarketplace";
-import BaseInput from "../../../components/inputs/BaseInput";
-import BaseButton from "../../../components/buttons/BaseButton";
+import TreeInput from "../../../components/inputs/TreeInputs";
 import { useItems } from "../../../hooks/useItems";
 import { useP2PMarket } from "../../../hooks/useContracts";
 import SendNFTDialog from "./SendNFTDialog";
@@ -14,7 +13,7 @@ const SellDialog = ({ onBack, onClose }) => {
   const [isSendNFTDialog, setIsSendNFTDialog] = useState(false);
   const [isSellConfirmDialog, setIsSellConfirmDialog] = useState(false);
   const [selectedItem, setSelectedItem] = useState({});
-
+  const [checkedItemIds, setCheckedItemIds] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const { all: allItems, loading, refetch: refetchItems } = useItems();
   const { getAllListings } = useP2PMarket();
@@ -25,7 +24,7 @@ const SellDialog = ({ onBack, onClose }) => {
     }
 
     // First filter to only show owned items
-    let filtered = allItems.filter((item) => item.count > 0);
+    let filtered = allItems.filter((item) => item.count > 0 && item.category !== 'ID_ITEM_SEED' && checkedItemIds.includes(item.id));
 
     // Apply search filter
     if (searchTerm.trim()) {
@@ -36,7 +35,7 @@ const SellDialog = ({ onBack, onClose }) => {
     }
 
     return filtered;
-  }, [allItems, searchTerm]);
+  }, [allItems, checkedItemIds, searchTerm]);
 
   const handleSend = (item) => {
     setSelectedItem(item);
@@ -68,21 +67,16 @@ const SellDialog = ({ onBack, onClose }) => {
   return (
     <BaseDialog onClose={onClose} title="SELL ITEMS">
       <div className="sell-dialog-content">
-        <CardView className="left-panel">
-          <div className="marketplace-filter">
-            <div className="tree-header">
-              <BaseInput
-                className="h-2.5rem"
-                placeholder="Search items..."
-                value={searchTerm}
-                setValue={setSearchTerm}
-              />
-              <BaseButton label="Reset" onClick={() => {
-                setSearchTerm("");
-              }} />
-              <BaseButton label="Back" onClick={onBack} />
-            </div>
-          </div>
+        <CardView className="left-panel items-list">
+          <TreeInput
+            onBack={onBack}
+            onSelect={useCallback(
+              (checkedIds) => setCheckedItemIds(checkedIds),
+              []
+            )}
+            onSearch={setSearchTerm}
+            search={searchTerm}
+          ></TreeInput>
         </CardView>
         <CardView className="right-panel">
           {loading && <div className="items-header">Loading items... </div>}

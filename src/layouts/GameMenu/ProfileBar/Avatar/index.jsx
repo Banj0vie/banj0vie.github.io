@@ -2,8 +2,7 @@ import React, { useState, useEffect } from "react";
 import "./style.css";
 import AvatarDialog from "../../../../containers/Menu_Avatar";
 import { useEquipmentRegistry } from "../../../../hooks/useContracts";
-import { useAgwEthersAndService } from "../../../../hooks/useAgwEthersAndService";
-import { useContractBase } from "../../../../hooks/useContractBase";
+import { useAgwEthersAndService } from "../../../../hooks/useContractBase";
 
 const Avatar = ({ src, alt = "avatar" }) => {
   const [isAvatarDialog, setIsAvatarDialog] = useState(false);
@@ -11,14 +10,13 @@ const Avatar = ({ src, alt = "avatar" }) => {
   const [loading, setLoading] = useState(true);
   
   const { account } = useAgwEthersAndService();
-  const { getAvatars } = useEquipmentRegistry();
-  const { getContract, publicClient } = useContractBase(['BOOST_NFT']);
+  const { getAvatars, getNFTMetadata } = useEquipmentRegistry();
   
   const fallbackSrc = "/images/avatars/avatar-left-placeholder.png";
 
   useEffect(() => {
     const fetchAvatarImage = async () => {
-      if (!account || !getAvatars || !publicClient) {
+      if (!account || !getAvatars || !getNFTMetadata) {
         setLoading(false);
         return;
       }
@@ -38,39 +36,13 @@ const Avatar = ({ src, alt = "avatar" }) => {
           
           for (let i = 0; i < nfts.length && i < 2; i++) {
             if (nfts[i] && nfts[i] !== "0x0000000000000000000000000000000000000000" && tokenIds[i]) {
-              // Get token metadata for this avatar
-              const boostNFT = getContract('BOOST_NFT');
-              if (boostNFT) {
-                const tokenURI = await publicClient.readContract({
-                  address: boostNFT.address,
-                  abi: boostNFT.abi,
-                  functionName: 'tokenURI',
-                  args: [tokenIds[i]]
-                });
-
-                const tokenData = await fetch(tokenURI);
-                const tokenDataJson = await tokenData.json();
-                
-                // Extract boost value from attributes
-                let boostValue = 0;
-                if (tokenDataJson.attributes && Array.isArray(tokenDataJson.attributes)) {
-                  const boostAttribute = tokenDataJson.attributes.find(attr => 
-                    attr.trait_type === 'Boost (ppm)' || attr.trait_type === 'Boost (%)'
-                  );
-                  
-                  if (boostAttribute) {
-                    if (boostAttribute.trait_type === 'Boost (ppm)') {
-                      boostValue = Number(boostAttribute.value);
-                    } else if (boostAttribute.trait_type === 'Boost (%)') {
-                      boostValue = Number(boostAttribute.value) * 1000; // Convert to ppm for comparison
-                    }
-                  }
-                }
-                
+              // Get token metadata using the hook function
+              const metadata = await getNFTMetadata(tokenIds[i]);
+              if (metadata) {
                 equippedAvatars.push({
                   tokenId: tokenIds[i],
-                  image: tokenDataJson.image,
-                  boostValue: boostValue,
+                  image: metadata.image,
+                  boostValue: metadata.boostPpm,
                   slotIndex: i
                 });
               }
@@ -104,7 +76,7 @@ const Avatar = ({ src, alt = "avatar" }) => {
     };
 
     fetchAvatarImage();
-  }, [account, getAvatars, publicClient, getContract]);
+  }, [account, getAvatars, getNFTMetadata]);
 
   const resolvedSrc = src || avatarImage || fallbackSrc;
 

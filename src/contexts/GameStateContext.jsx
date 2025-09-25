@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { useAgwEthersAndService } from '../hooks/useAgwEthersAndService';
+import { useAgwEthersAndService } from '../hooks/useContractBase';
 import { ethers } from 'ethers';
 
 const GameStateContext = createContext();

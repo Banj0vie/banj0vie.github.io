@@ -4,7 +4,7 @@ import BaseButton from "../../../components/buttons/BaseButton";
 import TokenInputRow from "../../Market_Dex/TokenInputRow";
 import CardListView from "../../../components/boxes/CardListView";
 import { useBanker } from "../../../hooks/useContracts";
-import { useAgwEthersAndService } from "../../../hooks/useAgwEthersAndService";
+import { useAgwEthersAndService } from "../../../hooks/useContractBase";
 import { useNotification } from "../../../contexts/NotificationContext";
 import { ethers } from "ethers";
 
@@ -18,7 +18,7 @@ const StakeHoney = ({ onBack }) => {
   const [estRewards, setEstRewards] = useState("0.000 Honey");
   
   const { account, contractService } = useAgwEthersAndService();
-  const { stake, unstake, getBalance, loading, error } = useBanker();
+  const { stake, unstake, getBalance, getBankerData, loading, error } = useBanker();
   const { show } = useNotification();
 
   // Load balances
@@ -38,37 +38,15 @@ const StakeHoney = ({ onBack }) => {
         setHoneyBalance("0.000");
       }
       
-      // Calculate actual ratio from contract
-      if (contractService) {
-        const banker = contractService.getContract('BANKER');
-        const [totalSupply, tokenBalance] = await Promise.all([
-          contractService.publicClient.readContract({
-            address: banker.address,
-            abi: banker.abi,
-            functionName: 'totalSupply',
-          }),
-          contractService.publicClient.readContract({
-            address: banker.address,
-            abi: banker.abi,
-            functionName: 'totalGameToken',
-          })
-        ]);
+      // Calculate actual ratio from contract using the hook
+      const bankerData = await getBankerData();
+      if (bankerData) {
+        setRatio(bankerData.ratio);
         
-        const totalSupplyNum = parseFloat(ethers.formatEther(totalSupply));
-        const tokenBalanceNum = parseFloat(ethers.formatEther(tokenBalance));
-        console.log(totalSupplyNum, tokenBalanceNum);
-        if (totalSupplyNum > 0 && tokenBalanceNum > 0) {
-          const ratioValue = tokenBalanceNum / totalSupplyNum;
-          setRatio(ratioValue); // Store as float
-          
-          // Calculate estimated rewards (XHoney balance * ratio)
-          const xHoneyBalanceNum = parseFloat(ethers.formatEther(xHoneyBal));
-          const estimatedRewards = xHoneyBalanceNum * ratioValue;
-          setEstRewards(`${estimatedRewards.toFixed(3)} Honey`);
-        } else {
-          setRatio(1.0); // Default ratio as float
-          setEstRewards("0.000 Honey");
-        }
+        // Calculate estimated rewards (XHoney balance * ratio)
+        const xHoneyBalanceNum = parseFloat(ethers.formatEther(xHoneyBal));
+        const estimatedRewards = xHoneyBalanceNum * bankerData.ratio;
+        setEstRewards(`${estimatedRewards.toFixed(3)} Honey`);
       } else {
         setRatio(1.0); // Default ratio as float
         setEstRewards("0.000 Honey");
@@ -76,7 +54,7 @@ const StakeHoney = ({ onBack }) => {
     } catch (err) {
       console.error('Failed to load balances:', err);
     }
-  }, [account, getBalance, contractService]);
+  }, [account, getBalance, getBankerData, contractService]);
 
   // Handle deposit (stake)
   const onDeposit = useCallback(async () => {

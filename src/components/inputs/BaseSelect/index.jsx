@@ -1,12 +1,12 @@
 import React from "react";
 import "./style.css";
 
-const BaseSelect = ({ className, options, value, onChange }) => {
+const BaseSelect = ({ className, options, value, setValue }) => {
   return (
     <div className={`${className} base-select`}>
-      <select>
+      <select value={value} onChange={(e) => setValue(e.target.value)}>
         {options.map((option, index) => (
-          <option key={index} value={option.value}>{option.label}</option>
+          <option key={index} value={option.value} selected={option.value === value}>{option.label}</option>
         ))}
       </select>
     </div>

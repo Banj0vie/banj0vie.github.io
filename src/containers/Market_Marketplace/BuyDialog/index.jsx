@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
 import "./style.css";
 import BaseDialog from "../../_BaseDialog";
 import CardView from "../../../components/boxes/CardView";
@@ -6,23 +6,21 @@ import ItemViewMarketplace from "../../../components/boxes/ItemViewMarketplace";
 import { ALL_ITEMS } from "../../../constants/item_data";
 import { ID_SEEDS, ID_PRODUCE_ITEMS, ID_BAIT_ITEMS, ID_FISH_ITEMS, ID_CHEST_ITEMS, ID_POTION_ITEMS } from "../../../constants/app_ids";
 import BuyConfirmDialog from "./BuyConfirmDialog";
-import BaseInput from "../../../components/inputs/BaseInput";
-import BaseSelect from "../../../components/inputs/BaseSelect";
-import BaseButton from "../../../components/buttons/BaseButton";
+import TreeInput from "../../../components/inputs/TreeInputs";
 import { buttonFrames } from "../../../constants/_baseimages";
 import BaseDivider from "../../../components/dividers/BaseDivider";
 import { useP2PMarket } from "../../../hooks/useContracts";
 import { useItems } from "../../../hooks/useItems";
-import { useAgwEthersAndService } from "../../../hooks/useAgwEthersAndService";
+import { useAgwEthersAndService } from "../../../hooks/useContractBase";
 
 const BuyDialog = ({ onBack, onClose }) => {
   const [isBuyConfirmDialog, setIsBuyConfirmDialog] = useState(false);
   const [selectedItem, setSelectedItem] = useState({});
+  const [checkedItemIds, setCheckedItemIds] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("price-asc");
   const itemsPerPage = 10;
-
   // Use P2P Market hook
   const { marketData, getAllListings, cancel } = useP2PMarket();
   const { listings, loading, error } = marketData;
@@ -101,9 +99,7 @@ const BuyDialog = ({ onBack, onClose }) => {
     if (!marketplaceItems || marketplaceItems.length === 0) {
       return [];
     }
-
-    let filtered = marketplaceItems;
-
+    let filtered = marketplaceItems.filter((item) => checkedItemIds.includes(item.id));
     // Apply search filter
     if (searchTerm.trim()) {
       filtered = filtered.filter((item) => {
@@ -111,7 +107,6 @@ const BuyDialog = ({ onBack, onClose }) => {
         return itemName.includes(searchTerm.toLowerCase());
       });
     }
-
     // Apply sorting
     filtered.sort((a, b) => {
       switch (sortBy) {
@@ -127,9 +122,8 @@ const BuyDialog = ({ onBack, onClose }) => {
           return 0;
       }
     });
-
     return filtered;
-  }, [marketplaceItems, searchTerm, sortBy]);
+  }, [checkedItemIds, marketplaceItems, searchTerm, sortBy]);
 
   // Paginate the filtered items
   const paginatedItems = useMemo(() => {
@@ -193,32 +187,19 @@ const BuyDialog = ({ onBack, onClose }) => {
   return (
     <BaseDialog onClose={onClose} title="BUY ITEMS">
       <div className="buy-dialog-content">
-        <CardView className="left-panel">
-          <div className="marketplace-filter">
-            <div className="tree-header">
-              <BaseInput
-                className="h-2.5rem"
-                placeholder="Search items..."
-                value={searchTerm}
-                setValue={setSearchTerm}
-              />
-              <BaseSelect
-                options={[
-                  { label: "Price - ASC", value: "price-asc" },
-                  { label: "Price - DESC", value: "price-desc" },
-                  { label: "Name - ASC", value: "name-asc" },
-                  { label: "Name - DESC", value: "name-desc" }
-                ]}
-                value={sortBy}
-                setValue={setSortBy}
-              />
-              <BaseButton label="Reset" onClick={() => {
-                setSearchTerm("");
-                setSortBy("price-asc");
-              }} />
-              <BaseButton label="Back" onClick={onBack} />
-            </div>
-          </div>
+        <CardView className="left-panel items-list">
+          <TreeInput
+            onSearch={setSearchTerm}
+            search={searchTerm}
+            onBack={onBack}
+            sortby={sortBy}
+            setSortBy={setSortBy}
+            onSelect={useCallback(
+              (checkedIds) => setCheckedItemIds(checkedIds),
+              []
+            )}
+            sortable
+          ></TreeInput>
         </CardView>
 
         <CardView className="right-panel">

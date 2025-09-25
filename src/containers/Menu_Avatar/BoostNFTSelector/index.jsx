@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import BaseDialog from '../../_BaseDialog';
 import './style.css';
-import { useAgwEthersAndService } from '../../../hooks/useAgwEthersAndService';
+import { useAgwEthersAndService } from '../../../hooks/useContractBase';
 import { useEquipmentRegistry } from '../../../hooks/useContracts';
 import CardView from '../../../components/boxes/CardView';
 import BaseButton from '../../../components/buttons/BaseButton';

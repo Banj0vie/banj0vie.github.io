@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useAgwEthersAndService } from '../hooks/useAgwEthersAndService';
+import { useAgwEthersAndService } from '../hooks/useContractBase';
 import { handleContractError } from '../utils/errorHandler';
 
 const ProfileContext = createContext();

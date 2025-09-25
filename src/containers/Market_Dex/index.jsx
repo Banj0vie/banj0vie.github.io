@@ -8,7 +8,7 @@ import LabelValueBox from "../../components/boxes/LabelValueBox";
 import DividerLink from "../../components/links/DividerLink";
 import { generateId } from "../../utils/basic";
 import { useDex } from "../../hooks/useContracts";
-import { useAgwEthersAndService } from "../../hooks/useAgwEthersAndService";
+import { useAgwEthersAndService } from "../../hooks/useContractBase";
 import { useNotification } from "../../contexts/NotificationContext";
 import { useGameState } from "../../contexts/GameStateContext";
 import { ethers } from "ethers";

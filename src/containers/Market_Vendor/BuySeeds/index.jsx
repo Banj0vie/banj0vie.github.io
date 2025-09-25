@@ -5,7 +5,7 @@ import BaseDivider from "../../../components/dividers/BaseDivider";
 import BuySeedBox from "../../../components/boxes/BuySeedBox";
 import BaseButton from "../../../components/buttons/BaseButton";
 
-const BuySeeds = ({ menuId, onBack, onBuy, buyingSeedId, isAnyBuying }) => {
+const BuySeeds = ({ menuId, onBack, onBuy, buyingItem, isAnyBuying }) => {
   const [seedPack, setSeedPack] = useState({});
 
   useEffect(() => {
@@ -25,7 +25,7 @@ const BuySeeds = ({ menuId, onBack, onBuy, buyingSeedId, isAnyBuying }) => {
             onBuy={() => {
               onBuy(item);
             }}
-            isBuying={buyingSeedId === menuId}
+            isBuying={buyingItem && buyingItem.packId === menuId && buyingItem.label === item.label}
             isDisabled={isAnyBuying}
           ></BuySeedBox>
         ))}

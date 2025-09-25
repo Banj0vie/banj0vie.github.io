@@ -5,7 +5,7 @@ import SocialLink from "../../components/links/SocialLink";
 import ConnectWalletAuthBox from "./ConnectWalletAuthBox";
 import { ID_AUTH_PAGES } from "../../constants/app_ids";
 import ProfileAuthBox from "./ProfileAuthBox";
-import { useAgwEthersAndService } from "../../hooks/useAgwEthersAndService";
+import { useAgwEthersAndService } from "../../hooks/useContractBase";
 
 const AuthPage = () => {
   const { isConnected, hasProfile, account } = useAgwEthersAndService();

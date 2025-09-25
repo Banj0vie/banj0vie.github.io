@@ -5,7 +5,7 @@ import { TYPE_LABEL_COLOR, SEED_PACK_LIST, GROW_STATUS } from "../../../../const
 import { ALL_ITEMS } from "../../../../constants/item_data";
 import BaseDivider from "../../../../components/dividers/BaseDivider";
 import GrowStatusBox from "../../../../components/boxes/GrowStatusBox";
-import { useAgwEthersAndService } from "../../../../hooks/useAgwEthersAndService";
+import { useAgwEthersAndService } from "../../../../hooks/useContractBase";
 import CropCircleIcon from "../../../../components/boxes/CropCircleIcon";
 const CropTooltip = ({ container, pos = { x: 0, y: 0 }, data = {}, growthProgress = 0 }) => {
   const { account, contractService } = useAgwEthersAndService();

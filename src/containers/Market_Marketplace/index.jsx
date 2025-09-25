@@ -8,7 +8,7 @@ import CardListView from "../../components/boxes/CardListView";
 import SellDialog from "./SellDialog";
 import BatchBuyDialog from "./BatchBuyDialog";
 import BuyDialog from "./BuyDialog";
-import { useAgwEthersAndService } from "../../hooks/useAgwEthersAndService";
+import { useAgwEthersAndService } from "../../hooks/useContractBase";
 
 const MarketPlaceDialog = ({ onClose, label = "VENDOR", header = "" }) => {
   const [pageIndex, setPageIndex] = useState(

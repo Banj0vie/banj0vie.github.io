@@ -5,7 +5,7 @@ import BaseDivider from "../../../components/dividers/BaseDivider";
 import Slider from "../../../components/inputs/Slider";
 import BaseButton from "../../../components/buttons/BaseButton";
 import { useROIData } from "../../../hooks/useContracts";
-import { useAgwEthersAndService } from "../../../hooks/useAgwEthersAndService";
+import { useAgwEthersAndService } from "../../../hooks/useContractBase";
 
 const RollChances = ({ onBack }) => {
   const { account, contractService } = useAgwEthersAndService();

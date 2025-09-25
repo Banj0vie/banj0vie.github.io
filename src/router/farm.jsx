@@ -11,7 +11,7 @@ import FarmMenu from "../layouts/FarmInterface/FarmMenu";
 import SelectSeedDialog from "../containers/Farm_SelectSeedDialog";
 import { useItems } from "../hooks/useItems";
 import { useFarming } from "../hooks/useContracts";
-import { useAgwEthersAndService } from "../hooks/useAgwEthersAndService";
+import { useAgwEthersAndService } from "../hooks/useContractBase";
 import { useNotification } from "../contexts/NotificationContext";
 import { useGameState } from "../contexts/GameStateContext";
 import { CropItemArrayClass } from "../models/crop";

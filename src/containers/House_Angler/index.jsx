@@ -7,7 +7,7 @@ import CraftBait from "./CraftBait";
 import StartFishing from "./StartFishing";
 import Fishing from "./Fishing";
 import { useFishing } from "../../hooks/useContracts";
-import { useAgwEthersAndService } from "../../hooks/useAgwEthersAndService";
+import { useAgwEthersAndService } from "../../hooks/useContractBase";
 
 const AnglerDialog = ({ onClose, label = "QUIET POND", header = "" }) => {
   const [pageIndex, setPageIndex] = useState(ID_ANGLER_PAGES.ANGLER_MENU);

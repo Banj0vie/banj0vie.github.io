@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useMemo } from "react";
 import "./style.css";
 import BaseInput from "../BaseInput";
 import BaseButton from "../../buttons/BaseButton";
@@ -7,13 +7,11 @@ import CardView from "../../boxes/CardView";
 import BaseCheckBox from "../BaseCheckBox";
 import BaseSelect from "../BaseSelect";
 
-const TreeInput = ({ onBack, onSelect, sortable = false }) => {
-  const [search, setSearch] = useState("");
+const TreeInput = ({ onBack, onSelect, onSearch, search = "", sortable = false, sortby = "price-asc", setSortBy = () => {} }) => {
   const [expanded, setExpanded] = useState(() => new Set());
   const [checked, setChecked] = useState(() => new Set());
   const { items: itemsTree, loading, error } = useItems();
   const onSelectRef = useRef(onSelect);
-
   useEffect(() => {
     onSelectRef.current = onSelect;
   });
@@ -40,12 +38,10 @@ const TreeInput = ({ onBack, onSelect, sortable = false }) => {
   };
 
   const toggleCheck = (node, isChecked) => {
-    console.log(`TreeInput: Toggling ${node.id} to ${isChecked}`);
     setChecked((s) => {
       const next = new Set(s);
 
       if (node.id === "ALL") {
-        console.log('TreeInput: Toggling ALL category');
         // For "All" category, select/deselect all items
         if (!itemsTree || itemsTree.length === 0) return s;
 
@@ -79,7 +75,6 @@ const TreeInput = ({ onBack, onSelect, sortable = false }) => {
           }
         });
       } else {
-        console.log(`TreeInput: Toggling category ${node.id}`);
         // For category nodes, get all items in this category and toggle them (all items, regardless of ownership)
         const getCategoryItemIds = (categoryNode) => {
           const itemIds = new Set();
@@ -94,38 +89,54 @@ const TreeInput = ({ onBack, onSelect, sortable = false }) => {
           walk(categoryNode);
           return itemIds;
         };
-        
-        const categoryItemIds = getCategoryItemIds(node);
-        console.log(`TreeInput: Category ${node.id} item IDs:`, Array.from(categoryItemIds));
-        
-        // Toggle all items in this category
-        categoryItemIds.forEach((id) => {
+        // if it is not category it should be id of the item
+        if (!node.children) {
           if (isChecked) {
-            next.add(id);
+            next.add(node.id);
           } else {
-            next.delete(id);
+            next.delete(node.id);
           }
-        });
+        } else {
+          const categoryItemIds = getCategoryItemIds(node);
+          categoryItemIds.forEach((id) => {
+            if (isChecked) {
+              next.add(id);
+            } else {
+              next.delete(id);
+            }
+          });
+        }        
       }
       return next;
     });
   };
 
   const onReset = () => {
-    setSearch("");
+    onSearch("");
     setExpanded(new Set());
-
     // Reset button selects all items (all items, regardless of ownership)
     if (itemsTree && itemsTree.length > 0) {
       const allItemIds = new Set();
 
-      const walk = (n) => {
-        if (n.items && n.items.length > 0) {
-          n.items.forEach((item) => allItemIds.add(item.id));
-        } else if (!n.children && n.id && typeof n.id === 'string' && n.id !== 'ALL') {
-          allItemIds.add(n.id);
+      const walk = (node) => {
+        // If this node has items array, add all item IDs
+        if (node.items && Array.isArray(node.items)) {
+          node.items.forEach((item) => {
+            if (item.id) {
+              allItemIds.add(item.id);
+            }
+          });
         }
-        if (n.children) n.children.forEach((c) => walk(c));
+        
+        // If this node has children, walk through them recursively
+        if (node.children && Array.isArray(node.children)) {
+          node.children.forEach((child) => walk(child));
+        }
+        
+        // Also check if this node itself is an item (has an id and is not a category)
+        if (node.id && !node.children && !node.items && typeof node.id === 'string' && node.id !== 'ALL') {
+          allItemIds.add(node.id);
+        }
       };
 
       itemsTree.forEach(walk);
@@ -134,8 +145,6 @@ const TreeInput = ({ onBack, onSelect, sortable = false }) => {
       setChecked(new Set());
     }
   };
-
-  // const onApply = () => {}; // Reserved for future use
 
   const filtered = useMemo(() => {
     if (!itemsTree || loading) return [];
@@ -174,7 +183,7 @@ const TreeInput = ({ onBack, onSelect, sortable = false }) => {
             n.items.forEach((item) => allIds.add(item.id));
           }
           // If this is a leaf node representing an actual item (all items, regardless of count/ownership)
-          else if (!n.children && n.id && typeof n.id === 'string' && n.id !== 'ALL') {
+          else if (!n.children && n.id && n.id !== 'ALL') {
             allIds.add(n.id);
           }
           // Recursively process children
@@ -195,7 +204,7 @@ const TreeInput = ({ onBack, onSelect, sortable = false }) => {
         const walk = (n) => {
           if (n.items && n.items.length > 0) {
             n.items.forEach((item) => itemIds.add(item.id));
-          } else if (!n.children && n.id && typeof n.id === 'string' && n.id !== 'ALL') {
+          } else if (!n.children && n.id && n.id !== 'ALL') {
             itemIds.add(n.id);
           }
           if (n.children) n.children.forEach((c) => walk(c));
@@ -292,20 +301,22 @@ const TreeInput = ({ onBack, onSelect, sortable = false }) => {
           className="h-2.5rem"
           placeholder="Search items..."
           value={search}
-          setValue={setSearch}
+          setValue={onSearch}
         />
         {sortable && (
           <BaseSelect
             options={sortOptions}
-            value="price-asc"
-            setValue={() => {}}
+            value={sortby}
+            setValue={setSortBy}
           />
         )}
-        <BaseButton label="Reset" onClick={onReset} />
-        <BaseButton label="Back" onClick={onBack} />
       </div>
       <div className="tree-content">
         {filtered.map((node) => renderNode(node))}
+      </div>
+      <div className="tree-buttons">
+        <BaseButton label="Reset" onClick={onReset} />
+        <BaseButton label="Back" onClick={onBack} />
       </div>
     </div>
   );

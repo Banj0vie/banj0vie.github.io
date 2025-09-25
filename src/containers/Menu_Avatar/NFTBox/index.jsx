@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import './style.css';
 import CardView from '../../../components/boxes/CardView';
-import { useContractBase } from '../../../hooks/useContractBase';
+import { useEquipmentRegistry } from '../../../hooks/useContracts';
 import BoostNFTSelector from '../BoostNFTSelector';
 
 const NFTBox = ({ avatar, loading, slotIndex, onAvatarChange, allAvatars = [] }) => {
     const [nftData, setNftData] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
     const [showSelector, setShowSelector] = useState(false);
-    const { getContract, publicClient } = useContractBase(['BOOST_NFT']);
+    const { getNFTMetadata } = useEquipmentRegistry();
 
     useEffect(() => {
         const fetchNFTData = async () => {
@@ -20,48 +20,23 @@ const NFTBox = ({ avatar, loading, slotIndex, onAvatarChange, allAvatars = [] })
             try {
                 setIsLoading(true);
                 
-                const boostNFT = getContract('BOOST_NFT');
-                if (!boostNFT || !publicClient) {
-                    throw new Error('BoostNFT contract not available');
+                // Use the hook function to get NFT metadata
+                const metadata = await getNFTMetadata(avatar.tokenId);
+                if (metadata) {
+                    setNftData({
+                        tokenId: avatar.tokenId,
+                        name: metadata.name,
+                        image: metadata.image,
+                        boost: metadata.boostPercentage.toFixed(2)
+                    });
+                } else {
+                    // Fallback data
+                    setNftData({
+                        tokenId: avatar.tokenId,
+                        name: `Character #${avatar.tokenId}`,
+                        boost: '0.00'
+                    });
                 }
-
-                // Fetch token metadata from tokenURI
-                const tokenURI = await publicClient.readContract({
-                    address: boostNFT.address,
-                    abi: boostNFT.abi,
-                    functionName: 'tokenURI',
-                    args: [avatar.tokenId]
-                });
-
-                const tokenData = await fetch(tokenURI);
-                const tokenDataJson = await tokenData.json();
-                
-                // Parse the token metadata
-                const name = tokenDataJson.name || `Character #${avatar.tokenId}`;
-                const image = tokenDataJson.image || '';
-                
-                // Extract boost values from attributes
-                let boostPercentage = 0;
-                if (tokenDataJson.attributes && Array.isArray(tokenDataJson.attributes)) {
-                    const boostAttribute = tokenDataJson.attributes.find(attr => 
-                        attr.trait_type === 'Boost (ppm)' || attr.trait_type === 'Boost (%)'
-                    );
-                    
-                    if (boostAttribute) {
-                        if (boostAttribute.trait_type === 'Boost (ppm)') {
-                            boostPercentage = Number(boostAttribute.value) / 1000; // Convert ppm to percentage
-                        } else if (boostAttribute.trait_type === 'Boost (%)') {
-                            boostPercentage = Number(boostAttribute.value);
-                        }
-                    }
-                }
-
-                setNftData({
-                    tokenId: avatar.tokenId,
-                    name,
-                    image,
-                    boost: boostPercentage.toFixed(2)
-                });
             } catch (error) {
                 console.error('Failed to fetch NFT data:', error);
                 // Fallback data
@@ -76,7 +51,7 @@ const NFTBox = ({ avatar, loading, slotIndex, onAvatarChange, allAvatars = [] })
         };
 
         fetchNFTData();
-    }, [avatar, loading, getContract, publicClient]);
+    }, [avatar, loading, getNFTMetadata]);
 
     const handleClick = () => {
         setShowSelector(true);

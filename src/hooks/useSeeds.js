@@ -1,20 +1,19 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useAgwEthersAndService } from '../hooks/useAgwEthersAndService';
+import { useAgwEthersAndService } from '../hooks/useContractBase';
 import { ID_SEEDS, ID_PRODUCE_ITEMS, ID_BAIT_ITEMS, ID_FISH_ITEMS, ID_CHEST_ITEMS, ID_POTION_ITEMS } from '../constants/app_ids';
 import { ALL_ITEMS } from '../constants/item_data';
+import { useContractBase } from './useContractBase';
 
 export const useItems = () => {
-  const { account, contractService } = useAgwEthersAndService();
-  const [items1155, setItems1155] = useState(null);
-  const [publicClient, setPublicClient] = useState(null);
+  const { account } = useAgwEthersAndService();
   const [isReady, setIsReady] = useState(false);
+  const { getContract, publicClient } = useContractBase(['ITEMS_1155']);
+  const items1155 = getContract('ITEMS_1155');
 
   useEffect(() => {
-    if (!contractService) return;
-    setItems1155(contractService.getContract('ITEMS_1155'));
-    setPublicClient(contractService.publicClient);
+    if (!items1155) return;
     setIsReady(true);
-  }, [contractService]);
+  }, [items1155]);
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);

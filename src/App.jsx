@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import { useAgwEthersAndService } from "./hooks/useAgwEthersAndService";
+import { useAgwEthersAndService } from "./hooks/useContractBase";
 import { GameStateProvider } from "./contexts/GameStateContext";
 import { NotificationProvider } from "./contexts/NotificationContext";
 import { ProfileProvider } from "./contexts/ProfileContext";

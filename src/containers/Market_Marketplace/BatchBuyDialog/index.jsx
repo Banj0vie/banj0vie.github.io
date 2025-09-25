@@ -1,9 +1,8 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
 import "./style.css";
 import BaseDialog from "../../_BaseDialog";
 import CardView from "../../../components/boxes/CardView";
-import BaseInput from "../../../components/inputs/BaseInput";
-import BaseButton from "../../../components/buttons/BaseButton";
+import TreeInput from "../../../components/inputs/TreeInputs";
 import ItemViewMarketplace from "../../../components/boxes/ItemViewMarketplace";
 import { ALL_ITEMS } from "../../../constants/item_data";
 import { ID_SEEDS, ID_PRODUCE_ITEMS, ID_BAIT_ITEMS, ID_FISH_ITEMS, ID_CHEST_ITEMS, ID_POTION_ITEMS } from "../../../constants/app_ids";
@@ -15,7 +14,7 @@ const BatchBuyDialog = ({ onBack, onClose, onPurchaseSuccess, item, excludeSelle
   const [selectedItem, setSelectedItem] = useState({});
   const [searchTerm, setSearchTerm] = useState("");
   const [expandedItems, setExpandedItems] = useState(new Set());
-
+  const [checkedItemIds, setCheckedItemIds] = useState([]);
   // Use P2P Market hook to get actual marketplace listings
   const { marketData, getAllListings } = useP2PMarket();
   const { listings, loading, error } = marketData;
@@ -101,7 +100,7 @@ const BatchBuyDialog = ({ onBack, onClose, onPurchaseSuccess, item, excludeSelle
 
   // Filter and sort grouped items
   const filteredItems = useMemo(() => {
-    let filtered = groupedItems;
+    let filtered = groupedItems.filter((item) => checkedItemIds.includes(item.id));
 
     // Apply search filter
     if (searchTerm.trim()) {
@@ -112,7 +111,7 @@ const BatchBuyDialog = ({ onBack, onClose, onPurchaseSuccess, item, excludeSelle
     }
 
     return filtered;
-  }, [groupedItems, searchTerm]);
+  }, [groupedItems, checkedItemIds, searchTerm]);
 
   const handleBatchBuy = (item) => {
     setSelectedItem(item);
@@ -144,19 +143,16 @@ const BatchBuyDialog = ({ onBack, onClose, onPurchaseSuccess, item, excludeSelle
   return (
     <BaseDialog onClose={onClose} title="BATCH BUY">
       <div className="batch-buy-dialog-content">
-        <CardView className="left-panel">
-          <div className="marketplace-filter">
-            <div className="tree-header">
-              <BaseInput
-                className="h-2.5rem"
-                placeholder="Search items..."
-                value={searchTerm}
-                setValue={setSearchTerm}
-              />
-              <BaseButton label="Reset" onClick={() => setSearchTerm("")} />
-              <BaseButton label="Back" onClick={onBack} />
-            </div>
-          </div>
+        <CardView className="left-panel items-list">
+          <TreeInput
+            onBack={onBack}
+            onSelect={useCallback(
+              (checkedIds) => setCheckedItemIds(checkedIds),
+              []
+            )}
+            onSearch={setSearchTerm}
+            search={searchTerm}
+          ></TreeInput>
         </CardView>
         <CardView className="right-panel">
           <div className="items-list">

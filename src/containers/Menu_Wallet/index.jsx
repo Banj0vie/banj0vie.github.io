@@ -3,7 +3,7 @@ import "./style.css";
 import BaseDialog from "../_BaseDialog";
 import BaseButton from "../../components/buttons/BaseButton";
 import { formatAddress } from "../../utils/basic";
-import { useAgwEthersAndService } from "../../hooks/useAgwEthersAndService";
+import { useAgwEthersAndService } from "../../hooks/useContractBase";
 import { handleContractError } from "../../utils/errorHandler";
 
 const WalletDialog = ({onClose}) => {

@@ -6,14 +6,15 @@ import BuySeeds from "./BuySeeds";
 import RollChances from "./RollChances";
 import { ID_CROP_CATEGORIES, ID_SEED_SHOP_PAGES } from "../../constants/app_ids";
 import { SEED_PACK_STATUS } from "../../constants/item_seed";
-import { useVendor, useFarming } from "../../hooks/useContracts";
-import { useAgwEthersAndService } from "../../hooks/useAgwEthersAndService";
+import { useVendor, useFarming, useRngHub } from "../../hooks/useContracts";
+import { useAgwEthersAndService } from "../../hooks/useContractBase";
 import { useNotification } from "../../contexts/NotificationContext";
 import CustomSeedsDialog from "./CustomSeedsDialog";
 import SeedRollingDialog from "./SeedRollingDialog";
 const VendorDialog = ({ onClose, label = "VENDOR", header = "" }) => {
   const { isConnected, account, contractService } = useAgwEthersAndService();
-  const { buySeedPack, getPackPrice, checkPendingRequests, getAllPendingRequests, fulfillPendingRequest, listenForSeedsRevealed } = useVendor();
+  const { buySeedPack, checkPendingRequests, getAllPendingRequests, listenForSeedsRevealed } = useVendor();
+  const { fulfillRequest } = useRngHub();
   const { getMaxPlots } = useFarming();
   const { show } = useNotification();
   
@@ -30,7 +31,7 @@ const VendorDialog = ({ onClose, label = "VENDOR", header = "" }) => {
   const [revealCleanup, setRevealCleanup] = useState(null);
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [dataLoaded, setDataLoaded] = useState(false);
-  const [buyingSeedId, setBuyingSeedId] = useState(null); // Track which seed is being bought
+  const [buyingItem, setBuyingItem] = useState(null);
   
   // Memoized initial seed status to prevent unnecessary re-renders
   const initialSeedStatus = useMemo(() => ({
@@ -114,26 +115,6 @@ const VendorDialog = ({ onClose, label = "VENDOR", header = "" }) => {
     }
   }, [isConnected, account, loadAvailablePlots, loadPendingRequests]);
 
-  // Load pack prices - only when needed (lazy loading)
-  const loadPackPrices = useCallback(async () => {
-    if (!getPackPrice) return;
-    
-    try {
-      // Load prices in parallel instead of sequentially
-      const pricePromises = Array.from({ length: 4 }, (_, i) => 
-        getPackPrice(i + 1).catch(err => {
-          console.error(`Failed to load tier ${i + 1} price:`, err);
-          return null;
-        })
-      );
-      
-      const prices = await Promise.all(pricePromises);
-      console.log('Pack prices:', prices);
-    } catch (err) {
-      console.error('Failed to load pack prices:', err);
-    }
-  }, [getPackPrice]);
-
   // Main data loading effect - only runs when dialog opens or account changes
   useEffect(() => {
     if (!isConnected || !account || !contractService || dataLoaded) return;
@@ -164,13 +145,6 @@ const VendorDialog = ({ onClose, label = "VENDOR", header = "" }) => {
       refreshVendorData();
     }
   }, [dataLoaded, isConnected, account, refreshVendorData]);
-
-  // Load pack prices when user navigates to seed pack detail
-  useEffect(() => {
-    if (pageIndex === ID_SEED_SHOP_PAGES.SEED_PACK_DETAIL) {
-      loadPackPrices();
-    }
-  }, [pageIndex, loadPackPrices]);
 
   const onSeedsClicked = useCallback((id) => {
     setSelectedSeed(id);
@@ -209,9 +183,8 @@ const VendorDialog = ({ onClose, label = "VENDOR", header = "" }) => {
     setIsRevealing(true);
     try {
       // Event listener will be set up after fulfill call with the correct block number
-      
       // Fulfill the pending request via VRNG system
-      const result = await fulfillPendingRequest(requestId);
+      const result = await fulfillRequest(requestId);
       if (result) {
         // Get the block number from the fulfill transaction
         const fulfillBlockNumber = result.blockNumber;
@@ -290,7 +263,7 @@ const VendorDialog = ({ onClose, label = "VENDOR", header = "" }) => {
       setIsRevealing(false);
       setRevealCleanup(null);
     }
-  }, [listenForSeedsRevealed, fulfillPendingRequest, loadPendingRequests, revealCleanup]);
+  }, [listenForSeedsRevealed, fulfillRequest, loadPendingRequests, revealCleanup]);
 
   // Cancel reveal process
   const cancelReveal = useCallback(async () => {
@@ -335,8 +308,11 @@ const VendorDialog = ({ onClose, label = "VENDOR", header = "" }) => {
       return;
     }
 
-    // Set buying state for this specific seed
-    setBuyingSeedId(selectedSeed);
+    // Set buying state for this specific item
+    setBuyingItem({
+      ...item,
+      packId: selectedSeed
+    });
     setIsRollingDlg(false);
     setSeedStatus((prev) => ({
       ...prev,
@@ -366,7 +342,7 @@ const VendorDialog = ({ onClose, label = "VENDOR", header = "" }) => {
       } else {
         throw new Error('Purchase failed');
       }
-      } catch (err) {
+    } catch (err) {
       console.error('Failed to buy seed pack:', err);
       setSeedStatus((prev) => ({
         ...prev,
@@ -378,7 +354,7 @@ const VendorDialog = ({ onClose, label = "VENDOR", header = "" }) => {
       show(`Failed to buy seed pack: ${err.message}`, 'error');
     } finally {
       // Reset buying state
-      setBuyingSeedId(null);
+      setBuyingItem(null);
     }
 
     setPageIndex(ID_SEED_SHOP_PAGES.SEED_PACK_LIST);
@@ -387,6 +363,7 @@ const VendorDialog = ({ onClose, label = "VENDOR", header = "" }) => {
   const onBuy = useCallback((item) => {
     setSelectedSeedPack(item);
     if (item.count === 0) {
+      // Don't set buyingItem for custom - wait until confirmation
       setIsCustomDlg(true);
     } else {
       handleBuy(item);
@@ -394,10 +371,12 @@ const VendorDialog = ({ onClose, label = "VENDOR", header = "" }) => {
   }, [handleBuy]);
 
   const onConfirm = useCallback((count) => {
-    handleBuy({
+    const customItem = {
       ...selectedSeedPack,
       count,
-    });
+      isCustom: true, // Add unique identifier for custom items
+    };
+    handleBuy(customItem);
     setIsCustomDlg(false);
   }, [selectedSeedPack, handleBuy]);
 
@@ -415,7 +394,7 @@ const VendorDialog = ({ onClose, label = "VENDOR", header = "" }) => {
           onRevealClicked={handleReveal}
           isRevealing={isRevealing}
           isLoading={isLoadingData}
-          buyingSeedId={buyingSeedId}
+          buyingItem={buyingItem}
         ></VendorMenu>
       )}
       {pageIndex === ID_SEED_SHOP_PAGES.SEED_PACK_DETAIL && (
@@ -425,8 +404,8 @@ const VendorDialog = ({ onClose, label = "VENDOR", header = "" }) => {
             setPageIndex(ID_SEED_SHOP_PAGES.SEED_PACK_LIST);
           }}
           onBuy={onBuy}
-          buyingSeedId={buyingSeedId}
-          isAnyBuying={buyingSeedId !== null}
+          buyingItem={buyingItem}
+          isAnyBuying={buyingItem !== null}
         ></BuySeeds>
       )}
       {pageIndex === ID_SEED_SHOP_PAGES.ROLL_CHANCES && (
@@ -442,6 +421,8 @@ const VendorDialog = ({ onClose, label = "VENDOR", header = "" }) => {
           onConfirm={onConfirm}
           onClose={() => {
             setIsCustomDlg(false);
+            // Clear any buying state if dialog is closed without confirming
+            setBuyingItem(null);
           }}
         ></CustomSeedsDialog>
       )}

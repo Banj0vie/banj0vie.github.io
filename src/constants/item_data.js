@@ -685,6 +685,7 @@ export const ALL_ITEMS = {
     label: "Bait I",
     category: ID_ITEM_CATEGORIES.LOOT,
     subCategory: ID_LOOT_CATEGORIES.BAIT,
+    pos: -1,
     type: ID_RARE_TYPE.COMMON,
     image: baitImages.bait1,
     honey: 0,
@@ -694,6 +695,7 @@ export const ALL_ITEMS = {
     label: "Bait II",
     category: ID_ITEM_CATEGORIES.LOOT,
     subCategory: ID_LOOT_CATEGORIES.BAIT,
+    pos: -1,
     type: ID_RARE_TYPE.UNCOMMON,
     image: baitImages.bait2,
     honey: 0,
@@ -703,6 +705,7 @@ export const ALL_ITEMS = {
     label: "Bait_III",
     category: ID_ITEM_CATEGORIES.LOOT,
     subCategory: ID_LOOT_CATEGORIES.BAIT,
+    pos: -1,
     type: ID_RARE_TYPE.RARE,
     image: baitImages.bait3,
     honey: 0,
@@ -716,6 +719,7 @@ export const ALL_ITEMS = {
     subCategory: ID_LOOT_CATEGORIES.FISH,
     type: ID_RARE_TYPE.EPIC,
     image: fishImages.catfish,
+    pos: -1,
   },
   [ID_FISH_ITEMS.FISH_LARGE]: {
     label: "FISH_LARGE",
@@ -723,6 +727,7 @@ export const ALL_ITEMS = {
     subCategory: ID_LOOT_CATEGORIES.FISH,
     type: ID_RARE_TYPE.EPIC,
     image: fishImages.catfish,
+    pos: -1,
   },
   [ID_FISH_ITEMS.ANCHOVY]: {
     label: "Anchovy",
@@ -730,6 +735,7 @@ export const ALL_ITEMS = {
     subCategory: ID_LOOT_CATEGORIES.FISH,
     type: ID_RARE_TYPE.COMMON,
     image: fishImages.anchovy,
+    pos: -1,
   },
   [ID_FISH_ITEMS.SARDINE]: {
     label: "Sardin",
@@ -737,6 +743,7 @@ export const ALL_ITEMS = {
     subCategory: ID_LOOT_CATEGORIES.FISH,
     type: ID_RARE_TYPE.COMMON,
     image: fishImages.sardine,
+    pos: -1,
   },
   [ID_FISH_ITEMS.HERRING]: {
     label: "Herring",
@@ -744,6 +751,7 @@ export const ALL_ITEMS = {
     subCategory: ID_LOOT_CATEGORIES.FISH,
     type: ID_RARE_TYPE.UNCOMMON,
     image: fishImages.herring,
+    pos: -1,
   },
   [ID_FISH_ITEMS.SMALL_TROUT]: {
     label: "Small Trout",
@@ -751,6 +759,7 @@ export const ALL_ITEMS = {
     subCategory: ID_LOOT_CATEGORIES.FISH,
     type: ID_RARE_TYPE.UNCOMMON,
     image: fishImages.smallTrout,
+    pos: -1,
   },
   [ID_FISH_ITEMS.YELLOW_PERCH]: {
     label: "Yellow Perch",
@@ -758,6 +767,7 @@ export const ALL_ITEMS = {
     subCategory: ID_LOOT_CATEGORIES.FISH,
     type: ID_RARE_TYPE.RARE,
     image: fishImages.yellowPerch,
+    pos: -1,
   },
   [ID_FISH_ITEMS.SALMON]: {
     label: "Salmon",
@@ -765,6 +775,7 @@ export const ALL_ITEMS = {
     subCategory: ID_LOOT_CATEGORIES.FISH,
     type: ID_RARE_TYPE.RARE,
     image: fishImages.salmon,
+    pos: -1,
   },
   [ID_FISH_ITEMS.ORANGE_ROUGHY]: {
     label: "Orange Roughy",
@@ -772,6 +783,7 @@ export const ALL_ITEMS = {
     subCategory: ID_LOOT_CATEGORIES.FISH,
     type: ID_RARE_TYPE.EPIC,
     image: fishImages.orangeRoughy,
+    pos: -1,
   },
   [ID_FISH_ITEMS.CATFISH]: {
     label: "Catfish",
@@ -779,6 +791,7 @@ export const ALL_ITEMS = {
     subCategory: ID_LOOT_CATEGORIES.FISH,
     type: ID_RARE_TYPE.EPIC,
     image: fishImages.catfish,
+    pos: -1,
   },
   [ID_FISH_ITEMS.SMALL_SHARK]: {
     label: "Small Shark",
@@ -786,6 +799,7 @@ export const ALL_ITEMS = {
     subCategory: ID_LOOT_CATEGORIES.FISH,
     type: ID_RARE_TYPE.LEGENDARY,
     image: fishImages.smallShark,
+    pos: -1,
   },
 
   // Chest items
@@ -795,6 +809,7 @@ export const ALL_ITEMS = {
     subCategory: ID_LOOT_CATEGORIES.CHEST,
     type: ID_RARE_TYPE.COMMON,
     image: chestImages.wood,
+    pos: -1,
     honey: 0,
     lockedHoney: 0,
   },
@@ -804,6 +819,7 @@ export const ALL_ITEMS = {
     subCategory: ID_LOOT_CATEGORIES.CHEST,
     type: ID_RARE_TYPE.RARE,
     image: chestImages.bronze,
+    pos: -1,
     honey: 0,
     lockedHoney: 0,
   },
@@ -813,6 +829,7 @@ export const ALL_ITEMS = {
     subCategory: ID_LOOT_CATEGORIES.CHEST,
     type: ID_RARE_TYPE.EPIC,
     image: chestImages.silver,
+    pos: -1,
     honey: 0,
     lockedHoney: 0,
   },
@@ -822,6 +839,7 @@ export const ALL_ITEMS = {
     subCategory: ID_LOOT_CATEGORIES.CHEST,
     type: ID_RARE_TYPE.LEGENDARY,
     image: chestImages.gold,
+    pos: -1,
     honey: 0,
     lockedHoney: 0,
   },

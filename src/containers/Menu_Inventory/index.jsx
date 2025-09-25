@@ -8,7 +8,7 @@ import BaseButton from "../../components/buttons/BaseButton";
 import ItemSmallView from "../../components/boxes/ItemViewSmall";
 import ItemViewUsable from "../../components/boxes/ItemViewUsable";
 import { useItems } from "../../hooks/useItems";
-import { useChestOpener } from "../../hooks/useContracts";
+import { useChestOpener, useRngHub } from "../../hooks/useContracts";
 import { useNotification } from "../../contexts/NotificationContext";
 import { useGameState } from "../../contexts/GameStateContext";
 import { ID_CHEST_ITEMS, ID_POTION_ITEMS } from "../../constants/app_ids";
@@ -29,9 +29,11 @@ const InventoryDialog = ({ onClose }) => {
     openChest, 
     checkPendingRequests, 
     getAllPendingRequests, 
-    fulfillPendingRequest, 
     listenForChestResults 
   } = useChestOpener();
+
+  const { fulfillRequest } = useRngHub();
+
   // Potion usage is now handled via context - no need to destructure useFarming
   const { show } = useNotification();
   const { triggerPotionUsage } = useGameState();
@@ -84,7 +86,7 @@ const InventoryDialog = ({ onClose }) => {
     
     try {
       // Fulfill the pending request via VRNG system
-      const result = await fulfillPendingRequest(requestId);
+      const result = await fulfillRequest(requestId);
       
       if (result) {
         // Set up event listener for chest results
@@ -146,7 +148,7 @@ const InventoryDialog = ({ onClose }) => {
         setRevealCleanup(null);
       }
     }
-  }, [fulfillPendingRequest, listenForChestResults, loadPendingChestRequests, refetch, revealCleanup]);
+  }, [fulfillRequest, listenForChestResults, loadPendingChestRequests, refetch, revealCleanup]);
 
   // Cancel reveal process
   const cancelChestReveal = useCallback(async () => {

@@ -1,7 +1,7 @@
 import React from "react";
 import "./style.css";
 import BaseButton from "../../../components/buttons/BaseButton";
-import { useAgwEthersAndService } from "../../../hooks/useAgwEthersAndService";
+import { useAgwEthersAndService } from "../../../hooks/useContractBase";
 import { useLoginWithAbstract } from "@abstract-foundation/agw-react";
 
 const ConnectWalletAuthBox = () => {

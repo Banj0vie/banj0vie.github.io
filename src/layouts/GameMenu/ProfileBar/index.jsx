@@ -5,7 +5,7 @@ import ProfileButton from "../../../components/buttons/ProfileButton";
 import { profileAssets } from "../../../constants/_baseimages";
 import ProfileView from "./ProfileView";
 import { useGameState } from "../../../contexts/GameStateContext";
-import { useAgwEthersAndService } from "../../../hooks/useAgwEthersAndService";
+import { useAgwEthersAndService } from "../../../hooks/useContractBase";
 import { useProduceSeeder, useEquipmentRegistry } from "../../../hooks/useContracts";
 import { useNotification } from "../../../contexts/NotificationContext";
 import { formatNumber } from "../../../utils/basic";
@@ -140,10 +140,10 @@ const ProfileBar = () => {
         title="Inventory"
         onClick={() => setIsInventoryDialog(true)}
       />
-      <ProfileButton
+      {/* <ProfileButton
         icon={<img alt="Tutorial" src={profileAssets.btnTutorial} />}
         title="Tutorial"
-      />
+      /> */}
       {/* TEMPORARY: Dummy button for seeding all produce (REMOVE IN PRODUCTION) */}
       <ProfileButton
         style={{ display: 'none' }}

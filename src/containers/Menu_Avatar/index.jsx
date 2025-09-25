@@ -4,7 +4,7 @@ import "./style.css";
 import NFTBox from "./NFTBox";
 import BaseDivider from "../../components/dividers/BaseDivider";
 import { useEquipmentRegistry } from "../../hooks/useContracts";
-import { useAgwEthersAndService } from "../../hooks/useAgwEthersAndService";
+import { useAgwEthersAndService } from "../../hooks/useContractBase";
 
 const AvatarDialog = ({ onClose }) => {
   const { account } = useAgwEthersAndService();
