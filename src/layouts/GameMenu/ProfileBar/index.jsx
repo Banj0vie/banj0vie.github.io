@@ -13,7 +13,7 @@ import { handleContractError } from "../../../utils/errorHandler";
 import InventoryDialog from "../../../containers/Menu_Inventory";
 import SettingsDialog from "../../../containers/Menu_Settings";
 
-const ProfileBar = () => {
+const ProfileBar = ({ isFarmMenu }) => {
   const { balances, formatBalance } = useGameState();
   const { contractService, account } = useAgwEthersAndService();
   const { seedAllProduce, produceSeederData } = useProduceSeeder();
@@ -122,7 +122,7 @@ const ProfileBar = () => {
   }, [account, randomMint, show]);
 
   return (
-    <div className="profile-bar">
+    <div className="profile-bar" style={{ display: isFarmMenu ? 'none' : 'flex' }}>
       <img
         alt="Profile"
         src={profileAssets.profileBg}

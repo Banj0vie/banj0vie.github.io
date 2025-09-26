@@ -348,7 +348,7 @@ const InventoryDialog = ({ onClose }) => {
                         count={item.count}
                         onUse={() => handleChestReveal(item.requestId, item.id)}
                         usable={item.usable}
-                        buttonLabel={isRevealing ? "Revealing..." : "Reveal"}
+                        buttonLabel={isRevealing ? "Loading..." : "Reveal"}
                         disabled={isRevealing}
                       ></ItemViewUsable>
                     );

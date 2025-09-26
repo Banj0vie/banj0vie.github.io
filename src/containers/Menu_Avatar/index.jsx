@@ -4,11 +4,13 @@ import "./style.css";
 import NFTBox from "./NFTBox";
 import BaseDivider from "../../components/dividers/BaseDivider";
 import { useEquipmentRegistry } from "../../hooks/useContracts";
+import { useAppData } from "../../context/AppDataContext";
 import { useAgwEthersAndService } from "../../hooks/useContractBase";
 
 const AvatarDialog = ({ onClose }) => {
   const { account } = useAgwEthersAndService();
   const { getAvatars, getTokenBoostPpm } = useEquipmentRegistry();
+  const { getAvatarsCached, getBoostCached } = useAppData();
   const [avatars, setAvatars] = useState([]);
   const [totalBoost, setTotalBoost] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -24,7 +26,7 @@ const AvatarDialog = ({ onClose }) => {
         setLoading(true);
         
         // Get equipped avatars
-        const avatarResult = await getAvatars(account);
+        const avatarResult = await (getAvatarsCached ? getAvatarsCached() : getAvatars(account));
         console.log('Avatar result:', avatarResult);
         
         // Handle case where getAvatars returns null
@@ -41,7 +43,7 @@ const AvatarDialog = ({ onClose }) => {
         const [nfts, tokenIds] = avatarResult;
         
         // Get total boost
-        const boostPpm = await getTokenBoostPpm(account);
+        const boostPpm = await (getBoostCached ? getBoostCached() : getTokenBoostPpm(account));
         const boostPercentage = boostPpm ? boostPpm / 1000 : 0; // Convert from ppm to percentage, default to 0 if null
         
         // Create avatar data array

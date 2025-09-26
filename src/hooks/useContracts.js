@@ -405,6 +405,12 @@ export const useFarming = () => {
       });
 
       console.log('Plant successful!');
+      
+      // Trigger a custom event to notify components that crops need to be refreshed
+      window.dispatchEvent(new CustomEvent('cropsRefreshed', { 
+        detail: { action: 'plant', seedId, plotNumber } 
+      }));
+      
       return txHash;
     } catch (err) {
       console.error('Failed to plant seed:', err);
@@ -437,6 +443,12 @@ export const useFarming = () => {
       });
 
       console.log('Plant batch successful!');
+      
+      // Trigger a custom event to notify components that crops need to be refreshed
+      window.dispatchEvent(new CustomEvent('cropsRefreshed', { 
+        detail: { action: 'plantBatch', seedIds, plotNumbers } 
+      }));
+      
       return txHash;
     } catch (err) {
       console.error('Failed to plant seeds batch:', err);
@@ -579,7 +591,8 @@ export const useFarming = () => {
         const seedIdBig = BigInt(crop[0]);
         const endTimeNum = Number(crop[1]);
         const produceMultiplier = Number(crop[2]);
-        const tokenMultiplier = Number([3]);
+        const tokenMultiplier = Number(crop[3]);
+        const growthElixirApplied = Boolean(crop[4]);
         
         return ({
           plotNumber: index,
@@ -587,6 +600,7 @@ export const useFarming = () => {
           endTime: endTimeNum,
           produceMultiplierX1000: produceMultiplier,
           tokenMultiplierX1000: tokenMultiplier,
+          growthElixirApplied: growthElixirApplied,
           isReady: seedIdBig !== 0n && endTimeNum <= Math.floor(Date.now() / 1000)
         });
       });
@@ -694,23 +708,25 @@ export const useFarming = () => {
         };
       }
 
-      // Handle case where crop is an array (tuple format) - new struct with 4 fields
+      // Handle case where crop is an array (tuple format) - struct with 5 fields
       if (Array.isArray(crop)) {
         return {
           seedId: crop[0] ? crop[0].toString() : "0",
           endTime: crop[1] ? Number(crop[1]) : 0,
           produceMultiplierX1000: crop[2] ? Number(crop[2]) : 1000,
-          tokenMultiplierX1000: crop[3] ? Number(crop[3]) : 1000
+          tokenMultiplierX1000: crop[3] ? Number(crop[3]) : 1000,
+          growthElixirApplied: !!crop[4]
         };
       }
 
-      // Handle case where crop is an object with new struct fields
+      // Handle case where crop is an object with struct fields
       if (crop.seedId !== undefined && crop.endTime !== undefined) {
         return {
           seedId: crop.seedId.toString(),
           endTime: Number(crop.endTime),
           produceMultiplierX1000: crop.produceMultiplierX1000 ? Number(crop.produceMultiplierX1000) : 1000,
-          tokenMultiplierX1000: crop.tokenMultiplierX1000 ? Number(crop.tokenMultiplierX1000) : 1000
+          tokenMultiplierX1000: crop.tokenMultiplierX1000 ? Number(crop.tokenMultiplierX1000) : 1000,
+          growthElixirApplied: !!crop.growthElixirApplied
         };
       }
 
@@ -720,7 +736,8 @@ export const useFarming = () => {
         seedId: "0",
         endTime: 0,
         produceMultiplierX1000: 1000,
-        tokenMultiplierX1000: 1000
+        tokenMultiplierX1000: 1000,
+        growthElixirApplied: false
       };
     } catch (err) {
       console.error('Failed to get crop:', err);
@@ -3456,7 +3473,7 @@ export const useEquipmentRegistry = () => {
       throw new Error('Equipment Registry contract, AGW Client, or account not available');
     }
 
-    return await executeWrite({
+    await executeWrite({
       abi: equipmentRegistry.abi,
       address: equipmentRegistry.address,
       functionName: 'setAvatar',
@@ -3465,6 +3482,9 @@ export const useEquipmentRegistry = () => {
       timeout: 120000,
       pollingInterval: 1000
     });
+    
+
+    return true;
   }, [equipmentRegistry, agwClient, account, executeWrite]);
 
   // Clear avatar from slot
@@ -3552,8 +3572,8 @@ export const useEquipmentRegistry = () => {
 
   // Get owned BoostNFTs for a player
   const getOwnedBoostNFTs = useCallback(async (player) => {
-    if (!equipmentRegistry || !publicClient) {
-      console.log('Equipment registry or public client not available');
+    if (!equipmentRegistry || !publicClient || !player) {
+      console.log('Missing required parameters:', { equipmentRegistry: !!equipmentRegistry, publicClient: !!publicClient, player });
       return [];
     }
 
@@ -3571,38 +3591,63 @@ export const useEquipmentRegistry = () => {
         functionName: 'nextId'
       });
 
-      const totalSupply = Number(nextId) - 1;
+      const totalSupply = Number(nextId);
+      
+      // Validate total supply
+      if (totalSupply <= 0) {
+        console.log('No NFTs exist yet (totalSupply:', totalSupply, ')');
+        return [];
+      }
+
       console.log('Total supply from nextId:', totalSupply);
 
       const nfts = [];
+      const batchSize = 10; // Process in batches to avoid overwhelming the RPC
 
-      // Check each token ID to see if player owns it
-      for (let tokenId = 1; tokenId <= totalSupply; tokenId++) {
-        try {
-          const owner = await publicClient.readContract({
-            address: boostNFT.address,
-            abi: boostNFT.abi,
-            functionName: 'ownerOf',
-            args: [tokenId]
-          });
+      // Check each token ID to see if player owns it (in batches)
+      for (let startId = 1; startId <= totalSupply; startId += batchSize) {
+        const endId = Math.min(startId + batchSize - 1, totalSupply);
+        const batchPromises = [];
 
-          if (owner.toLowerCase() === player.toLowerCase()) {
-            const metadata = await getNFTMetadata(tokenId);
-            if (metadata) {
-              nfts.push(metadata);
+        for (let tokenId = startId; tokenId <= endId; tokenId++) {
+          batchPromises.push(
+            publicClient.readContract({
+              address: boostNFT.address,
+              abi: boostNFT.abi,
+              functionName: 'ownerOf',
+              args: [tokenId]
+            }).then(owner => ({ tokenId, owner }))
+            .catch(err => {
+              console.warn(`Failed to fetch owner for token ${tokenId}:`, err);
+              return { tokenId, owner: null };
+            })
+          );
+        }
+
+        // Wait for batch to complete
+        const batchResults = await Promise.all(batchPromises);
+        
+        // Process results and fetch metadata for owned tokens
+        for (const { tokenId, owner } of batchResults) {
+          if (owner && owner.toLowerCase() === player.toLowerCase()) {
+            try {
+              const metadata = await getNFTMetadata(tokenId);
+              if (metadata) {
+                nfts.push(metadata);
+              }
+            } catch (err) {
+              console.warn(`Failed to fetch metadata for token ${tokenId}:`, err);
             }
           }
-        } catch (err) {
-          // Token might not exist or player doesn't own it, skip
-          console.warn(`Failed to fetch token ${tokenId}:`, err);
         }
       }
+
+      console.log(`Found ${nfts.length} owned NFTs for player ${player}`);
       return nfts;
     } catch (err) {
       console.error('Failed to fetch owned BoostNFTs:', err);
       const { message } = handleContractError(err, 'fetching owned BoostNFTs');
       console.error('Owned BoostNFTs error:', message);
-      // Return empty array instead of null for better error handling
       return [];
     }
   }, [equipmentRegistry, publicClient, getContract, getNFTMetadata]);

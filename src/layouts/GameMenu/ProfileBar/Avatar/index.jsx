@@ -3,6 +3,7 @@ import "./style.css";
 import AvatarDialog from "../../../../containers/Menu_Avatar";
 import { useEquipmentRegistry } from "../../../../hooks/useContracts";
 import { useAgwEthersAndService } from "../../../../hooks/useContractBase";
+import { useAppData } from "../../../../context/AppDataContext";
 
 const Avatar = ({ src, alt = "avatar" }) => {
   const [isAvatarDialog, setIsAvatarDialog] = useState(false);
@@ -11,6 +12,7 @@ const Avatar = ({ src, alt = "avatar" }) => {
   
   const { account } = useAgwEthersAndService();
   const { getAvatars, getNFTMetadata } = useEquipmentRegistry();
+  const { getAvatarsCached } = useAppData();
   
   const fallbackSrc = "/images/avatars/avatar-left-placeholder.png";
 
@@ -24,8 +26,8 @@ const Avatar = ({ src, alt = "avatar" }) => {
       try {
         setLoading(true);
         
-        // Get equipped avatars
-        const avatarResult = await getAvatars(account);
+        // Get equipped avatars (cached via context when available)
+        const avatarResult = await (getAvatarsCached ? getAvatarsCached() : getAvatars(account));
         
         // Check if we have any equipped avatars
         if (avatarResult && Array.isArray(avatarResult) && avatarResult.length >= 2) {
@@ -76,6 +78,13 @@ const Avatar = ({ src, alt = "avatar" }) => {
     };
 
     fetchAvatarImage();
+
+    // Listen for avatar updates to refresh image immediately after equip
+    const handler = () => {
+      fetchAvatarImage();
+    };
+    window.addEventListener('avatarsUpdated', handler);
+    return () => window.removeEventListener('avatarsUpdated', handler);
   }, [account, getAvatars, getNFTMetadata]);
 
   const resolvedSrc = src || avatarImage || fallbackSrc;

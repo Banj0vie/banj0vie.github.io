@@ -4,12 +4,14 @@ import BaseDialog from '../../_BaseDialog';
 import './style.css';
 import { useAgwEthersAndService } from '../../../hooks/useContractBase';
 import { useEquipmentRegistry } from '../../../hooks/useContracts';
+import { useAppData } from '../../../context/AppDataContext';
 import CardView from '../../../components/boxes/CardView';
 import BaseButton from '../../../components/buttons/BaseButton';
 
 const BoostNFTSelector = ({ onClose, onSelect, slotIndex, equippedAvatars = [] }) => {
   const { account } = useAgwEthersAndService();
   const { setAvatar, getOwnedBoostNFTs, getContract } = useEquipmentRegistry();
+  const { invalidate } = useAppData();
   const [ownedNFTs, setOwnedNFTs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -57,6 +59,17 @@ const BoostNFTSelector = ({ onClose, onSelect, slotIndex, equippedAvatars = [] }
 
       // Equip the NFT to the selected slot
       await setAvatar(slotIndex, boostNFT.address, nft.tokenId);
+
+      // Invalidate cached avatars/boost and notify listeners to refresh UI
+      try {
+        if (invalidate) {
+          invalidate('avatars');
+          invalidate('boost');
+        }
+      } catch {}
+      try {
+        window.dispatchEvent(new CustomEvent('avatarsUpdated'));
+      } catch {}
       
       // Call the onSelect callback to update the parent
       onSelect(nft);

@@ -15,7 +15,7 @@ import { useGameState } from "../contexts/GameStateContext";
 import { CropItemArrayClass } from "../models/crop";
 import { handleContractError } from "../utils/errorHandler";
 import { ID_POTION_ITEMS } from "../constants/app_ids";
-const Farm = () => {
+const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
   const { width, height } = FARM_VIEWPORT;
   const hotspots = FARM_HOTSPOTS;
   const { seeds: currentSeeds, refetch: refetchSeeds } = useItems();
@@ -36,7 +36,6 @@ const Farm = () => {
   } = useFarming();
   const { show } = useNotification();
   const { potionUsageState, clearPotionUsage } = useGameState();
-  const [isFarmMenu, setIsFarmMenu] = useState(false);
   const [isPlanting, setIsPlanting] = useState(true);
   const [isSelectCropDialog, setIsSelectCropDialog] = useState(false);
   const [cropArray, setCropArray] = useState(() => new CropItemArrayClass(30));
@@ -149,22 +148,18 @@ const Farm = () => {
               const originalEndTime = Math.floor((item.plantedAt || 0) / 1000) + growthTime;
               const timeDifference = originalEndTime - endTime;
               
-              // If endTime is less than expected, it means Growth Elixir was applied
-              if (timeDifference > 0) {
-                // Growth Elixir was applied - adjust plantedAt to reflect the speed boost
-                item.plantedAt = (endTime - growthTime) * 1000;
-              } else {
-                // Normal growth - use standard calculation
-                item.plantedAt = (endTime - growthTime) * 1000;
-              }
+              // Adjust plantedAt and record Growth Elixir application if any
+              item.plantedAt = (endTime - growthTime) * 1000;
+              item.growthElixirApplied = timeDifference > 0;
               
               item.growthTime = growthTime;
               const isReady = endTime <= nowSec;
               item.growStatus = isReady ? 2 : 1;
               
-              // Store potion effect multipliers for display
+              // Store potion effect multipliers and growth elixir status for display
               item.produceMultiplierX1000 = crop.produceMultiplierX1000 || 1000;
               item.tokenMultiplierX1000 = crop.tokenMultiplierX1000 || 1000;
+              item.growthElixirApplied = !!crop.growthElixirApplied;
             }
           } else {
             newCropArray.removeCropAt(crop.plotNumber);
@@ -243,6 +238,22 @@ const Farm = () => {
 
     loadUserData();
   }, [account, contractService, loadCropsFromContract, getMaxPlots]);
+
+  // Listen for crop refresh events (after planting)
+  useEffect(() => {
+    const handleCropsRefresh = async (event) => {
+      console.log('Crops refresh event received:', event.detail);
+      if (userAddress) {
+        await loadCropsFromContract(userAddress);
+      }
+    };
+
+    window.addEventListener('cropsRefreshed', handleCropsRefresh);
+    
+    return () => {
+      window.removeEventListener('cropsRefreshed', handleCropsRefresh);
+    };
+  }, [userAddress, loadCropsFromContract]);
 
   // Growth timer effect
   useEffect(() => {
@@ -910,11 +921,12 @@ const Farm = () => {
         return;
       }
 
-      // Toggle selection for potion usage
+      // Toggle selection for potion usage (single-select mode)
       setSelectedIndexes((prev) => {
         const exists = prev.includes(index);
-        if (exists) return prev.filter((i) => i !== index);
-        return [...prev, index];
+        // If already selected, deselect; otherwise, replace with only this index
+        if (exists) return [];
+        return [index];
       });
       return;
     }
@@ -956,7 +968,18 @@ const Farm = () => {
         setIsFarmMenu(true);
       }
     } else {
-      // Harvesting mode - toggle selection
+      // Harvesting mode - only allow selecting ready crops
+      const item = cropArray.getItem(index);
+      if (!item || !item.seedId) {
+        return;
+      }
+      const nowSec = Math.floor(Date.now() / 1000);
+      const endTime = Math.floor((item.plantedAt || 0) / 1000) + (item.growthTime || 0);
+      const isReady = (item.growStatus === 2) || (nowSec >= endTime);
+      if (!isReady) {
+        return;
+      }
+
       setSelectedIndexes((prev) => {
         const exists = prev.includes(index);
         if (exists) return prev.filter((i) => i !== index);

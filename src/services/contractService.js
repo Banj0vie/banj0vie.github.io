@@ -333,36 +333,38 @@ class ContractService {
 
   // Helper method to get multiplier (matching contract logic)
   getMultiplier(seedId, level) {
-    const id = BigInt(seedId) & 0xFFn;
-    
-    if (id === 1n) return this.getCommonMultiplier(level);
-    if (id === 2n) return this.getUncommonMultiplier(level);
-    if (id === 3n) return this.getRareMultiplier(level);
-    if (id === 4n) return this.getEpicMultiplier(level);
-    if (id === 5n) return this.getLegendaryMultiplier(level);
-    return 1000n; // 1x default
+    // New ID scheme: low bits encode 3-digit rarity code (e.g., 101, 205)
+    const idCode = BigInt(seedId) & 0xFFFFn;
+    const rarityCode = idCode / 100n; // 1..5
+
+    if (rarityCode === 1n) return this.getCommonMultiplier(level);
+    if (rarityCode === 2n) return this.getUncommonMultiplier(level);
+    if (rarityCode === 3n) return this.getRareMultiplier(level);
+    if (rarityCode === 4n) return this.getEpicMultiplier(level);
+    if (rarityCode === 5n) return this.getLegendaryMultiplier(level);
+    return 1000n; // default 1x
   }
 
   getCommonMultiplier(level) {
-    if (level <= 3) return 500n;
-    if (level <= 11) return 510n;
-    return 520n;
+    if (level <= 3) return 900n;
+    if (level <= 11) return 910n;
+    return 920n;
   }
 
   getUncommonMultiplier(level) {
-    if (level <= 2) return 900n;
-    if (level <= 6) return 910n;
-    if (level <= 11) return 920n;
-    return 930n;
+    if (level <= 2) return 1200n;
+    if (level <= 6) return 1210n;
+    if (level <= 11) return 1220n;
+    return 1230n;
   }
 
   getRareMultiplier(level) {
-    if (level <= 1) return 1200n;
-    if (level <= 5) return 1210n;
-    if (level <= 8) return 1220n;
-    if (level <= 11) return 1230n;
-    if (level <= 14) return 1240n;
-    return 1250n;
+    if (level <= 1) return 1300n;
+    if (level <= 5) return 1310n;
+    if (level <= 8) return 1320n;
+    if (level <= 11) return 1330n;
+    if (level <= 14) return 1340n;
+    return 1350n;
   }
 
   getEpicMultiplier(level) {

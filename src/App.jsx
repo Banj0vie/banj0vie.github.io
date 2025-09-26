@@ -18,11 +18,14 @@ import {
 import Farm from "./router/farm.jsx";
 import House from "./router/house.jsx";
 import { AbstractWalletProvider } from "@abstract-foundation/agw-react";
+import { AppDataProvider } from "./context/AppDataContext";
 import { abstractTestnet } from "viem/chains";
 import Tavern from "./router/tavern.jsx";
 import Valley from "./router/valley.jsx";
+import ProfileBar from "./layouts/GameMenu/ProfileBar";
 
 const AppContent = () => {
+  const [isFarmMenu, setIsFarmMenu] = useState(false);
   const { isConnected, account, hasProfile } = useAgwEthersAndService();
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [, setHasCheckedInitialState] = useState(false);
@@ -71,9 +74,14 @@ const AppContent = () => {
           position: "relative",
         }}
       >
+        
+          {/* Header */}
+          <div className="game-menu">
+            <ProfileBar isFarmMenu={isFarmMenu} />
+          </div>
         <div
           style={{
-            padding: "80px 20px 20px 20px",
+          padding: "80px 20px 20px 20px",
             marginLeft: "100px", // Space for the fixed menu
           }}
         >
@@ -81,7 +89,7 @@ const AppContent = () => {
             <Route path="/" element={<Market />} />
             <Route path="/house" element={<House />} />
             <Route path="/market" element={<Market />} />
-            <Route path="/farm" element={<Farm />} />
+            <Route path="/farm" element={<Farm isFarmMenu={isFarmMenu} setIsFarmMenu={setIsFarmMenu} />} />
             <Route path="/tavern" element={<Tavern />} />
             <Route path="/valley" element={<Valley />} />
             {/* <Route
@@ -177,9 +185,11 @@ const App = () => {
         <GameStateProvider>
           <NotificationProvider>
             <ProfileProvider>
-              <Router>
-                <AppContent />
-              </Router>
+              <AppDataProvider>
+                <Router>
+                  <AppContent />
+                </Router>
+              </AppDataProvider>
             </ProfileProvider>
           </NotificationProvider>
         </GameStateProvider>

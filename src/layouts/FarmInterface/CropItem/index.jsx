@@ -197,7 +197,7 @@ const CropItem = ({
       )}
 
       {/* Potion effect indicators */}
-      {data.seedId && (data.produceMultiplierX1000 > 1000 || data.tokenMultiplierX1000 > 1000) && (
+      {data.seedId && (data.produceMultiplierX1000 > 1000 || data.tokenMultiplierX1000 > 1000 || data.growthElixirApplied) && (
         <div className="potion-effects">
           {data.produceMultiplierX1000 > 1000 && (
             <div className="potion-indicator pesticide-indicator" title="Pesticide Active">
@@ -207,6 +207,11 @@ const CropItem = ({
           {data.tokenMultiplierX1000 > 1000 && (
             <div className="potion-indicator fertilizer-indicator" title="Fertilizer Active">
               💰
+            </div>
+          )}
+          {data.growthElixirApplied && (
+            <div className="potion-indicator growth-indicator" title="Growth Elixir Active">
+              ⏱️
             </div>
           )}
         </div>

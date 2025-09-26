@@ -6,6 +6,7 @@ export class CropItemClass {
         this.growthTime = 0; // time in seconds to grow
         this.produceMultiplierX1000 = 1000; // produce multiplier (1000 = 1x, 2000 = 2x)
         this.tokenMultiplierX1000 = 1000; // token multiplier (1000 = 1x, 1040 = 1.04x)
+        this.growthElixirApplied = false;
     }
 }
 
@@ -49,6 +50,7 @@ export class CropItemArrayClass {
             c.growthTime = it.growthTime;
             c.produceMultiplierX1000 = it.produceMultiplierX1000 || 1000;
             c.tokenMultiplierX1000 = it.tokenMultiplierX1000 || 1000;
+            c.growthElixirApplied = it.growthElixirApplied || false;
             return c;
         });
     }
@@ -66,6 +68,7 @@ export class CropItemArrayClass {
         item.growthTime = growthTime; // default 60 seconds
         item.produceMultiplierX1000 = 1000; // default 1x multiplier
         item.tokenMultiplierX1000 = 1000; // default 1x multiplier
+        item.growthElixirApplied = false;
         return true;
     }
 
@@ -80,6 +83,7 @@ export class CropItemArrayClass {
         item.growthTime = 0;
         item.produceMultiplierX1000 = 1000;
         item.tokenMultiplierX1000 = 1000;
+        item.growthElixirApplied = false;
         return true;
     }
 
