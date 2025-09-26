@@ -212,3 +212,15 @@ a {
   background: #e69c69;
   border: 2px solid #302b28;
 }
+
+/* profile bar container */
+.profile-bar {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  margin-bottom: 8px;
+}
+
+.game-menu > * {
+  pointer-events: auto;
+}

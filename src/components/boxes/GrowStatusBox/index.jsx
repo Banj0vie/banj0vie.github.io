@@ -78,7 +78,7 @@ const GrowStatusBox = ({
       )}
       
       {/* Token amounts display */}
-      {isReady && (lockedAmount > 0 || unlockedAmount > 0) && (
+      {/* {isReady && (lockedAmount > 0 || unlockedAmount > 0) && (
         <div className="reward-display">
           <div className="reward-item">
             <span className="reward-label">Unlocked:</span>
@@ -89,7 +89,7 @@ const GrowStatusBox = ({
             <span className="reward-amount">{formatAmount(lockedAmount)} $HNY</span>
           </div>
         </div>
-      )}
+      )} */}
     </div>
   );
 };

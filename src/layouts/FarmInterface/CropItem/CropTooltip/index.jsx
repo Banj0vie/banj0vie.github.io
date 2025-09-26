@@ -201,17 +201,17 @@ const CropTooltip = ({ container, pos = { x: 0, y: 0 }, data = {}, growthProgres
         <div>{((Number(locked) + Number(unlocked)) / 1e18).toFixed(2)} $HNY</div>
       </div>
       <div className="flex-text">
-        <div className="error text-1.25">locked</div>
-        <div className="error text-1.25">{(Number(locked) / 1e18).toFixed(2)} $HNY</div>
+        <div className="locked">locked</div>
+        <div className="locked">{(Number(locked) / 1e18).toFixed(2)} $HNY</div>
       </div>
       <div className="flex-text">
-        <div className="highlight text-1.25">unlocked</div>
-        <div className="highlight text-1.25">{(Number(unlocked) / 1e18).toFixed(2)} $HNY</div>
+        <div className="highlight">unlocked</div>
+        <div className="highlight">{(Number(unlocked) / 1e18).toFixed(2)} $HNY</div>
       </div>
       <BaseDivider/>
       <div className="active-effect">
         <div className="effect-header">Active Potion Effects:</div>
-        {data?.produceMultiplierX1000 > 1000 || data?.tokenMultiplierX1000 > 1000 ? (
+        {data?.produceMultiplierX1000 > 1000 || data?.tokenMultiplierX1000 > 1000 || data?.growthElixirApplied ? (
           <div className="effect-list">
             {data?.produceMultiplierX1000 > 1000 && (
               <div className="effect-item pesticide-effect">
@@ -221,6 +221,11 @@ const CropTooltip = ({ container, pos = { x: 0, y: 0 }, data = {}, growthProgres
             {data?.tokenMultiplierX1000 > 1000 && (
               <div className="effect-item fertilizer-effect">
                 💰 <strong>Fertilizer:</strong> +{(((data.tokenMultiplierX1000 - 1000) / 1000) * 100).toFixed(0)}% Token Rewards
+              </div>
+            )}
+            {data?.growthElixirApplied && (
+              <div className="effect-item growth-elixir-effect">
+                ⏱️ <strong>Growth Elixir:</strong> Growth Time Reduced
               </div>
             )}
           </div>

@@ -12,7 +12,7 @@ const GameMenu = () => {
 
   return (
     <nav className="game-menu">
-      <ProfileBar />
+      <div style={{marginBottom: 100}}></div>
       {menuItems.map((item) => {
         const isActive = location.pathname === item.path;
         return (
