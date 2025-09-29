@@ -3180,14 +3180,12 @@ export const useRngHub = () => {
   const fulfillRequest = useCallback(async (requestId) => {
     if (!rngHub || !agwClient) return;
 
-    const randomNumber = Math.floor(Math.random() * 100000);
-
     return handleContractCall(async () => {
       const txHash = await agwClient.writeContract({
         abi: rngHub.abi,
         address: rngHub.address,
         functionName: 'fulfillRequest',
-        args: [requestId, randomNumber],
+        args: [requestId],
       });
 
       return txHash;
