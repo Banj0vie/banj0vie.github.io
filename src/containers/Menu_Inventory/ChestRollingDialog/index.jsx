@@ -22,13 +22,13 @@ const ChestRollingDialog = ({ rollingInfo, onClose, onBack, onOpenAgain }) => {
             label="Back"
             onClick={onBack}
           ></BaseButton>
-          {onOpenAgain && (
+          {/* {onOpenAgain && (
             <BaseButton
               className="h-4rem"
               label="Open Again"
               onClick={onOpenAgain}
             ></BaseButton>
-          )}
+          )} */}
         </div>
       </div>
     </BaseDialog>

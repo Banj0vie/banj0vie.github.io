@@ -50,6 +50,7 @@ const InventoryDialog = ({ onClose }) => {
   const [isRollingDlg, setIsRollingDlg] = useState(false);
   const [rollingInfo, setRollingInfo] = useState({});
   const [revealCleanup, setRevealCleanup] = useState(null);
+  const [usingItemId, setUsingItemId] = useState(null);
   
   // Load pending chest requests
   const loadPendingChestRequests = useCallback(async () => {
@@ -163,6 +164,27 @@ const InventoryDialog = ({ onClose }) => {
     await loadPendingChestRequests();
   }, [revealCleanup, loadPendingChestRequests]);
 
+  // Open the same chest type again from the results dialog
+  const openAgainFromDialog = useCallback(async () => {
+    try {
+      if (!rollingInfo || !rollingInfo.chestId) return;
+      show("Opening chest...", "info");
+      const result = await openChest(rollingInfo.chestId);
+      if (result && result.success) {
+        // Return to inventory list and refresh pending requests
+        setIsRollingDlg(false);
+        setIsRevealing(false);
+        setTimeout(async () => {
+          await loadPendingChestRequests();
+          await refetch();
+        }, 500);
+      }
+    } catch (err) {
+      console.error("Failed to open chest again:", err);
+      show("Failed to open chest again", "error");
+    }
+  }, [rollingInfo, openChest, loadPendingChestRequests, refetch, show]);
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -185,6 +207,7 @@ const InventoryDialog = ({ onClose }) => {
   }, [selectedMenu, loadPendingChestRequests]);
 
   const onUseItem = async (itemId) => {
+    setUsingItemId(itemId);
     try {
       console.log("Using item:", itemId);
       
@@ -262,6 +285,8 @@ const InventoryDialog = ({ onClose }) => {
     } catch (error) {
       console.error("Error using item:", error);
       show(`Error: ${error.message}`, "error");
+    } finally {
+      setUsingItemId(null);
     }
   };
 
@@ -362,8 +387,8 @@ const InventoryDialog = ({ onClose }) => {
                       count={item.count}
                       onUse={onUseItem}
                       usable={item.usable}
-                      buttonLabel="Use"
-                      disabled={isRevealing}
+                      buttonLabel={Number(usingItemId) === Number(item.id) ? "Using..." : "Use"}
+                      disabled={isRevealing || Number(usingItemId) === Number(item.id)}
                     ></ItemViewUsable>
                   );
                 })}
@@ -378,6 +403,7 @@ const InventoryDialog = ({ onClose }) => {
         rollingInfo={rollingInfo}
         onClose={cancelChestReveal}
         onBack={cancelChestReveal}
+        onOpenAgain={openAgainFromDialog}
       />
     );
 };
