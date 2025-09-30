@@ -3198,36 +3198,6 @@ export const useRngHub = () => {
   };
 };
 
-// Hook for ProduceSeeder contract interactions (TEMPORARY - REMOVE IN PRODUCTION)
-export const useProduceSeeder = () => {
-  const { loading, error, agwClient, getContract, handleContractCall } = useContractBase(['PRODUCE_SEEDER']);
-  const produceSeeder = getContract('PRODUCE_SEEDER');
-
-  const produceSeederData = {
-    loading,
-    error
-  };
-
-  const seedAllProduce = useCallback(async (amountEach = 10) => {
-    if (!produceSeeder || !agwClient) return;
-
-    return handleContractCall(async () => {
-      const txHash = await agwClient.writeContract({
-        abi: produceSeeder.abi,
-        address: produceSeeder.address,
-        functionName: 'seedAllProduce',
-        args: [amountEach],
-      });
-
-      return { txHash, isPending: true };
-    }, 'seeding all produce');
-  }, [produceSeeder, agwClient, handleContractCall]);
-
-  return {
-    produceSeederData,
-    seedAllProduce
-  };
-};
 
 // Hook for P2PMarket contract interactions
 export const useP2PMarket = () => {

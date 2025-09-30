@@ -22,7 +22,6 @@ export const CONTRACT_ADDRESSES = {
     P2P_MARKET: "0x08eC3F93608B7445382119545CD93f09b542258F",
     BOOST_NFT: "0x9C3faeD638F1346512f741Ce5ec7D6B622fBa7dE",
     EQUIPMENT_REGISTRY: "0x14Ca3F9fcBb12cA178A4f55fBf6272737b0Bd660",
-    PRODUCE_SEEDER: "0x07cA08a7c71A5A687caA8f4688B1A475276Dfb6B",
   }
 };
 
@@ -348,16 +347,6 @@ export const CONTRACT_ABIS = {
     "function maybeReward()",
     "function lastRewardTs() view returns (uint64)",
     "function R() view returns (address)",
-    "function ITEMS() view returns (address)",
-    "function MODULE_ROLE() view returns (bytes32)",
-    "function hasRole(bytes32 role, address account) view returns (bool)",
-    "function grantRole(bytes32 role, address account)",
-    "function revokeRole(bytes32 role, address account)",
-    "function DEFAULT_ADMIN_ROLE() view returns (bytes32)"
-  ],
-
-  PRODUCE_SEEDER: [
-    "function seedAllProduce(uint256 amountEach)",
     "function ITEMS() view returns (address)",
     "function MODULE_ROLE() view returns (bytes32)",
     "function hasRole(bytes32 role, address account) view returns (bool)",
