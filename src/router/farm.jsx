@@ -470,6 +470,11 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
         return;
       }
 
+      if (readySlots.length > 5) {
+        show("You can only harvest up to 5 crops at a time!", "info");
+        return;
+      }
+
       show(`Harvesting ${readySlots.length} ready crops...`, "info");
 
       let ok = false;
@@ -740,6 +745,12 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
         );
         return;
       }
+
+      if (readyCrops.length > 5) {
+        show("You can only harvest up to 5 crops at a time!", "info");
+        return;
+      }
+
       show(`Harvesting ${readyCrops.length} ready crops...`, "info");
 
       let successCount = 0;
