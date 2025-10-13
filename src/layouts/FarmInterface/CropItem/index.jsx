@@ -197,7 +197,7 @@ const CropItem = ({
       )}
 
       {/* Potion effect indicators */}
-      {data.seedId && (data.produceMultiplierX1000 > 1000 || data.tokenMultiplierX1000 > 1000 || data.growthElixirApplied) && (
+      {/* {data.seedId && (data.produceMultiplierX1000 > 1000 || data.tokenMultiplierX1000 > 1000 || data.growthElixirApplied) && (
         <div className="potion-effects">
           {data.produceMultiplierX1000 > 1000 && (
             <div className="potion-indicator pesticide-indicator" title="Pesticide Active">
@@ -215,7 +215,7 @@ const CropItem = ({
             </div>
           )}
         </div>
-      )}
+      )} */}
 
       <div
         data-hotspots="true"
