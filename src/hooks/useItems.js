@@ -1,22 +1,14 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useAgwEthersAndService } from '../hooks/useContractBase';
 import { ID_SEEDS, ID_PRODUCE_ITEMS, ID_BAIT_ITEMS, ID_FISH_ITEMS, ID_CHEST_ITEMS, ID_POTION_ITEMS, ID_CROP_CATEGORIES, ID_ITEM_CATEGORIES, ID_POTION_CATEGORIES, ID_LOOT_CATEGORIES, ID_RARE_TYPE } from '../constants/app_ids';
 import { ALL_ITEMS, IMAGE_URL_CROP } from '../constants/item_data';
-import { useContractBase } from './useContractBase';
+import { useSolanaWallet } from './useSolanaWallet';
+import { fetchAllItemBalances } from '../solana/utils/inventoryUtils';
 
 export const useItems = () => {
-  const { account } = useAgwEthersAndService();
-  const [isReady, setIsReady] = useState(false);
-  const { getContract, publicClient } = useContractBase(['ITEMS_1155']);
-  const items1155 = getContract('ITEMS_1155');
-
-  useEffect(() => {
-    if (!items1155) return;
-    setIsReady(true);
-  }, [items1155]);
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const { connection, publicKey } = useSolanaWallet();
 
   // Get all item IDs from constants - memoize to prevent infinite loops
   const allItemIds = useMemo(() => [
@@ -27,113 +19,97 @@ export const useItems = () => {
     ...Object.values(ID_CHEST_ITEMS),
     ...Object.values(ID_POTION_ITEMS),
   ], []);
-  useEffect(() => {
-    const fetchItems = async () => {
-      if (!items1155 || !account || !isReady || !publicClient) {
-        setItems([]);
-        return;
-      }
+  
+  const fetchItems = async () => {
 
-      setLoading(true);
-      setError(null);
+    setLoading(true);
+    setError(null);
 
-      try {
-        // Create array of user addresses (same address for all items)
-        const addresses = new Array(allItemIds.length).fill(account);
-        
-        // Convert item IDs to strings for the contract call
-        const itemIdStrings = allItemIds.map(id => id.toString());
-        // Fetch balances for all items at once
-        const balances = await publicClient.readContract({
-          address: items1155.address,
-          abi: items1155.abi,
-          functionName: 'balanceOfBatch',
-          args: [addresses, itemIdStrings],
-        });
-        // Include ALL items (even with 0 balance) for crafting interface
-        const userItems = [];
-        balances.forEach((balance, index) => {
-          // Convert balance to number for comparison
-          const balanceNum = typeof balance === 'object' && balance.toNumber ? balance.toNumber() : Number(balance);
-          const itemId = allItemIds[index];
-          const itemData = ALL_ITEMS[itemId];
-          if (itemData) {
-          // Item exists in ALL_ITEMS, use its data
-            userItems.push({
-              id: itemId,
-              count: balanceNum,
-              ...itemData
-            });
-          } else {
-            // Item doesn't exist in ALL_ITEMS, create proper category structure
-            let category, subCategory;
+    try {
+      const balances = await fetchAllItemBalances(connection, publicKey);
+      // Include ALL items (even with 0 balance) for crafting interface
+      const userItems = [];
+      Object.entries(balances).forEach(([itemId, balance]) => {
+        // Convert balance to number for comparison
+        const balanceNum = typeof balance === 'object' && balance.toNumber ? balance.toNumber() : Number(balance);
+        const itemData = ALL_ITEMS[itemId];
+        if (itemData) {
+        // Item exists in ALL_ITEMS, use its data
+          userItems.push({
+            id: itemId,
+            count: balanceNum,
+            ...itemData
+          });
+        } else {
+          // Item doesn't exist in ALL_ITEMS, create proper category structure
+          let category, subCategory;
 
-            // Determine category and subcategory based on item ID or label
-            if (Object.values(ID_CHEST_ITEMS).includes(itemId)) {
-              category = ID_ITEM_CATEGORIES.LOOT;
-              subCategory = ID_LOOT_CATEGORIES.CHEST;
-            } else if (Object.values(ID_BAIT_ITEMS).includes(itemId)) {
-              category = ID_ITEM_CATEGORIES.LOOT;
-              subCategory = ID_LOOT_CATEGORIES.BAIT;
-            } else if (Object.values(ID_POTION_ITEMS).includes(itemId)) {
-              category = ID_ITEM_CATEGORIES.POTION;
-              // Determine potion subcategory based on the specific potion
-              if (itemId === ID_POTION_ITEMS.POTION_FERTILIZER) {
-                subCategory = ID_POTION_CATEGORIES.FERTILIZER;
-              } else if (itemId === ID_POTION_ITEMS.POTION_GROWTH_ELIXIR) {
-                subCategory = ID_POTION_CATEGORIES.GROWTH_ELIXIR;
-              } else if (itemId === ID_POTION_ITEMS.POTION_PESTICIDE) {
-                subCategory = ID_POTION_CATEGORIES.PESTICIDE;
-              }
+          // Determine category and subcategory based on item ID or label
+          if (Object.values(ID_CHEST_ITEMS).includes(itemId)) {
+            category = ID_ITEM_CATEGORIES.LOOT;
+            subCategory = ID_LOOT_CATEGORIES.CHEST;
+          } else if (Object.values(ID_BAIT_ITEMS).includes(itemId)) {
+            category = ID_ITEM_CATEGORIES.LOOT;
+            subCategory = ID_LOOT_CATEGORIES.BAIT;
+          } else if (Object.values(ID_POTION_ITEMS).includes(itemId)) {
+            category = ID_ITEM_CATEGORIES.POTION;
+            // Determine potion subcategory based on the specific potion
+            if (itemId === ID_POTION_ITEMS.POTION_FERTILIZER) {
+              subCategory = ID_POTION_CATEGORIES.FERTILIZER;
+            } else if (itemId === ID_POTION_ITEMS.POTION_GROWTH_ELIXIR) {
+              subCategory = ID_POTION_CATEGORIES.GROWTH_ELIXIR;
+            } else if (itemId === ID_POTION_ITEMS.POTION_PESTICIDE) {
+              subCategory = ID_POTION_CATEGORIES.PESTICIDE;
             }
-
-            // Get proper label from constants
-            let label = itemId.toString();
-            if (Object.values(ID_CHEST_ITEMS).includes(itemId)) {
-              // Find the chest label from ID_CHEST_ITEMS
-              const chestEntry = Object.entries(ID_CHEST_ITEMS).find(([key, value]) => value === itemId);
-              if (chestEntry) {
-                label = chestEntry[0]; // Use the key as label (e.g., "CHEST_WOOD")
-              }
-            } else if (Object.values(ID_BAIT_ITEMS).includes(itemId)) {
-              // Find the bait label from ID_BAIT_ITEMS
-              const baitEntry = Object.entries(ID_BAIT_ITEMS).find(([key, value]) => value === itemId);
-              if (baitEntry) {
-                label = baitEntry[0]; // Use the key as label (e.g., "BAIT_I")
-              }
-            } else if (Object.values(ID_POTION_ITEMS).includes(itemId)) {
-              // Find the potion label from ID_POTION_ITEMS
-              const potionEntry = Object.entries(ID_POTION_ITEMS).find(([key, value]) => value === itemId);
-              if (potionEntry) {
-                label = potionEntry[0]; // Use the key as label (e.g., "POTION_FERTILIZER")
-              }
-            }
-
-            // Create item data with proper categories
-            userItems.push({
-              id: itemId,
-              count: balanceNum,
-              category,
-              subCategory,
-              label,
-              type: ID_RARE_TYPE.COMMON,
-              image: IMAGE_URL_CROP,
-              pos: 0
-            });
           }
-        });
-        setItems(userItems);
-      } catch (err) {
-        console.error('Failed to fetch items:', err);
-        setError(err.message);
-        setItems([]);
-      } finally {
-        setLoading(false);
-      }
-    };
 
+          // Get proper label from constants
+          let label = itemId.toString();
+          if (Object.values(ID_CHEST_ITEMS).includes(itemId)) {
+            // Find the chest label from ID_CHEST_ITEMS
+            const chestEntry = Object.entries(ID_CHEST_ITEMS).find(([key, value]) => value === itemId);
+            if (chestEntry) {
+              label = chestEntry[0]; // Use the key as label (e.g., "CHEST_WOOD")
+            }
+          } else if (Object.values(ID_BAIT_ITEMS).includes(itemId)) {
+            // Find the bait label from ID_BAIT_ITEMS
+            const baitEntry = Object.entries(ID_BAIT_ITEMS).find(([key, value]) => value === itemId);
+            if (baitEntry) {
+              label = baitEntry[0]; // Use the key as label (e.g., "BAIT_I")
+            }
+          } else if (Object.values(ID_POTION_ITEMS).includes(itemId)) {
+            // Find the potion label from ID_POTION_ITEMS
+            const potionEntry = Object.entries(ID_POTION_ITEMS).find(([key, value]) => value === itemId);
+            if (potionEntry) {
+              label = potionEntry[0]; // Use the key as label (e.g., "POTION_FERTILIZER")
+            }
+          }
+
+          // Create item data with proper categories
+          userItems.push({
+            id: itemId,
+            count: balanceNum,
+            category,
+            subCategory,
+            label,
+            type: ID_RARE_TYPE.COMMON,
+            image: IMAGE_URL_CROP,
+            pos: 0
+          });
+        }
+      });
+      setItems(userItems);
+    } catch (err) {
+      console.error('Failed to fetch items:', err);
+      setError(err.message);
+      setItems([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+  useEffect(() => {
     fetchItems();
-  }, [items1155, account, isReady, publicClient, allItemIds]);
+  }, [connection, publicKey, allItemIds]);
 
   // Organize items into tree structure like ALL_ITEM_TREE but exclude seeds
   const itemsTree = useMemo(() => {
@@ -358,102 +334,6 @@ export const useItems = () => {
     all: items,
     loading,
     error,
-    refetch: async () => {
-      if (items1155 && account && isReady && publicClient) {
-          setLoading(true);
-          setError(null);
-
-          try {
-            const addresses = new Array(allItemIds.length).fill(account);
-            const itemIdStrings = allItemIds.map(id => id.toString());
-          const balances = await publicClient.readContract({
-            address: items1155.address,
-            abi: items1155.abi,
-            functionName: 'balanceOfBatch',
-            args: [addresses, itemIdStrings],
-          });
-
-          // Include ALL items (even with 0 balance) for crafting interface
-            const userItems = [];
-            balances.forEach((balance, index) => {
-              // Convert balance to number for comparison
-              const balanceNum = typeof balance === 'object' && balance.toNumber ? balance.toNumber() : Number(balance);
-                const itemId = allItemIds[index];
-                const itemData = ALL_ITEMS[itemId];
-
-                if (itemData) {
-              // Item exists in ALL_ITEMS, use its data
-                  userItems.push({
-                    id: itemId,
-                    count: balanceNum,
-                    ...itemData
-                  });
-            } else {
-              // Item doesn't exist in ALL_ITEMS, create proper category structure
-              let category, subCategory;
-
-              // Determine category and subcategory based on item ID or label
-              if (Object.values(ID_CHEST_ITEMS).includes(itemId)) {
-                category = ID_ITEM_CATEGORIES.LOOT;
-                subCategory = ID_LOOT_CATEGORIES.CHEST;
-              } else if (Object.values(ID_BAIT_ITEMS).includes(itemId)) {
-                category = ID_ITEM_CATEGORIES.LOOT;
-                subCategory = ID_LOOT_CATEGORIES.BAIT;
-              } else if (Object.values(ID_POTION_ITEMS).includes(itemId)) {
-                category = ID_ITEM_CATEGORIES.POTION;
-                // Determine potion subcategory based on the specific potion
-                if (itemId === ID_POTION_ITEMS.POTION_FERTILIZER) {
-                  subCategory = ID_POTION_CATEGORIES.FERTILIZER;
-                } else if (itemId === ID_POTION_ITEMS.POTION_GROWTH_ELIXIR) {
-                  subCategory = ID_POTION_CATEGORIES.GROWTH_ELIXIR;
-                } else if (itemId === ID_POTION_ITEMS.POTION_PESTICIDE) {
-                  subCategory = ID_POTION_CATEGORIES.PESTICIDE;
-                }
-              }
-
-              // Get proper label from constants
-              let label = itemId.toString();
-              if (Object.values(ID_CHEST_ITEMS).includes(itemId)) {
-                // Find the chest label from ID_CHEST_ITEMS
-                const chestEntry = Object.entries(ID_CHEST_ITEMS).find(([key, value]) => value === itemId);
-                if (chestEntry) {
-                  label = chestEntry[0]; // Use the key as label (e.g., "CHEST_WOOD")
-                }
-              } else if (Object.values(ID_BAIT_ITEMS).includes(itemId)) {
-                // Find the bait label from ID_BAIT_ITEMS
-                const baitEntry = Object.entries(ID_BAIT_ITEMS).find(([key, value]) => value === itemId);
-                if (baitEntry) {
-                  label = baitEntry[0]; // Use the key as label (e.g., "BAIT_I")
-                }
-              } else if (Object.values(ID_POTION_ITEMS).includes(itemId)) {
-                // Find the potion label from ID_POTION_ITEMS
-                const potionEntry = Object.entries(ID_POTION_ITEMS).find(([key, value]) => value === itemId);
-                if (potionEntry) {
-                  label = potionEntry[0]; // Use the key as label (e.g., "POTION_FERTILIZER")
-                }
-              }
-
-              // Create item data with proper categories
-              userItems.push({
-                id: itemId,
-                count: balanceNum,
-                category,
-                subCategory,
-                label,
-                type: ID_RARE_TYPE.COMMON,
-                image: IMAGE_URL_CROP,
-                pos: 0
-              });
-            }
-          });
-            setItems(userItems);
-          } catch (err) {
-            console.error('Failed to refetch items:', err);
-            setError(err.message);
-          } finally {
-            setLoading(false);
-          }
-      }
-    }
+    refetch: fetchItems,
   };
 };

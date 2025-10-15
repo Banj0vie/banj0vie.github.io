@@ -3,13 +3,15 @@ import "./style.css";
 import BaseDivider from "../../../components/dividers/BaseDivider";
 import BaseInput from "../../../components/inputs/BaseInput";
 import BaseButton from "../../../components/buttons/BaseButton";
-import { useAgwEthersAndService } from "../../../hooks/useContractBase";
+import { useSolanaWallet } from '../../../hooks/useSolanaWallet';
 import { useNotification } from "../../../contexts/NotificationContext";
+import { useUser } from "../../../solana/hooks/useUser";
 
 const ProfileAuthBox = ({ onCreateProfile }) => {
   const [username, setUsername] = useState("");
   const [referralCode, setReferralCode] = useState("");
-  const { contractService, refreshProfileStatus } = useAgwEthersAndService();
+  const { refreshProfileStatus } = useSolanaWallet();
+  const { createProfile } = useUser();
   const [isCreatingProfile, setIsCreatingProfile] = useState(false);
   const [error, setError] = useState(null);
 
@@ -25,7 +27,7 @@ const ProfileAuthBox = ({ onCreateProfile }) => {
     setIsCreatingProfile(true);
     setError(null);
     try {
-      const txHash = await contractService.createProfile(username.trim(), referralCode.trim());
+      const txHash = await createProfile(username.trim(), referralCode.trim());
       console.log('✅ Profile creation transaction:', txHash);
       
       // Add a delay to allow blockchain state to update

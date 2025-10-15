@@ -1,9 +1,8 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import { useAgwEthersAndService } from "./hooks/useContractBase";
-import { GameStateProvider } from "./contexts/GameStateContext";
+import { Provider } from 'react-redux';
+import { useSolanaWallet } from "./hooks/useSolanaWallet";
 import { NotificationProvider } from "./contexts/NotificationContext";
-import { ProfileProvider } from "./contexts/ProfileContext";
 import AuthPage from "./layouts/AuthPage";
 import LoadingPage from "./layouts/LoadingPage";
 import Market from "./router/market.jsx";
@@ -17,52 +16,52 @@ import {
 } from "./constants/_baseimages.js";
 import Farm from "./router/farm.jsx";
 import House from "./router/house.jsx";
-import { AbstractWalletProvider } from "@abstract-foundation/agw-react";
-import { AppDataProvider } from "./context/AppDataContext";
-import { abstractTestnet } from "viem/chains";
+import { ConnectionProvider, WalletProvider } from '@solana/wallet-adapter-react';
+import { WalletModalProvider } from '@solana/wallet-adapter-react-ui';
+import { FINAL_RPC_ENDPOINT, getCurrentCluster, getCurrentClusterConfig } from './solana/constants/programId';
+import { getClusterWarning, getClusterDisplayName } from './solana/utils/clusterUtils';
 import Tavern from "./router/tavern.jsx";
 import Valley from "./router/valley.jsx";
 import ProfileBar from "./layouts/GameMenu/ProfileBar";
+import wallets from "./config/solanaWallet";
+import store from "./solana/store";
+
+// Import wallet adapter CSS
+import '@solana/wallet-adapter-react-ui/styles.css';
 
 const AppContent = () => {
   const [isFarmMenu, setIsFarmMenu] = useState(false);
-  const { isConnected, account, hasProfile } = useAgwEthersAndService();
+  const { isConnected, account, hasProfile } = useSolanaWallet();
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [, setHasCheckedInitialState] = useState(false);
 
   useEffect(() => {
-    // Initial app load: check wallet connection and profile status
     if (isInitialLoad) {
       const timer = setTimeout(() => {
         setIsInitialLoad(false);
         setHasCheckedInitialState(true);
-      }, 3000); // Initial loading time to check wallet/profile (3 seconds)
+      }, 3000);
 
       return () => clearTimeout(timer);
     }
   }, [isInitialLoad]);
 
-  // Show loading page only during initial app load
   if (isInitialLoad) {
     return <LoadingPage />;
   }
 
-  // After initial load, show appropriate page based on connection and profile status
   if (!isConnected || !account) {
     return <AuthPage />;
   }
 
-  // If connected but profile status is unknown, show connect wallet page with "Connecting..." state
   if (isConnected && account && hasProfile === null) {
     return <AuthPage />;
   }
 
-  // If connected but no profile, show create profile page
   if (isConnected && account && hasProfile === false) {
     return <AuthPage />;
   }
 
-  // If connected and has profile, show game
   if (isConnected && account && hasProfile) {
     return (
       <div
@@ -82,7 +81,7 @@ const AppContent = () => {
         <div
           style={{
           padding: "80px 20px 20px 20px",
-            marginLeft: "100px", // Space for the fixed menu
+            marginLeft: "100px",
           }}
         >
           <Routes>
@@ -92,19 +91,12 @@ const AppContent = () => {
             <Route path="/farm" element={<Farm isFarmMenu={isFarmMenu} setIsFarmMenu={setIsFarmMenu} />} />
             <Route path="/tavern" element={<Tavern />} />
             <Route path="/valley" element={<Valley />} />
-            {/* <Route
-              path="/tavern"
-              element={
-                <div style={{ color: "white" }}>Tavern - Coming Soon!</div>
-              }
-            /> */}
           </Routes>
         </div>
       </div>
     );
   }
 
-  // Fallback: should not reach here, but just in case
   return <AuthPage />;
 };
 
@@ -180,20 +172,59 @@ const App = () => {
     );
   }, []);
 
+  const endpoint = useMemo(() => FINAL_RPC_ENDPOINT, []);
+  
+  const currentCluster = getCurrentCluster();
+  const clusterConfig = getCurrentClusterConfig();
+  const clusterWarning = getClusterWarning();
+  const clusterDisplayName = getClusterDisplayName();
+
   return (
-    <AbstractWalletProvider chain={abstractTestnet}>
-        <GameStateProvider>
-          <NotificationProvider>
-            <ProfileProvider>
-              <AppDataProvider>
-                <Router>
-                  <AppContent />
-                </Router>
-              </AppDataProvider>
-            </ProfileProvider>
-          </NotificationProvider>
-        </GameStateProvider>
-    </AbstractWalletProvider>
+    <Provider store={store}>
+      <ConnectionProvider endpoint={endpoint}>
+        <WalletProvider wallets={wallets} autoConnect>
+          <WalletModalProvider>
+            <NotificationProvider>
+              <Router>
+                {clusterWarning && (
+                  <div style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    backgroundColor: '#ff6b6b',
+                    color: 'white',
+                    padding: '8px 16px',
+                    textAlign: 'center',
+                    zIndex: 9999,
+                    fontSize: '14px',
+                    fontWeight: 'bold'
+                  }}>
+                    {clusterWarning}
+                  </div>
+                )}
+                
+                <div style={{
+                  position: 'fixed',
+                  top: clusterWarning ? '40px' : '0',
+                  right: '20px',
+                  backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                  color: 'white',
+                  padding: '4px 8px',
+                  borderRadius: '4px',
+                  fontSize: '12px',
+                  zIndex: 9998
+                }}>
+                  Network: {clusterDisplayName}
+                </div>
+                
+                <AppContent />
+              </Router>
+            </NotificationProvider>
+          </WalletModalProvider>
+        </WalletProvider>
+      </ConnectionProvider>
+    </Provider>
   );
 };
 

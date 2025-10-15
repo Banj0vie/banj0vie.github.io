@@ -1,0 +1,52 @@
+import { 
+  PhantomWalletAdapter,
+  SolflareWalletAdapter,
+  TorusWalletAdapter,
+  LedgerWalletAdapter,
+  MathWalletAdapter,
+  CoinbaseWalletAdapter,
+  BitpieWalletAdapter,
+  BitKeepWalletAdapter,
+  CloverWalletAdapter,
+  Coin98WalletAdapter,
+  CoinhubWalletAdapter,
+  HuobiWalletAdapter,
+  KrystalWalletAdapter,
+  NightlyWalletAdapter,
+  SaifuWalletAdapter,
+  SkyWalletAdapter,
+  SpotWalletAdapter,
+  TokenPocketWalletAdapter,
+  TokenaryWalletAdapter,
+  TrustWalletAdapter,
+  XDEFIWalletAdapter,
+  BitgetWalletAdapter
+} from '@solana/wallet-adapter-wallets';
+
+// Create wallet adapters - using only available adapters
+const wallets = [
+  new PhantomWalletAdapter(),
+  new SolflareWalletAdapter(),
+  new BitgetWalletAdapter(),
+  new TorusWalletAdapter(),
+  new LedgerWalletAdapter(),
+  new MathWalletAdapter(),
+  new CoinbaseWalletAdapter(),
+  new BitpieWalletAdapter(),
+  new BitKeepWalletAdapter(),
+  new CloverWalletAdapter(),
+  new Coin98WalletAdapter(),
+  new CoinhubWalletAdapter(),
+  new HuobiWalletAdapter(),
+  new KrystalWalletAdapter(),
+  new NightlyWalletAdapter(),
+  new SaifuWalletAdapter(),
+  new SkyWalletAdapter(),
+  new SpotWalletAdapter(),
+  new TokenPocketWalletAdapter(),
+  new TokenaryWalletAdapter(),
+  new TrustWalletAdapter(),
+  new XDEFIWalletAdapter(),
+];
+
+export default wallets;

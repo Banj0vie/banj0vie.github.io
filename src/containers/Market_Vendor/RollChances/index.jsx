@@ -1,42 +1,30 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import "./style.css";
 import CardListView from "../../../components/boxes/CardListView";
 import BaseDivider from "../../../components/dividers/BaseDivider";
 import Slider from "../../../components/inputs/Slider";
 import BaseButton from "../../../components/buttons/BaseButton";
 import { useROIData } from "../../../hooks/useContracts";
-import { useAgwEthersAndService } from "../../../hooks/useContractBase";
+import { useSolanaWallet } from '../../../hooks/useSolanaWallet';
+import { useSelector } from "react-redux";
 
 const RollChances = ({ onBack }) => {
-  const { account, contractService } = useAgwEthersAndService();
+  const { account } = useSolanaWallet();
   const { roiData, getROIData, loading } = useROIData();
   const [currentFarmLevel, setCurrentFarmLevel] = useState(0);
-
-  // Get user's farm level from PlayerStore
-  const getUserFarmLevel = useCallback(async () => {
-    if (!contractService || !account) return 0;
-    
-    try {
-      const profile = await contractService.getProfile(account);
-      return Number(profile[1]) || 0; // level is the second element
-    } catch (err) {
-      console.error('Failed to get farm level:', err);
-      return 0;
-    }
-  }, [contractService, account]);
+  
+  const level = useSelector(state => state.user?.userData?.level || 0);
 
   // Load initial data
   useEffect(() => {
     const loadData = async () => {
-      const level = await getUserFarmLevel();
-      setCurrentFarmLevel(level);
       await getROIData(level);
     };
     
-    if (contractService && account) {
+    if (account) {
       loadData();
     }
-  }, [contractService, account, getUserFarmLevel, getROIData]);
+  }, [account, level, getROIData]);
 
   // Update ROI data when farm level changes
   const handleFarmLevelChange = async (newLevel) => {

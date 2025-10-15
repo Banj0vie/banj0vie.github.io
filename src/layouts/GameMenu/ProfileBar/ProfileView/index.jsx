@@ -2,14 +2,10 @@ import React, { useState } from "react";
 import "./style.css";
 import WalletButton from "../../../../components/buttons/WalletButton";
 import WalletDialog from "../../../../containers/Menu_Wallet";
-import { useProfile } from "../../../../contexts/ProfileContext";
 
-const ProfileView = () => {
+const ProfileView = ({ username }) => {
   const [isWalletDlg, setIsWalletDlg] = useState(false);
-  const { profileData } = useProfile();
   
-  const username = profileData?.username || "";
-
   return (
     <div className="name-pill">
       <div>{username}</div>
