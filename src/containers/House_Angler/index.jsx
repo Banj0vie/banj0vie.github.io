@@ -6,8 +6,8 @@ import AnglerMenu from "./AnglerMenu";
 import CraftBait from "./CraftBait";
 import StartFishing from "./StartFishing";
 import Fishing from "./Fishing";
-import { useFishing } from "../../hooks/useContracts";
-import { useAgwEthersAndService } from "../../hooks/useContractBase";
+import { useFishing } from "../../hooks/useFishing";
+import { useSolanaWallet } from "../../hooks/useSolanaWallet";
 
 const AnglerDialog = ({ onClose, label = "QUIET POND", header = "" }) => {
   const [pageIndex, setPageIndex] = useState(ID_ANGLER_PAGES.ANGLER_MENU);
@@ -17,7 +17,7 @@ const AnglerDialog = ({ onClose, label = "QUIET POND", header = "" }) => {
   const [hasPendingRequests, setHasPendingRequests] = useState(false);
   const [pendingRequests, setPendingRequests] = useState([]);
 
-  const { isConnected, account } = useAgwEthersAndService();
+  const { isConnected, account } = useSolanaWallet();
   const { checkPendingRequests, getAllPendingRequests } = useFishing();
 
   // Load pending requests when dialog opens

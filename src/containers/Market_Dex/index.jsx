@@ -8,15 +8,13 @@ import LabelValueBox from "../../components/boxes/LabelValueBox";
 import DividerLink from "../../components/links/DividerLink";
 import { generateId } from "../../utils/basic";
 import { useDex } from "../../hooks/useContracts";
-import { useAgwEthersAndService } from "../../hooks/useContractBase";
 import { useNotification } from "../../contexts/NotificationContext";
-import { useGameState } from "../../contexts/GameStateContext";
 import { isTransactionRejection } from "../../utils/errorUtils";
-import { ethers } from "ethers";
+import { useSolanaWallet } from "../../hooks/useSolanaWallet";
+import { ethers } from 'ethers';
 const DexDialog = ({ onClose, label = "DEX", header = "" }) => {
-  const { isConnected } = useAgwEthersAndService();
+  const { isConnected } = useSolanaWallet();
   const { swapETHForYield, swapHoneyForETH, getYieldAmount, getETHAmount, ethBalance, honeyBalance, fetchBalances, loading, error } = useDex();
-  const { loadBalances: loadGameStateBalances } = useGameState();
   
   const [isReversed, setIsReversed] = useState(false);
   const [swapInfo, setSwapInfo] = useState([]);
@@ -60,7 +58,7 @@ const DexDialog = ({ onClose, label = "DEX", header = "" }) => {
             setEthAmount('');
             return;
           }
-          const honeyWei = ethers.parseEther(honeyAmount);
+          const honeyWei = (honeyAmount);
           const ethAmount = await getETHAmount(honeyWei);
           console.log("🚀 ~ calculateAmounts ~ ETH amount for", honeyAmount, "Honey:", ethAmount);
           setEthAmount(ethers.formatEther(ethAmount));
@@ -70,7 +68,7 @@ const DexDialog = ({ onClose, label = "DEX", header = "" }) => {
             setHoneyAmount('0');
             return;
           }
-          const ethWei = ethers.parseEther(ethAmount);
+          const ethWei = (ethAmount);
           const honeyAmount = await getYieldAmount(ethWei);
           console.log("🚀 ~ calculateAmounts ~ Honey amount for", ethAmount, "ETH:", honeyAmount);
           setHoneyAmount(ethers.formatEther(honeyAmount));
@@ -115,7 +113,6 @@ const DexDialog = ({ onClose, label = "DEX", header = "" }) => {
           // Refresh balances after successful swap
           await Promise.all([
             fetchBalances(), // Refresh DEX component balances
-            loadGameStateBalances() // Refresh GameStateContext balances for other components
           ]);
           // Close dialog after successful swap
           onClose();
@@ -142,7 +139,6 @@ const DexDialog = ({ onClose, label = "DEX", header = "" }) => {
           // Refresh balances after successful swap
           await Promise.all([
             fetchBalances(), // Refresh DEX component balances
-            loadGameStateBalances() // Refresh GameStateContext balances for other components
           ]);
           // Close dialog after successful swap
           onClose();

@@ -4,13 +4,11 @@ import "./style.css";
 import NFTBox from "./NFTBox";
 import BaseDivider from "../../components/dividers/BaseDivider";
 import { useEquipmentRegistry } from "../../hooks/useContracts";
-import { useAppData } from "../../context/AppDataContext";
-import { useAgwEthersAndService } from "../../hooks/useContractBase";
+import { useSolanaWallet } from "../../hooks/useSolanaWallet";
 
 const AvatarDialog = ({ onClose }) => {
-  const { account } = useAgwEthersAndService();
+  const { account } = useSolanaWallet();
   const { getAvatars, getTokenBoostPpm } = useEquipmentRegistry();
-  const { getAvatarsCached, getBoostCached } = useAppData();
   const [avatars, setAvatars] = useState([]);
   const [totalBoost, setTotalBoost] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -25,25 +23,13 @@ const AvatarDialog = ({ onClose }) => {
       try {
         setLoading(true);
         
-        // Get equipped avatars
-        const avatarResult = await (getAvatarsCached ? getAvatarsCached() : getAvatars(account));
-        console.log('Avatar result:', avatarResult);
         
-        // Handle case where getAvatars returns null
-        if (!avatarResult || !Array.isArray(avatarResult) || avatarResult.length < 2) {
-          console.log('No avatar data available, using empty state');
-          setAvatars([
-            { nft: null, tokenId: null, isEmpty: true },
-            { nft: null, tokenId: null, isEmpty: true }
-          ]);
-          setTotalBoost(0);
-          return;
-        }
         
-        const [nfts, tokenIds] = avatarResult;
+        
+        const [nfts, tokenIds] = await getAvatars(account);
         
         // Get total boost
-        const boostPpm = await (getBoostCached ? getBoostCached() : getTokenBoostPpm(account));
+        const boostPpm = await getTokenBoostPpm(account);
         const boostPercentage = boostPpm ? boostPpm / 1000 : 0; // Convert from ppm to percentage, default to 0 if null
         
         // Create avatar data array
@@ -68,12 +54,6 @@ const AvatarDialog = ({ onClose }) => {
         setTotalBoost(boostPercentage);
       } catch (error) {
         console.error('Failed to fetch avatar data:', error);
-        // Set empty state on error
-        setAvatars([
-          { nft: null, tokenId: null, isEmpty: true },
-          { nft: null, tokenId: null, isEmpty: true }
-        ]);
-        setTotalBoost(0);
       } finally {
         setLoading(false);
       }

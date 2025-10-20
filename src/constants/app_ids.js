@@ -110,17 +110,17 @@ export const ID_CROP_CATEGORIES = {
     BASIC_SEED: "ID_CROP_BASIC_SEED",
     PREMIUM_SEED: "ID_CROP_PREMIUM_SEED",
 }
-const CAT_FEEBLE_SEED = 1;
-const CAT_PICO_SEED = 2;
-const CAT_BASIC_SEED = 3;
-const CAT_PREMIUM_SEED = 4;
-const CAT_PICO_PRODUCE = 5;
-const CAT_BASIC_PRODUCE = 6;
-const CAT_PREMIUM_PRODUCE = 7;
-const CAT_BAIT = 8;
-const CAT_FISH = 9;
-const CAT_CHEST = 10;
-const CAT_POTION = 11;
+export const CAT_FEEBLE_SEED = 1;
+export const CAT_PICO_SEED = 2;
+export const CAT_BASIC_SEED = 3;
+export const CAT_PREMIUM_SEED = 4;
+export const CAT_PICO_PRODUCE = 5;
+export const CAT_BASIC_PRODUCE = 6;
+export const CAT_PREMIUM_PRODUCE = 7;
+export const CAT_BAIT = 8;
+export const CAT_FISH = 9;
+export const CAT_CHEST = 10;
+export const CAT_POTION = 11;
 export const ID_SEEDS = {
     F_POTATO: CAT_FEEBLE_SEED << 8 | 1,
     F_LETTUCE: CAT_FEEBLE_SEED << 8 | 2,

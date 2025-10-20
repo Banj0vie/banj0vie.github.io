@@ -1,78 +1,57 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
+import { useSelector } from 'react-redux';
 import "./style.css";
 import BaseButton from "../../../components/buttons/BaseButton";
 import TokenInputRow from "../../Market_Dex/TokenInputRow";
 import CardListView from "../../../components/boxes/CardListView";
-import { useBanker } from "../../../hooks/useContracts";
-import { useAgwEthersAndService } from "../../../hooks/useContractBase";
+import { useBanker } from "../../../hooks/useBanker";
 import { useNotification } from "../../../contexts/NotificationContext";
-import { ethers } from "ethers";
 import { isTransactionRejection } from "../../../utils/errorUtils";
+import { useSolanaWallet } from "../../../hooks/useSolanaWallet";
+import { selectBankerTotalGameToken, selectBankerTotalXGameToken, selectBankerLoading } from '../../../solana/store/slices/bankerSlice';
 
 const StakeHoney = ({ onBack }) => {
   const [isStaking, setIsStaking] = useState(true);
   const [amount, setAmount] = useState("0");
   const [data, setData] = useState([]);
-  const [honeyBalance, setHoneyBalance] = useState("0");
-  const [xHoneyBalance, setXHoneyBalance] = useState("0");
-  const [ratio, setRatio] = useState(1.0); // Ratio as float
-  const [estRewards, setEstRewards] = useState("0.000 Honey");
 
-  const { account, contractService } = useAgwEthersAndService();
-  const { stake, unstake, getBalance, getBankerData, loading, error } =
-    useBanker();
+  const { publicKey } = useSolanaWallet();
+  const { stake, unstake, getBalance, getBankerData } = useBanker();
   const { show } = useNotification();
 
-  // Monitor errors and show notifications with duplicate prevention
-  const lastNotificationTime = useRef(0);
-  useEffect(() => {
-    if (error) {
-      const now = Date.now();
-      // Only show notification if it's been more than 2 seconds since last notification
-      if (now - lastNotificationTime.current > 2000) {
-        lastNotificationTime.current = now;
-        if (isTransactionRejection(error)) {
-          show("Transaction was rejected by user.", "error");
-        } else {
-          show(`Stake operation failed!`, "error");
-        }
-      }
-    }
-  }, [error, show]);
-  // Load balances
-  const loadBalances = useCallback(async () => {
-    if (!account) return;
+  // Redux selectors for balances and banker data
+  const gameToken = useSelector(state => state.balance.gameToken);
+  const xTokenShare = useSelector(state => state.balance.xTokenShare);
+  const totalGameToken = useSelector(selectBankerTotalGameToken);
+  const totalXGameToken = useSelector(selectBankerTotalXGameToken);
+  const ratioRaw = parseFloat(totalGameToken) / parseFloat(totalXGameToken);
+  const ratio = Number.isFinite(ratioRaw) && ratioRaw > 0 ? ratioRaw : 0;
+  const loading = useSelector(selectBankerLoading);
 
+  // Format balances for display
+  const honeyBalance = parseFloat(gameToken).toFixed(3);
+  const xHoneyBalance = parseFloat(xTokenShare).toFixed(3);
+  const estRewards = Number.isFinite(ratio)
+    ? (parseFloat(xHoneyBalance) * ratio).toFixed(3)
+    : '0.000';
+
+
+  // Load balances and banker data on mount and when publicKey changes
+  const loadData = useCallback(async () => {
+    if (!publicKey) return;
     try {
-      // Get XHoney balance (staked balance)
-      const xHoneyBal = await getBalance(account);
-      setXHoneyBalance(ethers.formatEther(xHoneyBal));
-
-      // Get Honey balance from yield token contract
-      if (contractService) {
-        const honeyBal = await contractService.getYieldBalance(account);
-        setHoneyBalance(ethers.formatEther(honeyBal));
-      } else {
-        setHoneyBalance("0.000");
-      }
-
-      // Calculate actual ratio from contract using the hook
-      const bankerData = await getBankerData();
-      if (bankerData) {
-        setRatio(bankerData.ratio);
-
-        // Calculate estimated rewards (XHoney balance * ratio)
-        const xHoneyBalanceNum = parseFloat(ethers.formatEther(xHoneyBal));
-        const estimatedRewards = xHoneyBalanceNum * bankerData.ratio;
-        setEstRewards(`${estimatedRewards.toFixed(3)} Honey`);
-      } else {
-        setRatio(1.0); // Default ratio as float
-        setEstRewards("0.000 Honey");
-      }
+      await Promise.all([
+        getBalance(),
+        getBankerData(),
+      ]);
     } catch (err) {
-      console.error("Failed to load balances:", err);
+      console.error("Failed to load banker data:", err);
     }
-  }, [account, getBalance, getBankerData, contractService]);
+  }, [publicKey, getBalance, getBankerData]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   // Handle deposit (stake)
   const onDeposit = useCallback(async () => {
@@ -89,8 +68,8 @@ const StakeHoney = ({ onBack }) => {
     }
 
     // Check if user has enough balance
-    const userhoneyBalance = parseFloat(honeyBalance);
-    if (amountNum > userhoneyBalance) {
+    const userHoneyBalance = parseFloat(honeyBalance);
+    if (amountNum > userHoneyBalance) {
       show(
         `Insufficient Honey balance. You have ${honeyBalance} Honey`,
         "warning"
@@ -99,24 +78,22 @@ const StakeHoney = ({ onBack }) => {
     }
 
     try {
-      const amountWei = ethers.parseEther(amount);
+      const amountLamports = Math.floor(parseFloat(amount));
 
       show("Staking Honey tokens...", "info");
 
-      const result = await stake(amountWei);
+      const result = await stake(amountLamports);
 
       if (result) {
         show(`Successfully staked ${amount} Honey!`, "success");
         setAmount("0");
-        await loadBalances(); // Refresh balances
-      } else {
-        // show("Failed to stake tokens", "error");
+        await loadData(); // Refresh balances
       }
     } catch (err) {
       console.error("Stake error:", err);
       show(`Stake failed: ${err.message}`, "error");
     }
-  }, [amount, honeyBalance, stake, show, loadBalances]);
+  }, [amount, honeyBalance, stake, show, loadData]);
 
   // Handle balance click to fill input
   const handleBalanceClick = useCallback((balance) => {
@@ -138,8 +115,8 @@ const StakeHoney = ({ onBack }) => {
     }
 
     // Check if user has enough XHoney balance
-    const userxHoneyBalance = parseFloat(xHoneyBalance);
-    if (amountNum > userxHoneyBalance) {
+    const userXHoneyBalance = parseFloat(xHoneyBalance);
+    if (amountNum > userXHoneyBalance) {
       show(
         `Insufficient XHoney balance. You have ${xHoneyBalance} XHoney`,
         "warning"
@@ -148,49 +125,43 @@ const StakeHoney = ({ onBack }) => {
     }
 
     try {
-      const amountWei = ethers.parseEther(amount);
-      const result = await unstake(amountWei);
+      const amountLamports = Math.floor(parseFloat(amount));
+      const result = await unstake(amountLamports);
 
       if (result) {
         show(`Successfully unstaked ${amount} XHoney!`, "success");
         setAmount("0");
-        await loadBalances(); // Refresh balances
-      } else {
-        // show("Failed to unstake tokens", "error");
+        await loadData(); // Refresh balances
       }
     } catch (err) {
       console.error("Unstake error:", err);
       show(`Unstake failed: ${err.message}`, "error");
     }
-  }, [amount, xHoneyBalance, unstake, show, loadBalances]);
+  }, [amount, xHoneyBalance, unstake, show, loadData]);
 
-  // Load balances on mount and when account changes
-  useEffect(() => {
-    loadBalances();
-  }, [loadBalances]);
-
+  // Update display data based on mode and state
   useEffect(() => {
     setData(
       isStaking
         ? [
-            { label: "Ratio", value: `1 XHONEY - ${ratio.toFixed(3)} HONEY` },
+            { label: "Ratio", value: `1 XHONEY - ${Number.isFinite(ratio) ? ratio.toFixed(3) : '0.000'} HONEY` },
             {
               label: "XHoney Balance",
-              value: `${parseFloat(xHoneyBalance).toFixed(3)} XHoney`,
+              value: `${xHoneyBalance} XHoney`,
             },
-            { label: "Est. Honey Rewards", value: estRewards },
+            { label: "Est. Honey Rewards", value: `${estRewards} Honey` },
           ]
         : [
-            { label: "Ratio", value: `1 XHONEY - ${ratio.toFixed(3)} HONEY` },
+            { label: "Ratio", value: `1 XHONEY - ${Number.isFinite(ratio) ? ratio.toFixed(3) : '0.000'} HONEY` },
             {
               label: "XHoney Balance",
-              value: `${parseFloat(xHoneyBalance).toFixed(3)} XHoney`,
+              value: `${xHoneyBalance} XHoney`,
             },
             {
               label: "Honey Balance",
-              value: `${parseFloat(honeyBalance).toFixed(3)} Honey`,
+              value: `${honeyBalance} Honey`,
             },
-            { label: "Est. Honey Rewards", value: estRewards },
+            { label: "Est. Honey Rewards", value: `${estRewards} Honey` },
           ]
     );
   }, [isStaking, ratio, xHoneyBalance, honeyBalance, estRewards]);

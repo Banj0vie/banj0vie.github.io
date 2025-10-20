@@ -8,7 +8,7 @@ import { formatDuration } from "../../utils/basic";
 import { buttonFrames } from "../../constants/_baseimages";
 import BaseButton from "../../components/buttons/BaseButton";
 import RewardsDialog from "./RewardsDialog";
-import { useLeaderboard } from "../../hooks/useContracts";
+import { useLeaderboard } from "../../hooks/useLeaderboard";
 
 const LeaderboardDialog = ({ onClose, label = "LEADERBOARD", header = "" }) => {
   const {
@@ -17,7 +17,6 @@ const LeaderboardDialog = ({ onClose, label = "LEADERBOARD", header = "" }) => {
     epochStart,
     currentEpoch,
     fetchLeaderboardData,
-    advanceEpoch,
     loading  } = useLeaderboard();
   const [remainedTime, setRemainedTime] = useState(0);
   const [selectedEpoch, setSelectedEpoch] = useState(null);
@@ -99,12 +98,12 @@ const LeaderboardDialog = ({ onClose, label = "LEADERBOARD", header = "" }) => {
             remainedTime <= 0 ? (
               <div>
                 <div>Epoch Ended!</div>
-                <BaseButton
+                {/* <BaseButton
                   label="Advance Epoch"
                   onClick={advanceEpoch}
                   className="h-3rem mt-1rem"
                   disabled={loading}
-                />
+                /> */}
               </div>
             ) : (
               <>

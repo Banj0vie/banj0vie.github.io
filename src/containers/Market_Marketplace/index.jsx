@@ -8,7 +8,7 @@ import CardListView from "../../components/boxes/CardListView";
 import SellDialog from "./SellDialog";
 import BatchBuyDialog from "./BatchBuyDialog";
 import BuyDialog from "./BuyDialog";
-import { useAgwEthersAndService } from "../../hooks/useContractBase";
+import { useSolanaWallet } from "../../hooks/useSolanaWallet";
 
 const MarketPlaceDialog = ({ onClose, label = "VENDOR", header = "" }) => {
   const [pageIndex, setPageIndex] = useState(
@@ -22,7 +22,7 @@ const MarketPlaceDialog = ({ onClose, label = "VENDOR", header = "" }) => {
     { label: "Volume", value: "0" },
   ];
 
-  const { account } = useAgwEthersAndService();
+  const { account } = useSolanaWallet();
 
   switch (pageIndex) {
     case ID_MARKETPLACE_PAGES.SELL:

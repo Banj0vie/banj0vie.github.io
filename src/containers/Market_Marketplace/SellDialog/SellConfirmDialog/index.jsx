@@ -5,7 +5,7 @@ import BaseInput from "../../../../components/inputs/BaseInput";
 import Slider from "../../../../components/inputs/Slider";
 import BaseDivider from "../../../../components/dividers/BaseDivider";
 import BaseButton from "../../../../components/buttons/BaseButton";
-import { useP2PMarket } from "../../../../hooks/useContracts";
+import { useMarket } from "../../../../hooks/useMarket";
 import { useNotification } from "../../../../contexts/NotificationContext";
 import { handleContractError } from "../../../../utils/errorHandler";
 
@@ -14,7 +14,7 @@ const SellConfirmDialog = ({ onClose, onSellSuccess, item }) => {
   const [amount, setAmount] = useState(1);
   const [loading, setLoading] = useState(false);
 
-  const { list } = useP2PMarket();
+  const { list } = useMarket();
   const { show } = useNotification();
 
   const handleConfirm = async () => {

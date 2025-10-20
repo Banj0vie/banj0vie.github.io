@@ -4,15 +4,16 @@ import BaseDialog from "../../../_BaseDialog";
 import BaseInput from "../../../../components/inputs/BaseInput";
 import BaseDivider from "../../../../components/dividers/BaseDivider";
 import BaseButton from "../../../../components/buttons/BaseButton";
-import { useP2PMarket } from "../../../../hooks/useContracts";
+import { useMarket } from "../../../../hooks/useMarket";
 import { useNotification } from "../../../../contexts/NotificationContext";
 import { handleContractError } from "../../../../utils/errorHandler";
 
 const BuyConfirmDialog = ({ onClose, onPurchaseSuccess, item }) => {
+  console.log("🚀 ~ BuyConfirmDialog ~ item:", item)
   const [amount, setAmount] = useState(1);
   const [loading, setLoading] = useState(false);
 
-  const { purchase } = useP2PMarket();
+  const { purchase } = useMarket();
   const { show } = useNotification();
 
   const handleConfirm = async () => {
@@ -73,7 +74,7 @@ const BuyConfirmDialog = ({ onClose, onPurchaseSuccess, item }) => {
             <BaseButton
               label={loading ? "Processing..." : "Confirm Purchase"}
               onClick={handleConfirm}
-              disabled={loading || !item.listingId}
+              disabled={loading || !item.id}
             ></BaseButton>
           </>
         )}

@@ -9,33 +9,26 @@ import FarmMenu from "../layouts/FarmInterface/FarmMenu";
 import SelectSeedDialog from "../containers/Farm_SelectSeedDialog";
 import { useItems } from "../hooks/useItems";
 import { useFarming } from "../hooks/useContracts";
-import { useAgwEthersAndService } from "../hooks/useContractBase";
 import { useNotification } from "../contexts/NotificationContext";
-import { useGameState } from "../contexts/GameStateContext";
 import { CropItemArrayClass } from "../models/crop";
 import { handleContractError } from "../utils/errorHandler";
 import { ID_POTION_ITEMS } from "../constants/app_ids";
+import { getGrowthTime, getSubtype } from "../utils/basic";
 const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
   const { width, height } = FARM_VIEWPORT;
   const hotspots = FARM_HOTSPOTS;
   const { seeds: currentSeeds, refetch: refetchSeeds } = useItems();
-  const { account, contractService } = useAgwEthersAndService();
   const {
-    plant,
     plantBatch,
-    harvest,
     harvestMany,
-    harvestAll,
     getMaxPlots,
     getUserCrops,
-    getGrowthTime,
     applyGrowthElixir,
     applyPesticide,
     applyFertilizer,
     loading: farmingLoading,
   } = useFarming();
   const { show } = useNotification();
-  const { potionUsageState, clearPotionUsage } = useGameState();
   const [isPlanting, setIsPlanting] = useState(true);
   const [isSelectCropDialog, setIsSelectCropDialog] = useState(false);
   const [cropArray, setCropArray] = useState(() => new CropItemArrayClass(30));
@@ -46,56 +39,18 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
   const [selectedIndexes, setSelectedIndexes] = useState([]);
   const [selectedSeed, setSelectedSeed] = useState(null);
   const [, setGrowthTimer] = useState(null);
-  const [userAddress, setUserAddress] = useState(null);
   const [maxPlots, setMaxPlots] = useState(0);
   const [previewUpdateKey, setPreviewUpdateKey] = useState(0);
   const [userCropsLoaded, setUserCropsLoaded] = useState(false);
-  const [usedSeedsInPreview, setUsedSeedsInPreview] = useState({}); // Track seeds used in preview
+  const [usedSeedsInPreview, setUsedSeedsInPreview] = useState({});
   
-  // Potion usage state
   const [isUsingPotion, setIsUsingPotion] = useState(false);
   const [selectedPotion, setSelectedPotion] = useState(null);
 
-  // Force re-render when crop array changes
   useEffect(() => {
     setPreviewUpdateKey(prev => prev + 1);
   }, [cropArray]);
 
-  // Listen for potion usage state from context
-  useEffect(() => {
-    if (potionUsageState.isActive) {
-      // Trigger potion usage mode
-      setIsUsingPotion(true);
-      setSelectedPotion({
-        id: potionUsageState.potionId,
-        name: potionUsageState.potionName
-      });
-      setIsPlanting(false); // Switch to potion mode
-      setIsFarmMenu(true); // Show farm menu
-      setSelectedIndexes([]); // Clear any existing selections
-      
-      // Clear the context state
-      clearPotionUsage();
-    }
-  }, [potionUsageState.isActive, potionUsageState.potionId, potionUsageState.potionName, clearPotionUsage]);
-
-  // Get growth time for different seed types
-  const getGrowthTimeForSeed = useCallback(
-    async (seedId) => {
-      // Get growth time from contract instead of hardcoded values
-      try {
-        const growthTime = await getGrowthTime(seedId);
-        return growthTime;
-      } catch (error) {
-        const { message } = handleContractError(error, 'getting growth time');
-        console.error("Failed to get growth time from contract:", message);
-        return 60; // Default fallback
-      }
-    },
-    [getGrowthTime]
-  );
-
-  // Calculate available seeds (original count minus used in preview)
   const getAvailableSeeds = useCallback(() => {
     return currentSeeds
       .map((seed) => ({
@@ -105,15 +60,12 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
       .filter((seed) => seed.count > 0);
   }, [currentSeeds, usedSeedsInPreview]);
 
-
-  // Load crops from contract
   const loadCropsFromContract = useCallback(
-    async (address) => {
+    async () => {
       try {
         setUserCropsLoaded(false);
-
         // Get all user crops in a single call
-        const crops = await getUserCrops(address);
+        const crops = await getUserCrops();
 
         // Collect unique seedIds to fetch growth times once per seed type
         const uniqueSeedIds = Array.from(
@@ -127,7 +79,7 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
         const growthTimeCache = new Map();
         await Promise.all(
           uniqueSeedIds.map(async (sid) => {
-            const gt = await getGrowthTimeForSeed(sid);
+            const gt = getGrowthTime(sid);
             growthTimeCache.set(sid.toString(), gt);
           })
         );
@@ -186,50 +138,14 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
         setUserCropsLoaded(true);
       }
     },
-    [getGrowthTimeForSeed, getUserCrops]
+    [getUserCrops]
   );
 
-  // Load user address and crops from contract
   useEffect(() => {
     const loadUserData = async () => {
       try {
-        // Use account from AGW service
-        if (!account) {
-          return;
-        }
-        
-        setUserAddress(account);
-
-        // Only proceed if contract service is ready
-        if (!contractService) {
-          return;
-        }
-
-        // Get max plots for this user
-        try {
-          // First check if user has a profile
-          const profile = await contractService.getProfile(account);
-          
-          if (!profile || !profile.exists) {
-            // User doesn't have a profile, set default max plots for level 0
-            setMaxPlots(15);
-          } else {
-            // User has a profile, get actual max plots
-            const userMaxPlots = await getMaxPlots(account);
-            
-            if (userMaxPlots && userMaxPlots > 0) {
-              setMaxPlots(Number(userMaxPlots));
-            } else {
-              setMaxPlots(15); // Default for level 0
-            }
-          }
-        } catch (error) {
-          const { message } = handleContractError(error, 'getting max plots');
-          console.error("Failed to get max plots:", message);
-          setMaxPlots(15); // Default fallback for level 0
-        }
-
-        await loadCropsFromContract(account);
+        setMaxPlots(await getMaxPlots());
+        await loadCropsFromContract();
       } catch (error) {
         const { message } = handleContractError(error, 'loading user data');
         console.error("Failed to load user data:", message);
@@ -237,15 +153,13 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
     };
 
     loadUserData();
-  }, [account, contractService, loadCropsFromContract, getMaxPlots]);
+  }, [loadCropsFromContract, getMaxPlots]);
 
   // Listen for crop refresh events (after planting)
   useEffect(() => {
     const handleCropsRefresh = async (event) => {
       console.log('Crops refresh event received:', event.detail);
-      if (userAddress) {
-        await loadCropsFromContract(userAddress);
-      }
+      await loadCropsFromContract();
     };
 
     window.addEventListener('cropsRefreshed', handleCropsRefresh);
@@ -253,7 +167,7 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
     return () => {
       window.removeEventListener('cropsRefreshed', handleCropsRefresh);
     };
-  }, [userAddress, loadCropsFromContract]);
+  }, [loadCropsFromContract]);
 
   // Growth timer effect
   useEffect(() => {
@@ -393,7 +307,7 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
       if (seedsToPlant <= 0) continue;
 
       // Get growth time for this seed type
-      const growthTime = await getGrowthTimeForSeed(seed.id);
+      const growthTime = getGrowthTime(seed.id);
       const planted = newPreviewCropArray.plantAll(
         seed.id,
         seedsToPlant,
@@ -423,7 +337,7 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
       show("No seeds were planted. All plots may already be occupied.", "info");
       return;
     }
-  }, [userCropsLoaded, maxPlots, isFarmMenu, cropArray, currentSeeds, usedSeedsInPreview, show, getGrowthTimeForSeed]);
+  }, [userCropsLoaded, maxPlots, isFarmMenu, cropArray, currentSeeds, usedSeedsInPreview, show, getGrowthTime]);
 
   const startHarvesting = () => {
     setPreviewCropArray(cropArray);
@@ -431,7 +345,6 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
     setIsFarmMenu(true);
   };
 
-  // Start potion usage mode
   const startPotionUsage = (potionId, potionName) => {
     setSelectedPotion({ id: potionId, name: potionName });
     setIsUsingPotion(true);
@@ -440,17 +353,7 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
   };
 
   const handleHarvestAll = async () => {
-    if (!contractService) {
-      show(
-        "Contract service not ready yet. Please wait a moment and try again.",
-        "warning"
-      );
-      return;
-    }
-
     try {
-
-      // Build list of all ready plots
       const readySlots = [];
       const currentTimeSeconds = Math.floor(Date.now() / 1000);
 
@@ -470,11 +373,6 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
         return;
       }
 
-      if (readySlots.length > 5) {
-        show("You can only harvest up to 5 crops at a time!", "info");
-        return;
-      }
-
       show(`Harvesting ${readySlots.length} ready crops...`, "info");
 
       let ok = false;
@@ -483,11 +381,11 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
           const res = await harvestMany(readySlots);
           ok = !!res;
         } else if (readySlots.length === 1) {
-          const res = await harvest(readySlots[0]);
+          const res = await harvestMany(readySlots[0]);
           ok = !!res;
         } else {
           // Fallback if batch method is unavailable
-          const res = await harvestAll();
+          const res = await harvestMany(readySlots);
           ok = !!res;
         }
       } catch (error) {
@@ -502,14 +400,12 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
       }
 
       // Reload crops from contract to sync state
-      if (userAddress) {
-        // Small delay to ensure blockchain state is updated
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        await loadCropsFromContract(userAddress);
-        
-        // Force a re-render by updating the preview update key
-        setPreviewUpdateKey(prev => prev + 1);
-      }
+      // Small delay to ensure blockchain state is updated
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      await loadCropsFromContract();
+      
+      // Force a re-render by updating the preview update key
+      setPreviewUpdateKey(prev => prev + 1);
 
       show(`✅ Successfully harvested ${readySlots.length} crops!`, "success");
       // Clear any selection state after harvest all
@@ -532,29 +428,13 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
   };
 
   const handlePlant = async () => {
-    if (!contractService) {
-      show(
-        "Contract service not ready yet. Please wait a moment and try again.",
-        "warning"
-      );
-      return;
-    }
-
     // Check if userCrops are loaded before allowing planting
     if (!userCropsLoaded) {
       show("Please wait for your farm data to load before planting seeds.", "info");
       return;
     }
-
-    // Check if user has unlocked farming plots
-    if (maxPlots <= 0) {
-      show("You need to level up to unlock farming plots!", "info");
-      setIsFarmMenu(false);
-      return;
-    }
-
+    let loadingNotification = null;
     try {
-
       // Find all newly planted crops in preview (growStatus === -1)
       const cropsToPlant = [];
       for (let i = 0; i < previewCropArray.getLength(); i++) {
@@ -567,8 +447,8 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
         }
       }
 
-
       if (cropsToPlant.length === 0) {
+        console.log("🚀 ~ handlePlant ~ selectedSeed:", selectedSeed)
         if (!selectedSeed) {
           show("Please select a seed first!", "info");
         } else {
@@ -580,62 +460,34 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
         setIsFarmMenu(false);
         return;
       }
-
       // Show loading message that persists until transaction completes
       const loadingMessage =
         cropsToPlant.length === 1
           ? "Planting seed..."
           : `Planting ${cropsToPlant.length} seeds...`;
-      const loadingNotification = show(loadingMessage, "info", 300000); // 5 minutes timeout
+      loadingNotification = show(loadingMessage, "info", 300000); // 5 minutes timeout
 
-      // Call contract to plant all crops
-      if (cropsToPlant.length === 1) {
-        // Single plant
-        try {
-          const result = await plant(
-            cropsToPlant[0].seedId,
-            cropsToPlant[0].plotNumber
-          );
-          if (result) {
-            // Dismiss loading notification
-            loadingNotification.dismiss();
-            show(
-              `✅ Successfully planted seed at plot ${cropsToPlant[0].plotNumber}!`,
-              "success",
-              3000 // 3 seconds timeout
-            );
-          } else {
-            // Dismiss loading notification
-            loadingNotification.dismiss();
-            // show("❌ Failed to plant seed. Please try again.", "error", 3000);
-            // return;
-          }
-        } catch (error) {
-          loadingNotification.dismiss();
-          const { message } = handleContractError(error, 'planting seed');
-          console.error("Failed to plant seedaaaaaaaa:", message);
-          show(`${message}`, "error");
-          return;
-        }
+      // Batch plant
+      const seedIds = cropsToPlant.map((crop) => {
+        const category = crop.seedId >> 8;
+        const id = crop.seedId & 0xFF;
+        const subtype = getSubtype(crop.seedId);
+        const plotId = crop.plotNumber;
+        console.log("🚀 ~ handlePlant ~ plotId:", plotId, category, id, subtype)
+        return (plotId << 24) | (category << 16) | (subtype << 8) | id
+      });
+      const result = await plantBatch(seedIds);
+      if (result) {
+        loadingNotification.dismiss();
+        show(
+          `✅ Successfully planted ${cropsToPlant.length} seeds!`,
+          "success",
+          3000 // 3 seconds timeout
+        );
       } else {
-        // Batch plant
-        const seedIds = cropsToPlant.map((crop) => crop.seedId);
-        const plotNumbers = cropsToPlant.map((crop) => crop.plotNumber);
-        const result = await plantBatch(seedIds, plotNumbers);
-        if (result) {
-          // Dismiss loading notification
-          loadingNotification.dismiss();
-          show(
-            `✅ Successfully planted ${cropsToPlant.length} seeds!`,
-            "success",
-            3000 // 3 seconds timeout
-          );
-        } else {
-          // Dismiss loading notification
-          loadingNotification.dismiss();
-          show("❌ Failed to plant seeds. Please try again.", "error", 3000);
-          return;
-        }
+        loadingNotification.dismiss();
+        show("❌ Failed to plant seeds. Please try again.", "error", 3000);
+        return;
       }
 
       // Update the main crop array immediately with planted crops before closing menu
@@ -665,9 +517,8 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
       setSelectedIndexes([]);
 
       // Reload crops and seeds concurrently to reduce total wait time
-      if (userAddress) {
-        await Promise.all([
-          loadCropsFromContract(userAddress),
+      await Promise.all([
+        loadCropsFromContract(),
           (async () => {
             try {
               if (typeof refetchSeeds === "function") {
@@ -679,9 +530,8 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
           })(),
         ]);
         
-        // Force a re-render by updating the preview update key
-        setPreviewUpdateKey(prev => prev + 1);
-      }
+      // Force a re-render by updating the preview update key
+      setPreviewUpdateKey(prev => prev + 1);
 
       // Confirm planting in preview array (transition -1 to 1)
       setPreviewCropArray((prevPreviewCropArray) => {
@@ -700,27 +550,18 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
       
     } catch (error) {
       const { message } = handleContractError(error, 'planting crops');
+      loadingNotification.dismiss();
       console.error("Failed to plant crops:", message);
       show(`❌ ${message}`, "error");
     }
   };
 
   const handleHarvest = async () => {
-    if (!contractService) {
-      show(
-        "Contract service not ready yet. Please wait a moment and try again.",
-        "warning"
-      );
-      return;
-    }
-
     if (!selectedIndexes || selectedIndexes.length === 0) {
       show("Please select crops to harvest first!", "info");
       return;
     }
-
     try {
-
       // Check which crops are actually ready to harvest
       const readyCrops = [];
       const currentTime = Math.floor(Date.now());
@@ -746,39 +587,21 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
         return;
       }
 
-      if (readyCrops.length > 5) {
-        show("You can only harvest up to 5 crops at a time!", "info");
-        return;
-      }
-
       show(`Harvesting ${readyCrops.length} ready crops...`, "info");
 
       let successCount = 0;
       // Prefer batch harvest when multiple crops are ready
-      if (readyCrops.length > 1 && typeof harvestMany === "function") {
-        const result = await harvestMany(readyCrops);
-        if (result) {
-          successCount = readyCrops.length;
-        }
-      } else {
-        // Fallback to single harvest
-        for (const idx of readyCrops) {
-          const result = await harvest(idx);
-          if (result) {
-            successCount++;
-          }
-        }
+      const result = await harvestMany(readyCrops);
+      if (result) {
+        successCount = readyCrops.length;
       }
-
-      // Reload crops from contract to sync state
-      if (userAddress) {
-        // Small delay to ensure blockchain state is updated
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        await loadCropsFromContract(userAddress);
-        
-        // Force a re-render by updating the preview update key
-        setPreviewUpdateKey(prev => prev + 1);
-      }
+    
+      // Small delay to ensure blockchain state is updated
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      await loadCropsFromContract();
+      
+      // Force a re-render by updating the preview update key
+      setPreviewUpdateKey(prev => prev + 1);
 
       if (successCount > 0) {
         show(`✅ Successfully harvested ${successCount} crops!`, "success");
@@ -823,7 +646,6 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
     });
   };
 
-  // Handle potion application
   const handlePotionUse = async () => {
     if (!selectedIndexes || selectedIndexes.length === 0) {
       show("Please select plots to apply the potion to!", "info");
@@ -873,14 +695,12 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
         show(`✅ Successfully applied ${selectedPotion.name} to ${successCount} plots!`, "success");
         
         // Reload crops from contract to show updated potion effects
-        if (userAddress) {
           // Small delay to ensure blockchain state is updated
           await new Promise(resolve => setTimeout(resolve, 1000));
-          await loadCropsFromContract(userAddress);
+          await loadCropsFromContract();
           
           // Force a re-render by updating the preview update key
           setPreviewUpdateKey(prev => prev + 1);
-        }
         
         setSelectedIndexes([]);
         setIsUsingPotion(false);
@@ -998,6 +818,7 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
       });
     }
   };
+
   const handleClickSeedFromDialog = async (id, fieldIndex) => {
     // Remember the selected seed so Shift+click can reuse it across plots
     setSelectedSeed(id);
@@ -1027,7 +848,7 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
     newPreviewCropArray.copyFrom(previewCropArray);
 
     // Get growth time for this seed type from contract
-    const growthTime = await getGrowthTimeForSeed(id);
+    const growthTime = getGrowthTime(id);
 
     newPreviewCropArray.plantCropAt(idx, id, growthTime);
 
@@ -1057,7 +878,6 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
   ];
   return (
     <div>
-      
       <PanZoomViewport
         backgroundSrc="/images/backgrounds/farm.gif"
         hotspots={hotspots}

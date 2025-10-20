@@ -16,21 +16,20 @@ import {
 } from "../../constants/app_ids";
 import { SEED_PACK_STATUS } from "../../constants/item_seed";
 import { useVendor, useFarming, useRngHub } from "../../hooks/useContracts";
-import { useAgwEthersAndService } from "../../hooks/useContractBase";
+import { useSolanaWallet } from "../../hooks/useSolanaWallet";
 import { useNotification } from "../../contexts/NotificationContext";
 import { isTransactionRejection } from "../../utils/errorUtils";
 import CustomSeedsDialog from "./CustomSeedsDialog";
 import SeedRollingDialog from "./SeedRollingDialog";
 const VendorDialog = ({ onClose, label = "VENDOR", header = "" }) => {
-  const { isConnected, account, contractService } = useAgwEthersAndService();
+  const { isConnected, account } = useSolanaWallet();
   const {
     buySeedPack,
-    checkPendingRequests,
+    revealSeeds,
     getAllPendingRequests,
     listenForSeedsRevealed,
     error: vendorError,
   } = useVendor();
-  const { fulfillRequest } = useRngHub();
   const { getMaxPlots, getUserCrops } = useFarming();
   const { show } = useNotification();
 
@@ -130,26 +129,18 @@ const VendorDialog = ({ onClose, label = "VENDOR", header = "" }) => {
   const loadPendingRequests = useCallback(async () => {
     if (
       !isConnected ||
-      !account ||
-      !checkPendingRequests ||
       !getAllPendingRequests
     )
       return;
 
     try {
-      const hasPending = await checkPendingRequests();
-      setHasPendingRequests(hasPending);
-
-      if (hasPending) {
-        const allPendingReqs = await getAllPendingRequests();
-        setPendingRequests(allPendingReqs);
-      } else {
-        setPendingRequests([]);
-      }
+      const requests = await getAllPendingRequests();
+      setHasPendingRequests(requests.length > 0);
+      setPendingRequests(requests);
     } catch (err) {
       console.error("Failed to load pending requests:", err);
     }
-  }, [isConnected, account, checkPendingRequests, getAllPendingRequests]);
+  }, [isConnected, account, getAllPendingRequests]);
 
   // Refresh function to reload pending requests and available plots
   const refreshVendorData = useCallback(async () => {
@@ -164,7 +155,7 @@ const VendorDialog = ({ onClose, label = "VENDOR", header = "" }) => {
 
   // Main data loading effect - only runs when dialog opens or account changes
   useEffect(() => {
-    if (!isConnected || !account || !contractService || dataLoaded) return;
+    if (!isConnected || !account || dataLoaded) return;
 
     const loadData = async () => {
       setIsLoadingData(true);
@@ -187,7 +178,6 @@ const VendorDialog = ({ onClose, label = "VENDOR", header = "" }) => {
   }, [
     isConnected,
     account,
-    contractService,
     dataLoaded,
     loadAvailablePlots,
     loadPendingRequests,
@@ -241,10 +231,10 @@ const VendorDialog = ({ onClose, label = "VENDOR", header = "" }) => {
       try {
         // Event listener will be set up after fulfill call with the correct block number
         // Fulfill the pending request via VRNG system
-        const result = await fulfillRequest(requestId);
+        const result = await revealSeeds();
         if (result) {
           // Get the block number from the fulfill transaction
-          const fulfillBlockNumber = result.blockNumber;
+          const txSig = result;
 
           // Immediately update UI state since fulfill was successful
           // This will update the UI buttons to remove the reveal status
@@ -266,11 +256,12 @@ const VendorDialog = ({ onClose, label = "VENDOR", header = "" }) => {
           };
           setRollingInfo(rollingInfo);
           setIsRollingDlg(true);
-
+          console.log("🚀 ~ VendorDialog ~ txSig:", txSig)
           // Set up event listener with the fulfill transaction block number
           const eventCleanup = await listenForSeedsRevealed(
-            requestId,
+            txSig,
             (revealedSeeds) => {
+              console.log("🚀 ~ VendorDialog ~ revealedSeeds:", revealedSeeds)
               // Update the rolling dialog with the actual revealed seeds
               setRollingInfo((prev) => ({
                 ...prev,
@@ -298,8 +289,7 @@ const VendorDialog = ({ onClose, label = "VENDOR", header = "" }) => {
               setTimeout(async () => {
                 await loadPendingRequests();
               }, 1000); // Wait 1 second for the transaction to be mined
-            },
-            fulfillBlockNumber
+            }
           );
 
           if (eventCleanup) {
@@ -323,7 +313,7 @@ const VendorDialog = ({ onClose, label = "VENDOR", header = "" }) => {
         setRevealCleanup(null);
       }
     },
-    [listenForSeedsRevealed, fulfillRequest, loadPendingRequests, revealCleanup]
+    [listenForSeedsRevealed, revealSeeds, loadPendingRequests, revealCleanup]
   );
 
   // Cancel reveal process
@@ -389,7 +379,6 @@ const VendorDialog = ({ onClose, label = "VENDOR", header = "" }) => {
          
          const tier = tierMap[selectedSeed];
          const result = await buySeedPack(tier, item.count);
-         console.log("Seed pack purchase result:", result);
          
          // Show success message (loading notification will auto-dismiss after 5 minutes)
          
@@ -416,9 +405,7 @@ const VendorDialog = ({ onClose, label = "VENDOR", header = "" }) => {
         }
       } catch (err) {
         console.error("Failed to buy seed pack:", err);
-        
          // Show error message (loading notification will auto-dismiss after 5 minutes)
-        
         setSeedStatus((prev) => ({
           ...prev,
           [selectedSeed]: {

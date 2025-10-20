@@ -6,7 +6,7 @@ import TreeInput from "../../../components/inputs/TreeInputs";
 import ItemViewMarketplace from "../../../components/boxes/ItemViewMarketplace";
 import { ALL_ITEMS } from "../../../constants/item_data";
 import { ID_SEEDS, ID_PRODUCE_ITEMS, ID_BAIT_ITEMS, ID_FISH_ITEMS, ID_CHEST_ITEMS, ID_POTION_ITEMS } from "../../../constants/app_ids";
-import { useP2PMarket } from "../../../hooks/useContracts";
+import { useMarket } from "../../../hooks/useMarket";
 import BatchBuyConfirmDialog from "./BatchBuyConfirmDialog";
 
 const BatchBuyDialog = ({ onBack, onClose, onPurchaseSuccess, item, excludeSeller }) => {
@@ -16,7 +16,7 @@ const BatchBuyDialog = ({ onBack, onClose, onPurchaseSuccess, item, excludeSelle
   const [expandedItems, setExpandedItems] = useState(new Set());
   const [checkedItemIds, setCheckedItemIds] = useState([]);
   // Use P2P Market hook to get actual marketplace listings
-  const { marketData, getAllListings } = useP2PMarket();
+  const { marketData, getAllListings } = useMarket();
   const { listings, loading, error } = marketData;
 
   // Helper function to find item data by BigInt ID

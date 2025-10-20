@@ -3,7 +3,7 @@ import "./style.css";
 import { fishImages, fishingPanelImages } from "../../../constants/_baseimages";
 import BaseButton from "../../../components/buttons/BaseButton";
 import LootReceivedDialog from "../../Global_LootReceivedDialog";
-import { useFishing, useRngHub } from "../../../hooks/useContracts";
+import { useFishing } from "../../../hooks/useFishing";
 import { useItems } from "../../../hooks/useItems";
 import { useNotification } from "../../../contexts/NotificationContext";
 import { handleContractError } from "../../../utils/errorHandler";
@@ -16,8 +16,7 @@ const Fishing = ({ baitId, amount, requestId, onBuyAgain, onBackToMenu }) => {
   const [fishingResult, setFishingResult] = useState(null);
   const [hasThrownBait, setHasThrownBait] = useState(false);
   
-  const { listenForFishingResults } = useFishing();
-  const { fulfillRequest, rngHubData } = useRngHub();
+  const { revealFishing } = useFishing();
   const { refetch } = useItems();
   const { show } = useNotification();
   
@@ -51,55 +50,17 @@ const Fishing = ({ baitId, amount, requestId, onBuyAgain, onBackToMenu }) => {
     setIsFishing(true);
     
       try {
-        // Fulfill the RNG request to reveal fishing results
-        const result = await fulfillRequest(requestId);
+        // Reveal fishing on-chain
+        const result = await revealFishing(requestId);
         
         if (result) {
           show("Reeling in fish...", "info");
           
           // Set up event listener for fishing results
-          const eventCleanup = await listenForFishingResults(requestId, (fishingResults) => {
-          console.log('Fishing results received:', fishingResults);
-          
-          // Convert the results to the format expected by LootReceivedDialog
-          const lootItems = [];
-          fishingResults.itemIds.forEach((itemId, index) => {
-            if (fishingResults.amounts[index] > 0) {
-              lootItems.push({
-                id: itemId,
-                count: parseInt(fishingResults.amounts[index])
-              });
-            }
-          });
-          
-          setFishingResult(lootItems);
-          setIsLootReceivedDialog(true);
+          // No event listener; results will be reflected in inventory. Prompt user.
+          show("Fishing revealed! Check your inventory.", "success");
           setIsFishing(false);
-          
-          // Refresh inventory to show updated item counts
           refetch();
-          
-          // Clean up the event listener
-          if (fishingCleanupRef.current) {
-            fishingCleanupRef.current();
-            fishingCleanupRef.current = null;
-          }
-          
-          show("Fishing complete! Check your loot!", "success");
-        }, 'latest');
-        
-        if (eventCleanup) {
-          fishingCleanupRef.current = eventCleanup;
-        }
-        
-        // Clean up event listener after 30 seconds (timeout)
-        setTimeout(() => {
-          if (fishingCleanupRef.current) {
-            fishingCleanupRef.current();
-            fishingCleanupRef.current = null;
-          }
-          setIsFishing(false);
-        }, 30000);
         
       } else {
         // If fulfillment failed, reset the loading state
@@ -118,7 +79,7 @@ const Fishing = ({ baitId, amount, requestId, onBuyAgain, onBackToMenu }) => {
         fishingCleanupRef.current = null;
       }
     }
-    }, [requestId, fulfillRequest, listenForFishingResults, show, refetch]);
+    }, [requestId, revealFishing, show, refetch]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -163,7 +124,7 @@ const Fishing = ({ baitId, amount, requestId, onBuyAgain, onBackToMenu }) => {
           className="button"
           label={isFishing ? "Reeling..." : "Reel in Fish"}
           onClick={onReelInFish}
-          disabled={isFishing || rngHubData.loading || !hasThrownBait}
+          disabled={isFishing || !hasThrownBait}
         ></BaseButton>
       )}
       {isLootReceivedDialog && (

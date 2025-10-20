@@ -2,16 +2,15 @@
 import React, { useState, useEffect } from 'react';
 import BaseDialog from '../../_BaseDialog';
 import './style.css';
-import { useAgwEthersAndService } from '../../../hooks/useContractBase';
+import { useSolanaWallet } from '../../../hooks/useSolanaWallet';
 import { useEquipmentRegistry } from '../../../hooks/useContracts';
-import { useAppData } from '../../../context/AppDataContext';
 import CardView from '../../../components/boxes/CardView';
 import BaseButton from '../../../components/buttons/BaseButton';
 
 const BoostNFTSelector = ({ onClose, onSelect, slotIndex, equippedAvatars = [] }) => {
-  const { account } = useAgwEthersAndService();
+  const { account } = useSolanaWallet();
   const { setAvatar, getOwnedBoostNFTs, getContract } = useEquipmentRegistry();
-  const { invalidate } = useAppData();
+  // const { invalidate } = useAppData();
   const [ownedNFTs, setOwnedNFTs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -61,12 +60,12 @@ const BoostNFTSelector = ({ onClose, onSelect, slotIndex, equippedAvatars = [] }
       await setAvatar(slotIndex, boostNFT.address, nft.tokenId);
 
       // Invalidate cached avatars/boost and notify listeners to refresh UI
-      try {
-        if (invalidate) {
-          invalidate('avatars');
-          invalidate('boost');
-        }
-      } catch {}
+      // try {
+      //   if (invalidate) {
+      //     invalidate('avatars');
+      //     invalidate('boost');
+      //   }
+      // } catch {}
       try {
         window.dispatchEvent(new CustomEvent('avatarsUpdated'));
       } catch {}

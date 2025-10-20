@@ -5,7 +5,7 @@ import CardView from "../../components/boxes/CardView";
 import LabelValueBox from "../../components/boxes/LabelValueBox";
 import BaseButton from "../../components/buttons/BaseButton";
 import { formatDuration } from "../../utils/basic";
-import { useChestOpener } from "../../hooks/useContracts";
+import { useChest } from "../../hooks/useChest";
 import { useNotification } from "../../contexts/NotificationContext";
 import { handleContractError } from "../../utils/errorHandler";
 import { isTransactionRejection } from "../../utils/errorUtils";
@@ -20,7 +20,7 @@ const GoldChestDialog = ({ onClose, label = "DAILY CHEST", header = "" }) => {
     fetchChestData,
     loading,
     error: chestError,
-  } = useChestOpener();
+  } = useChest();
   
   const { show } = useNotification();
   const [remainedTime, setRemainedTime] = useState(0);

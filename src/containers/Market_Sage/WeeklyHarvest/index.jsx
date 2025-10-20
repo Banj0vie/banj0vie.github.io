@@ -37,8 +37,6 @@ const WeeklyHarvest = ({onBack}) => {
         lastNotificationTime.current = now;
         if (isTransactionRejection(error)) {
           show('Transaction was rejected by user.', 'error');
-        } else {
-          show(`Sage operation failed!`, 'error');
         }
       }
     }

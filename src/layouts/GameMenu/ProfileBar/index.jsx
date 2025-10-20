@@ -8,7 +8,7 @@ import { formatNumber } from "../../../utils/basic";
 import InventoryDialog from "../../../containers/Menu_Inventory";
 import SettingsDialog from "../../../containers/Menu_Settings";
 import { useSelector } from "react-redux";
-import { bnToNumber } from "../../../solana/utils/tokenUtils";
+// Removed bnToNumber; using plain parsing based on 1e6 decimals for locked tokens
 
 const ProfileBar = ({ isFarmMenu }) => {
 
@@ -17,9 +17,15 @@ const ProfileBar = ({ isFarmMenu }) => {
   const [isInventoryDialog, setIsInventoryDialog] = useState(false);
   const [isSettingsDialog, setIsSettingsDialog] = useState(false);
   const gameToken = useSelector((state) => state.balance.gameToken);
-  const lockedTokens = bnToNumber(userData?.lockedTokens);
+  // locked_tokens stored as string (lamports with 1e6 decimals). Convert to UI units.
+  const lockedTokensUi = useMemo(() => {
+    const raw = userData?.locked_tokens ?? '0';
+    const n = parseFloat(raw);
+    if (!isFinite(n)) return '0';
+    return (n / 1e6).toString();
+  }, [userData?.locked_tokens]);
 
-  const lockedHoney = useMemo(() => formatNumber(lockedTokens.toString()), [lockedTokens]);
+  const lockedHoney = useMemo(() => formatNumber(lockedTokensUi), [lockedTokensUi]);
   const honeyBalance = useMemo(() => formatNumber((gameToken || "0").toString()), [gameToken]);
 
   return (

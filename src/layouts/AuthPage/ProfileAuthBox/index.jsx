@@ -3,15 +3,13 @@ import "./style.css";
 import BaseDivider from "../../../components/dividers/BaseDivider";
 import BaseInput from "../../../components/inputs/BaseInput";
 import BaseButton from "../../../components/buttons/BaseButton";
-import { useSolanaWallet } from '../../../hooks/useSolanaWallet';
 import { useNotification } from "../../../contexts/NotificationContext";
-import { useUser } from "../../../solana/hooks/useUser";
+import { useReferral } from "../../../hooks/useContracts";
 
 const ProfileAuthBox = ({ onCreateProfile }) => {
   const [username, setUsername] = useState("");
   const [referralCode, setReferralCode] = useState("");
-  const { refreshProfileStatus } = useSolanaWallet();
-  const { createProfile } = useUser();
+  const { fetchReferralData, createProfile } = useReferral();
   const [isCreatingProfile, setIsCreatingProfile] = useState(false);
   const [error, setError] = useState(null);
 
@@ -36,8 +34,7 @@ const ProfileAuthBox = ({ onCreateProfile }) => {
       
       // Refresh profile status after creation
       console.log('🔄 Refreshing profile status...');
-      const hasProfile = await refreshProfileStatus();
-      console.log('🔍 Profile status after refresh:', hasProfile);
+      await fetchReferralData();
       
       onCreateProfile(username.trim(), referralCode.trim());
       show("Profile created successfully!", 'success');

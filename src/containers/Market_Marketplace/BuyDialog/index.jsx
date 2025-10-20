@@ -9,9 +9,9 @@ import BuyConfirmDialog from "./BuyConfirmDialog";
 import TreeInput from "../../../components/inputs/TreeInputs";
 import { buttonFrames } from "../../../constants/_baseimages";
 import BaseDivider from "../../../components/dividers/BaseDivider";
-import { useP2PMarket } from "../../../hooks/useContracts";
-import { useItems } from "../../../hooks/useItems";
-import { useAgwEthersAndService } from "../../../hooks/useContractBase";
+import { useMarket } from "../../../hooks/useMarket";
+import { useItems } from "../../../hooks/useItems"; 
+import { useSolanaWallet } from "../../../hooks/useSolanaWallet";
 
 const BuyDialog = ({ onBack, onClose }) => {
   const [isBuyConfirmDialog, setIsBuyConfirmDialog] = useState(false);
@@ -22,14 +22,14 @@ const BuyDialog = ({ onBack, onClose }) => {
   const [sortBy, setSortBy] = useState("price-asc");
   const itemsPerPage = 10;
   // Use P2P Market hook
-  const { marketData, getAllListings, cancel } = useP2PMarket();
+  const { marketData, getAllListings, cancel } = useMarket();
   const { listings, loading, error } = marketData;
   
   // Use Items hook to refresh user inventory after purchase
   const { refetch: refetchItems } = useItems();
   
   // Get current user account
-  const { account } = useAgwEthersAndService();
+  const { account } = useSolanaWallet();
 
   // Helper function to find item data by BigInt ID
   const findItemDataByBigIntId = (bigIntIdString) => {

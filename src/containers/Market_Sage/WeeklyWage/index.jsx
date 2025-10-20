@@ -32,8 +32,6 @@ const WeeklyWage = ({ onBack }) => {
         lastNotificationTime.current = now;
         if (isTransactionRejection(error)) {
           showNotification('Transaction was rejected by user.', 'error');
-        } else {
-          showNotification(`Sage operation failed!`, 'error');
         }
       }
     }

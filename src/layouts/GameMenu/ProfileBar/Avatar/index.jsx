@@ -2,17 +2,15 @@ import React, { useState, useEffect } from "react";
 import "./style.css";
 import AvatarDialog from "../../../../containers/Menu_Avatar";
 import { useEquipmentRegistry } from "../../../../hooks/useContracts";
-import { useAgwEthersAndService } from "../../../../hooks/useContractBase";
-import { useAppData } from "../../../../context/AppDataContext";
+import { useSolanaWallet } from "../../../../hooks/useSolanaWallet";
 
 const Avatar = ({ src, alt = "avatar" }) => {
   const [isAvatarDialog, setIsAvatarDialog] = useState(false);
   const [avatarImage, setAvatarImage] = useState(null);
   const [loading, setLoading] = useState(true);
   
-  const { account } = useAgwEthersAndService();
+  const { account } = useSolanaWallet();
   const { getAvatars, getNFTMetadata } = useEquipmentRegistry();
-  const { getAvatarsCached } = useAppData();
   
   const fallbackSrc = "/images/avatars/avatar-left-placeholder.png";
 
@@ -27,44 +25,14 @@ const Avatar = ({ src, alt = "avatar" }) => {
         setLoading(true);
         
         // Get equipped avatars (cached via context when available)
-        const avatarResult = await (getAvatarsCached ? getAvatarsCached() : getAvatars(account));
+        const avatarResult = await getAvatars(account);
+        const [nfts, tokenIds] = avatarResult;
         
         // Check if we have any equipped avatars
-        if (avatarResult && Array.isArray(avatarResult) && avatarResult.length >= 2) {
-          const [nfts, tokenIds] = avatarResult;
-          
-          // Collect all equipped avatars with their metadata
-          const equippedAvatars = [];
-          
-          for (let i = 0; i < nfts.length && i < 2; i++) {
-            if (nfts[i] && nfts[i] !== "0x0000000000000000000000000000000000000000" && tokenIds[i]) {
-              // Get token metadata using the hook function
-              const metadata = await getNFTMetadata(tokenIds[i]);
-              if (metadata) {
-                equippedAvatars.push({
-                  tokenId: tokenIds[i],
-                  image: metadata.image,
-                  boostValue: metadata.boostPpm,
-                  slotIndex: i
-                });
-              }
-            }
-          }
-          
-          // Sort by boost value (descending), then by slot index (ascending)
-          equippedAvatars.sort((a, b) => {
-            if (b.boostValue !== a.boostValue) {
-              return b.boostValue - a.boostValue; // Higher boost first
-            }
-            return a.slotIndex - b.slotIndex; // Lower slot index first if same boost
-          });
-          
-          // Use the best avatar
-          if (equippedAvatars.length > 0 && equippedAvatars[0].image) {
-            setAvatarImage(equippedAvatars[0].image);
-            setLoading(false);
-            return;
-          }
+        if (nfts && Array.isArray(nfts) && nfts.length >= 2) {
+          setAvatarImage(nfts[0].image);
+          setLoading(false);
+          return;
         }
         
         // No equipped avatar found, use placeholder

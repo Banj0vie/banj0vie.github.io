@@ -5,11 +5,9 @@ import BaseDivider from "../../../components/dividers/BaseDivider";
 import Slider from "../../../components/inputs/Slider";
 import BaseButton from "../../../components/buttons/BaseButton";
 import { useROIData } from "../../../hooks/useContracts";
-import { useSolanaWallet } from '../../../hooks/useSolanaWallet';
 import { useSelector } from "react-redux";
 
 const RollChances = ({ onBack }) => {
-  const { account } = useSolanaWallet();
   const { roiData, getROIData, loading } = useROIData();
   const [currentFarmLevel, setCurrentFarmLevel] = useState(0);
   
@@ -17,19 +15,13 @@ const RollChances = ({ onBack }) => {
 
   // Load initial data
   useEffect(() => {
-    const loadData = async () => {
-      await getROIData(level);
-    };
-    
-    if (account) {
-      loadData();
-    }
-  }, [account, level, getROIData]);
+    getROIData(level);
+  }, [level]);
 
   // Update ROI data when farm level changes
   const handleFarmLevelChange = async (newLevel) => {
     setCurrentFarmLevel(newLevel);
-    await getROIData(newLevel);
+    getROIData(newLevel);
   };
 
   const primaryData = [

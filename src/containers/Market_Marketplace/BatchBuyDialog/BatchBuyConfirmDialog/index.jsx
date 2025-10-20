@@ -4,7 +4,7 @@ import BaseDialog from "../../../_BaseDialog";
 import BaseInput from "../../../../components/inputs/BaseInput";
 import BaseDivider from "../../../../components/dividers/BaseDivider";
 import BaseButton from "../../../../components/buttons/BaseButton";
-import { useP2PMarket } from "../../../../hooks/useContracts";
+import { useMarket } from "../../../../hooks/useMarket";
 import { useNotification } from "../../../../contexts/NotificationContext";
 import { handleContractError } from "../../../../utils/errorHandler";
 
@@ -13,7 +13,7 @@ const BatchBuyConfirmDialog = ({ onClose, onPurchaseSuccess, item }) => {
   const [totalBudget, setTotalBudget] = useState(0);
   const [loading, setLoading] = useState(false);
 
-  const { batchBuy } = useP2PMarket();
+  const { batchBuy } = useMarket();
   const { show } = useNotification();
 
   const handleConfirm = async () => {

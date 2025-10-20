@@ -3,11 +3,11 @@ import "./style.css";
 import BaseDialog from "../_BaseDialog";
 import BaseButton from "../../components/buttons/BaseButton";
 import { formatAddress } from "../../utils/basic";
-import { useAgwEthersAndService } from "../../hooks/useContractBase";
+import { useSolanaWallet } from '../../hooks/useSolanaWallet';
 import { handleContractError } from "../../utils/errorHandler";
 
 const WalletDialog = ({onClose}) => {
-  const { account, disconnect } = useAgwEthersAndService();
+  const { account, disconnect } = useSolanaWallet();
 
   const onDisconnect = () => {
     try {

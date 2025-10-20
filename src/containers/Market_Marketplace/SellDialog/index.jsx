@@ -5,7 +5,7 @@ import CardView from "../../../components/boxes/CardView";
 import ItemViewMarketplace from "../../../components/boxes/ItemViewMarketplace";
 import TreeInput from "../../../components/inputs/TreeInputs";
 import { useItems } from "../../../hooks/useItems";
-import { useP2PMarket } from "../../../hooks/useContracts";
+import { useMarket } from "../../../hooks/useMarket";
 import SendNFTDialog from "./SendNFTDialog";
 import SellConfirmDialog from "./SellConfirmDialog";
 
@@ -16,7 +16,7 @@ const SellDialog = ({ onBack, onClose }) => {
   const [checkedItemIds, setCheckedItemIds] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const { all: allItems, loading, refetch: refetchItems } = useItems();
-  const { getAllListings } = useP2PMarket();
+  const { getAllListings } = useMarket();
   // Filter items based on search term, only show owned items
   const filteredItems = useMemo(() => {
     if (!allItems || allItems.length === 0) {

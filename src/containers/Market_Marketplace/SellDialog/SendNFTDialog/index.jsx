@@ -4,7 +4,7 @@ import BaseDialog from "../../../_BaseDialog";
 import BaseInput from "../../../../components/inputs/BaseInput";
 import Slider from "../../../../components/inputs/Slider";
 import BaseButton from "../../../../components/buttons/BaseButton";
-import { useP2PMarket } from "../../../../hooks/useContracts";
+import { useMarket } from "../../../../hooks/useMarket";
 import { useNotification } from "../../../../contexts/NotificationContext";
 import { handleContractError } from "../../../../utils/errorHandler";
 
@@ -13,7 +13,7 @@ const SendNFTDialog = ({ onClose, onSendSuccess, item }) => {
   const [address, setAddress] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const { send } = useP2PMarket();
+  const { send } = useMarket();
   const { show } = useNotification();
 
   const handleSend = async () => {
@@ -27,9 +27,9 @@ const SendNFTDialog = ({ onClose, onSendSuccess, item }) => {
       return;
     }
 
-    // Basic address validation
-    if (!address.startsWith("0x") || address.length !== 42) {
-      show("Please enter a valid Ethereum address", "error");
+    // Basic Solana address validation
+    if (address.length < 32 || address.length > 44) {
+      show("Please enter a valid Solana address", "error");
       return;
     }
 
@@ -62,9 +62,9 @@ const SendNFTDialog = ({ onClose, onSendSuccess, item }) => {
               <div>Recipient Address</div>
               <BaseInput
                 className="input"
-                placeholder="0x..."
+                placeholder="Enter Solana address..."
                 value={address}
-                maxLength={42}
+                maxLength={44}
                 setValue={(val) => setAddress(val)}
               ></BaseInput>
             </div>
