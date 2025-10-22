@@ -86,6 +86,7 @@ export const useChest = () => {
     }, [program, publicKey, fetchChestData]);
 
     const openChest = useCallback(async (chestType) => {
+        console.log("🚀 ~ useChest ~ chestType:", chestType)
         if (!program || !publicKey) { setChestData(p => ({ ...p, error: 'Program or wallet not available' })); return null; }
         setChestData(p => ({ ...p, loading: true, error: null }));
         try {
@@ -105,6 +106,7 @@ export const useChest = () => {
                 })
                 .remainingAccounts(remainingAccounts)
                 .instruction();
+            console.log("🚀 ~ useChest ~ ix:", ix)
             const { value: alt } = await connection.getAddressLookupTable(LOOKUP_TABLE_ADDRESS);
             if (!alt) throw new Error('ALT not found');
             const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
@@ -114,6 +116,16 @@ export const useChest = () => {
                 instructions: [...preIx, ix],
             }).compileToV0Message([alt]);  
             const tx = new VersionedTransaction(msgV0);
+
+            let size = 0;
+            try {
+                
+                // If using VersionedTransaction, use the message flow above; for legacy:
+                size = tx.serialize({ verifySignatures: false, requireAllSignatures: false }).length;
+                console.log("tx bytes:", size); // must be <= ~1232
+            } catch (e) {
+                console.error("Serialize error:", e);
+            }
             // Pre-send simulation to surface errors/logs
             try {
                 console.log('openChest arg (raw):', chestType);

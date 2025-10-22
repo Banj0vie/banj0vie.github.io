@@ -3,17 +3,18 @@ import { useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useSolanaWallet } from './useSolanaWallet';
 import { createSolanaValleyDexProgram } from '../solana/anchor/client';
-import { 
-  GAME_TOKEN_MINT, 
-  SOLANA_VALLEY_DEX_PROGRAM_ID 
+import {
+  GAME_TOKEN_MINT,
+  SOLANA_VALLEY_DEX_PROGRAM_ID
 } from '../solana/constants/programId';
-import { 
-  getAssociatedTokenAddress, 
-  TOKEN_PROGRAM_ID, 
-  ASSOCIATED_TOKEN_PROGRAM_ID 
+import {
+  getAssociatedTokenAddress,
+  TOKEN_PROGRAM_ID,
+  ASSOCIATED_TOKEN_PROGRAM_ID
 } from '@solana/spl-token';
 import { PublicKey, SystemProgram, LAMPORTS_PER_SOL } from '@solana/web3.js';
 import { BN } from '@coral-xyz/anchor';
+import { getBalance, getParsedTokenAccountsByOwner } from '../utils/requestQueue';
 import {
   buyTokensStart,
   buyTokensSuccess,
@@ -68,7 +69,7 @@ export const useDex = () => {
       if (!connection) return;
 
       // Get SOL balance
-      const solBalance = await connection.getBalance(publicKey);
+      const solBalance = await getBalance(connection, publicKey);
       const solBalanceFormatted = (solBalance / LAMPORTS_PER_SOL).toFixed(6);
 
       // Get game token balance
@@ -80,8 +81,8 @@ export const useDex = () => {
 
       let gameTokenBalance = '0';
       try {
-        const tokenAccount = await connection.getTokenAccountBalance(userGameTokenAta);
-        gameTokenBalance = (tokenAccount.value.uiAmount || 0).toFixed(6);
+        const parsed = await getParsedTokenAccountsByOwner(connection, publicKey, { mint: GAME_TOKEN_MINT });
+        gameTokenBalance = (parsed.value?.[0]?.account?.data?.parsed?.info?.tokenAmount?.uiAmount || 0).toFixed(6);
       } catch (err) {
         // Token account doesn't exist yet
         gameTokenBalance = '0';

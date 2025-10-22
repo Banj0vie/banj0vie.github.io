@@ -15,7 +15,7 @@ import {
   ID_SEED_SHOP_PAGES,
 } from "../../constants/app_ids";
 import { SEED_PACK_STATUS } from "../../constants/item_seed";
-import { useVendor, useFarming, useRngHub } from "../../hooks/useContracts";
+import { useVendor, useFarming } from "../../hooks/useContracts";
 import { useSolanaWallet } from "../../hooks/useSolanaWallet";
 import { useNotification } from "../../contexts/NotificationContext";
 import { isTransactionRejection } from "../../utils/errorUtils";

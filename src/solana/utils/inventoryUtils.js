@@ -1,6 +1,7 @@
 import { ID_SEEDS, ID_PRODUCE_ITEMS, ID_BAIT_ITEMS, ID_FISH_ITEMS, ID_CHEST_ITEMS, ID_POTION_ITEMS } from '../../constants/app_ids';
 import { getItemMintPDA } from './pdaUtils';
 import { TOKEN_PROGRAM_ID } from './accountUtils';
+import { getParsedTokenAccountsByOwner } from '../../utils/requestQueue';
 
 export async function fetchAllItemBalances(connection, ownerPublicKey) {
   const idGroups = [ID_SEEDS, ID_PRODUCE_ITEMS, ID_BAIT_ITEMS, ID_FISH_ITEMS, ID_CHEST_ITEMS, ID_POTION_ITEMS];
@@ -12,7 +13,7 @@ export async function fetchAllItemBalances(connection, ownerPublicKey) {
       mintToItemId.set(mintPda.toString(), itemId);
     } catch {}
   }
-  const ownerTokenAccounts = await connection.getParsedTokenAccountsByOwner(ownerPublicKey, { programId: TOKEN_PROGRAM_ID });
+  const ownerTokenAccounts = await getParsedTokenAccountsByOwner(connection, ownerPublicKey, { programId: TOKEN_PROGRAM_ID });
   const balances = {};
   for (const itemId of allIds) balances[itemId] = 0;
   for (const { account } of ownerTokenAccounts.value || []) {

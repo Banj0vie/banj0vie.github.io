@@ -6,6 +6,7 @@ import { SystemProgram, SYSVAR_SLOT_HASHES_PUBKEY, TransactionMessage, Versioned
 import { BN } from '@coral-xyz/anchor';
 import { GAME_TOKEN_MINT, LOOKUP_TABLE_ADDRESS } from '../solana/constants/programId';
 import { getAssociatedTokenAddress, TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID } from '@solana/spl-token';
+import { EPOCH_PERIOD } from '../utils/basic';
 
 export const useVendor = () => {
   const { publicKey, sendTransaction } = useSolanaWallet();
@@ -39,21 +40,22 @@ export const useVendor = () => {
       const userGameAta = await getAssociatedTokenAddress(GAME_TOKEN_MINT, publicKey, false);
       const gameTokenMintAuthPda = getGameTokenMintAuthPDA();
       const gameRegistryInfo = await getGameRegistryInfo(program);
-      const remainingAccounts = [];
-      const epochTop5Pda = getEpochTop5PDA(gameRegistryInfo.epoch - 1);
-      remainingAccounts.push({ pubkey: epochTop5Pda, isWritable: true, isSigner: false });
+      const epoch = (gameRegistryInfo.epochStart + EPOCH_PERIOD) > Date.now()/1000 ? gameRegistryInfo.epoch : gameRegistryInfo.epoch + 1;
+      const epochTop5Pda = getEpochTop5PDA(epoch);
       const sponsorGameAta = await getSponsorGameAta(program, publicKey);
-      remainingAccounts.push({ pubkey: sponsorGameAta, isWritable: true, isSigner: false });
+      let remainingAccounts = [];
+      remainingAccounts.push({ pubkey: userDataPda, isWritable: true, isSigner: false });
+      remainingAccounts.push({ pubkey: bankerDataPda, isWritable: true, isSigner: false });
+      remainingAccounts.push({ pubkey: userGameAta, isWritable: true, isSigner: false });
+      remainingAccounts.push({ pubkey: GAME_TOKEN_MINT, isWritable: true, isSigner: false });
+      remainingAccounts.push({ pubkey: gameTokenMintAuthPda, isWritable: false, isSigner: false });
+      remainingAccounts.push({ pubkey: epochTop5Pda, isWritable: true, isSigner: false });
+      remainingAccounts.push({ pubkey: sponsorGameAta, isWritable: false, isSigner: false });
       const tx = await program.methods
-      .buySeedPack(tier, new BN(count), new BN(nonce))
+      .buySeedPack(tier, new BN(count), new BN(nonce), epoch)
       .accounts({
         buyer: publicKey,
         gameRegistry: gameRegistryPda,
-        userData: userDataPda,
-        bankerData: bankerDataPda,
-        buyerGameAta: userGameAta,
-        gameTokenMint: GAME_TOKEN_MINT,
-        gameTokenMintAuth: gameTokenMintAuthPda,
         request: requestPda,
         tokenProgram: TOKEN_PROGRAM_ID,
         systemProgram: SystemProgram.programId,
@@ -156,7 +158,6 @@ export const useVendor = () => {
       }).compileToV0Message([alt]);
       const tx = new VersionedTransaction(msgV0);
       const sig = await sendTransaction(tx, connection, { skipPreflight: false, maxRetries: 3 });
-      console.log("🚀 ~ useVendor ~ sig:", sig)
       await connection.confirmTransaction({signature: sig, blockhash, lastValidBlockHeight});
       localStorage.removeItem(`seedNonce:${publicKey.toBase58()}`);
       return sig;

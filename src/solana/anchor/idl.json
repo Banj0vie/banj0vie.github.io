@@ -1,1 +1,2246 @@
-{"version":"0.1.0","name":"solana_valley","instructions":[{"name":"initialize","accounts":[{"name":"admin","isMut":true,"isSigner":true},{"name":"bankerData","isMut":true,"isSigner":false},{"name":"gameRegistry","isMut":true,"isSigner":false},{"name":"epochTop5","isMut":true,"isSigner":false},{"name":"gameTokenMint","isMut":false,"isSigner":false},{"name":"tokenProgram","isMut":false,"isSigner":false},{"name":"systemProgram","isMut":false,"isSigner":false}],"args":[]},{"name":"initItemMint","accounts":[{"name":"admin","isMut":true,"isSigner":true},{"name":"gameRegistry","isMut":false,"isSigner":false},{"name":"itemMintAuth","isMut":false,"isSigner":false},{"name":"itemMintPda","isMut":true,"isSigner":false},{"name":"tokenProgram","isMut":false,"isSigner":false},{"name":"systemProgram","isMut":false,"isSigner":false},{"name":"rent","isMut":false,"isSigner":false}],"args":[{"name":"category","type":"u8"},{"name":"subtype","type":"u8"}]},{"name":"setItemMetadata","accounts":[{"name":"admin","isMut":true,"isSigner":true},{"name":"gameRegistry","isMut":false,"isSigner":false},{"name":"itemMintAuth","isMut":false,"isSigner":false},{"name":"itemMintPda","isMut":false,"isSigner":false},{"name":"tokenMetadataProgram","isMut":false,"isSigner":false},{"name":"metadataPda","isMut":true,"isSigner":false},{"name":"systemProgram","isMut":false,"isSigner":false}],"args":[{"name":"name","type":"string"},{"name":"symbol","type":"string"},{"name":"uri","type":"string"}]},{"name":"createProfile","accounts":[{"name":"user","isMut":true,"isSigner":true},{"name":"userData","isMut":true,"isSigner":false},{"name":"codeOwner","isMut":true,"isSigner":false},{"name":"systemProgram","isMut":false,"isSigner":false}],"args":[{"name":"name","type":"string"},{"name":"referralCode","type":{"array":["u8",32]}}]},{"name":"buySeedPack","accounts":[{"name":"buyer","isMut":true,"isSigner":true},{"name":"gameRegistry","isMut":true,"isSigner":false},{"name":"userData","isMut":true,"isSigner":false},{"name":"bankerData","isMut":true,"isSigner":false},{"name":"buyerGameAta","isMut":true,"isSigner":false},{"name":"gameTokenMint","isMut":true,"isSigner":false},{"name":"gameTokenMintAuth","isMut":false,"isSigner":false},{"name":"request","isMut":true,"isSigner":false},{"name":"tokenProgram","isMut":false,"isSigner":false},{"name":"systemProgram","isMut":false,"isSigner":false}],"args":[{"name":"tier","type":"u8"},{"name":"count","type":"u64"},{"name":"nonce","type":"u64"}]},{"name":"revealSeeds","accounts":[{"name":"buyer","isMut":true,"isSigner":true},{"name":"gameRegistry","isMut":false,"isSigner":false},{"name":"itemMintAuth","isMut":false,"isSigner":false},{"name":"request","isMut":true,"isSigner":false},{"name":"slotHashes","isMut":false,"isSigner":false},{"name":"tokenProgram","isMut":false,"isSigner":false},{"name":"associatedTokenProgram","isMut":false,"isSigner":false},{"name":"systemProgram","isMut":false,"isSigner":false}],"args":[{"name":"nonce","type":"u64"}]},{"name":"stake","accounts":[{"name":"user","isMut":true,"isSigner":true},{"name":"userData","isMut":true,"isSigner":false},{"name":"bankerData","isMut":true,"isSigner":false},{"name":"gameTokenMint","isMut":true,"isSigner":false},{"name":"userGameAta","isMut":true,"isSigner":false},{"name":"tokenProgram","isMut":false,"isSigner":false}],"args":[{"name":"amount","type":"u64"}]},{"name":"unstake","accounts":[{"name":"user","isMut":true,"isSigner":true},{"name":"gameRegistry","isMut":false,"isSigner":false},{"name":"userData","isMut":true,"isSigner":false},{"name":"bankerData","isMut":true,"isSigner":false},{"name":"gameTokenMint","isMut":true,"isSigner":false},{"name":"userGameAta","isMut":true,"isSigner":false},{"name":"gameTokenMintAuth","isMut":false,"isSigner":false},{"name":"tokenProgram","isMut":false,"isSigner":false}],"args":[{"name":"shares","type":"u64"}]},{"name":"plant","accounts":[{"name":"user","isMut":true,"isSigner":true},{"name":"gameRegistry","isMut":false,"isSigner":false},{"name":"userData","isMut":true,"isSigner":false},{"name":"tokenProgram","isMut":false,"isSigner":false},{"name":"systemProgram","isMut":false,"isSigner":false}],"args":[{"name":"seedIds","type":{"vec":"u32"}}]},{"name":"harvest","accounts":[{"name":"user","isMut":true,"isSigner":true},{"name":"gameRegistry","isMut":false,"isSigner":false},{"name":"userData","isMut":true,"isSigner":false},{"name":"gameTokenMint","isMut":true,"isSigner":false},{"name":"userGameAta","isMut":true,"isSigner":false},{"name":"gameTokenMintAuth","isMut":false,"isSigner":false},{"name":"systemProgram","isMut":false,"isSigner":false},{"name":"tokenProgram","isMut":false,"isSigner":false},{"name":"associatedTokenProgram","isMut":false,"isSigner":false}],"args":[{"name":"plotIds","type":"bytes"}]},{"name":"applyGrowthElixir","accounts":[{"name":"user","isMut":true,"isSigner":true},{"name":"userData","isMut":true,"isSigner":false},{"name":"gameRegistry","isMut":false,"isSigner":false},{"name":"gameTokenMint","isMut":true,"isSigner":false},{"name":"userGameAta","isMut":true,"isSigner":false},{"name":"systemProgram","isMut":false,"isSigner":false},{"name":"tokenProgram","isMut":false,"isSigner":false},{"name":"associatedTokenProgram","isMut":false,"isSigner":false}],"args":[{"name":"plotNumber","type":"u8"}]},{"name":"applyPesticide","accounts":[{"name":"user","isMut":true,"isSigner":true},{"name":"userData","isMut":true,"isSigner":false},{"name":"gameRegistry","isMut":false,"isSigner":false},{"name":"gameTokenMint","isMut":true,"isSigner":false},{"name":"userGameAta","isMut":true,"isSigner":false},{"name":"systemProgram","isMut":false,"isSigner":false},{"name":"tokenProgram","isMut":false,"isSigner":false},{"name":"associatedTokenProgram","isMut":false,"isSigner":false}],"args":[{"name":"plotNumber","type":"u8"}]},{"name":"applyFertilizer","accounts":[{"name":"user","isMut":true,"isSigner":true},{"name":"userData","isMut":true,"isSigner":false},{"name":"gameRegistry","isMut":false,"isSigner":false},{"name":"gameTokenMint","isMut":true,"isSigner":false},{"name":"userGameAta","isMut":true,"isSigner":false},{"name":"systemProgram","isMut":false,"isSigner":false},{"name":"tokenProgram","isMut":false,"isSigner":false},{"name":"associatedTokenProgram","isMut":false,"isSigner":false}],"args":[{"name":"plotNumber","type":"u8"}]},{"name":"claimDailyChest","accounts":[{"name":"user","isMut":true,"isSigner":true},{"name":"gameRegistry","isMut":false,"isSigner":false},{"name":"userData","isMut":true,"isSigner":false},{"name":"systemProgram","isMut":false,"isSigner":false},{"name":"tokenProgram","isMut":false,"isSigner":false},{"name":"associatedTokenProgram","isMut":false,"isSigner":false}],"args":[]},{"name":"openChest","accounts":[{"name":"user","isMut":true,"isSigner":true},{"name":"gameRegistry","isMut":false,"isSigner":false},{"name":"userData","isMut":true,"isSigner":false},{"name":"slotHashes","isMut":false,"isSigner":false},{"name":"systemProgram","isMut":false,"isSigner":false},{"name":"tokenProgram","isMut":false,"isSigner":false},{"name":"associatedTokenProgram","isMut":false,"isSigner":false}],"args":[{"name":"chestType","type":"u8"}]},{"name":"levelUp","accounts":[{"name":"user","isMut":true,"isSigner":true},{"name":"userData","isMut":true,"isSigner":false},{"name":"gameRegistry","isMut":false,"isSigner":false},{"name":"gameTokenMint","isMut":true,"isSigner":false},{"name":"userGameAta","isMut":true,"isSigner":false},{"name":"tokenProgram","isMut":false,"isSigner":false}],"args":[{"name":"targetLevel","type":"u8"}]},{"name":"unlockWeeklyWage","accounts":[{"name":"user","isMut":true,"isSigner":true},{"name":"gameRegistry","isMut":false,"isSigner":false},{"name":"userData","isMut":true,"isSigner":false},{"name":"gameTokenMint","isMut":true,"isSigner":false},{"name":"userGameAta","isMut":true,"isSigner":false},{"name":"gameTokenMintAuth","isMut":false,"isSigner":false},{"name":"tokenProgram","isMut":false,"isSigner":false}],"args":[]},{"name":"unlockWeeklyHarvest","accounts":[{"name":"user","isMut":true,"isSigner":true},{"name":"gameRegistry","isMut":false,"isSigner":false},{"name":"userData","isMut":true,"isSigner":false},{"name":"gameTokenMint","isMut":true,"isSigner":false},{"name":"userGameAta","isMut":true,"isSigner":false},{"name":"gameTokenMintAuth","isMut":false,"isSigner":false},{"name":"tokenProgram","isMut":false,"isSigner":false}],"args":[]},{"name":"craftGrowthElixir","accounts":[{"name":"user","isMut":true,"isSigner":true},{"name":"userData","isMut":true,"isSigner":false},{"name":"gameTokenMint","isMut":true,"isSigner":false},{"name":"gameTokenMintAuth","isMut":false,"isSigner":false},{"name":"gameRegistry","isMut":false,"isSigner":false},{"name":"systemProgram","isMut":false,"isSigner":false},{"name":"tokenProgram","isMut":false,"isSigner":false},{"name":"associatedTokenProgram","isMut":false,"isSigner":false}],"args":[{"name":"count","type":"u64"}]},{"name":"craftPesticide","accounts":[{"name":"user","isMut":true,"isSigner":true},{"name":"userData","isMut":true,"isSigner":false},{"name":"gameTokenMint","isMut":true,"isSigner":false},{"name":"gameTokenMintAuth","isMut":false,"isSigner":false},{"name":"gameRegistry","isMut":false,"isSigner":false},{"name":"systemProgram","isMut":false,"isSigner":false},{"name":"tokenProgram","isMut":false,"isSigner":false},{"name":"associatedTokenProgram","isMut":false,"isSigner":false}],"args":[{"name":"count","type":"u64"}]},{"name":"craftFertilizer","accounts":[{"name":"user","isMut":true,"isSigner":true},{"name":"userData","isMut":true,"isSigner":false},{"name":"gameTokenMint","isMut":true,"isSigner":false},{"name":"gameTokenMintAuth","isMut":false,"isSigner":false},{"name":"gameRegistry","isMut":false,"isSigner":false},{"name":"systemProgram","isMut":false,"isSigner":false},{"name":"tokenProgram","isMut":false,"isSigner":false},{"name":"associatedTokenProgram","isMut":false,"isSigner":false}],"args":[{"name":"count","type":"u64"}]},{"name":"craftBait1","accounts":[{"name":"user","isMut":true,"isSigner":true},{"name":"gameRegistry","isMut":false,"isSigner":false},{"name":"userData","isMut":true,"isSigner":false},{"name":"systemProgram","isMut":false,"isSigner":false},{"name":"tokenProgram","isMut":false,"isSigner":false},{"name":"associatedTokenProgram","isMut":false,"isSigner":false}],"args":[{"name":"count","type":"u64"}]},{"name":"craftBait2","accounts":[{"name":"user","isMut":true,"isSigner":true},{"name":"gameRegistry","isMut":false,"isSigner":false},{"name":"userData","isMut":true,"isSigner":false},{"name":"systemProgram","isMut":false,"isSigner":false},{"name":"tokenProgram","isMut":false,"isSigner":false},{"name":"associatedTokenProgram","isMut":false,"isSigner":false}],"args":[{"name":"itemIds","type":{"vec":"u16"}},{"name":"amounts","type":{"vec":"u64"}}]},{"name":"craftBait3","accounts":[{"name":"user","isMut":true,"isSigner":true},{"name":"gameRegistry","isMut":false,"isSigner":false},{"name":"userData","isMut":true,"isSigner":false},{"name":"systemProgram","isMut":false,"isSigner":false},{"name":"tokenProgram","isMut":false,"isSigner":false},{"name":"associatedTokenProgram","isMut":false,"isSigner":false}],"args":[{"name":"itemIds","type":{"vec":"u16"}},{"name":"amounts","type":{"vec":"u64"}}]},{"name":"fish","accounts":[{"name":"user","isMut":true,"isSigner":true},{"name":"gameRegistry","isMut":false,"isSigner":false},{"name":"userData","isMut":true,"isSigner":false},{"name":"request","isMut":true,"isSigner":false},{"name":"systemProgram","isMut":false,"isSigner":false},{"name":"tokenProgram","isMut":false,"isSigner":false}],"args":[{"name":"baitId","type":"u16"},{"name":"amount","type":"u16"},{"name":"nonce","type":"u64"}]},{"name":"revealFishing","accounts":[{"name":"user","isMut":true,"isSigner":true},{"name":"gameRegistry","isMut":false,"isSigner":false},{"name":"itemMintAuth","isMut":false,"isSigner":false},{"name":"request","isMut":true,"isSigner":false},{"name":"slotHashes","isMut":false,"isSigner":false},{"name":"tokenProgram","isMut":false,"isSigner":false},{"name":"associatedTokenProgram","isMut":false,"isSigner":false},{"name":"systemProgram","isMut":false,"isSigner":false}],"args":[{"name":"nonce","type":"u64"}]},{"name":"registerMyReferralCode","accounts":[{"name":"player","isMut":true,"isSigner":true},{"name":"userData","isMut":true,"isSigner":false},{"name":"codeOwner","isMut":true,"isSigner":false},{"name":"systemProgram","isMut":false,"isSigner":false}],"args":[{"name":"code","type":{"array":["u8",32]}}]},{"name":"list","accounts":[{"name":"seller","isMut":true,"isSigner":true},{"name":"gameRegistry","isMut":false,"isSigner":false},{"name":"marketData","isMut":true,"isSigner":false},{"name":"listing","isMut":true,"isSigner":false},{"name":"itemMint","isMut":true,"isSigner":false},{"name":"sellerItemAta","isMut":true,"isSigner":false},{"name":"itemMintAuth","isMut":false,"isSigner":false},{"name":"tokenProgram","isMut":false,"isSigner":false},{"name":"associatedTokenProgram","isMut":false,"isSigner":false},{"name":"systemProgram","isMut":false,"isSigner":false}],"args":[{"name":"itemId","type":"u16"},{"name":"amount","type":"u64"},{"name":"pricePer","type":"u64"}]},{"name":"purchase","accounts":[{"name":"buyer","isMut":true,"isSigner":true},{"name":"gameRegistry","isMut":false,"isSigner":false},{"name":"listing","isMut":true,"isSigner":false},{"name":"buyerData","isMut":true,"isSigner":false},{"name":"buyerGameAta","isMut":true,"isSigner":false},{"name":"sellerGameAta","isMut":true,"isSigner":false},{"name":"gameTokenMint","isMut":true,"isSigner":false},{"name":"gameTokenMintAuth","isMut":false,"isSigner":false},{"name":"itemMint","isMut":true,"isSigner":false},{"name":"buyerItemAta","isMut":true,"isSigner":false},{"name":"itemMintAuth","isMut":false,"isSigner":false},{"name":"tokenProgram","isMut":false,"isSigner":false},{"name":"associatedTokenProgram","isMut":false,"isSigner":false},{"name":"systemProgram","isMut":false,"isSigner":false}],"args":[{"name":"marketId","type":"u64"},{"name":"amount","type":"u64"}]},{"name":"cancel","accounts":[{"name":"seller","isMut":true,"isSigner":true},{"name":"gameRegistry","isMut":false,"isSigner":false},{"name":"listing","isMut":true,"isSigner":false},{"name":"itemMint","isMut":true,"isSigner":false},{"name":"sellerItemAta","isMut":true,"isSigner":false},{"name":"itemMintAuth","isMut":false,"isSigner":false},{"name":"tokenProgram","isMut":false,"isSigner":false},{"name":"associatedTokenProgram","isMut":false,"isSigner":false},{"name":"systemProgram","isMut":false,"isSigner":false}],"args":[]},{"name":"send","accounts":[{"name":"sender","isMut":true,"isSigner":true},{"name":"recipient","isMut":false,"isSigner":false},{"name":"gameRegistry","isMut":false,"isSigner":false},{"name":"itemMint","isMut":true,"isSigner":false},{"name":"senderItemAta","isMut":true,"isSigner":false},{"name":"recipientItemAta","isMut":true,"isSigner":false},{"name":"itemMintAuth","isMut":false,"isSigner":false},{"name":"tokenProgram","isMut":false,"isSigner":false},{"name":"associatedTokenProgram","isMut":false,"isSigner":false},{"name":"systemProgram","isMut":false,"isSigner":false}],"args":[{"name":"itemId","type":"u16"},{"name":"amount","type":"u64"}]},{"name":"batchBuy","accounts":[{"name":"buyer","isMut":true,"isSigner":true},{"name":"gameRegistry","isMut":false,"isSigner":false},{"name":"buyerData","isMut":true,"isSigner":false},{"name":"buyerGameAta","isMut":true,"isSigner":false},{"name":"gameTokenMint","isMut":true,"isSigner":false},{"name":"gameTokenMintAuth","isMut":false,"isSigner":false},{"name":"itemMint","isMut":true,"isSigner":false},{"name":"buyerItemAta","isMut":true,"isSigner":false},{"name":"itemMintAuth","isMut":false,"isSigner":false},{"name":"tokenProgram","isMut":false,"isSigner":false},{"name":"associatedTokenProgram","isMut":false,"isSigner":false},{"name":"systemProgram","isMut":false,"isSigner":false}],"args":[{"name":"itemId","type":"u16"},{"name":"maxPricePer","type":"u64"},{"name":"totalBudget","type":"u64"}]}],"accounts":[{"name":"UserData","type":{"kind":"struct","fields":[{"name":"name","type":"string"},{"name":"referralCode","type":{"array":["u8",32]}},{"name":"sponsor","type":"publicKey"},{"name":"level","type":"u8"},{"name":"xp","type":"u32"},{"name":"epochXp","type":"u32"},{"name":"lastEpochCounted","type":"u32"},{"name":"avatars","type":{"array":["publicKey",2]}},{"name":"lockedTokens","type":"u64"},{"name":"xtokenShare","type":"u64"},{"name":"chestOpenTime","type":"u32"},{"name":"lastWageTime","type":"u32"},{"name":"lastHarvestTime","type":"u32"},{"name":"activePlotIds","type":"bytes"},{"name":"userCrops","type":{"array":[{"defined":"UserCrops"},30]}}]}},{"name":"BankerData","type":{"kind":"struct","fields":[{"name":"balance","type":"u64"},{"name":"xbalance","type":"u64"}]}},{"name":"GameRegistry","type":{"kind":"struct","fields":[{"name":"admin","type":"publicKey"},{"name":"gameTokenMint","type":"publicKey"},{"name":"epoch","type":"u32"},{"name":"epochStart","type":"u32"}]}},{"name":"Request","type":{"kind":"struct","fields":[{"name":"buyer","type":"publicKey"},{"name":"tier","type":"u8"},{"name":"revealed","type":"bool"},{"name":"count","type":"u64"},{"name":"nonce","type":"u64"},{"name":"commitment","type":{"array":["u8",32]}},{"name":"commitSlot","type":"u64"}]}},{"name":"FishingRequest","type":{"kind":"struct","fields":[{"name":"player","type":"publicKey"},{"name":"level","type":"u8"},{"name":"baitId","type":"u16"},{"name":"amount","type":"u16"},{"name":"commitment","type":{"array":["u8",32]}},{"name":"commitSlot","type":"u64"},{"name":"revealed","type":"bool"}]}},{"name":"Listing","type":{"kind":"struct","fields":[{"name":"listingId","type":"u64"},{"name":"seller","type":"publicKey"},{"name":"itemId","type":"u16"},{"name":"amount","type":"u64"},{"name":"pricePer","type":"u64"},{"name":"active","type":"bool"}]}},{"name":"MarketData","type":{"kind":"struct","fields":[{"name":"nextId","type":"u64"}]}},{"name":"ReferralCodeOwner","type":{"kind":"struct","fields":[{"name":"owner","type":"publicKey"}]}},{"name":"EpochTop5History","type":{"kind":"struct","fields":[{"name":"epoch","type":"u32"},{"name":"timestamp","type":"u32"},{"name":"top5","type":{"array":["publicKey",5]}},{"name":"top5Xp","type":{"array":["u32",5]}}]}}],"types":[{"name":"LootEntry","type":{"kind":"struct","fields":[{"name":"id","type":"u16"},{"name":"ppm","type":"u32"}]}},{"name":"UserCrops","type":{"kind":"struct","fields":[{"name":"id","type":"u32"},{"name":"endTime","type":"u32"},{"name":"prodMultiplier","type":"u16"},{"name":"tokenMultiplier","type":"u16"},{"name":"growthElixir","type":"u8"}]}}],"events":[{"name":"FishingResults","fields":[{"name":"player","type":"publicKey","index":false},{"name":"requestId","type":"publicKey","index":false},{"name":"itemIds","type":{"vec":"u16"},"index":false},{"name":"amounts","type":{"vec":"u64"},"index":false},{"name":"baitId","type":"u16","index":false},{"name":"totalAmount","type":"u16","index":false}]},{"name":"Listed","fields":[{"name":"listingId","type":"u64","index":false},{"name":"seller","type":"publicKey","index":false},{"name":"itemId","type":"u16","index":false},{"name":"amount","type":"u64","index":false},{"name":"pricePer","type":"u64","index":false}]},{"name":"Purchased","fields":[{"name":"listingId","type":"u64","index":false},{"name":"buyer","type":"publicKey","index":false},{"name":"amount","type":"u64","index":false}]},{"name":"Canceled","fields":[{"name":"listingId","type":"u64","index":false}]},{"name":"BuyResults","fields":[{"name":"player","type":"publicKey","index":false},{"name":"nonce","type":"u64","index":false},{"name":"itemIds","type":{"vec":"u16"},"index":false}]}],"errors":[{"code":6000,"name":"BadTier","msg":"Bad tier"},{"code":6001,"name":"BadCount","msg":"Bad count"},{"code":6002,"name":"Overflow","msg":"Overflow"},{"code":6003,"name":"AlreadyRevealed","msg":"Reveal already done"},{"code":6004,"name":"NotBuyer","msg":"Not buyer"},{"code":6005,"name":"BadReveal","msg":"Bad reveal"},{"code":6006,"name":"SlotHashMissing","msg":"Slot hash missing or reveal window expired"},{"code":6007,"name":"MissingItemMint","msg":"Missing item mint account in remaining_accounts"},{"code":6008,"name":"MissingAta","msg":"Missing ATA account in remaining_accounts"},{"code":6009,"name":"OobIndex","msg":"Index out of bounds for tier"},{"code":6010,"name":"WrongOwner","msg":"Account has wrong owner"},{"code":6011,"name":"WrongSize","msg":"Account has wrong size"},{"code":6012,"name":"WrongMetadataPda","msg":"Metadata PDA mismatch"},{"code":6013,"name":"InvalidAmount","msg":"Invalid amount"},{"code":6014,"name":"MaxPlotsReached","msg":"Maximum plots reached"},{"code":6015,"name":"InvalidPlotId","msg":"Invalid plot ID"},{"code":6016,"name":"InvalidCategory","msg":"Invalid category"},{"code":6017,"name":"InvalidSubtype","msg":"Invalid subtype"},{"code":6018,"name":"NoCrop","msg":"No crop found"},{"code":6019,"name":"AlreadyGrown","msg":"Already grown"},{"code":6020,"name":"NotEnoughTime","msg":"Not enough time"},{"code":6021,"name":"InvalidBait","msg":"Invalid bait"},{"code":6022,"name":"MissingAccount","msg":"Missing account"}]}
+{
+  "version": "0.1.0",
+  "name": "solana_valley",
+  "instructions": [
+    {
+      "name": "initialize",
+      "accounts": [
+        {
+          "name": "admin",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "bankerData",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "gameRegistry",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "epochTop5",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "gameTokenMint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "initItemMint",
+      "accounts": [
+        {
+          "name": "admin",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "gameRegistry",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "itemMintAuth",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "itemMintPda",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "category",
+          "type": "u8"
+        },
+        {
+          "name": "subtype",
+          "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "setItemMetadata",
+      "accounts": [
+        {
+          "name": "admin",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "gameRegistry",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "itemMintAuth",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "itemMintPda",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenMetadataProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "metadataPda",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "symbol",
+          "type": "string"
+        },
+        {
+          "name": "uri",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "createProfile",
+      "accounts": [
+        {
+          "name": "user",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "userData",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "codeOwner",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "referralCode",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "buySeedPack",
+      "accounts": [
+        {
+          "name": "buyer",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "gameRegistry",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "request",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "tier",
+          "type": "u8"
+        },
+        {
+          "name": "count",
+          "type": "u64"
+        },
+        {
+          "name": "nonce",
+          "type": "u64"
+        },
+        {
+          "name": "epoch",
+          "type": "u32"
+        }
+      ]
+    },
+    {
+      "name": "revealSeeds",
+      "accounts": [
+        {
+          "name": "buyer",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "gameRegistry",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "itemMintAuth",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "request",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "slotHashes",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "associatedTokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "nonce",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "stake",
+      "accounts": [
+        {
+          "name": "user",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "userData",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "bankerData",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "gameTokenMint",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "userGameAta",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "unstake",
+      "accounts": [
+        {
+          "name": "user",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "gameRegistry",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "userData",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "bankerData",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "gameTokenMint",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "userGameAta",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "gameTokenMintAuth",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "shares",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "plant",
+      "accounts": [
+        {
+          "name": "user",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "gameRegistry",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "userData",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "seedIds",
+          "type": {
+            "vec": "u32"
+          }
+        }
+      ]
+    },
+    {
+      "name": "harvest",
+      "accounts": [
+        {
+          "name": "user",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "gameRegistry",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "userData",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "gameTokenMint",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "userGameAta",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "gameTokenMintAuth",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "associatedTokenProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "plotIds",
+          "type": "bytes"
+        }
+      ]
+    },
+    {
+      "name": "applyGrowthElixir",
+      "accounts": [
+        {
+          "name": "user",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "userData",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "gameRegistry",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "gameTokenMint",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "userGameAta",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "associatedTokenProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "plotNumber",
+          "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "applyPesticide",
+      "accounts": [
+        {
+          "name": "user",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "userData",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "gameRegistry",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "gameTokenMint",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "userGameAta",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "associatedTokenProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "plotNumber",
+          "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "applyFertilizer",
+      "accounts": [
+        {
+          "name": "user",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "userData",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "gameRegistry",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "gameTokenMint",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "userGameAta",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "associatedTokenProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "plotNumber",
+          "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "claimDailyChest",
+      "accounts": [
+        {
+          "name": "user",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "gameRegistry",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "userData",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "associatedTokenProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "openChest",
+      "accounts": [
+        {
+          "name": "user",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "gameRegistry",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "userData",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "slotHashes",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "associatedTokenProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "chestType",
+          "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "levelUp",
+      "accounts": [
+        {
+          "name": "user",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "userData",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "gameRegistry",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "gameTokenMint",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "userGameAta",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "targetLevel",
+          "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "unlockWeeklyWage",
+      "accounts": [
+        {
+          "name": "user",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "gameRegistry",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "userData",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "gameTokenMint",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "userGameAta",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "gameTokenMintAuth",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "unlockWeeklyHarvest",
+      "accounts": [
+        {
+          "name": "user",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "gameRegistry",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "userData",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "gameTokenMint",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "userGameAta",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "gameTokenMintAuth",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "craftGrowthElixir",
+      "accounts": [
+        {
+          "name": "user",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "userData",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "gameTokenMint",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "gameTokenMintAuth",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "gameRegistry",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "epochTop5",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "associatedTokenProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "count",
+          "type": "u64"
+        },
+        {
+          "name": "epoch",
+          "type": "u32"
+        }
+      ]
+    },
+    {
+      "name": "craftPesticide",
+      "accounts": [
+        {
+          "name": "user",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "userData",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "gameTokenMint",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "gameTokenMintAuth",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "gameRegistry",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "epochTop5",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "associatedTokenProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "count",
+          "type": "u64"
+        },
+        {
+          "name": "epoch",
+          "type": "u32"
+        }
+      ]
+    },
+    {
+      "name": "craftFertilizer",
+      "accounts": [
+        {
+          "name": "user",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "userData",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "gameTokenMint",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "gameTokenMintAuth",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "gameRegistry",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "epochTop5",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "associatedTokenProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "count",
+          "type": "u64"
+        },
+        {
+          "name": "epoch",
+          "type": "u32"
+        }
+      ]
+    },
+    {
+      "name": "craftBait1",
+      "accounts": [
+        {
+          "name": "user",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "gameRegistry",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "userData",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "associatedTokenProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "count",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "craftBait2",
+      "accounts": [
+        {
+          "name": "user",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "gameRegistry",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "userData",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "associatedTokenProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "itemIds",
+          "type": {
+            "vec": "u16"
+          }
+        },
+        {
+          "name": "amounts",
+          "type": {
+            "vec": "u64"
+          }
+        }
+      ]
+    },
+    {
+      "name": "craftBait3",
+      "accounts": [
+        {
+          "name": "user",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "gameRegistry",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "userData",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "associatedTokenProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "itemIds",
+          "type": {
+            "vec": "u16"
+          }
+        },
+        {
+          "name": "amounts",
+          "type": {
+            "vec": "u64"
+          }
+        }
+      ]
+    },
+    {
+      "name": "fish",
+      "accounts": [
+        {
+          "name": "user",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "gameRegistry",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "userData",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "request",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "baitId",
+          "type": "u16"
+        },
+        {
+          "name": "amount",
+          "type": "u16"
+        },
+        {
+          "name": "nonce",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "revealFishing",
+      "accounts": [
+        {
+          "name": "user",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "gameRegistry",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "itemMintAuth",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "PDA mint authority for **item** SFT mints"
+          ]
+        },
+        {
+          "name": "request",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The fishing request to reveal"
+          ]
+        },
+        {
+          "name": "slotHashes",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "associatedTokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "nonce",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "registerMyReferralCode",
+      "accounts": [
+        {
+          "name": "player",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "userData",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "codeOwner",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "code",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "list",
+      "accounts": [
+        {
+          "name": "seller",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "gameRegistry",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "marketData",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "listing",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "itemMint",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "sellerItemAta",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "itemMintAuth",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "associatedTokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "itemId",
+          "type": "u16"
+        },
+        {
+          "name": "amount",
+          "type": "u64"
+        },
+        {
+          "name": "pricePer",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "purchase",
+      "accounts": [
+        {
+          "name": "buyer",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "gameRegistry",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "listing",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "buyerData",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "buyerGameAta",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "gameTokenMint",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "gameTokenMintAuth",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "associatedTokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "marketId",
+          "type": "u64"
+        },
+        {
+          "name": "amount",
+          "type": "u64"
+        },
+        {
+          "name": "epoch",
+          "type": "u32"
+        }
+      ]
+    },
+    {
+      "name": "cancel",
+      "accounts": [
+        {
+          "name": "seller",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "gameRegistry",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "listing",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "itemMint",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "sellerItemAta",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "itemMintAuth",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "associatedTokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "send",
+      "accounts": [
+        {
+          "name": "sender",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "recipient",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "gameRegistry",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "itemMint",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "senderItemAta",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "recipientItemAta",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "itemMintAuth",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "associatedTokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "itemId",
+          "type": "u16"
+        },
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "batchBuy",
+      "accounts": [
+        {
+          "name": "buyer",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "gameRegistry",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "buyerData",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "buyerGameAta",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "gameTokenMint",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "gameTokenMintAuth",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "associatedTokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "itemId",
+          "type": "u16"
+        },
+        {
+          "name": "maxPricePer",
+          "type": "u64"
+        },
+        {
+          "name": "totalBudget",
+          "type": "u64"
+        },
+        {
+          "name": "epoch",
+          "type": "u32"
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "UserData",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "referralCode",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "sponsor",
+            "type": "publicKey"
+          },
+          {
+            "name": "level",
+            "type": "u8"
+          },
+          {
+            "name": "xp",
+            "type": "u32"
+          },
+          {
+            "name": "epochXp",
+            "type": "u32"
+          },
+          {
+            "name": "lastEpochCounted",
+            "type": "u32"
+          },
+          {
+            "name": "avatars",
+            "type": {
+              "array": [
+                "publicKey",
+                2
+              ]
+            }
+          },
+          {
+            "name": "lockedTokens",
+            "type": "u64"
+          },
+          {
+            "name": "xtokenShare",
+            "type": "u64"
+          },
+          {
+            "name": "chestOpenTime",
+            "type": "u32"
+          },
+          {
+            "name": "lastWageTime",
+            "type": "u32"
+          },
+          {
+            "name": "lastHarvestTime",
+            "type": "u32"
+          },
+          {
+            "name": "activePlotIds",
+            "type": "bytes"
+          },
+          {
+            "name": "userCrops",
+            "type": {
+              "array": [
+                {
+                  "defined": "UserCrops"
+                },
+                30
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "BankerData",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "balance",
+            "type": "u64"
+          },
+          {
+            "name": "xbalance",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "GameRegistry",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "admin",
+            "type": "publicKey"
+          },
+          {
+            "name": "gameTokenMint",
+            "type": "publicKey"
+          },
+          {
+            "name": "epoch",
+            "type": "u32"
+          },
+          {
+            "name": "epochStart",
+            "type": "u32"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Request",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "buyer",
+            "type": "publicKey"
+          },
+          {
+            "name": "tier",
+            "type": "u8"
+          },
+          {
+            "name": "revealed",
+            "type": "bool"
+          },
+          {
+            "name": "count",
+            "type": "u64"
+          },
+          {
+            "name": "nonce",
+            "type": "u64"
+          },
+          {
+            "name": "commitment",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "commitSlot",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "FishingRequest",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "player",
+            "type": "publicKey"
+          },
+          {
+            "name": "level",
+            "type": "u8"
+          },
+          {
+            "name": "baitId",
+            "type": "u16"
+          },
+          {
+            "name": "amount",
+            "type": "u16"
+          },
+          {
+            "name": "commitment",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "commitSlot",
+            "type": "u64"
+          },
+          {
+            "name": "revealed",
+            "type": "bool"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Listing",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "listingId",
+            "type": "u64"
+          },
+          {
+            "name": "seller",
+            "type": "publicKey"
+          },
+          {
+            "name": "itemId",
+            "type": "u16"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "pricePer",
+            "type": "u64"
+          },
+          {
+            "name": "active",
+            "type": "bool"
+          }
+        ]
+      }
+    },
+    {
+      "name": "MarketData",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "nextId",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ReferralCodeOwner",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "codeOwner",
+            "type": "publicKey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "EpochTop5History",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "epoch",
+            "type": "u32"
+          },
+          {
+            "name": "timestamp",
+            "type": "u32"
+          },
+          {
+            "name": "top5Xp",
+            "type": {
+              "array": [
+                "u32",
+                5
+              ]
+            }
+          },
+          {
+            "name": "name1",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "name2",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "name3",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "name4",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "name5",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "LootEntry",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "id",
+            "type": "u16"
+          },
+          {
+            "name": "ppm",
+            "type": "u32"
+          }
+        ]
+      }
+    },
+    {
+      "name": "UserCrops",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "id",
+            "type": "u32"
+          },
+          {
+            "name": "endTime",
+            "type": "u32"
+          },
+          {
+            "name": "prodMultiplier",
+            "type": "u16"
+          },
+          {
+            "name": "tokenMultiplier",
+            "type": "u16"
+          },
+          {
+            "name": "growthElixir",
+            "type": "u8"
+          }
+        ]
+      }
+    }
+  ],
+  "events": [
+    {
+      "name": "FishingResults",
+      "fields": [
+        {
+          "name": "player",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "requestId",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "itemIds",
+          "type": {
+            "vec": "u16"
+          },
+          "index": false
+        },
+        {
+          "name": "amounts",
+          "type": {
+            "vec": "u64"
+          },
+          "index": false
+        },
+        {
+          "name": "baitId",
+          "type": "u16",
+          "index": false
+        },
+        {
+          "name": "totalAmount",
+          "type": "u16",
+          "index": false
+        }
+      ]
+    },
+    {
+      "name": "Listed",
+      "fields": [
+        {
+          "name": "listingId",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "seller",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "itemId",
+          "type": "u16",
+          "index": false
+        },
+        {
+          "name": "amount",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "pricePer",
+          "type": "u64",
+          "index": false
+        }
+      ]
+    },
+    {
+      "name": "Purchased",
+      "fields": [
+        {
+          "name": "listingId",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "buyer",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "amount",
+          "type": "u64",
+          "index": false
+        }
+      ]
+    },
+    {
+      "name": "Canceled",
+      "fields": [
+        {
+          "name": "listingId",
+          "type": "u64",
+          "index": false
+        }
+      ]
+    },
+    {
+      "name": "BuyResults",
+      "fields": [
+        {
+          "name": "player",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "nonce",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "itemIds",
+          "type": {
+            "vec": "u16"
+          },
+          "index": false
+        }
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "BadTier",
+      "msg": "Bad tier"
+    },
+    {
+      "code": 6001,
+      "name": "BadCount",
+      "msg": "Bad count"
+    },
+    {
+      "code": 6002,
+      "name": "Overflow",
+      "msg": "Overflow"
+    },
+    {
+      "code": 6003,
+      "name": "AlreadyRevealed",
+      "msg": "Reveal already done"
+    },
+    {
+      "code": 6004,
+      "name": "NotBuyer",
+      "msg": "Not buyer"
+    },
+    {
+      "code": 6005,
+      "name": "BadReveal",
+      "msg": "Bad reveal"
+    },
+    {
+      "code": 6006,
+      "name": "SlotHashMissing",
+      "msg": "Slot hash missing or reveal window expired"
+    },
+    {
+      "code": 6007,
+      "name": "MissingItemMint",
+      "msg": "Missing item mint account in remaining_accounts"
+    },
+    {
+      "code": 6008,
+      "name": "MissingAta",
+      "msg": "Missing ATA account in remaining_accounts"
+    },
+    {
+      "code": 6009,
+      "name": "OobIndex",
+      "msg": "Index out of bounds for tier"
+    },
+    {
+      "code": 6010,
+      "name": "WrongOwner",
+      "msg": "Account has wrong owner"
+    },
+    {
+      "code": 6011,
+      "name": "WrongSize",
+      "msg": "Account has wrong size"
+    },
+    {
+      "code": 6012,
+      "name": "WrongMetadataPda",
+      "msg": "Metadata PDA mismatch"
+    },
+    {
+      "code": 6013,
+      "name": "InvalidAmount",
+      "msg": "Invalid amount"
+    },
+    {
+      "code": 6014,
+      "name": "MaxPlotsReached",
+      "msg": "Maximum plots reached"
+    },
+    {
+      "code": 6015,
+      "name": "InvalidPlotId",
+      "msg": "Invalid plot ID"
+    },
+    {
+      "code": 6016,
+      "name": "InvalidCategory",
+      "msg": "Invalid category"
+    },
+    {
+      "code": 6017,
+      "name": "InvalidSubtype",
+      "msg": "Invalid subtype"
+    },
+    {
+      "code": 6018,
+      "name": "NoCrop",
+      "msg": "No crop found"
+    },
+    {
+      "code": 6019,
+      "name": "AlreadyGrown",
+      "msg": "Already grown"
+    },
+    {
+      "code": 6020,
+      "name": "NotEnoughTime",
+      "msg": "Not enough time"
+    },
+    {
+      "code": 6021,
+      "name": "InvalidBait",
+      "msg": "Invalid bait"
+    },
+    {
+      "code": 6022,
+      "name": "MissingAccount",
+      "msg": "Missing account"
+    },
+    {
+      "code": 6023,
+      "name": "InvalidPDA",
+      "msg": "Invalid PDA"
+    }
+  ],
+  "metadata": {
+    "address": "CGT1otbr2P59kjbJckZvTAQLRFsX7oZhN5RZPHJhSzth"
+  }
+}

@@ -9,7 +9,6 @@ import { useNotification } from "../../../../contexts/NotificationContext";
 import { handleContractError } from "../../../../utils/errorHandler";
 
 const BuyConfirmDialog = ({ onClose, onPurchaseSuccess, item }) => {
-  console.log("🚀 ~ BuyConfirmDialog ~ item:", item)
   const [amount, setAmount] = useState(1);
   const [loading, setLoading] = useState(false);
 

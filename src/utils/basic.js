@@ -191,7 +191,7 @@ export const getGrowthTime = (seedId) => {
 export const chestLootTable = (chestType) => {
   const chestId = (CAT_CHEST << 8) | Number(chestType);
   const values = (obj) => Object.values(obj || {});
-  const byCategory = (ids, category) => ids.filter((id) => ((Number(id) >> 8) === category));
+  const byCategory = (ids, category) => ids.filter((id) => ((Number(id) >> 8) === category)).slice(0, 4);
 
   const seedIds = values(ID_SEEDS);
   const produceIds = values(ID_PRODUCE_ITEMS);

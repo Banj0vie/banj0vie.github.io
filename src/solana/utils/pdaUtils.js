@@ -2,8 +2,9 @@ import { ComputeBudgetProgram, PublicKey } from '@solana/web3.js';
 import { GAME_TOKEN_MINT, SOLANA_VALLEY_PROGRAM_ID } from '../constants/programId';
 import { SEEDS } from '../constants/seeds';
 import { getAssociatedTokenAddressSync } from '@solana/spl-token';
-import { ID_CHEST_ITEMS, ID_SEEDS } from '../../constants/app_ids';
+import { CAT_CHEST, ID_CHEST_ITEMS, ID_SEEDS } from '../../constants/app_ids';
 import { chestLootTable } from '../../utils/basic';
+import { BN } from 'bn.js';
 
 
 export const getGameRegistryInfo = async (program) => {
@@ -21,10 +22,14 @@ export const getSponsorGameAta = async (program, publicKey) => {
   try {
     const userData = await program.account.userData.fetch(getUserDataPDA(publicKey));
     const sponsor = userData.sponsor;
-    console.log("🚀 ~ getSponsorGameAta ~ sponsor:", sponsor)
-    return getAssociatedTokenAddressSync(GAME_TOKEN_MINT, sponsor, false);
+    if (sponsor && !sponsor.equals(PublicKey.default)) {
+      return getAssociatedTokenAddressSync(GAME_TOKEN_MINT, sponsor, false);
+    }
+    // If no sponsor or sponsor is default, use the user's own ATA as fallback
+    return getAssociatedTokenAddressSync(GAME_TOKEN_MINT, publicKey, false);
   } catch (error) {
-    return PublicKey.default;
+    // If we can't get user data, use the user's own ATA as fallback
+    return getAssociatedTokenAddressSync(GAME_TOKEN_MINT, publicKey, false);
   }
 };
 
@@ -121,6 +126,10 @@ export const getChestOpenRemainingAccounts = (chestType, publicKey) => {
     accounts.push({ pubkey: mint, isWritable: true, isSigner: false });
     accounts.push({ pubkey: ata, isWritable: true, isSigner: false });
   }
+  const chestMint = getItemMintPDA((CAT_CHEST << 8) | Number(chestType));
+  accounts.push({ pubkey: chestMint, isWritable: true, isSigner: false });
+  const chestAta = getAssociatedTokenAddressSync(chestMint, publicKey, false);
+  accounts.push({ pubkey: chestAta, isWritable: true, isSigner: false });
   const itemMintAuth = getItemMintAuthPDA();
   accounts.push({ pubkey: itemMintAuth, isWritable: false, isSigner: false });
   return accounts;
@@ -143,6 +152,13 @@ export const getBankerDataPDA = () => {
 export const getGameRegistryPDA = () => {
   return PublicKey.findProgramAddressSync(
     [Buffer.from(SEEDS.GAME_REGISTRY)],
+    SOLANA_VALLEY_PROGRAM_ID
+  )[0];
+};
+
+export const getEpochTop5PDA = (epoch) => {
+  return PublicKey.findProgramAddressSync(
+    [Buffer.from(SEEDS.EPOCH_TOP5), new BN(epoch).toArrayLike(Buffer, 'le', 4)],
     SOLANA_VALLEY_PROGRAM_ID
   )[0];
 };
@@ -178,15 +194,6 @@ export const getMarketDataPDA = () => {
 export const getReferralCodeOwnerPDA = (code) => {
   return PublicKey.findProgramAddressSync(
     [Buffer.from(SEEDS.REF_CODE), code],
-    SOLANA_VALLEY_PROGRAM_ID
-  )[0];
-};
-
-export const getEpochTop5PDA = (epoch) => {
-  const epochBuffer = Buffer.alloc(4);
-  epochBuffer.writeUInt32LE(epoch, 0);
-  return PublicKey.findProgramAddressSync(
-    [Buffer.from(SEEDS.EPOCH_TOP5), epochBuffer],
     SOLANA_VALLEY_PROGRAM_ID
   )[0];
 };

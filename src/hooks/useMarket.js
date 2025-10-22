@@ -7,6 +7,7 @@ import { BN } from '@coral-xyz/anchor';
 import { GAME_TOKEN_MINT, LOOKUP_TABLE_ADDRESS } from '../solana/constants/programId';
 import { getAssociatedTokenAddress, TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import { preIx } from '../solana/utils/pdaUtils';
+import { EPOCH_PERIOD } from '../utils/basic';
 
 export const useMarket = () => {
     const { publicKey, sendTransaction } = useSolanaWallet();
@@ -14,6 +15,42 @@ export const useMarket = () => {
     const program = valleyProgram.getProgram();
     const connection = valleyProgram.getConnection();
     const [marketData, setMarketData] = useState({ listings: [], nextId: 0, loading: false, error: null });
+
+    function getRemainingAccounts({
+        listingPairs,
+        itemMintPda,
+        buyerItemAta,
+        itemMintAuthPda,
+        epochTop5Pda,
+        sponsorGameAta,
+    }) {
+        const accounts = [];
+        // Listings first (each as [listingPda, sellerGameAta])
+        for (const [listingPda, sellerGameAta] of listingPairs) {
+            accounts.push({ pubkey: listingPda, isWritable: true, isSigner: false });
+            accounts.push({ pubkey: sellerGameAta, isWritable: true, isSigner: false });
+        }
+        // Item minting accounts (searched by address in program)
+        accounts.push({ pubkey: itemMintPda, isWritable: true, isSigner: false });
+        accounts.push({ pubkey: buyerItemAta, isWritable: true, isSigner: false });
+        accounts.push({ pubkey: itemMintAuthPda, isWritable: false, isSigner: false });
+        // XP accounts at the end (last 2)
+        accounts.push({ pubkey: epochTop5Pda, isWritable: true, isSigner: false });
+        accounts.push({ pubkey: sponsorGameAta, isWritable: true, isSigner: false });
+        return accounts;
+    }
+    
+    async function getListingPairs({ program, itemId, gameTokenMint, maxPairs = 10 }) {
+        // Fetch all listing accounts, filter by active + itemId, return [listingPda, sellerGameAta]
+        const allListings = await program.account.listing.all();
+        const filtered = allListings.filter(l => l.account.active && l.account.itemId === itemId);
+        const pairs = [];
+        for (const listing of filtered.slice(0, maxPairs)) {
+            const sellerGameAta = await getAssociatedTokenAddress(gameTokenMint, listing.account.seller);
+            pairs.push([listing.publicKey, sellerGameAta]);
+        }
+        return pairs;
+    }
 
     const getAllListings = useCallback(async () => {
         if (!program) return [];
@@ -33,7 +70,7 @@ export const useMarket = () => {
                             seller: listing.seller?.toString?.() || '',
                             id: Number(listing.itemId || 0),
                             amount: Number(listing.amount || 0),
-                            pricePer: Number(listing.pricePer || 0) / 1e9,
+                            pricePer: Number(listing.pricePer || 0) / 1e6,
                             active: !!listing.active,
                         });
                     }
@@ -65,33 +102,35 @@ export const useMarket = () => {
             const buyerItemAta = await getAssociatedTokenAddress(itemMintPda, publicKey, false);
             const itemMintAuthPda = getItemMintAuthPDA();
             const gameTokenMintAuthPda = getGameTokenMintAuthPDA();
-            const remainingAccounts = [];
             const gameRegistryInfo = await getGameRegistryInfo(program);
-            const epochTop5Pda = getEpochTop5PDA(gameRegistryInfo.epoch - 1);
-            console.log("🚀 ~ useMarket ~ epochTop5Pda:", epochTop5Pda.toBase58())
-            remainingAccounts.push({ pubkey: epochTop5Pda, isWritable: true, isSigner: false });
+            const epoch = (gameRegistryInfo.epochStart + EPOCH_PERIOD) > Date.now()/1000 ? gameRegistryInfo.epoch : gameRegistryInfo.epoch + 1;
+            const epochTop5Pda = getEpochTop5PDA(epoch);
             const sponsorGameAta = await getSponsorGameAta(program, publicKey);
-            remainingAccounts.push({ pubkey: sponsorGameAta, isWritable: true, isSigner: false });
+            const remainingAccounts = [
+                { pubkey: sellerGameAta, isWritable: true, isSigner: false },
+                { pubkey: itemMintPda, isWritable: true, isSigner: false },
+                { pubkey: buyerItemAta, isWritable: true, isSigner: false },
+                { pubkey: itemMintAuthPda, isWritable: true, isSigner: false },
+                { pubkey: epochTop5Pda, isWritable: true, isSigner: false },
+                { pubkey: sponsorGameAta, isWritable: true, isSigner: false },
+            ];
             // Build transaction with compute budget
             const ix = await program.methods
-                .purchase(new BN(lid), new BN(amount))
+                .purchase(new BN(lid), new BN(amount), epoch)
                 .accounts({
                     buyer: publicKey,
                     gameRegistry: gameRegistryPda,
                     listing: listingPda,
                     buyerData: userDataPda,
                     buyerGameAta: userGameAta,
-                    sellerGameAta: sellerGameAta,
                     gameTokenMint: GAME_TOKEN_MINT,
                     gameTokenMintAuth: gameTokenMintAuthPda,
-                    itemMint: itemMintPda,
-                    buyerItemAta: buyerItemAta,
-                    itemMintAuth: itemMintAuthPda,
                     tokenProgram: TOKEN_PROGRAM_ID,
                     associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
                     systemProgram: SystemProgram.programId,
                 })
-                .rpc();
+                .remainingAccounts(remainingAccounts)
+                .instruction();
             const { value: alt } = await connection.getAddressLookupTable(LOOKUP_TABLE_ADDRESS);
             if (!alt) throw new Error('ALT not found');
             const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
@@ -101,18 +140,6 @@ export const useMarket = () => {
                 instructions: [...preIx, ix],
             }).compileToV0Message([alt]);
             const tx = new VersionedTransaction(msgV0);
-            // INSERT_YOUR_CODE
-            // Pre-send simulation to surface possible errors/logs
-            try {
-                const sim = await connection.simulateTransaction(tx, { sigVerify: false, commitment: 'processed' });
-                if (sim?.value?.err) {
-                    console.error('🚨 purchase simulate error:', sim.value.err, sim.value.logs);
-                    throw new Error('Simulation failed');
-                }
-            } catch (simErr) {
-                console.error('🚨 purchase simulation threw:', simErr);
-                throw simErr;
-            }
             const sig = await sendTransaction(tx, connection, { skipPreflight: false, maxRetries: 3 });
             await connection.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight });
             return sig;
@@ -135,7 +162,7 @@ export const useMarket = () => {
             const itemMintAuthPda = getItemMintAuthPDA();
             // Build transaction with compute budget
             const tx = await program.methods
-                .list(id, new BN(amount), new BN(Math.floor(pricePer * 1e9)))
+                .list(id, new BN(amount), new BN(Math.floor(pricePer * 1e6)))
                 .accounts({ 
                     seller: publicKey, 
                     gameRegistry: gameRegistryPda, 
@@ -167,7 +194,6 @@ export const useMarket = () => {
             const itemMintPda = getItemMintPDA(itemId);
             const sellerItemAta = await getAssociatedTokenAddress(itemMintPda, publicKey, false);
             const itemMintAuthPda = getItemMintAuthPDA();
-            
             // Build transaction with compute budget
             const tx = await program.methods
                 .cancel()
@@ -201,24 +227,34 @@ export const useMarket = () => {
             const buyerItemAta = await getAssociatedTokenAddress(itemMintPda, publicKey, false);
             const itemMintAuthPda = getItemMintAuthPDA();
             const gameTokenMintAuthPda = getGameTokenMintAuthPDA();
-            
+            const gameRegistryInfo = await getGameRegistryInfo(program);
+            const epoch = (gameRegistryInfo.epochStart + EPOCH_PERIOD) > Date.now()/1000 ? gameRegistryInfo.epoch : gameRegistryInfo.epoch + 1;
+            const epochTop5Pda = getEpochTop5PDA(epoch);
+            const sponsorGameAta = await getSponsorGameAta(program, publicKey);
+            const listingPairs = await getListingPairs({ program, itemId: id, gameTokenMint: GAME_TOKEN_MINT });
+
             // Build transaction with compute budget
             const tx = await program.methods
-                .batchBuy(id, new BN(Math.floor(maxPricePer * 1e9)), new BN(Math.floor(totalBudget * 1e9)))
+                .batchBuy(id, new BN(Math.floor(maxPricePer * 1e6)), new BN(Math.floor(totalBudget * 1e6)), epoch)
                 .accounts({ 
                     buyer: publicKey, 
                     gameRegistry: gameRegistryPda, 
                     buyerData: userDataPda, 
                     buyerGameAta: userGameAta, 
                     gameTokenMint: GAME_TOKEN_MINT, 
-                    gameTokenMintAuth: gameTokenMintAuthPda, 
-                    itemMint: itemMintPda, 
-                    buyerItemAta: buyerItemAta, 
-                    itemMintAuth: itemMintAuthPda, 
+                    gameTokenMintAuth: gameTokenMintAuthPda,
                     tokenProgram: TOKEN_PROGRAM_ID, 
                     associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID, 
                     systemProgram: SystemProgram.programId 
                 })
+                .remainingAccounts(getRemainingAccounts({
+                    listingPairs,
+                    itemMintPda,
+                    buyerItemAta,
+                    itemMintAuthPda,
+                    epochTop5Pda,
+                    sponsorGameAta,
+                }))
                 .rpc();
 
             return tx;

@@ -6,6 +6,7 @@ import { getUserPDAs, getGameRegistryPDA } from '../solana/utils/pdaUtils';
 import { setHasProfile, fetchUserDataSuccess } from '../solana/store/slices/userSlice';
 import { updateSolBalance, fetchBalancesSuccess } from '../solana/store/slices/balanceSlice';
 import { useProgram } from './useProgram';
+import { getBalance, getParsedTokenAccountsByOwner, getAccountInfo } from '../utils/requestQueue';
 
 const serializePubkey = (pk) => (pk && typeof pk.toString === 'function' ? pk.toString() : pk);
 const toStringIfBN = (v) => (v && typeof v.toString === 'function' && typeof v !== 'string' ? v.toString() : v);
@@ -107,7 +108,7 @@ export const useSolanaWallet = () => {
       try {
         setLoading(true);
         const { userData: userDataPda } = getUserPDAs(publicKey);
-        const info = await connection.getAccountInfo(userDataPda);
+        const info = await getAccountInfo(connection, userDataPda);
         if (!cancelled) {
           dispatch(setHasProfile(!!info));
         }
@@ -123,15 +124,20 @@ export const useSolanaWallet = () => {
     return () => { cancelled = true; };
   }, [publicKey, connection, dispatch]);
 
-  // When profile exists, fetch profile data and balances (bounded retries + de-dupe)
-  const fetchGuardRef = useRef({ inFlight: false, retry: 0, timer: null });
+  // When profile exists, fetch profile data and balances (with rate limiting)
+  const fetchGuardRef = useRef({ inFlight: false, lastFetch: 0 });
   useEffect(() => {
     let cancelled = false;
-    if (!publicKey || !program || !hasProfile) return; // nothing to do
+    if (!publicKey || !program || !hasProfile) return;
 
     const guard = fetchGuardRef.current;
-    if (guard.inFlight) return; // prevent concurrent fetches
+    const now = Date.now();
+    
+    // Prevent concurrent fetches and rate limit to once per 5 seconds
+    if (guard.inFlight || (now - guard.lastFetch) < 5000) return;
+    
     guard.inFlight = true;
+    guard.lastFetch = now;
 
     const doFetch = async () => {
       try {
@@ -144,7 +150,7 @@ export const useSolanaWallet = () => {
         }
 
         // SOL balance
-        const lamports = await connection.getBalance(publicKey);
+        const lamports = await getBalance(connection, publicKey);
         if (!cancelled) dispatch(updateSolBalance(lamports.toString()));
 
         // Game token balance via GameRegistry.mint -> parsed token account
@@ -153,9 +159,10 @@ export const useSolanaWallet = () => {
         const mint = gameRegistry.gameTokenMint;
         let gameTokenAmount = '0';
         try {
-          const parsed = await connection.getParsedTokenAccountsByOwner(publicKey, { mint });
+          const parsed = await getParsedTokenAccountsByOwner(connection, publicKey, { mint });
           gameTokenAmount = parsed.value?.[0]?.account?.data?.parsed?.info?.tokenAmount?.uiAmount || 0;
         } catch {}
+        
         // Update all balances at once with fetchBalancesSuccess
         if (!cancelled) {
           const lockedTokensStr = userData?.locked_tokens ? userData.locked_tokens.toString() : '0';
@@ -170,26 +177,15 @@ export const useSolanaWallet = () => {
           }));
         }
 
-        // Fetch all item balances once
-        // const balances = await fetchAllItemBalances(connection, publicKey);
-        // if (!cancelled) dispatch(setAllItems(balances));
-
-        // success -> reset retry counter
-        guard.retry = 0;
       } catch (e) {
         console.error('Failed to fetch profile/balances', e);
-      } 
+      } finally {
+        guard.inFlight = false;
+      }
     };
 
     doFetch();
-    return () => {
-      cancelled = true;
-      if (fetchGuardRef.current.timer) {
-        clearTimeout(fetchGuardRef.current.timer);
-        fetchGuardRef.current.timer = null;
-      }
-      fetchGuardRef.current.inFlight = false;
-    };
+    return () => { cancelled = true; };
   }, [publicKey, program, hasProfile, connection, dispatch]);
 
   // Function to connect wallet - opens wallet selection dialog
@@ -225,7 +221,7 @@ export const useSolanaWallet = () => {
     try {
       setLoading(true);
       const { userData: userDataPda } = getUserPDAs(publicKey);
-      const info = await connection.getAccountInfo(userDataPda);
+      const info = await getAccountInfo(connection, userDataPda);
       const exists = !!info;
       dispatch(setHasProfile(exists));
       return exists;
@@ -237,6 +233,14 @@ export const useSolanaWallet = () => {
       setLoading(false);
     }
   }, [publicKey, connection, dispatch]);
+
+  // Function to refresh balances
+  const refreshBalances = useCallback(async () => {
+    if (!publicKey || !hasProfile) return;
+    // Force refresh by clearing the guard and triggering a new fetch
+    fetchGuardRef.current.inFlight = false;
+    fetchGuardRef.current.lastFetch = 0;
+  }, [publicKey, hasProfile]);
 
   // Function to sign a message
   const signMessage = useCallback(async (message) => {
@@ -271,6 +275,7 @@ export const useSolanaWallet = () => {
     disconnect: disconnectWallet,
     select,
     refreshProfileStatus,
+    refreshBalances,
     signMessage,
     sendTransaction,
     

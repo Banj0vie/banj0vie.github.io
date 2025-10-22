@@ -13,7 +13,7 @@ export const useGardener = () => {
   const connection = valleyProgram.getConnection();
   const [gardenerData, setGardenerData] = useState({
     currentLevel: 0,
-    maxLevel: 50,
+    maxLevel: 15,
     levelUpCost: 0,
     canLevelUp: false,
     loading: false,
@@ -29,7 +29,7 @@ export const useGardener = () => {
       const userData = await program.account.userData.fetch(userDataPda);
       const gameRegistry = await program.account.gameRegistry.fetch(gameRegistryPda);
       const currentLevel = Number(userData.level || 0);
-      const maxLevel = Number(gameRegistry.maxLevel || 50);
+      const maxLevel = Number(gameRegistry.maxLevel || 15);
       const levelUpCost = currentLevel < maxLevel ? (currentLevel + 1) * 100 : 0; // in HONEY (ui)
       // Fetch user's HONEY balance via associated token account
       const userGameAta = await getAssociatedTokenAddress(GAME_TOKEN_MINT, publicKey, false);

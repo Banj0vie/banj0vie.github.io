@@ -48,33 +48,17 @@ export const useLeaderboard = () => {
       try {
         const epochTop5Pda = getEpochTop5PDA(epoch);
         const hist = await program.account.epochTop5History.fetch(epochTop5Pda);
-        const pubs = hist.top5 || [];
+        const names = [hist.name1, hist.name2, hist.name3, hist.name4, hist.name5];
         const xps = hist.top5Xp || hist.top5_xp || [];
-        // Build base rows first
-        items = pubs.map((pk, i) => ({
-          rank: i + 1,
-          pubkey: new PublicKey(pk).toBase58(),
-          name: shortPk(pk),
-          score: Number(xps[i] || 0),
-        }));
-        // Enrich names from userData PDA (best-effort)
-        try {
-          const namePromises = pubs.map(async (pk, i) => {
-            try {
-              const walletPk = new PublicKey(pk);
-              const userPda = getUserDataPDA(walletPk);
-              const ud = await program.account.userData.fetch(userPda);
-              const nm = ud?.name || items[i].name;
-              return nm;
-            } catch {
-              return items[i].name;
-            }
-          });
-          const names = await Promise.all(namePromises);
-          items = items.map((row, i) => ({ ...row, name: names[i] }));
-        } catch {
-          // ignore name enrichment failure
-        }
+        items = names.map((nameByteArray, i) => {
+          // Convert byte array to string, removing null bytes
+          const nameStr = new TextDecoder('utf-8').decode(nameByteArray).replace(/\0/g, '');
+          return {
+            rank: i + 1,
+            name: nameStr || "Anonymous",
+            score: Number(xps[i] || 0),
+          };
+        });
       } catch (e) {
         // No history for this epoch yet
         items = [];
@@ -91,9 +75,7 @@ export const useLeaderboard = () => {
           if (lastCounted === epoch) {
             myScore = epochXp;
           }
-          // also ensure my name appears correctly if I'm in top 5
-          const myBase58 = publicKey.toBase58();
-          items = items.map((r) => (r.pubkey === myBase58 ? { ...r, name: meUd?.name || r.name } : r));
+          // Names are now stored directly in the leaderboard data
         } catch {
           // ignore userData fetch errors
         }

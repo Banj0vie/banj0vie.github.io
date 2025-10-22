@@ -6,6 +6,7 @@ import { getGameRegistryPDA, getUserDataPDA, getBankerDataPDA, getGameTokenMintA
 import { BN } from '@coral-xyz/anchor';
 import { GAME_TOKEN_MINT } from '../solana/constants/programId';
 import { getAssociatedTokenAddress, TOKEN_PROGRAM_ID } from '@solana/spl-token';
+import { getBalance, getParsedTokenAccountsByOwner } from '../utils/requestQueue';
 import {
   fetchBankerDataSuccess,
   fetchBankerDataFailure,
@@ -139,25 +140,37 @@ export const useBanker = () => {
     if (!program || !publicKey) return '0';
     try {
       const userDataPda = getUserDataPDA(publicKey);
-        const userDataRaw = await program.account.userData.fetch(userDataPda);
-        const userData = userDataRaw;
-        const parsed = await connection.getParsedTokenAccountsByOwner(publicKey, { GAME_TOKEN_MINT });
-        const gameTokenAmount = parsed.value?.[0]?.account?.data?.parsed?.info?.tokenAmount?.uiAmount || 0;
-        const lamports = await connection.getBalance(publicKey);
-        
-        // Update all balances at once with fetchBalancesSuccess
-        dispatch(fetchBalancesSuccess({
-          gameToken: gameTokenAmount.toString(),
-          stakedBalance: userData?.lockedTokens ? (parseFloat(userData.lockedTokens.toString()) / 1e6).toString() : '0',
-          xTokenShare: userData?.xtokenShare ? (parseFloat(userData.xtokenShare.toString()) / 1e6).toString() : '0',
-          solBalance: (lamports / 1e9).toString()
-        }));
-      
-      return gameTokenAmount.toString();
-    } catch {
+      const userDataRaw = await program.account.userData.fetch(userDataPda);
+
+      // Fetch SPL token balance for GAME_TOKEN_MINT
+      const parsed = await getParsedTokenAccountsByOwner(connection, publicKey, { mint: GAME_TOKEN_MINT });
+      const gameTokenAmount = parsed.value?.[0]?.account?.data?.parsed?.info?.tokenAmount?.uiAmount ?? 0;
+
+      // Fetch SOL balance
+      const lamports = await getBalance(connection, publicKey);
+
+      // Convert on-chain fields (assumed 6 decimals)
+      const lockedTokensUi = (() => {
+        try { return (parseFloat(userDataRaw.lockedTokens?.toString?.() ?? '0') / 1e6).toString(); } catch { return '0'; }
+      })();
+      const xTokenShareUi = (() => {
+        try { return (parseFloat(userDataRaw.xtokenShare?.toString?.() ?? '0') / 1e6).toString(); } catch { return '0'; }
+      })();
+
+      // Update all balances at once
+      dispatch(fetchBalancesSuccess({
+        gameToken: (gameTokenAmount ?? 0).toString(),
+        stakedBalance: lockedTokensUi,
+        xTokenShare: xTokenShareUi,
+        solBalance: (lamports / 1e9).toString(),
+      }));
+
+      return (gameTokenAmount ?? 0).toString();
+    } catch (e) {
+      console.error('getBalance failed:', e);
       return '0';
     }
-  }, [program, publicKey, dispatch]);
+  }, [program, publicKey, connection, dispatch]);
 
   return { stake, unstake, getBalance, getBankerData, loading, error };
 };
