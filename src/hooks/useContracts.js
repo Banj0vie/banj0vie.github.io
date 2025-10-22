@@ -12,9 +12,8 @@ export { useVendor } from './useVendor';
 export { useProfile } from './useProfile';
 export { useItems } from './useItems';
 export { useROIData } from './useROIData';
+export { useLeaderboard } from './useLeaderboard';
+export { useDex } from './useDex';
 
 
 export const useEquipmentRegistry = () => ({ });
-export { useDex } from './useDex';
-export const useLeaderboard = () => ({ });
-

@@ -18,6 +18,7 @@ export const useVendor = () => {
 
   const buySeedPack = useCallback(async (tier, count) => {
     if (!program || !publicKey) { setError('Program or wallet not available'); return null; }
+    if (loading) { setError('Transaction already in progress'); return null; }
     setLoading(true); setError(null);
     try {
       const pendingKey = `seedNonce:${publicKey.toBase58()}`;
@@ -32,7 +33,8 @@ export const useVendor = () => {
           return null;
         }
       }
-      const nonce = Date.now();
+      // Generate a more unique nonce to prevent duplicate transactions
+      const nonce = Date.now() + Math.random() * 1000000;
       const gameRegistryPda = getGameRegistryPDA();
       const userDataPda = getUserDataPDA(publicKey);
       const bankerDataPda = getBankerDataPDA(publicKey);
@@ -65,7 +67,19 @@ export const useVendor = () => {
       localStorage.setItem(pendingKey, JSON.stringify({requestId: nonce, tier, count}));
       return { txHash: tx, tier, isPending: false };
     } catch (err) { 
-      console.log("🚀 ~ useVendor ~ err:", err); setError(err.message); return null; 
+      console.log("🚀 ~ useVendor ~ err:", err); 
+      
+      // Handle specific transaction errors
+      if (err.message.includes('already been processed')) {
+        setError('Transaction already submitted. Please wait and try again.');
+      } else if (err.message.includes('insufficient funds')) {
+        setError('Insufficient funds for this transaction.');
+      } else if (err.message.includes('User rejected')) {
+        setError('Transaction was cancelled by user.');
+      } else {
+        setError(err.message);
+      }
+      return null; 
     } finally { 
       setLoading(false); 
     }

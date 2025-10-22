@@ -41,25 +41,40 @@ export const useLeaderboard = () => {
     try {
       const gameRegistryPda = getGameRegistryPDA();
       const reg = await program.account.gameRegistry.fetch(gameRegistryPda);
-      const epoch = epochParam ?? Number(reg.epoch);
+      const currentEpochFromRegistry = Number(reg.epoch);
+      const epoch = epochParam ?? currentEpochFromRegistry;
       const start = Number(reg.epochStart);
 
       let items = [];
       try {
         const epochTop5Pda = getEpochTop5PDA(epoch);
         const hist = await program.account.epochTop5History.fetch(epochTop5Pda);
+        console.log("🚀 ~ useLeaderboard ~ hist:", hist)
+        
+        // Extract names and scores
         const names = [hist.name1, hist.name2, hist.name3, hist.name4, hist.name5];
-        const xps = hist.top5Xp || hist.top5_xp || [];
+        const xps = hist.top5Xp || [];
+        
+        console.log('Raw names data:', names);
+        console.log('Raw xps data:', xps);
+        
         items = names.map((nameByteArray, i) => {
           // Convert byte array to string, removing null bytes
-          const nameStr = new TextDecoder('utf-8').decode(nameByteArray).replace(/\0/g, '');
+          const nameStr = new TextDecoder('utf-8').decode(new Uint8Array(nameByteArray)).replace(/\0/g, '');
+          const score = Number(xps[i] || 0);
+          
+          console.log(`Player ${i + 1}: name="${nameStr}", score=${score}`);
+          
           return {
             rank: i + 1,
             name: nameStr || "Anonymous",
-            score: Number(xps[i] || 0),
+            score: score,
           };
         });
+        
+        console.log('Final leaderboard items:', items);
       } catch (e) {
+        console.log('No history for epoch', epoch, 'error:', e);
         // No history for this epoch yet
         items = [];
       }
@@ -72,19 +87,33 @@ export const useLeaderboard = () => {
           const meUd = await program.account.userData.fetch(myPda);
           const lastCounted = Number(meUd.lastEpochCounted ?? meUd.last_epoch_counted ?? 0);
           const epochXp = Number(meUd.epochXp ?? meUd.epoch_xp ?? 0);
-          if (lastCounted === epoch) {
-            myScore = epochXp;
+          const totalXp = Number(meUd.xp ?? 0);
+          
+          console.log('User data for score calculation:', {
+            publicKey: publicKey.toString(),
+            lastCounted,
+            epochXp,
+            totalXp,
+            viewingEpoch: epoch,
+            lastCountedMatchesEpoch: lastCounted === epoch
+          });
+          
+          // Always show the user's epoch XP, regardless of whether they're in top 5
+          myScore = epochXp;
+          console.log('User score set to epochXp:', myScore, 'for epoch:', epoch);
+          
+          if (lastCounted !== epoch) {
+            console.log('Note: lastCounted (', lastCounted, ') !== epoch (', epoch, '), but showing epochXp anyway');
           }
-          // Names are now stored directly in the leaderboard data
-        } catch {
-          // ignore userData fetch errors
+        } catch (e) {
+          console.log('Error fetching user data for score:', e);
         }
       }
 
       dispatch(fetchLeaderboardSuccess({
         items,
         userScore: myScore,
-        currentEpoch: epoch,
+        currentEpoch: currentEpochFromRegistry,
         epochStart: start,
         selectedEpoch: epoch,
       }));

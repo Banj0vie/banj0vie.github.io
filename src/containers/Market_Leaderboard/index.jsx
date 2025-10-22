@@ -4,7 +4,7 @@ import "./style.css";
 import BaseDialog from "../_BaseDialog";
 import BaseDivider from "../../components/dividers/BaseDivider";
 import CardView from "../../components/boxes/CardView";
-import { formatDuration } from "../../utils/basic";
+import { EPOCH_PERIOD, formatDuration } from "../../utils/basic";
 import { buttonFrames } from "../../constants/_baseimages";
 import BaseButton from "../../components/buttons/BaseButton";
 import RewardsDialog from "./RewardsDialog";
@@ -16,10 +16,11 @@ const LeaderboardDialog = ({ onClose, label = "LEADERBOARD", header = "" }) => {
     userScore,
     epochStart,
     currentEpoch,
+    selectedEpoch,
     fetchLeaderboardData,
+    setSelectedEpoch,
     loading  } = useLeaderboard();
   const [remainedTime, setRemainedTime] = useState(0);
-  const [selectedEpoch, setSelectedEpoch] = useState(null);
   const [isRewardDlg, setIsRewardDlg] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
 
@@ -27,13 +28,6 @@ const LeaderboardDialog = ({ onClose, label = "LEADERBOARD", header = "" }) => {
   useEffect(() => {
     fetchLeaderboardData();
   }, [fetchLeaderboardData]);
-
-  // Update selected epoch when currentEpoch changes
-  useEffect(() => {
-    if (currentEpoch >= 0) {
-      setSelectedEpoch(currentEpoch);
-    }
-  }, [currentEpoch]);
 
   // Handle epoch navigation
   const handleEpochChange = useCallback((newEpoch) => {
@@ -48,17 +42,14 @@ const LeaderboardDialog = ({ onClose, label = "LEADERBOARD", header = "" }) => {
         setIsNavigating(false);
       });
     }
-  }, [currentEpoch, fetchLeaderboardData, isNavigating]);
+  }, [currentEpoch, fetchLeaderboardData, isNavigating, setSelectedEpoch]);
 
   // Update timer based on epochStart
   useEffect(() => {
     if (epochStart > 0) {
       const updateTimer = () => {
         const now = Math.floor(Date.now() / 1000); // Current timestamp in seconds
-        // =================TIME GLITCH=================
-        // const epochDuration = 7 * 24 * 60 * 60;
-        const epochDuration = 7 * 60 * 60;
-        const epochEndTime = epochStart + epochDuration;
+        const epochEndTime = epochStart + EPOCH_PERIOD;
         const remaining = Math.max(0, (epochEndTime - now) * 1000); // Convert to milliseconds
         setRemainedTime(remaining);
       };
@@ -94,7 +85,7 @@ const LeaderboardDialog = ({ onClose, label = "LEADERBOARD", header = "" }) => {
           Your score: <span className="highlight">{loading ? "Loading..." : userScore.toFixed(2)}</span>
         </div>
         <div className="text-center timer">
-          {(selectedEpoch !== null ? selectedEpoch : currentEpoch) === currentEpoch ? (
+          {(selectedEpoch ?? currentEpoch) === currentEpoch ? (
             remainedTime <= 0 ? (
               <div>
                 <div>Epoch Ended!</div>
@@ -113,7 +104,7 @@ const LeaderboardDialog = ({ onClose, label = "LEADERBOARD", header = "" }) => {
             )
           ) : (
             <>
-              Historical Epoch: <span className="highlight">{selectedEpoch !== null ? selectedEpoch : currentEpoch}</span>
+              Historical Epoch: <span className="highlight">{selectedEpoch ?? currentEpoch}</span>
             </>
           )}
         </div>
@@ -125,18 +116,17 @@ const LeaderboardDialog = ({ onClose, label = "LEADERBOARD", header = "" }) => {
             className="triangle-button"
             onClick={() => {
               if (isNavigating) return;
-              const currentDisplayEpoch = selectedEpoch !== null ? selectedEpoch : currentEpoch;
+              const currentDisplayEpoch = selectedEpoch ?? currentEpoch;
               const newEpoch = Math.max(0, currentDisplayEpoch - 1);
-              console.log('Left arrow clicked, new epoch:', newEpoch);
               handleEpochChange(newEpoch);
             }}
             style={{ 
-              opacity: (selectedEpoch !== null ? selectedEpoch : currentEpoch) <= 0 || isNavigating ? 0.5 : 1, 
-              cursor: (selectedEpoch !== null ? selectedEpoch : currentEpoch) <= 0 || isNavigating ? 'not-allowed' : 'pointer' 
+              opacity: (selectedEpoch ?? currentEpoch) <= 0 || isNavigating ? 0.5 : 1, 
+              cursor: (selectedEpoch ?? currentEpoch) <= 0 || isNavigating ? 'not-allowed' : 'pointer' 
             }}
           ></img>
           <div>
-            Epoch <span className="highlight">{selectedEpoch !== null ? selectedEpoch : currentEpoch}</span>
+            Epoch <span className="highlight">{selectedEpoch ?? currentEpoch}</span>
           </div>
           <img
             src={buttonFrames.rightTriangleButton}
@@ -144,13 +134,12 @@ const LeaderboardDialog = ({ onClose, label = "LEADERBOARD", header = "" }) => {
             className="triangle-button"
             onClick={() => {
               if (isNavigating) return;
-              const newEpoch = (selectedEpoch !== null ? selectedEpoch : currentEpoch) + 1;
-              console.log('Right arrow clicked, new epoch:', newEpoch);
+              const newEpoch = (selectedEpoch ?? currentEpoch) + 1;
               handleEpochChange(newEpoch);
             }}
             style={{ 
-              opacity: (selectedEpoch !== null ? selectedEpoch : currentEpoch) >= currentEpoch || isNavigating ? 0.5 : 1, 
-              cursor: (selectedEpoch !== null ? selectedEpoch : currentEpoch) >= currentEpoch || isNavigating ? 'not-allowed' : 'pointer' 
+              opacity: (selectedEpoch ?? currentEpoch) >= currentEpoch || isNavigating ? 0.5 : 1, 
+              cursor: (selectedEpoch ?? currentEpoch) >= currentEpoch || isNavigating ? 'not-allowed' : 'pointer' 
             }}
           ></img>
         </div>
@@ -158,7 +147,7 @@ const LeaderboardDialog = ({ onClose, label = "LEADERBOARD", header = "" }) => {
         <div className="button-row">
           <BaseButton
             label="Refresh"
-            onClick={() => fetchLeaderboardData(selectedEpoch || currentEpoch)}
+            onClick={() => fetchLeaderboardData(selectedEpoch ?? currentEpoch)}
             className="h-4rem mt-1rem"
             disabled={loading}
           />
