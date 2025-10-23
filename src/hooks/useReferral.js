@@ -4,9 +4,10 @@ import { useSolanaWallet } from './useSolanaWallet';
 import { getUserDataPDA, getReferralCodeOwnerPDA } from '../solana/utils/pdaUtils';
 import { SystemProgram, PublicKey } from '@solana/web3.js';
 import { handleContractError } from '../utils/errorHandler';
+import { sendTransactionForPhantom } from '../utils/transactionHelper';
 
 export const useReferral = () => {
-  const { publicKey } = useSolanaWallet();
+  const { publicKey, connection, sendTransaction } = useSolanaWallet();
   const valleyProgram = useProgram();
   const program = valleyProgram.getProgram();
   const [referralData, setReferralData] = useState({
@@ -59,15 +60,16 @@ export const useReferral = () => {
         codeBytes.set(code.slice(0, 32));
       }
       const referralCodeOwnerPda = getReferralCodeOwnerPDA(codeBytes);
-      const tx = await program.methods
+      const method = program.methods
         .registerMyReferralCode(codeBytes)
         .accounts({ 
           player: publicKey, 
           userData: userDataPda, 
           codeOwner: referralCodeOwnerPda, 
           systemProgram: SystemProgram.programId 
-        })
-        .rpc();
+        });
+      
+      const tx = await sendTransactionForPhantom(method, connection, sendTransaction, publicKey);
       await fetchReferralData();
       return tx;
     } catch (err) {
@@ -125,10 +127,11 @@ export const useReferral = () => {
         referralCodeOwnerPda = null; // null for empty referral code
       }
       
-      const tx = await program.methods
+      const method = program.methods
         .createProfile(name, referralBytes)
-        .accounts({ user: publicKey, userData: userDataPda, codeOwner: referralCodeOwnerPda, systemProgram: SystemProgram.programId })
-        .rpc();
+        .accounts({ user: publicKey, userData: userDataPda, codeOwner: referralCodeOwnerPda, systemProgram: SystemProgram.programId });
+      
+      const tx = await sendTransactionForPhantom(method, connection, sendTransaction, publicKey);
       await fetchReferralData();
       return tx;
     } catch (err) {

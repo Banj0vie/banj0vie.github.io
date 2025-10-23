@@ -502,16 +502,6 @@
           "isSigner": false
         },
         {
-          "name": "gameTokenMint",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "userGameAta",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
           "name": "systemProgram",
           "isMut": false,
           "isSigner": false
@@ -553,16 +543,6 @@
           "isSigner": false
         },
         {
-          "name": "gameTokenMint",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "userGameAta",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
           "name": "systemProgram",
           "isMut": false,
           "isSigner": false
@@ -601,16 +581,6 @@
         {
           "name": "gameRegistry",
           "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "gameTokenMint",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "userGameAta",
-          "isMut": true,
           "isSigner": false
         },
         {

@@ -27,9 +27,10 @@ import {
   selectBalanceLoading,
   selectBalanceError,
 } from '../solana/store/slices/balanceSlice';
+import { sendTransactionForPhantom } from '../utils/transactionHelper';
 
 export const useDex = () => {
-  const { publicKey, wallet, connection } = useSolanaWallet();
+  const { publicKey, wallet, connection, sendTransaction } = useSolanaWallet();
   const dispatch = useDispatch();
   
   // Redux state
@@ -110,6 +111,12 @@ export const useDex = () => {
       return false;
     }
 
+    // Check if already loading
+    if (loading) {
+      dispatch(buyTokensFailure('Transaction already in progress'));
+      return false;
+    }
+
     dispatch(buyTokensStart());
 
     try {
@@ -134,7 +141,7 @@ export const useDex = () => {
       );
 
       const program = dexProgram.getProgram();
-      const tx = await program.methods
+      const method = program.methods
         .buyTokens(new BN(solAmountLamports))
         .accounts({
           user: publicKey,
@@ -146,8 +153,9 @@ export const useDex = () => {
           systemProgram: SystemProgram.programId,
           tokenProgram: TOKEN_PROGRAM_ID,
           associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-        })
-        .rpc();
+        });
+      
+      const tx = await sendTransactionForPhantom(method, connection, sendTransaction, publicKey);
 
       dispatch(buyTokensSuccess());
       
@@ -157,7 +165,20 @@ export const useDex = () => {
       return { txHash: tx, success: true };
     } catch (err) {
       console.error('Buy tokens error:', err);
-      dispatch(buyTokensFailure(err.message));
+      
+      // Handle specific transaction errors
+      let errorMessage = err.message;
+      if (err.message.includes('already been processed') || err.message.includes('Transaction simulation failed: This transaction has already been processed')) {
+        errorMessage = 'Transaction already submitted. Please wait and try again.';
+      } else if (err.message.includes('insufficient funds')) {
+        errorMessage = 'Insufficient funds for this transaction.';
+      } else if (err.message.includes('User rejected')) {
+        errorMessage = 'Transaction was cancelled by user.';
+      } else if (err.message.includes('encoding overruns Uint8Array')) {
+        errorMessage = 'Transaction too large. Please try with a smaller amount.';
+      }
+      
+      dispatch(buyTokensFailure(errorMessage));
       return false;
     }
   }, [publicKey, dispatch, getDexProgram, getDexPoolPda, getSolVaultPda, fetchBalances]);
@@ -172,6 +193,12 @@ export const useDex = () => {
     const dexProgram = getDexProgram();
     if (!dexProgram) {
       dispatch(sellTokensFailure('DEX program not available'));
+      return false;
+    }
+
+    // Check if already loading
+    if (loading) {
+      dispatch(sellTokensFailure('Transaction already in progress'));
       return false;
     }
 
@@ -199,7 +226,7 @@ export const useDex = () => {
       );
 
       const program = dexProgram.getProgram();
-      const tx = await program.methods
+      const method = program.methods
         .sellTokens(new BN(tokenAmountBaseUnits))
         .accounts({
           user: publicKey,
@@ -211,8 +238,9 @@ export const useDex = () => {
           systemProgram: SystemProgram.programId,
           tokenProgram: TOKEN_PROGRAM_ID,
           associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-        })
-        .rpc();
+        });
+      
+      const tx = await sendTransactionForPhantom(method, connection, sendTransaction, publicKey);
 
       dispatch(sellTokensSuccess());
       
@@ -222,7 +250,20 @@ export const useDex = () => {
       return { txHash: tx, success: true };
     } catch (err) {
       console.error('Sell tokens error:', err);
-      dispatch(sellTokensFailure(err.message));
+      
+      // Handle specific transaction errors
+      let errorMessage = err.message;
+      if (err.message.includes('already been processed') || err.message.includes('Transaction simulation failed: This transaction has already been processed')) {
+        errorMessage = 'Transaction already submitted. Please wait and try again.';
+      } else if (err.message.includes('insufficient funds')) {
+        errorMessage = 'Insufficient funds for this transaction.';
+      } else if (err.message.includes('User rejected')) {
+        errorMessage = 'Transaction was cancelled by user.';
+      } else if (err.message.includes('encoding overruns Uint8Array')) {
+        errorMessage = 'Transaction too large. Please try with a smaller amount.';
+      }
+      
+      dispatch(sellTokensFailure(errorMessage));
       return false;
     }
   }, [publicKey, dispatch, getDexProgram, getDexPoolPda, getSolVaultPda, fetchBalances]);

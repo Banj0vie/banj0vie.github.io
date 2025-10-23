@@ -105,8 +105,8 @@ class RequestQueue {
 // Global request queue instance
 export const requestQueue = new RequestQueue({
   maxConcurrent: 2, // Reduce concurrent requests
-  delay: 100, // 200ms between requests
-  retryDelay: 1000, // 2s before retry on 429
+  delay: 200, // 200ms between requests
+  retryDelay: 2000, // 2s before retry on 429
   maxRetries: 3,
   cacheTimeout: 10000 // 10 seconds cache
 });

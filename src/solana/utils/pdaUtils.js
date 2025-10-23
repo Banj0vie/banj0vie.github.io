@@ -232,6 +232,9 @@ export const getItemMintAuthPDA = () => {
 };
 
 export const getGameTokenMintAuthPDA = (gameRegistryKey) => {
+  if (!gameRegistryKey) {
+    gameRegistryKey = getGameRegistryPDA();
+  }
   return PublicKey.findProgramAddressSync(
     [Buffer.from(SEEDS.GAME_TOKEN_MINT_AUTH), gameRegistryKey.toBuffer()],
     SOLANA_VALLEY_PROGRAM_ID,
@@ -323,6 +326,26 @@ export const getCraftBait1RemainingAccounts = (publicKey) => {
     return accounts;
   } catch (error) {
     console.error('getCraftBait1RemainingAccounts - error:', error);
+    throw error;
+  }
+};
+
+export const getPotionUsageRemainingAccounts = (publicKey, potionId) => {
+  const accounts = [];
+  
+  try {
+    // Add the specific potion item mint and ATA for burning
+    const mint = getItemMintPDA(potionId);
+    const ata = getAssociatedTokenAddressSync(mint, publicKey, false);
+    accounts.push({ pubkey: mint, isWritable: true, isSigner: false });
+    accounts.push({ pubkey: ata, isWritable: true, isSigner: false });
+    
+    // Add item mint authority
+    const itemMintAuth = getItemMintAuthPDA();
+    accounts.push({ pubkey: itemMintAuth, isWritable: false, isSigner: false });
+    return accounts;
+  } catch (error) {
+    console.error('getPotionUsageRemainingAccounts - error:', error);
     throw error;
   }
 };

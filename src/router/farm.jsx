@@ -51,6 +51,20 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
     setPreviewUpdateKey(prev => prev + 1);
   }, [cropArray]);
 
+  // Listen for potion usage events from inventory
+  useEffect(() => {
+    const handleStartPotionUsage = (event) => {
+      const { id, name } = event.detail;
+      startPotionUsage(id, name);
+    };
+
+    window.addEventListener('startPotionUsage', handleStartPotionUsage);
+    
+    return () => {
+      window.removeEventListener('startPotionUsage', handleStartPotionUsage);
+    };
+  }, []);
+
   const getAvailableSeeds = useCallback(() => {
     return currentSeeds
       .map((seed) => ({
@@ -647,18 +661,17 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
   };
 
   const handlePotionUse = async () => {
-    if (!selectedIndexes || selectedIndexes.length === 0) {
-      show("Please select plots to apply the potion to!", "info");
-      return;
-    }
-
     if (!selectedPotion) {
       show("No potion selected!", "error");
       return;
     }
 
+    if (!selectedIndexes || selectedIndexes.length === 0) {
+      show("Please select crops to apply the potion to!", "info");
+      return;
+    }
+
     try {
-      let successCount = 0;
       let potionFunction = null;
 
       // Determine which potion function to use based on the BigInt ID
@@ -681,8 +694,9 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
         return;
       }
 
-      show(`Applying ${selectedPotion.name} to ${selectedIndexes.length} plots...`, "info");
+      show(`Applying ${selectedPotion.name} to ${selectedIndexes.length} crops...`, "info");
 
+      let successCount = 0;
       // Apply potion to each selected plot
       for (const plotIndex of selectedIndexes) {
         const result = await potionFunction(plotIndex);
@@ -692,23 +706,23 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
       }
 
       if (successCount > 0) {
-        show(`✅ Successfully applied ${selectedPotion.name} to ${successCount} plots!`, "success");
+        show(`✅ Successfully applied ${selectedPotion.name} to ${successCount} crops!`, "success");
         
         // Reload crops from contract to show updated potion effects
-          // Small delay to ensure blockchain state is updated
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          await loadCropsFromContract();
-          
-          // Force a re-render by updating the preview update key
-          setPreviewUpdateKey(prev => prev + 1);
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        await loadCropsFromContract();
         
+        // Force a re-render by updating the preview update key
+        setPreviewUpdateKey(prev => prev + 1);
+        
+        // Clear any selection state after successful potion application
         setSelectedIndexes([]);
         setIsUsingPotion(false);
         setSelectedPotion(null);
         setIsFarmMenu(false);
         setIsPlanting(true);
       } else {
-        // show("❌ Failed to apply potion. Please try again.", "error");
+        show("❌ Failed to apply potion. Please try again.", "error");
       }
     } catch (error) {
       const { message } = handleContractError(error, 'applying potion');
@@ -734,7 +748,7 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
     }
 
     if (isUsingPotion) {
-      // Potion usage mode - only allow selection of plots that are growing (not ready to harvest)
+      // Potion usage mode - allow selection of growing crops
       const plotData = cropArray.getItem(index);
       if (!plotData || !plotData.seedId) {
         show("This plot is empty. Potions can only be used on growing crops.", "info");
@@ -752,12 +766,11 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
         return;
       }
 
-      // Toggle selection for potion usage (single-select mode)
+      // Toggle selection for potion usage (multi-select mode like harvesting)
       setSelectedIndexes((prev) => {
         const exists = prev.includes(index);
-        // If already selected, deselect; otherwise, replace with only this index
-        if (exists) return [];
-        return [index];
+        if (exists) return prev.filter((i) => i !== index);
+        return [...prev, index];
       });
       return;
     }

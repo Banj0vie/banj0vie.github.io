@@ -7,10 +7,11 @@ import { BN } from '@coral-xyz/anchor';
 import { TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddressSync } from '@solana/spl-token';
 import { ID_PRODUCE_ITEMS, ID_POTION_ITEMS } from '../constants/app_ids';
 import { handleContractError } from '../utils/errorHandler';
+import { sendTransactionForPhantom } from '../utils/transactionHelper';
 
 export const usePotion = () => {
   const [potionData, setPotionData] = useState({ loading: false, error: null });
-  const { publicKey } = useSolanaWallet();
+  const { publicKey, connection, sendTransaction } = useSolanaWallet();
   const valleyProgram = useProgram();
   const program = valleyProgram.getProgram();
 
@@ -73,13 +74,18 @@ export const usePotion = () => {
   };
   const craftGrowthElixir = useCallback(async (count = 1) => {
     if (!program || !publicKey) return null;
+    if (potionData.loading) {
+      setPotionData(prev => ({ ...prev, error: 'Transaction already in progress' }));
+      return null;
+    }
+    
     setPotionData(prev => ({ ...prev, loading: true, error: null }));
     try {
       const gameRegistryPda = getGameRegistryPDA();
       const userDataPda = getUserDataPDA(publicKey);
       const remainingAccounts = getPotionRemainingAccounts('growth_elixir');
       
-      const tx = await program.methods
+      const method = program.methods
         .craftGrowthElixir(new BN(count))
         .accounts({
           user: publicKey,
@@ -89,8 +95,9 @@ export const usePotion = () => {
           tokenProgram: TOKEN_PROGRAM_ID,
           associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
         })
-        .remainingAccounts(remainingAccounts)
-        .rpc();
+        .remainingAccounts(remainingAccounts);
+      
+      const tx = await sendTransactionForPhantom(method, connection, sendTransaction, publicKey);
       setPotionData(prev => ({ ...prev, loading: false }));
       return { txHash: tx, isPending: false };
     } catch (err) {
@@ -98,17 +105,22 @@ export const usePotion = () => {
       setPotionData(prev => ({ ...prev, loading: false, error: message }));
       throw err;
     }
-  }, [program, publicKey]);
+  }, [program, publicKey, potionData.loading]);
 
   const craftPesticide = useCallback(async (count = 1) => {
     if (!program || !publicKey) return null;
+    if (potionData.loading) {
+      setPotionData(prev => ({ ...prev, error: 'Transaction already in progress' }));
+      return null;
+    }
+    
     setPotionData(prev => ({ ...prev, loading: true, error: null }));
     try {
       const gameRegistryPda = getGameRegistryPDA();
       const userDataPda = getUserDataPDA(publicKey);
       const remainingAccounts = getPotionRemainingAccounts('pesticide');
       
-      const tx = await program.methods
+      const method = program.methods
         .craftPesticide(new BN(count))
         .accounts({
           user: publicKey,
@@ -118,8 +130,9 @@ export const usePotion = () => {
           tokenProgram: TOKEN_PROGRAM_ID,
           associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
         })
-        .remainingAccounts(remainingAccounts)
-        .rpc();
+        .remainingAccounts(remainingAccounts);
+      
+      const tx = await sendTransactionForPhantom(method, connection, sendTransaction, publicKey);
       setPotionData(prev => ({ ...prev, loading: false }));
       return { txHash: tx, isPending: false };
     } catch (err) {
@@ -127,17 +140,22 @@ export const usePotion = () => {
       setPotionData(prev => ({ ...prev, loading: false, error: message }));
       throw err;
     }
-  }, [program, publicKey]);
+  }, [program, publicKey, potionData.loading]);
 
   const craftFertilizer = useCallback(async (count = 1) => {
     if (!program || !publicKey) return null;
+    if (potionData.loading) {
+      setPotionData(prev => ({ ...prev, error: 'Transaction already in progress' }));
+      return null;
+    }
+    
     setPotionData(prev => ({ ...prev, loading: true, error: null }));
     try {
       const gameRegistryPda = getGameRegistryPDA();
       const userDataPda = getUserDataPDA(publicKey);
       const remainingAccounts = getPotionRemainingAccounts('fertilizer');
       
-      const tx = await program.methods
+      const method = program.methods
         .craftFertilizer(new BN(count))
         .accounts({
           user: publicKey,
@@ -147,8 +165,9 @@ export const usePotion = () => {
           tokenProgram: TOKEN_PROGRAM_ID,
           associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
         })
-        .remainingAccounts(remainingAccounts)
-        .rpc();
+        .remainingAccounts(remainingAccounts);
+      
+      const tx = await sendTransactionForPhantom(method, connection, sendTransaction, publicKey);
       setPotionData(prev => ({ ...prev, loading: false }));
       return { txHash: tx, isPending: false };
     } catch (err) {
@@ -156,7 +175,7 @@ export const usePotion = () => {
       setPotionData(prev => ({ ...prev, loading: false, error: message }));
       throw err;
     }
-  }, [program, publicKey]);
+  }, [program, publicKey, potionData.loading]);
 
   // Batch crafting functions (alias for single functions with count parameter)
   const craftGrowthElixirBatch = useCallback(async (count = 1) => {

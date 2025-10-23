@@ -8,6 +8,7 @@ import { GAME_TOKEN_MINT, LOOKUP_TABLE_ADDRESS } from '../solana/constants/progr
 import { getAssociatedTokenAddress, TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import { preIx } from '../solana/utils/pdaUtils';
 import { EPOCH_PERIOD } from '../utils/basic';
+import { sendTransactionForPhantom } from '../utils/transactionHelper';
 
 export const useMarket = () => {
     const { publicKey, sendTransaction } = useSolanaWallet();
@@ -86,6 +87,8 @@ export const useMarket = () => {
 
     const purchase = useCallback(async (lid, amount) => {
         if (!program || !publicKey) return null;
+        if (marketData.loading) { throw new Error('Transaction already in progress'); }
+        setMarketData(prev => ({ ...prev, loading: true, error: null }));
         try {
             const gameRegistryPda = getGameRegistryPDA();
             const userDataPda = getUserDataPDA(publicKey);
@@ -115,7 +118,7 @@ export const useMarket = () => {
                 { pubkey: sponsorGameAta, isWritable: true, isSigner: false },
             ];
             // Build transaction with compute budget
-            const ix = await program.methods
+            const method = program.methods
                 .purchase(new BN(lid), new BN(amount), epoch)
                 .accounts({
                     buyer: publicKey,
@@ -129,28 +132,34 @@ export const useMarket = () => {
                     associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
                     systemProgram: SystemProgram.programId,
                 })
-                .remainingAccounts(remainingAccounts)
-                .instruction();
-            const { value: alt } = await connection.getAddressLookupTable(LOOKUP_TABLE_ADDRESS);
-            if (!alt) throw new Error('ALT not found');
-            const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
-            const msgV0 = new TransactionMessage({
-                payerKey: publicKey,
-                recentBlockhash: blockhash,
-                instructions: [...preIx, ix],
-            }).compileToV0Message([alt]);
-            const tx = new VersionedTransaction(msgV0);
-            const sig = await sendTransaction(tx, connection, { skipPreflight: false, maxRetries: 3 });
-            await connection.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight });
+                .remainingAccounts(remainingAccounts);
+            
+            const sig = await sendTransactionForPhantom(method, connection, sendTransaction, publicKey);
             return sig;
         } catch (error) {
             console.error('Purchase error:', error);
+            
+            // Handle specific transaction errors
+            if (error.message.includes('already been processed') || error.message.includes('Transaction simulation failed: This transaction has already been processed')) {
+                throw new Error('Transaction already submitted. Please wait and try again.');
+            } else if (error.message.includes('insufficient funds')) {
+                throw new Error('Insufficient funds for this transaction.');
+            } else if (error.message.includes('User rejected')) {
+                throw new Error('Transaction was cancelled by user.');
+            } else if (error.message.includes('encoding overruns Uint8Array')) {
+                throw new Error('Transaction too large. Please try with a smaller amount.');
+            }
+            
             throw error;
+        } finally {
+            setMarketData(prev => ({ ...prev, loading: false }));
         }
-    }, [program, publicKey]);
+    }, [program, publicKey, marketData.loading]);
 
     const list = useCallback(async (id, amount, pricePer) => {
         if (!program || !publicKey) return null;
+        if (marketData.loading) { throw new Error('Transaction already in progress'); }
+        setMarketData(prev => ({ ...prev, loading: true, error: null }));
         try {
             const gameRegistryPda = getGameRegistryPDA();
             const marketDataPda = getMarketDataPDA();
@@ -161,7 +170,7 @@ export const useMarket = () => {
             const sellerItemAta = await getAssociatedTokenAddress(itemMintPda, publicKey, false);
             const itemMintAuthPda = getItemMintAuthPDA();
             // Build transaction with compute budget
-            const tx = await program.methods
+            const method = program.methods
                 .list(id, new BN(amount), new BN(Math.floor(pricePer * 1e6)))
                 .accounts({ 
                     seller: publicKey, 
@@ -174,18 +183,34 @@ export const useMarket = () => {
                     tokenProgram: TOKEN_PROGRAM_ID, 
                     associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID, 
                     systemProgram: SystemProgram.programId 
-                })
-                .rpc();
-
+                });
+            
+            const tx = await sendTransactionForPhantom(method, connection, sendTransaction, publicKey);
             return tx;
         } catch (error) {
             console.error('List error:', error);
+            
+            // Handle specific transaction errors
+            if (error.message.includes('already been processed') || error.message.includes('Transaction simulation failed: This transaction has already been processed')) {
+                throw new Error('Transaction already submitted. Please wait and try again.');
+            } else if (error.message.includes('insufficient funds')) {
+                throw new Error('Insufficient funds for this transaction.');
+            } else if (error.message.includes('User rejected')) {
+                throw new Error('Transaction was cancelled by user.');
+            } else if (error.message.includes('encoding overruns Uint8Array')) {
+                throw new Error('Transaction too large. Please try with a smaller amount.');
+            }
+            
             throw error;
+        } finally {
+            setMarketData(prev => ({ ...prev, loading: false }));
         }
-    }, [program, publicKey]);
+    }, [program, publicKey, marketData.loading]);
 
     const cancel = useCallback(async (lid) => {
         if (!program || !publicKey) return null;
+        if (marketData.loading) { throw new Error('Transaction already in progress'); }
+        setMarketData(prev => ({ ...prev, loading: true, error: null }));
         try {
             const gameRegistryPda = getGameRegistryPDA();
             const listingPda = getListingPDA(new BN(lid));
@@ -195,7 +220,7 @@ export const useMarket = () => {
             const sellerItemAta = await getAssociatedTokenAddress(itemMintPda, publicKey, false);
             const itemMintAuthPda = getItemMintAuthPDA();
             // Build transaction with compute budget
-            const tx = await program.methods
+            const method = program.methods
                 .cancel()
                 .accounts({ 
                     seller: publicKey, 
@@ -207,18 +232,34 @@ export const useMarket = () => {
                     tokenProgram: TOKEN_PROGRAM_ID, 
                     associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID, 
                     systemProgram: SystemProgram.programId 
-                })
-                .rpc();
-
+                });
+            
+            const tx = await sendTransactionForPhantom(method, connection, sendTransaction, publicKey);
             return tx;
         } catch (error) {
             console.error('Cancel error:', error);
+            
+            // Handle specific transaction errors
+            if (error.message.includes('already been processed') || error.message.includes('Transaction simulation failed: This transaction has already been processed')) {
+                throw new Error('Transaction already submitted. Please wait and try again.');
+            } else if (error.message.includes('insufficient funds')) {
+                throw new Error('Insufficient funds for this transaction.');
+            } else if (error.message.includes('User rejected')) {
+                throw new Error('Transaction was cancelled by user.');
+            } else if (error.message.includes('encoding overruns Uint8Array')) {
+                throw new Error('Transaction too large. Please try with a smaller amount.');
+            }
+            
             throw error;
+        } finally {
+            setMarketData(prev => ({ ...prev, loading: false }));
         }
-    }, [program, publicKey]);
+    }, [program, publicKey, marketData.loading]);
 
     const batchBuy = useCallback(async (id, maxPricePer, totalBudget) => {
         if (!program || !publicKey) return null;
+        if (marketData.loading) { throw new Error('Transaction already in progress'); }
+        setMarketData(prev => ({ ...prev, loading: true, error: null }));
         try {
             const gameRegistryPda = getGameRegistryPDA();
             const userDataPda = getUserDataPDA(publicKey);
@@ -234,7 +275,7 @@ export const useMarket = () => {
             const listingPairs = await getListingPairs({ program, itemId: id, gameTokenMint: GAME_TOKEN_MINT });
 
             // Build transaction with compute budget
-            const tx = await program.methods
+            const method = program.methods
                 .batchBuy(id, new BN(Math.floor(maxPricePer * 1e6)), new BN(Math.floor(totalBudget * 1e6)), epoch)
                 .accounts({ 
                     buyer: publicKey, 
@@ -254,18 +295,34 @@ export const useMarket = () => {
                     itemMintAuthPda,
                     epochTop5Pda,
                     sponsorGameAta,
-                }))
-                .rpc();
-
+                }));
+            
+            const tx = await sendTransactionForPhantom(method, connection, sendTransaction, publicKey);
             return tx;
         } catch (error) {
             console.error('Batch buy error:', error);
+            
+            // Handle specific transaction errors
+            if (error.message.includes('already been processed') || error.message.includes('Transaction simulation failed: This transaction has already been processed')) {
+                throw new Error('Transaction already submitted. Please wait and try again.');
+            } else if (error.message.includes('insufficient funds')) {
+                throw new Error('Insufficient funds for this transaction.');
+            } else if (error.message.includes('User rejected')) {
+                throw new Error('Transaction was cancelled by user.');
+            } else if (error.message.includes('encoding overruns Uint8Array')) {
+                throw new Error('Transaction too large. Please try with a smaller amount.');
+            }
+            
             throw error;
+        } finally {
+            setMarketData(prev => ({ ...prev, loading: false }));
         }
-    }, [program, publicKey]);
+    }, [program, publicKey, marketData.loading]);
 
     const send = useCallback(async (id, to, amount) => {
         if (!program || !publicKey) return null;
+        if (marketData.loading) { throw new Error('Transaction already in progress'); }
+        setMarketData(prev => ({ ...prev, loading: true, error: null }));
         try {
             const gameRegistryPda = getGameRegistryPDA();
             const itemMintPda = getItemMintPDA(id);
@@ -275,7 +332,7 @@ export const useMarket = () => {
             const itemMintAuthPda = getItemMintAuthPDA();
             
             // Build transaction with compute budget
-            const tx = await program.methods
+            const method = program.methods
                 .send(id, new BN(amount))
                 .accounts({ 
                     sender: publicKey, 
@@ -288,15 +345,29 @@ export const useMarket = () => {
                     tokenProgram: TOKEN_PROGRAM_ID, 
                     associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID, 
                     systemProgram: SystemProgram.programId 
-                })
-                .rpc();
-
+                });
+            
+            const tx = await sendTransactionForPhantom(method, connection, sendTransaction, publicKey);
             return tx;
         } catch (error) {
             console.error('Send error:', error);
+            
+            // Handle specific transaction errors
+            if (error.message.includes('already been processed') || error.message.includes('Transaction simulation failed: This transaction has already been processed')) {
+                throw new Error('Transaction already submitted. Please wait and try again.');
+            } else if (error.message.includes('insufficient funds')) {
+                throw new Error('Insufficient funds for this transaction.');
+            } else if (error.message.includes('User rejected')) {
+                throw new Error('Transaction was cancelled by user.');
+            } else if (error.message.includes('encoding overruns Uint8Array')) {
+                throw new Error('Transaction too large. Please try with a smaller amount.');
+            }
+            
             throw error;
+        } finally {
+            setMarketData(prev => ({ ...prev, loading: false }));
         }
-    }, [program, publicKey]);
+    }, [program, publicKey, marketData.loading]);
 
     return { marketData, getAllListings, purchase, list, cancel, batchBuy, send };
 };

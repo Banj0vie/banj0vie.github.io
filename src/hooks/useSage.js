@@ -8,6 +8,7 @@ import { BN } from '@coral-xyz/anchor';
 import { GAME_TOKEN_MINT } from '../solana/constants/programId';
 import { getAssociatedTokenAddress, TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import { EPOCH_PERIOD } from '../utils/basic';
+import { sendTransactionForPhantom } from '../utils/transactionHelper';
 
 // Mirror on-chain constants/logic from sage.rs
 const SAGE_UNLOCK_COOLDOWN = EPOCH_PERIOD; // EPOCH_PERIOD (ms)
@@ -23,7 +24,7 @@ const getUnlockCost = (level) => {
 };
 
 export const useSage = () => {
-  const { publicKey } = useSolanaWallet();
+  const { publicKey, connection, sendTransaction } = useSolanaWallet();
   const valleyProgram = useProgram();
   const program = valleyProgram.getProgram();
   const dispatch = useDispatch();
@@ -125,13 +126,14 @@ export const useSage = () => {
 
   const unlockWeeklyHarvest = useCallback(async () => {
     if (!program || !publicKey) { setError('Program or wallet not available'); return null; }
+    if (loading) { setError('Transaction already in progress'); return null; }
     setLoading(true); setError(null);
     try {
       const gameRegistryPda = getGameRegistryPDA();
       const userDataPda = getUserDataPDA(publicKey);
       const gameTokenMintAuthPda = getGameTokenMintAuthPDA();
       const userGameAta = await getAssociatedTokenAddress(GAME_TOKEN_MINT, publicKey, false);
-      const tx = await program.methods
+      const method = program.methods
         .unlockWeeklyHarvest()
         .accounts({ 
           gameRegistry: gameRegistryPda, 
@@ -141,22 +143,39 @@ export const useSage = () => {
           gameTokenMintAuth: gameTokenMintAuthPda, 
           user: publicKey, 
           tokenProgram: TOKEN_PROGRAM_ID 
-        })
-        .rpc();
+        });
+      
+      const tx = await sendTransactionForPhantom(method, connection, sendTransaction, publicKey);
       await fetchSageData();
       return tx;
-    } catch (err) { setError(err.message); throw err; } finally { setLoading(false); }
+    } catch (err) { 
+      // Handle specific transaction errors
+      let errorMessage = err.message;
+      if (err.message.includes('already been processed') || err.message.includes('Transaction simulation failed: This transaction has already been processed')) {
+        errorMessage = 'Transaction already submitted. Please wait and try again.';
+      } else if (err.message.includes('insufficient funds')) {
+        errorMessage = 'Insufficient funds for this transaction.';
+      } else if (err.message.includes('User rejected')) {
+        errorMessage = 'Transaction was cancelled by user.';
+      } else if (err.message.includes('encoding overruns Uint8Array')) {
+        errorMessage = 'Transaction too large. Please try with a smaller amount.';
+      }
+      
+      setError(errorMessage); 
+      throw err; 
+    } finally { setLoading(false); }
   }, [program, publicKey, fetchSageData]);
 
   const unlockWeeklyWage = useCallback(async () => {
     if (!program || !publicKey) { setError('Program or wallet not available'); return null; }
+    if (loading) { setError('Transaction already in progress'); return null; }
     setLoading(true); setError(null);
     try {
       const gameRegistryPda = getGameRegistryPDA();
       const userDataPda = getUserDataPDA(publicKey);
       const gameTokenMintAuthPda = getGameTokenMintAuthPDA();
       const userGameAta = await getAssociatedTokenAddress(GAME_TOKEN_MINT, publicKey, false);
-      const tx = await program.methods
+      const method = program.methods
         .unlockWeeklyWage()
         .accounts({ 
           gameRegistry: gameRegistryPda, 
@@ -166,12 +185,28 @@ export const useSage = () => {
           gameTokenMintAuth: gameTokenMintAuthPda, 
           user: publicKey, 
           tokenProgram: TOKEN_PROGRAM_ID 
-        })
-        .rpc();
+        });
+      
+      const tx = await sendTransactionForPhantom(method, connection, sendTransaction, publicKey);
       await new Promise(r => setTimeout(r, 2000));
       await fetchSageData();
       return tx;
-    } catch (err) { setError(err.message); throw err; } finally { setLoading(false); }
+    } catch (err) { 
+      // Handle specific transaction errors
+      let errorMessage = err.message;
+      if (err.message.includes('already been processed') || err.message.includes('Transaction simulation failed: This transaction has already been processed')) {
+        errorMessage = 'Transaction already submitted. Please wait and try again.';
+      } else if (err.message.includes('insufficient funds')) {
+        errorMessage = 'Insufficient funds for this transaction.';
+      } else if (err.message.includes('User rejected')) {
+        errorMessage = 'Transaction was cancelled by user.';
+      } else if (err.message.includes('encoding overruns Uint8Array')) {
+        errorMessage = 'Transaction too large. Please try with a smaller amount.';
+      }
+      
+      setError(errorMessage); 
+      throw err; 
+    } finally { setLoading(false); }
   }, [program, publicKey, fetchSageData]);
 
   const getTimeUntilNextWageUnlock = useCallback(() => {

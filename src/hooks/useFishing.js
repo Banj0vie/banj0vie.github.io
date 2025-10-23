@@ -6,9 +6,10 @@ import { SystemProgram, SYSVAR_SLOT_HASHES_PUBKEY } from '@solana/web3.js';
 import { TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import { BN } from '@coral-xyz/anchor';
 import { ID_BAIT_ITEMS } from '../constants/app_ids';
+import { sendTransactionForPhantom } from '../utils/transactionHelper';
 
 export const useFishing = () => {
-  const { publicKey } = useSolanaWallet();
+  const { publicKey, connection, sendTransaction } = useSolanaWallet();
   const valleyProgram = useProgram();
   const program = valleyProgram.getProgram();
   const [fishingData, setFishingData] = useState({ loading: false, error: null, pendingRequests: [] });
@@ -60,12 +61,18 @@ export const useFishing = () => {
 
   const craftBait1 = useCallback(async (baitCount) => {
     if (!program || !publicKey) return null;
+    if (fishingData.loading) {
+      setFishingData(prev => ({ ...prev, error: 'Transaction already in progress' }));
+      return null;
+    }
+    
     try {
       setFishingData(prev => ({ ...prev, loading: true, error: null }));
       const gameRegistryPda = getGameRegistryPDA();
       const userDataPda = getUserDataPDA(publicKey);
       const remainingAccounts = getCraftBait1RemainingAccounts(publicKey);
-      const tx = await program.methods
+      
+      const method = program.methods
         .craftBait1(new BN(baitCount))
         .accounts({
           user: publicKey,
@@ -75,8 +82,9 @@ export const useFishing = () => {
           tokenProgram: TOKEN_PROGRAM_ID,
           associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
         })
-        .remainingAccounts(remainingAccounts)
-        .rpc();
+        .remainingAccounts(remainingAccounts);
+      
+      const tx = await sendTransactionForPhantom(method, connection, sendTransaction, publicKey);
       setFishingData(prev => ({ ...prev, loading: false }));
       return { txHash: tx, isPending: false };
     } catch (err) {
@@ -97,10 +105,15 @@ export const useFishing = () => {
       setFishingData(prev => ({ ...prev, loading: false, error: errorMessage }));
       return null;
     }
-  }, [program, publicKey]);
+  }, [program, publicKey, fishingData.loading]);
 
   const craftBait2 = useCallback(async (itemIds, amounts) => {
     if (!program || !publicKey) return null;
+    if (fishingData.loading) {
+      setFishingData(prev => ({ ...prev, error: 'Transaction already in progress' }));
+      return null;
+    }
+    
     try {
       setFishingData(prev => ({ ...prev, loading: true, error: null }));
       const gameRegistryPda = getGameRegistryPDA();
@@ -108,12 +121,13 @@ export const useFishing = () => {
       
       // Use specific remaining accounts if itemIds is valid, otherwise fall back to general
       let remainingAccounts;
-             if (Array.isArray(itemIds) && itemIds.length > 0) {
-               remainingAccounts = getCraftBaitSpecificRemainingAccounts(publicKey, itemIds, ID_BAIT_ITEMS.BAIT_2);
-             } else {
-               remainingAccounts = getCraftBaitRemainingAccounts(publicKey);
-             }
-      const tx = await program.methods
+      if (Array.isArray(itemIds) && itemIds.length > 0) {
+        remainingAccounts = getCraftBaitSpecificRemainingAccounts(publicKey, itemIds, ID_BAIT_ITEMS.BAIT_2);
+      } else {
+        remainingAccounts = getCraftBaitRemainingAccounts(publicKey);
+      }
+      
+      const method = program.methods
         .craftBait2(itemIds, amounts.map(a => new BN(a)))
         .accounts({
           user: publicKey,
@@ -123,8 +137,9 @@ export const useFishing = () => {
           tokenProgram: TOKEN_PROGRAM_ID,
           associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
         })
-        .remainingAccounts(remainingAccounts)
-        .rpc();
+        .remainingAccounts(remainingAccounts);
+      
+      const tx = await sendTransactionForPhantom(method, connection, sendTransaction, publicKey);
       setFishingData(prev => ({ ...prev, loading: false }));
       return { txHash: tx, isPending: false };
     } catch (err) {
@@ -145,10 +160,15 @@ export const useFishing = () => {
       setFishingData(prev => ({ ...prev, loading: false, error: errorMessage }));
       throw new Error(errorMessage); // Re-throw with better error message
     }
-  }, [program, publicKey]);
+  }, [program, publicKey, fishingData.loading]);
 
   const craftBait3 = useCallback(async (itemIds, amounts) => {
     if (!program || !publicKey) return null;
+    if (fishingData.loading) {
+      setFishingData(prev => ({ ...prev, error: 'Transaction already in progress' }));
+      return null;
+    }
+    
     try {
       setFishingData(prev => ({ ...prev, loading: true, error: null }));
       const gameRegistryPda = getGameRegistryPDA();
@@ -162,7 +182,7 @@ export const useFishing = () => {
         remainingAccounts = getCraftBaitRemainingAccounts(publicKey);
       }
       
-      const tx = await program.methods
+      const method = program.methods
         .craftBait3(itemIds, amounts.map(a => new BN(a)))
         .accounts({
           user: publicKey,
@@ -172,8 +192,9 @@ export const useFishing = () => {
           tokenProgram: TOKEN_PROGRAM_ID,
           associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
         })
-        .remainingAccounts(remainingAccounts)
-        .rpc();
+        .remainingAccounts(remainingAccounts);
+      
+      const tx = await sendTransactionForPhantom(method, connection, sendTransaction, publicKey);
       setFishingData(prev => ({ ...prev, loading: false }));
       return { txHash: tx, isPending: false };
     } catch (err) {
@@ -194,10 +215,15 @@ export const useFishing = () => {
       setFishingData(prev => ({ ...prev, loading: false, error: errorMessage }));
       throw new Error(errorMessage); // Re-throw with better error message
     }
-  }, [program, publicKey]);
+  }, [program, publicKey, fishingData.loading]);
 
   const fish = useCallback(async (baitId, amount = 1, nonce = null) => {
     if (!program || !publicKey) return null;
+    if (fishingData.loading) {
+      setFishingData(prev => ({ ...prev, error: 'Transaction already in progress' }));
+      return null;
+    }
+    
     try {
       setFishingData(prev => ({ ...prev, loading: true, error: null }));
       // Do not allow a new request if there is an unrevealed one
@@ -224,7 +250,7 @@ export const useFishing = () => {
       // Add remaining accounts for bait burning
       const remainingAccounts = getCraftBaitSpecificRemainingAccounts(publicKey, [baitId], baitId);
       
-      const tx = await program.methods
+      const method = program.methods
         .fish(baitId, amount, new BN(finalNonce))
         .accounts({
           user: publicKey,
@@ -234,8 +260,9 @@ export const useFishing = () => {
           systemProgram: SystemProgram.programId,
           tokenProgram: TOKEN_PROGRAM_ID,
         })
-        .remainingAccounts(remainingAccounts)
-        .rpc();
+        .remainingAccounts(remainingAccounts);
+      
+      const tx = await sendTransactionForPhantom(method, connection, sendTransaction, publicKey);
       writeStoredNonce(finalNonce, baitId, amount);
       setFishingData(prev => ({ ...prev, loading: false }));
       return { txHash: tx, isPending: false };
@@ -257,7 +284,7 @@ export const useFishing = () => {
       setFishingData(prev => ({ ...prev, loading: false, error: errorMessage }));
       return null;
     }
-  }, [program, publicKey, ensureNoUnrevealedPending]);
+  }, [program, publicKey, ensureNoUnrevealedPending, fishingData.loading]);
 
   const getAllPendingRequests = useCallback(async () => {
     if (!program || !publicKey) return [];
@@ -295,6 +322,11 @@ export const useFishing = () => {
 
   const revealFishing = useCallback(async (requestId) => {
     if (!program || !publicKey) return null;
+    if (fishingData.loading) {
+      setFishingData(prev => ({ ...prev, error: 'Transaction already in progress' }));
+      return null;
+    }
+    
     try {
       setFishingData(prev => ({ ...prev, loading: true, error: null }));
       
@@ -323,8 +355,7 @@ export const useFishing = () => {
       const itemMintAuthPda = getItemMintAuthPDA();
       const remainingAccounts = getRevealFishingRemainingAccounts(publicKey);
       
-      
-      const tx = await program.methods
+      const method = program.methods
         .revealFishing(new BN(storedRequestId))
         .accounts({
           user: publicKey,
@@ -336,8 +367,9 @@ export const useFishing = () => {
           associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
           systemProgram: SystemProgram.programId,
         })
-        .remainingAccounts(remainingAccounts)
-        .rpc();
+        .remainingAccounts(remainingAccounts);
+      
+      const tx = await sendTransactionForPhantom(method, connection, sendTransaction, publicKey);
       
       localStorage.removeItem(storageKey());
       setFishingData(prev => ({ ...prev, loading: false }));
@@ -360,7 +392,7 @@ export const useFishing = () => {
       setFishingData(prev => ({ ...prev, loading: false, error: errorMessage }));
       return null;
     }
-  }, [program, publicKey]);
+  }, [program, publicKey, fishingData.loading]);
 
   const listenForFishingResults = useCallback(async (txSig, onResults) => {
     if (!program || !publicKey) return null;

@@ -11,7 +11,7 @@ import { useItems } from "../../hooks/useItems";
 import { useChest } from "../../hooks/useChest";
 import { useNotification } from "../../contexts/NotificationContext";
 import { ID_CHEST_ITEMS, ID_POTION_ITEMS } from "../../constants/app_ids";
-// ChestRollingDialog removed; chest opens directly via useChest
+import ChestRollingDialog from "./ChestRollingDialog";
 
 const menus = [
   { id: ID_INVENTORY_MENUS.SEEDS, label: "Seeds" },
@@ -37,10 +37,8 @@ const InventoryDialog = ({ onClose }) => {
   
   // Chest opening state
   const [usingItemId, setUsingItemId] = useState(null);
-  
-  // No reveal dialog flow
-
-  // No pending VRNG flow
+  const [chestResult, setChestResult] = useState(null);
+  const [showChestDialog, setShowChestDialog] = useState(false);
 
   const onUseItem = async (itemId) => {
     setUsingItemId(itemId);
@@ -58,13 +56,49 @@ const InventoryDialog = ({ onClose }) => {
         show("Opening chest...", "info");
         const result = await openChest(idNum);
         
-        if (result.success) {
-          show("Chest opened! Click 'Reveal' to see your reward.", "success");
-          // Wait a moment for the transaction to be processed
-          setTimeout(async () => {
-            // Refresh items to update the inventory display
+        console.log("🎁 Chest opening result:", result);
+        if (result.success && result.results && result.results.length > 0) {
+          console.log("🎁 Showing chest result dialog with reward:", result.results[0]);
+          // Show the chest result dialog
+          setChestResult({
+            rewardId: result.results[0], // Take the first reward
+            chestType: idNum
+          });
+          setShowChestDialog(true);
+          console.log("🎁 Dialog state set - showChestDialog should be true");
+          
+          // Refresh items immediately and then with retry mechanism
+          await refetch();
+          
+          // Multiple refresh attempts to ensure inventory updates
+          const refreshInventory = async (attempt = 1) => {
+            console.log(`🔄 Refresh attempt ${attempt} after chest opening...`);
             await refetch();
-          }, 1000);
+            
+            if (attempt < 5) {
+              setTimeout(() => refreshInventory(attempt + 1), 1000 * attempt);
+            }
+          };
+          
+          setTimeout(() => refreshInventory(), 1000);
+        } else if (result.success) {
+          console.log("🎁 Chest opened but no results found");
+          show("Chest opened successfully!", "success");
+          
+          // Refresh items immediately and then with retry mechanism
+          await refetch();
+          
+          // Multiple refresh attempts to ensure inventory updates
+          const refreshInventory = async (attempt = 1) => {
+            console.log(`🔄 Refresh attempt ${attempt} after chest opening...`);
+            await refetch();
+            
+            if (attempt < 5) {
+              setTimeout(() => refreshInventory(attempt + 1), 1000 * attempt);
+            }
+          };
+          
+          setTimeout(() => refreshInventory(), 1000);
         }
         return;
       }
@@ -75,9 +109,10 @@ const InventoryDialog = ({ onClose }) => {
           itemId === ID_POTION_ITEMS.POTION_GROWTH_ELIXIR_III) {
         
         if (isOnFarmPage()) {
-          // Trigger potion usage mode in farm interface
-          // triggerPotionUsage(itemId, "Growth Elixir");
-          show("Select growing crops to apply Growth Elixir.", "info");
+          // Directly trigger farm potion mode
+          window.dispatchEvent(new CustomEvent('startPotionUsage', {
+            detail: { id: itemId, name: 'Growth Elixir' }
+          }));
           onClose(); // Close inventory dialog
         } else {
           show("Go to the Farm to use Growth Elixir on growing crops.", "info");
@@ -90,9 +125,10 @@ const InventoryDialog = ({ onClose }) => {
           itemId === ID_POTION_ITEMS.POTION_PESTICIDE_III) {
         
         if (isOnFarmPage()) {
-          // Trigger potion usage mode in farm interface
-          // triggerPotionUsage(itemId, "Pesticide");
-          show("Select growing crops to apply Pesticide.", "info");
+          // Directly trigger farm potion mode
+          window.dispatchEvent(new CustomEvent('startPotionUsage', {
+            detail: { id: itemId, name: 'Pesticide' }
+          }));
           onClose(); // Close inventory dialog
         } else {
           show("Go to the Farm to use Pesticide on growing crops.", "info");
@@ -105,9 +141,10 @@ const InventoryDialog = ({ onClose }) => {
           itemId === ID_POTION_ITEMS.POTION_FERTILIZER_III) {
         
         if (isOnFarmPage()) {
-          // Trigger potion usage mode in farm interface
-          // triggerPotionUsage(itemId, "Fertilizer");
-          show("Select growing crops to apply Fertilizer.", "info");
+          // Directly trigger farm potion mode
+          window.dispatchEvent(new CustomEvent('startPotionUsage', {
+            detail: { id: itemId, name: 'Fertilizer' }
+          }));
           onClose(); // Close inventory dialog
         } else {
           show("Go to the Farm to use Fertilizer on growing crops.", "info");
@@ -158,55 +195,80 @@ const InventoryDialog = ({ onClose }) => {
   }, [selectedMenu, allItems]);
 
   return (
-    <BaseDialog onClose={onClose} title="INVENTORY">
-      <div className="inventory-dialog">
-        <div className="layout">
-          <div className="info-row">
-            {menus.map((item, index) => (
-              <BaseButton
-                className={`button ${index === 0 ? "first" : ""}`}
-                label={item.label}
-                key={index}
-                focused={selectedMenu === item.id}
-                onClick={() => setSelectedMenu(item.id)}
-              ></BaseButton>
-            ))}
-          </div>
-          <div className="seed-row">
-            {selectedMenu !== ID_INVENTORY_MENUS.ITEMS && (
-              <div className="seed-row-wrapper">
-                {list.map((item, index) => (
-                  <ItemSmallView
-                    key={index}
-                    itemId={item.id}
-                    count={item.count}
-                  ></ItemSmallView>
-                ))}
-              </div>
-            )}
-            {selectedMenu === ID_INVENTORY_MENUS.ITEMS && (
-              <div className="seed-list">
-                {list.map((item, index) => {
-                  
-                  // Regular item (chest or potion)
-                  return (
-                    <ItemViewUsable
+    <>
+      <BaseDialog onClose={onClose} title="INVENTORY">
+        <div className="inventory-dialog">
+          <div className="layout">
+            <div className="info-row">
+              {menus.map((item, index) => (
+                <BaseButton
+                  className={`button ${index === 0 ? "first" : ""}`}
+                  label={item.label}
+                  key={index}
+                  focused={selectedMenu === item.id}
+                  onClick={() => setSelectedMenu(item.id)}
+                ></BaseButton>
+              ))}
+            </div>
+            <div className="seed-row">
+              {selectedMenu !== ID_INVENTORY_MENUS.ITEMS && (
+                <div className="seed-row-wrapper">
+                  {list.map((item, index) => (
+                    <ItemSmallView
                       key={index}
                       itemId={item.id}
                       count={item.count}
-                      onUse={onUseItem}
-                      usable={item.usable}
-                      buttonLabel={Number(usingItemId) === Number(item.id) ? "Using..." : "Use"}
-                      disabled={Number(usingItemId) === Number(item.id)}
-                    ></ItemViewUsable>
-                  );
-                })}
-              </div>
-            )}
+                    ></ItemSmallView>
+                  ))}
+                </div>
+              )}
+              {selectedMenu === ID_INVENTORY_MENUS.ITEMS && (
+                <div className="seed-list">
+                  {list.map((item, index) => {
+                    
+                    // Regular item (chest or potion)
+                    return (
+                      <ItemViewUsable
+                        key={index}
+                        itemId={item.id}
+                        count={item.count}
+                        onUse={onUseItem}
+                        usable={item.usable}
+                        buttonLabel={Number(usingItemId) === Number(item.id) ? "Using..." : "Use"}
+                        disabled={Number(usingItemId) === Number(item.id)}
+                      ></ItemViewUsable>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </div>
         </div>
-      </div>
-    </BaseDialog>
+      </BaseDialog>
+      
+      {/* Chest Result Dialog */}
+      {console.log("🔍 Dialog render check - showChestDialog:", showChestDialog, "chestResult:", chestResult)}
+      {showChestDialog && chestResult && (
+        <ChestRollingDialog
+          rollingInfo={chestResult}
+          onClose={() => {
+            console.log("🎁 Closing chest dialog");
+            setShowChestDialog(false);
+            setChestResult(null);
+            // Refresh inventory when dialog is closed
+            refetch();
+          }}
+          onBack={() => {
+            console.log("🎁 Going back from chest dialog");
+            setShowChestDialog(false);
+            setChestResult(null);
+            // Refresh inventory when dialog is closed
+            refetch();
+          }}
+        />
+      )}
+      
+    </>
   );
 };
 

@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { useDispatch } from 'react-redux';
 import { useProgram } from './useProgram';
 import { useSolanaWallet } from './useSolanaWallet';
 import { getGameRegistryPDA, getUserDataPDA, getRequestPDA, getBankerDataPDA, getItemMintAuthPDA, getGameTokenMintAuthPDA, getEpochTop5PDA, getSponsorGameAta, getGameRegistryInfo, getRevealSeedsRemainingAccounts, preIx } from '../solana/utils/pdaUtils';
@@ -7,14 +8,52 @@ import { BN } from '@coral-xyz/anchor';
 import { GAME_TOKEN_MINT, LOOKUP_TABLE_ADDRESS } from '../solana/constants/programId';
 import { getAssociatedTokenAddress, TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import { EPOCH_PERIOD } from '../utils/basic';
+import { fetchBalancesSuccess } from '../solana/store/slices/balanceSlice';
+import { getBalance, getParsedTokenAccountsByOwner } from '../utils/requestQueue';
+import { sendTransaction as sendTransactionHelper, handleSimulationError, sendTransactionForPhantom } from '../utils/transactionHelper';
 
 export const useVendor = () => {
   const { publicKey, sendTransaction } = useSolanaWallet();
   const valleyProgram = useProgram();
   const program = valleyProgram.getProgram();
   const connection = valleyProgram.getConnection();
+  const dispatch = useDispatch();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  // Function to refresh user balances after transactions
+  const refreshBalances = useCallback(async () => {
+    if (!program || !publicKey) return;
+    try {
+      const userDataPda = getUserDataPDA(publicKey);
+      const userDataRaw = await program.account.userData.fetch(userDataPda);
+
+      // Fetch SPL token balance for GAME_TOKEN_MINT
+      const parsed = await getParsedTokenAccountsByOwner(connection, publicKey, { mint: GAME_TOKEN_MINT });
+      const gameTokenAmount = parsed.value?.[0]?.account?.data?.parsed?.info?.tokenAmount?.uiAmount ?? 0;
+
+      // Fetch SOL balance
+      const lamports = await getBalance(connection, publicKey);
+
+      // Convert on-chain fields (assumed 6 decimals)
+      const lockedTokensUi = (() => {
+        try { return (parseFloat(userDataRaw.lockedTokens?.toString?.() ?? '0') / 1e6).toString(); } catch { return '0'; }
+      })();
+      const xTokenShareUi = (() => {
+        try { return (parseFloat(userDataRaw.xtokenShare?.toString?.() ?? '0') / 1e6).toString(); } catch { return '0'; }
+      })();
+
+      // Update all balances at once
+      dispatch(fetchBalancesSuccess({
+        gameToken: (gameTokenAmount ?? 0).toString(),
+        stakedBalance: lockedTokensUi,
+        xTokenShare: xTokenShareUi,
+        solBalance: (lamports / 1e9).toString(),
+      }));
+    } catch (err) {
+      console.error('Failed to refresh balances:', err);
+    }
+  }, [program, publicKey, connection, dispatch]);
 
   const buySeedPack = useCallback(async (tier, count) => {
     if (!program || !publicKey) { setError('Program or wallet not available'); return null; }
@@ -51,34 +90,31 @@ export const useVendor = () => {
       remainingAccounts.push({ pubkey: userGameAta, isWritable: true, isSigner: false });
       remainingAccounts.push({ pubkey: epochTop5Pda, isWritable: true, isSigner: false });
       remainingAccounts.push({ pubkey: sponsorGameAta, isWritable: false, isSigner: false });
-      const tx = await program.methods
-      .buySeedPack(tier, new BN(count), new BN(nonce), epoch)
-      .accounts({
-        buyer: publicKey,
-        gameRegistry: gameRegistryPda,
-        request: requestPda,
-        gameTokenMint: GAME_TOKEN_MINT,
-        gameTokenMintAuth: gameTokenMintAuthPda,
-        tokenProgram: TOKEN_PROGRAM_ID,
-        systemProgram: SystemProgram.programId,
-      })
-      .remainingAccounts(remainingAccounts)
-      .rpc();
-      localStorage.setItem(pendingKey, JSON.stringify({requestId: nonce, tier, count}));
-      return { txHash: tx, tier, isPending: false };
+      const method = program.methods
+        .buySeedPack(tier, new BN(count), new BN(nonce), epoch)
+        .accounts({
+          buyer: publicKey,
+          gameRegistry: gameRegistryPda,
+          request: requestPda,
+          gameTokenMint: GAME_TOKEN_MINT,
+          gameTokenMintAuth: gameTokenMintAuthPda,
+          tokenProgram: TOKEN_PROGRAM_ID,
+          systemProgram: SystemProgram.programId,
+        })
+        .remainingAccounts(remainingAccounts);
+      
+      const result = await sendTransactionForPhantom(method, connection, sendTransaction, publicKey);
+      
+      // Store pending request on success
+      if (result) {
+        localStorage.setItem(pendingKey, JSON.stringify({requestId: nonce, tier, count}));
+        return { txHash: result, tier, isPending: false };
+      } else {
+        return null;
+      }
     } catch (err) { 
       console.log("🚀 ~ useVendor ~ err:", err); 
-      
-      // Handle specific transaction errors
-      if (err.message.includes('already been processed')) {
-        setError('Transaction already submitted. Please wait and try again.');
-      } else if (err.message.includes('insufficient funds')) {
-        setError('Insufficient funds for this transaction.');
-      } else if (err.message.includes('User rejected')) {
-        setError('Transaction was cancelled by user.');
-      } else {
-        setError(err.message);
-      }
+      setError(err.message);
       return null; 
     } finally { 
       setLoading(false); 
@@ -134,6 +170,10 @@ export const useVendor = () => {
   const revealSeeds = useCallback(async () => {
     if (!program || !publicKey) { setError('Program or wallet not available'); return null; }
     setLoading(true); setError(null);
+    
+    // Declare variables outside try block so they're accessible in catch block
+    let requestId, tier, count;
+    
     try {
       // INSERT_YOUR_CODE
       const pendingKey = `seedNonce:${publicKey.toBase58()}`;
@@ -143,12 +183,28 @@ export const useVendor = () => {
         setLoading(false);
         return null;
       }
-      const {requestId, tier, count} = JSON.parse(raw);
+      ({requestId, tier, count} = JSON.parse(raw));
+      
+      // Check if the request has already been revealed
       const gameRegistryPda = getGameRegistryPDA();
       const requestPda = getRequestPDA(publicKey, new BN(requestId));
+      
+      try {
+        const requestData = await program.account.request.fetch(requestPda);
+        if (requestData.revealed) {
+          console.log('Request already revealed, cleaning up localStorage');
+          localStorage.removeItem(pendingKey);
+          setLoading(false);
+          return 'already_revealed';
+        }
+      } catch (err) {
+        console.log('Request account not found or error fetching:', err);
+        // Continue with the reveal attempt
+      }
+      
       const itemMintAuthPda = getItemMintAuthPDA();
       const remainingAccounts = await getRevealSeedsRemainingAccounts(publicKey, tier);
-      const buyIx = await program.methods
+      const method = program.methods
         .revealSeeds(new BN(requestId))
         .accounts({
           buyer: publicKey,
@@ -160,24 +216,23 @@ export const useVendor = () => {
           associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
           systemProgram: SystemProgram.programId,
         })
-        .remainingAccounts(remainingAccounts)
-        .instruction();
-      const { value: alt } = await connection.getAddressLookupTable(LOOKUP_TABLE_ADDRESS);
-      if (!alt) throw new Error('ALT not found');
-      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
-      const msgV0 = new TransactionMessage({
-        payerKey: publicKey,
-        recentBlockhash: blockhash,
-        instructions: [...preIx, buyIx],
-      }).compileToV0Message([alt]);
-      const tx = new VersionedTransaction(msgV0);
-      const sig = await sendTransaction(tx, connection, { skipPreflight: false, maxRetries: 3 });
-      await connection.confirmTransaction({signature: sig, blockhash, lastValidBlockHeight});
+        .remainingAccounts(remainingAccounts);
+      
+      const result = await sendTransactionForPhantom(method, connection, sendTransaction, publicKey);
+
+      // Clean up pending request and refresh balances
       localStorage.removeItem(`seedNonce:${publicKey.toBase58()}`);
-      return sig;
+      await refreshBalances();
+      
+      if (result) {
+        return result;
+      } else {
+        return null;
+      }
     } catch (err) {
       console.log("🚀 ~ useVendor ~ err:", err);
-      setError(err.message); return null; 
+      setError(err.message);
+      return null; 
     } finally { setLoading(false); }
   }, [program, publicKey]);
 

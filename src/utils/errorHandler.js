@@ -52,6 +52,17 @@ export const handleContractError = (error, context = '') => {
   const errorMessage = error?.message || error?.toString() || '';
   const errorCode = error?.code;
   
+  // Handle "already processed" errors
+  if (errorMessage.includes('already been processed') || 
+      errorMessage.includes('Transaction simulation failed: This transaction has already been processed') ||
+      errorMessage.includes('This transaction has already been processed')) {
+    return {
+      type: ErrorTypes.TRANSACTION_FAILED,
+      message: 'Transaction already submitted. Please wait and try again.',
+      originalError: error
+    };
+  }
+
   // Handle user rejection
   if (errorCode === 4001 || 
       errorCode === 'ACTION_REJECTED' ||

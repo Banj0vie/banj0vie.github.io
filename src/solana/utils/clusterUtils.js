@@ -2,14 +2,14 @@
 export const CLUSTER_CONFIGS = {
   'devnet': {
     name: 'devnet',
-    rpcEndpoint: 'https://api.devnet.solana.com',
+    rpcEndpoint: 'https://devnet.helius-rpc.com/?api-key=58281a41-2a84-4eab-82ea-b84c72af7346',
     wsEndpoint: 'wss://api.devnet.solana.com',
     isMainnet: false,
     isTestnet: true,
   },
   'mainnet-beta': {
     name: 'mainnet-beta',
-    rpcEndpoint: 'https://api.mainnet-beta.solana.com',
+    rpcEndpoint: 'https://mainnet.helius-rpc.com/?api-key=58281a41-2a84-4eab-82ea-b84c72af7346',
     wsEndpoint: 'wss://api.mainnet-beta.solana.com',
     isMainnet: true,
     isTestnet: false,

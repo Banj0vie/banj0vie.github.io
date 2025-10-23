@@ -117,9 +117,7 @@ const VendorDialog = ({ onClose, label = "VENDOR", header = "" }) => {
       const plantedCount = userCrops.filter(crop => crop.seedId && crop.seedId !== 0n).length;
       
       const availablePlotsCount = maxPlots - plantedCount;
-      setAvailablePlots(Math.max(0, availablePlotsCount)); // Ensure it's not negative
-      console.log('Max plots:', maxPlots, 'Planted plots:', plantedCount, 'Available plots:', availablePlotsCount);
-      console.log('User crops:', userCrops);
+      setAvailablePlots(Math.max(0, availablePlotsCount));
     } catch (err) {
       console.error("Failed to load available plots:", err);
     }

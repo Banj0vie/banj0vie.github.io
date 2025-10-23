@@ -5,9 +5,10 @@ import { getUserDataPDA, getGameRegistryPDA } from '../solana/utils/pdaUtils';
 import { getAssociatedTokenAddress, TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import { GAME_TOKEN_MINT } from '../solana/constants/programId';
 import { handleContractError } from '../utils/errorHandler';
+import { sendTransactionForPhantom } from '../utils/transactionHelper';
 
 export const useGardener = () => {
-  const { publicKey } = useSolanaWallet();
+  const { publicKey, sendTransaction } = useSolanaWallet();
   const valleyProgram = useProgram();
   const program = valleyProgram.getProgram();
   const connection = valleyProgram.getConnection();
@@ -54,7 +55,7 @@ export const useGardener = () => {
       const gameRegistryPda = getGameRegistryPDA();
       const userDataPda = getUserDataPDA(publicKey);
       const userGameAta = await getAssociatedTokenAddress(GAME_TOKEN_MINT, publicKey, false);
-      const tx = await program.methods
+      const method = program.methods
         .levelUp(targetLevel)
         .accounts({ 
           user: publicKey, 
@@ -63,8 +64,9 @@ export const useGardener = () => {
           gameTokenMint: GAME_TOKEN_MINT, 
           userGameAta, 
           tokenProgram: TOKEN_PROGRAM_ID 
-        })
-        .rpc();
+        });
+      
+      const tx = await sendTransactionForPhantom(method, connection, sendTransaction, publicKey);
       await fetchGardenerData();
       return tx;
     } catch (err) {
