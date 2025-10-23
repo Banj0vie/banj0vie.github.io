@@ -1,4 +1,4 @@
-Gamified DeFi Website
+Gamified DeFi Website 
 
 Welcome to the Gamified DeFi front‑end. This app provides an interactive game layer on top of DeFi mechanics: buy seed packs, farm produce, open chests, fish for loot, trade on the vendor and DEX, and more.
 
