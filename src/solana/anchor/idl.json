@@ -855,23 +855,8 @@
           "isSigner": false
         },
         {
-          "name": "gameTokenMint",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "gameTokenMintAuth",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
           "name": "gameRegistry",
           "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "epochTop5",
-          "isMut": true,
           "isSigner": false
         },
         {
@@ -894,10 +879,6 @@
         {
           "name": "count",
           "type": "u64"
-        },
-        {
-          "name": "epoch",
-          "type": "u32"
         }
       ]
     },
@@ -915,23 +896,8 @@
           "isSigner": false
         },
         {
-          "name": "gameTokenMint",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "gameTokenMintAuth",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
           "name": "gameRegistry",
           "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "epochTop5",
-          "isMut": true,
           "isSigner": false
         },
         {
@@ -954,10 +920,6 @@
         {
           "name": "count",
           "type": "u64"
-        },
-        {
-          "name": "epoch",
-          "type": "u32"
         }
       ]
     },
@@ -975,23 +937,8 @@
           "isSigner": false
         },
         {
-          "name": "gameTokenMint",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "gameTokenMintAuth",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
           "name": "gameRegistry",
           "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "epochTop5",
-          "isMut": true,
           "isSigner": false
         },
         {
@@ -1014,10 +961,6 @@
         {
           "name": "count",
           "type": "u64"
-        },
-        {
-          "name": "epoch",
-          "type": "u32"
         }
       ]
     },

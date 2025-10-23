@@ -6,6 +6,9 @@ import { CAT_CHEST, ID_BAIT_ITEMS, ID_CHEST_ITEMS, ID_POTION_ITEMS, ID_PRODUCE_I
 import { chestLootTable } from '../../utils/basic';
 import { BN } from 'bn.js';
 
+// Metaplex Token Metadata Program ID
+const TOKEN_METADATA_PROGRAM_ID = new PublicKey('metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s');
+
 
 export const getGameRegistryInfo = async (program) => {
   try {
@@ -228,11 +231,21 @@ export const getItemMintAuthPDA = () => {
   )[0];
 };
 
-export const getGameTokenMintAuthPDA = () => {
-  const gameRegistryPda = getGameRegistryPDA();
+export const getGameTokenMintAuthPDA = (gameRegistryKey) => {
   return PublicKey.findProgramAddressSync(
-    [Buffer.from(SEEDS.GAME_TOKEN_MINT_AUTH), gameRegistryPda.toBuffer()],
+    [Buffer.from(SEEDS.GAME_TOKEN_MINT_AUTH), gameRegistryKey.toBuffer()],
     SOLANA_VALLEY_PROGRAM_ID,
+  )[0];
+};
+
+export const getMetadataPDA = (mintPda) => {
+  return PublicKey.findProgramAddressSync(
+    [
+      Buffer.from('metadata'),
+      TOKEN_METADATA_PROGRAM_ID.toBuffer(),
+      mintPda.toBuffer(),
+    ],
+    TOKEN_METADATA_PROGRAM_ID,
   )[0];
 };
 
@@ -375,5 +388,86 @@ export const getCraftBaitSpecificRemainingAccounts = (publicKey, itemIds, baitId
   } catch (error) {
     console.error('getCraftBaitSpecificRemainingAccounts - error:', error);
     throw error;
+  }
+};
+
+export const getCraftPotionRemainingAccounts = (publicKey, potionType) => {
+  const accounts = [];
+  
+  try {
+    // Validate inputs
+    if (!publicKey) {
+      console.warn('getCraftPotionRemainingAccounts: publicKey is null/undefined');
+      return [];
+    }
+    
+    if (!potionType) {
+      console.warn('getCraftPotionRemainingAccounts: potionType is null/undefined');
+      return [];
+    }
+    
+    let requiredItems = [];
+    
+    // Define required items for each potion type based on Rust program
+    switch (potionType) {
+      case 'growth_elixir':
+        requiredItems = [
+          ID_PRODUCE_ITEMS.RADISH,    // 2x required
+          ID_PRODUCE_ITEMS.ONION,     // 8x required
+          ID_POTION_ITEMS.POTION_GROWTH_ELIXIR  // output
+        ];
+        break;
+      case 'pesticide':
+        requiredItems = [
+          ID_PRODUCE_ITEMS.GRAPES,    // 2x required
+          ID_PRODUCE_ITEMS.BERRY,    // 3x required
+          ID_PRODUCE_ITEMS.CAULIFLOWER, // 3x required
+          ID_POTION_ITEMS.POTION_PESTICIDE  // output
+        ];
+        break;
+      case 'fertilizer':
+        requiredItems = [
+          ID_PRODUCE_ITEMS.DRAGONFRUIT, // 2x required
+          ID_PRODUCE_ITEMS.LAVENDER,  // 2x required
+          ID_PRODUCE_ITEMS.LYCHEE,    // 2x required
+          ID_POTION_ITEMS.POTION_FERTILIZER  // output
+        ];
+        break;
+      default:
+        console.warn(`getCraftPotionRemainingAccounts: Unknown potion type: ${potionType}`);
+        return [];
+    }
+    
+    // Ensure requiredItems is an array
+    if (!Array.isArray(requiredItems)) {
+      console.warn('getCraftPotionRemainingAccounts: requiredItems is not an array');
+      return [];
+    }
+    
+    // Add mint, ATA, and metadata accounts for each required item
+    for (const itemId of requiredItems) {
+      if (itemId == null || itemId === undefined) {
+        console.warn('getCraftPotionRemainingAccounts: itemId is null/undefined, skipping');
+        continue;
+      }
+      
+      const mint = getItemMintPDA(itemId);
+      const ata = getAssociatedTokenAddressSync(mint, publicKey, false);
+      const metadata = getMetadataPDA(mint);
+      
+      accounts.push({ pubkey: mint, isWritable: true, isSigner: false });
+      accounts.push({ pubkey: ata, isWritable: true, isSigner: false });
+      accounts.push({ pubkey: metadata, isWritable: true, isSigner: false });
+    }
+    
+    // Add sponsor game token ATA (required for XP rewards)
+    const sponsorGameAta = getAssociatedTokenAddressSync(GAME_TOKEN_MINT, publicKey, false);
+    accounts.push({ pubkey: sponsorGameAta, isWritable: true, isSigner: false });
+    
+    return accounts;
+  } catch (error) {
+    console.error('getCraftPotionRemainingAccounts - error:', error);
+    // Return empty array instead of throwing to prevent crashes
+    return [];
   }
 };
