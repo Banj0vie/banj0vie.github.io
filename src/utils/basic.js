@@ -162,7 +162,7 @@ export const getSubtype = (seedId) => {
   }
   let x = 0;
   for (let i = 0; i < array.length; i++) {
-    if (array[i] <= id) {
+    if (array[i] >= id) {
       x = i + 1;
       break;
     }

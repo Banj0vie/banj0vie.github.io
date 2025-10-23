@@ -1,6 +1,20 @@
 import { Connection, TransactionMessage, VersionedTransaction } from '@solana/web3.js';
 import { LOOKUP_TABLE_ADDRESS } from '../solana/constants/programId';
 
+// Detect user-rejection errors from wallet providers/adapters
+const isUserRejectError = (err) => {
+  try {
+    const msg = (err?.message || String(err) || '').toLowerCase();
+    return (
+      msg.includes('user rejected') ||
+      msg.includes('rejected the request') ||
+      msg.includes('request was rejected') ||
+      msg.includes('transaction was rejected') ||
+      msg.includes('rejected by the user')
+    );
+  } catch (_) { return false; }
+};
+
 /**
  * Enhanced transaction sender with comprehensive error handling
  */
@@ -233,12 +247,12 @@ export const sendTransactionForPhantom = async (method, connection, sendTransact
         }
         // If simulation fails, we should skip preflight
         console.log('Simulation failed, will use skipPreflight=true');
-        throw new Error('Simulation failed');
+        throw new Error('simulation failed');
       }
     } catch (simError) {
       console.log('Simulation failed, proceeding with skipPreflight=true:', simError.message);
       // If simulation fails, we should skip preflight
-      throw new Error('Simulation failed');
+      throw new Error('simulation failed');
     }
     
     // Send the transaction (prefer raw sign+send to avoid Phantom adapter issues)
@@ -249,6 +263,7 @@ export const sendTransactionForPhantom = async (method, connection, sendTransact
         signature = await connection.sendRawTransaction(signed.serialize(), { skipPreflight: false, maxRetries: 3, preflightCommitment: 'processed' });
       }
     } catch (rawSendErr) {
+      if (isUserRejectError(rawSendErr)) throw rawSendErr; // do not retry on user reject
       console.warn('Raw send (non-skip) failed, falling back to wallet adapter:', rawSendErr?.message);
     }
 
@@ -260,6 +275,7 @@ export const sendTransactionForPhantom = async (method, connection, sendTransact
           preflightCommitment: 'processed'
         });
       } catch (adapterErr) {
+        if (isUserRejectError(adapterErr)) throw adapterErr; // do not retry on user reject
         console.warn('Wallet adapter sendTransaction failed, retrying via raw sign+send with skipPreflight:', adapterErr?.message);
         if (typeof window !== 'undefined' && window?.solana?.signTransaction) {
           const signed = await window.solana.signTransaction(tx);
@@ -286,7 +302,8 @@ export const sendTransactionForPhantom = async (method, connection, sendTransact
     }
     
     // Check if it's a simulation error or "Failed to simulate" error
-    if (error.message && (error.message.includes('simulation') || error.message.includes('Failed to simulate'))) {
+    const errMsg = (error?.message || '').toLowerCase();
+    if (errMsg && (errMsg.includes('simulation') || errMsg.includes('failed to simulate'))) {
       console.log('Simulation failed, retrying with skipPreflight...');
       
       try {
@@ -312,11 +329,17 @@ export const sendTransactionForPhantom = async (method, connection, sendTransact
             signature = await connection.sendRawTransaction(signed.serialize(), { skipPreflight: true, maxRetries: 3 });
           }
         } catch (rawErr) {
+          if (isUserRejectError(rawErr)) throw rawErr; // do not fallback on user reject
           console.warn('Raw sign/send failed, falling back to wallet adapter:', rawErr?.message);
         }
 
         if (!signature) {
-          signature = await sendTransactionFn(tx, connection, { skipPreflight: true, maxRetries: 3 });
+          try {
+            signature = await sendTransactionFn(tx, connection, { skipPreflight: true, maxRetries: 3 });
+          } catch (adapterErr) {
+            if (isUserRejectError(adapterErr)) throw adapterErr;
+            throw adapterErr;
+          }
         }
         
         await connection.confirmTransaction({

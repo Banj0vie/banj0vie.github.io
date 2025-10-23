@@ -487,7 +487,7 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
         const id = crop.seedId & 0xFF;
         const subtype = getSubtype(crop.seedId);
         const plotId = crop.plotNumber;
-        console.log("🚀 ~ handlePlant ~ plotId:", plotId, category, id, subtype)
+        console.log("🚀 ~ handlePlant ~ plotId:", plotId, category, subtype, id)
         return (plotId << 24) | (category << 16) | (subtype << 8) | id
       });
       const result = await plantBatch(seedIds);
@@ -666,8 +666,8 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
       return;
     }
 
-    if (!selectedIndexes || selectedIndexes.length === 0) {
-      show("Please select crops to apply the potion to!", "info");
+    if (!selectedIndexes || selectedIndexes.length !== 1) {
+      show("Please select exactly one crop to apply the potion!", "info");
       return;
     }
 
@@ -694,19 +694,13 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
         return;
       }
 
-      show(`Applying ${selectedPotion.name} to ${selectedIndexes.length} crops...`, "info");
+      const targetIndex = selectedIndexes[0];
+      show(`Applying ${selectedPotion.name} to crop #${targetIndex + 1}...`, "info");
 
-      let successCount = 0;
-      // Apply potion to each selected plot
-      for (const plotIndex of selectedIndexes) {
-        const result = await potionFunction(plotIndex);
-        if (result) {
-          successCount++;
-        }
-      }
+      const result = await potionFunction(targetIndex);
 
-      if (successCount > 0) {
-        show(`✅ Successfully applied ${selectedPotion.name} to ${successCount} crops!`, "success");
+      if (result) {
+        show(`✅ Successfully applied ${selectedPotion.name} to 1 crop!`, "success");
         
         // Reload crops from contract to show updated potion effects
         await new Promise(resolve => setTimeout(resolve, 1000));
@@ -748,7 +742,7 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
     }
 
     if (isUsingPotion) {
-      // Potion usage mode - allow selection of growing crops
+      // Potion usage mode - allow selection of exactly one growing crop
       const plotData = cropArray.getItem(index);
       if (!plotData || !plotData.seedId) {
         show("This plot is empty. Potions can only be used on growing crops.", "info");
@@ -766,12 +760,8 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
         return;
       }
 
-      // Toggle selection for potion usage (multi-select mode like harvesting)
-      setSelectedIndexes((prev) => {
-        const exists = prev.includes(index);
-        if (exists) return prev.filter((i) => i !== index);
-        return [...prev, index];
-      });
+      // Single-select behavior: selecting a new crop replaces previous selection
+      setSelectedIndexes((prev) => (prev.length === 1 && prev[0] === index ? [] : [index]));
       return;
     }
 

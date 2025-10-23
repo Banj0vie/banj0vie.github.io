@@ -117,6 +117,8 @@ export const useMarket = () => {
                 { pubkey: epochTop5Pda, isWritable: true, isSigner: false },
                 { pubkey: sponsorGameAta, isWritable: true, isSigner: false },
             ];
+
+            // No client-side balance pre-check; centralized handler will format errors
             // Build transaction with compute budget
             const method = program.methods
                 .purchase(new BN(lid), new BN(amount), epoch)
@@ -144,6 +146,8 @@ export const useMarket = () => {
                 throw new Error('Transaction already submitted. Please wait and try again.');
             } else if (error.message.includes('insufficient funds')) {
                 throw new Error('Insufficient funds for this transaction.');
+            } else if (error.message.toLowerCase().includes('insufficient balance')) {
+                throw new Error('Insufficient balance');
             } else if (error.message.includes('User rejected')) {
                 throw new Error('Transaction was cancelled by user.');
             } else if (error.message.includes('encoding overruns Uint8Array')) {
@@ -274,6 +278,8 @@ export const useMarket = () => {
             const sponsorGameAta = await getSponsorGameAta(program, publicKey);
             const listingPairs = await getListingPairs({ program, itemId: id, gameTokenMint: GAME_TOKEN_MINT });
 
+            // No client-side balance pre-check; centralized handler will format errors
+
             // Build transaction with compute budget
             const method = program.methods
                 .batchBuy(id, new BN(Math.floor(maxPricePer * 1e6)), new BN(Math.floor(totalBudget * 1e6)), epoch)
@@ -307,6 +313,8 @@ export const useMarket = () => {
                 throw new Error('Transaction already submitted. Please wait and try again.');
             } else if (error.message.includes('insufficient funds')) {
                 throw new Error('Insufficient funds for this transaction.');
+            } else if (error.message.toLowerCase().includes('insufficient balance')) {
+                throw new Error('Insufficient balance');
             } else if (error.message.includes('User rejected')) {
                 throw new Error('Transaction was cancelled by user.');
             } else if (error.message.includes('encoding overruns Uint8Array')) {

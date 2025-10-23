@@ -100,6 +100,23 @@ export const handleContractError = (error, context = '') => {
       originalError: error
     };
   }
+
+  // Handle direct insufficient balance messages from dApp or program
+  const lowerMsg = errorMessage.toLowerCase();
+  if (
+    lowerMsg.includes('insufficient balance') ||
+    lowerMsg.includes('not enough balance') ||
+    lowerMsg.includes('not enough hny') ||
+    lowerMsg.includes('insufficient hny') ||
+    lowerMsg.includes('insufficient game') ||
+    lowerMsg.includes('not enough tokens')
+  ) {
+    return {
+      type: ErrorTypes.INSUFFICIENT_BALANCE,
+      message: ErrorMessages[ErrorTypes.INSUFFICIENT_BALANCE],
+      originalError: error
+    };
+  }
   
   // Handle network errors
   if (errorCode === 'NETWORK_ERROR' || errorMessage.includes('network') || errorMessage.includes('connection')) {
