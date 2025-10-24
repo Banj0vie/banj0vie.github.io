@@ -34,21 +34,13 @@ export const useBalanceRefresh = () => {
 
     // Don't start a new refresh if one is already in progress
     if (isRefreshing && retryCount === 0) {
-      console.log('Balance refresh already in progress, skipping...');
       return;
-    }
-    
-    // If this is a retry and we're already refreshing, don't start loading state again
-    if (retryCount > 0 && isRefreshing) {
-      console.log('Balance refresh already in progress, continuing without loading state...');
     }
 
     try {
       if (retryCount === 0) {
         dispatch(startBalanceRefresh());
       }
-
-      console.log(`🔄 Refreshing balances (attempt ${retryCount + 1}/${maxRetries + 1})...`);
 
       // Fetch user data from on-chain
       const userDataPda = getUserDataPDA(publicKey);
@@ -86,14 +78,6 @@ export const useBalanceRefresh = () => {
         solBalance: (lamports / 1e9).toString(),
       };
 
-      console.log('📊 Balance update data:', balanceUpdate);
-      console.log('📊 Raw userData:', {
-        lockedTokens: userDataRaw.lockedTokens?.toString(),
-        xtokenShare: userDataRaw.xtokenShare?.toString(),
-        gameTokenAmount,
-        lamports
-      });
-
       // Only update if there are actual changes
       dispatch(fetchBalancesSuccess(balanceUpdate));
 
@@ -101,11 +85,8 @@ export const useBalanceRefresh = () => {
       dispatch(updateLockedTokens(parseFloat(lockedTokensUi) * 1e6)); // Convert back to lamports
       dispatch(updateXTokenShare(parseFloat(xTokenShareUi) * 1e6)); // Convert back to lamports
 
-      console.log('✅ Balance refresh completed successfully');
-      
       // Force immediate UI update by completing refresh state
       dispatch(completeBalanceRefresh());
-      console.log('🎯 Balance refresh state completed - UI should update now');
       
       // If this is the first refresh and we got updated values, cancel the second refresh
       if (retryCount === 0 && secondRefreshTimeoutRef.current) {
@@ -113,7 +94,6 @@ export const useBalanceRefresh = () => {
         const lastBalance = lastBalanceRef.current;
         
         if (lastBalance && currentBalance !== lastBalance) {
-          console.log('🚫 Canceling second refresh - first refresh got updated values');
           clearTimeout(secondRefreshTimeoutRef.current);
           secondRefreshTimeoutRef.current = null;
           scheduledRefreshRef.current = false;
@@ -123,18 +103,16 @@ export const useBalanceRefresh = () => {
       }
 
     } catch (err) {
-      console.error(`❌ Balance refresh failed (attempt ${retryCount + 1}):`, err);
+      console.error('Balance refresh failed:', err);
       
       if (retryCount < maxRetries) {
         // Exponential backoff: 1s, 2s, 4s
         const delay = Math.pow(2, retryCount) * 1000;
-        console.log(`⏳ Retrying balance refresh in ${delay}ms...`);
         
         setTimeout(() => {
           refreshBalances(retryCount + 1, maxRetries);
         }, delay);
       } else {
-        console.error('❌ All balance refresh attempts failed');
         dispatch(completeBalanceRefresh());
       }
     }
@@ -144,33 +122,26 @@ export const useBalanceRefresh = () => {
   const refreshBalancesAfterTransaction = useCallback(async (delay = 2000) => {
     // Prevent duplicate scheduling
     if (scheduledRefreshRef.current) {
-      console.log('🔄 Balance refresh already scheduled, skipping...');
       return;
     }
     
     scheduledRefreshRef.current = true;
-    console.log(`🔄 Scheduling balance refresh in ${delay}ms...`);
     
     return new Promise((resolve) => {
       setTimeout(async () => {
         try {
-          console.log('⏰ Starting delayed balance refresh...');
           await refreshBalances();
           
           // Only do one additional refresh after 3 seconds to catch any blockchain lag
           secondRefreshTimeoutRef.current = setTimeout(async () => {
             // Check if we're still supposed to run this refresh
             if (scheduledRefreshRef.current) {
-              console.log('🔄 Final balance refresh attempt (blockchain lag check)...');
               await refreshBalances();
-            } else {
-              console.log('🚫 Second refresh cancelled - first refresh was successful');
             }
             scheduledRefreshRef.current = false; // Reset after final attempt
             secondRefreshTimeoutRef.current = null;
           }, 3000);
           
-          console.log('⏰ Delayed balance refresh completed');
           resolve();
         } catch (error) {
           console.error('Balance refresh failed:', error);
@@ -183,7 +154,6 @@ export const useBalanceRefresh = () => {
 
   // Test function to manually trigger balance refresh
   const testBalanceRefresh = useCallback(async () => {
-    console.log('🧪 Testing balance refresh...');
     await refreshBalances();
   }, [refreshBalances]);
 

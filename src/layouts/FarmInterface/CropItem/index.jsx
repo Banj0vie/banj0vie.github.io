@@ -13,6 +13,7 @@ import {
 import { ONE_SEED_HEIGHT } from "../../../constants/item_seed";
 import { ALL_ITEMS } from "../../../constants/item_data";
 import CropTooltip from "./CropTooltip";
+import { getSetting } from "../../../utils/settings";
 
 const CropItem = ({
   data,
@@ -30,6 +31,7 @@ const CropItem = ({
   const [growthProgress, setGrowthProgress] = useState(0);
   const [tooltipVisible, setTooltipVisible] = useState(false);
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
+  const [isShowGrowthStage, setIsShowGrowthStage] = useState(false);
   // tooltipRef removed; portal rendering handled by CropTooltip
   const rootRef = useRef(null);
   const [portalContainer, setPortalContainer] = useState(null);
@@ -54,6 +56,39 @@ const CropItem = ({
       setGrowthProgress(progress);
     }
   }, [cropArray, data.seedId, index]);
+
+  // Load and listen for growth stage setting changes
+  useEffect(() => {
+    const loadGrowthStageSetting = () => {
+      try {
+        const setting = getSetting('isShowGrowthStage');
+        setIsShowGrowthStage(setting);
+      } catch (error) {
+        console.error('Failed to load growth stage setting:', error);
+        setIsShowGrowthStage(false);
+      }
+    };
+
+    // Load initial setting
+    loadGrowthStageSetting();
+
+    // Listen for storage changes (when settings are updated in another tab/component)
+    const handleStorageChange = (e) => {
+      if (e.key === 'cryptoValley_settings') {
+        loadGrowthStageSetting();
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+
+    // Also check periodically in case localStorage is updated without storage event
+    const interval = setInterval(loadGrowthStageSetting, 1000);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      clearInterval(interval);
+    };
+  }, []);
 
   const handleMouseMove = (e) => {
     if (!data.seedId) return;
@@ -141,6 +176,25 @@ const CropItem = ({
     }
   }
 
+  // Calculate number of filled segments using same logic as sprite frame calculation
+  const getFilledSegments = () => {
+    if (!data.seedId || data.seedId === 0n) return 0;
+    
+    // Use the exact same logic as the sprite frame calculation
+    if (data.growStatus === -1) {
+      return 1; // newly planted
+    } else if (data.growStatus === 2) {
+      return 5; // ready frame (all 5 segments)
+    } else {
+      // growing: interpolate segments based on progress, same as sprite frames
+      const clamped = Math.max(0, Math.min(0.999, growthProgress || 0));
+      const segments = 1 + Math.floor(clamped * 4); // 1-5 segments based on progress
+      return segments;
+    }
+  };
+
+  const filledSegments = getFilledSegments();
+
   return (
     <div
       ref={rootRef}
@@ -170,6 +224,18 @@ const CropItem = ({
             className="growth-bar"
             style={{ width: `${growthProgress * 100}%` }}
           ></div>
+        </div>
+      )}
+
+      {/* Growth stage indicator - 5 segments */}
+      {isShowGrowthStage && data.seedId && data.seedId !== 0n && (
+        <div className="growth-stage-indicator">
+          {Array.from({ length: 5 }, (_, i) => (
+            <div
+              key={i}
+              className={`growth-segment ${i <= filledSegments ? 'filled' : ''}`}
+            />
+          ))}
         </div>
       )}
 

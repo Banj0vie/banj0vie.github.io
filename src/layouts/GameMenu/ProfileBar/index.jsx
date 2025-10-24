@@ -23,7 +23,6 @@ const ProfileBar = ({ isFarmMenu }) => {
   
   // Force re-render when balance refresh completes (less aggressive)
   const balanceKey = useMemo(() => {
-    console.log('🔑 ProfileBar balanceKey updated:', { gameToken, stakedBalance, isBalanceRefreshing });
     return `${gameToken}-${stakedBalance}-${isBalanceRefreshing}`;
   }, [gameToken, stakedBalance, isBalanceRefreshing]);
   
@@ -34,28 +33,11 @@ const ProfileBar = ({ isFarmMenu }) => {
 
   const lockedHoney = useMemo(() => {
     const formatted = formatNumber(lockedTokensUi);
-    // Only log when values actually change
-    if (lockedTokensUi !== '0') {
-      console.log('🔍 ProfileBar lockedHoney:', { 
-        lockedTokensUi, 
-        formatted, 
-        stakedBalance, 
-        isBalanceRefreshing
-      });
-    }
     return formatted;
   }, [lockedTokensUi, stakedBalance, isBalanceRefreshing]);
   
   const honeyBalance = useMemo(() => {
     const formatted = formatNumber((gameToken || "0").toString());
-    // Only log when values actually change
-    if (gameToken && gameToken !== '0') {
-      console.log('🔍 ProfileBar honeyBalance:', { 
-        gameToken, 
-        formatted, 
-        isBalanceRefreshing
-      });
-    }
     return formatted;
   }, [gameToken, isBalanceRefreshing]);
 

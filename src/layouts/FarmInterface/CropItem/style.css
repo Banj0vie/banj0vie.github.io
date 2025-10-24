@@ -113,3 +113,29 @@
     transform: scale(1.1);
   }
 }
+
+/* Growth stage indicator - 5 segments */
+.growth-stage-indicator {
+  position: absolute;
+  bottom: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 2px;
+  z-index: 100;
+  pointer-events: none;
+}
+
+.growth-segment {
+  width: 4px;
+  height: 3px;
+  background-color: #743f39; /* Empty color from GrowStatusBox */
+  border-radius: 1px;
+  transition: background-color 0.2s ease;
+  border: 1px solid #3f2832; /* Empty border color from GrowStatusBox */
+}
+
+.growth-segment.filled {
+  background-color: #1fec0d; /* Active color from GrowStatusBox */
+  border: 1px solid #743f39; /* Active border color from GrowStatusBox */
+}

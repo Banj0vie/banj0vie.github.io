@@ -5,39 +5,7 @@ import Slider from "../../components/inputs/Slider";
 import BaseDivider from "../../components/dividers/BaseDivider";
 import BaseCheckBox from "../../components/inputs/BaseCheckBox";
 import BaseInput from "../../components/inputs/BaseInput";
-
-// Settings storage key
-const SETTINGS_STORAGE_KEY = 'cryptoValley_settings';
-
-// Default settings
-const defaultSettings = {
-  soundVolume: 50,
-  musicVolume: 50,
-  isShowGrowthStage: false,
-  isOverwritePlant: false,
-  dexSlippage: 0.5,
-  baseGwei: 0.5
-};
-
-// Load settings from localStorage
-const loadSettings = () => {
-  try {
-    const saved = localStorage.getItem(SETTINGS_STORAGE_KEY);
-    return saved ? { ...defaultSettings, ...JSON.parse(saved) } : defaultSettings;
-  } catch (error) {
-    console.error('Failed to load settings:', error);
-    return defaultSettings;
-  }
-};
-
-// Save settings to localStorage
-const saveSettings = (settings) => {
-  try {
-    localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
-  } catch (error) {
-    console.error('Failed to save settings:', error);
-  }
-};
+import { loadSettings, saveSettings, defaultSettings } from "../../utils/settings";
 
 const SettingsDialog = ({ onClose }) => {
   const [soundVolume, setSoundVolume] = useState(defaultSettings.soundVolume);
@@ -104,13 +72,13 @@ const SettingsDialog = ({ onClose }) => {
             onChange={(v) => setIsShowGrowthStage(v)}
           ></BaseCheckBox>
         </div>
-        <div className="settings-row">
+        {/* <div className="settings-row">
           <div>Overwrite plant modifiers</div>
           <BaseCheckBox
             isChecked={isOverwritePlant}
             onChange={(v) => setIsOverwritePlant(v)}
           ></BaseCheckBox>
-        </div>
+        </div> */}
         <BaseDivider></BaseDivider>
         <div className="settings-row">
           <div className="left">Dex Slippage %</div>

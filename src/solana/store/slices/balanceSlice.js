@@ -22,33 +22,12 @@ const balanceSlice = createSlice({
       state.error = null;
     },
     fetchBalancesSuccess: (state, action) => {
-      // Only log if there are actual changes
-      const hasChanges = (
-        state.gameToken !== action.payload.gameToken ||
-        state.stakedBalance !== action.payload.stakedBalance ||
-        state.xTokenShare !== action.payload.xTokenShare ||
-        state.solBalance !== action.payload.solBalance
-      );
-      
-      if (hasChanges) {
-        console.log('🔄 Balance slice updating with:', action.payload);
-      }
-      
       state.gameToken = action.payload.gameToken;
       state.stakedBalance = action.payload.stakedBalance;
       state.xTokenShare = action.payload.xTokenShare;
       state.solBalance = action.payload.solBalance;
       state.loading = false;
       state.error = null;
-      
-      if (hasChanges) {
-        console.log('✅ Balance slice updated:', {
-          gameToken: state.gameToken,
-          stakedBalance: state.stakedBalance,
-          xTokenShare: state.xTokenShare,
-          solBalance: state.solBalance
-        });
-      }
     },
     fetchBalancesFailure: (state, action) => {
       state.loading = false;
