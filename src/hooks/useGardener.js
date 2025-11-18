@@ -31,7 +31,7 @@ export const useGardener = () => {
       const gameRegistry = await program.account.gameRegistry.fetch(gameRegistryPda);
       const currentLevel = Number(userData.level || 0);
       const maxLevel = Number(gameRegistry.maxLevel || 15);
-      const levelUpCost = currentLevel < maxLevel ? (currentLevel + 1) * 100 : 0; // in HONEY (ui)
+      const levelUpCost = currentLevel < maxLevel ? 20 + 50 * (currentLevel + 1) * (currentLevel + 1) : 0; // in HONEY (ui)
       // Fetch user's HONEY balance via associated token account
       const userGameAta = await getAssociatedTokenAddress(GAME_TOKEN_MINT, publicKey, false);
       let gameTokenBalanceUi = 0;
