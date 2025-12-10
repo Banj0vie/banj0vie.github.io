@@ -50,10 +50,6 @@ div,
 span,
 a,
 button {
-  text-shadow: rgb(43, 45, 49) -1px -1px 0px, rgb(43, 45, 49) 1px 1px 0px,
-    rgb(43, 45, 49) -1px 0px 0px, rgb(43, 45, 49) 0px -1px 0px,
-    rgb(43, 45, 49) 0px 1px 0px, rgb(43, 45, 49) 1px -1px 0px,
-    rgb(43, 45, 49) 1px 0px 0px, rgb(43, 45, 49) -1px 1px 0px;
   color: white;
 }
 

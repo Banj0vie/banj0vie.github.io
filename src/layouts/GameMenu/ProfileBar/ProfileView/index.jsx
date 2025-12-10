@@ -16,8 +16,8 @@ const ProfileView = ({ username }) => {
             setIsWalletDlg(true);
           }}
         />
-        {isWalletDlg && <WalletDialog onClose={() => setIsWalletDlg(false)}></WalletDialog>}
       </div>
+      {isWalletDlg && <WalletDialog onClose={() => setIsWalletDlg(false)}></WalletDialog>}
     </div>
   );
 };

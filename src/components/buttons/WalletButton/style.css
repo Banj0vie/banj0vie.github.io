@@ -1,18 +1,15 @@
-.wallet-icon svg{
-    width: 1.5rem;
-    height: 1.5rem;
-    padding-top: 4px;
+.wallet-icon {
     cursor: pointer;
+    height: fit-content;
+    display: inline-flex;
+    align-items: center;
 }
 
-.wallet-icon svg path {
-    fill: rgb(255, 234, 175) !important;
+.wallet-icon img {
+    width: auto;
+    display: block;
 }
 
 .wallet-icon:hover {
     transform: scale(1.1);
-}
-
-.wallet-icon:hover svg path {
-    fill: rgb(255, 214, 100) !important;
 }
