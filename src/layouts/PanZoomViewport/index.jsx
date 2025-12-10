@@ -177,6 +177,7 @@ const PanZoomViewport = ({
   return isWalletConnected() ? (
     <>
       <div className="panzoom-root">
+
         {!hideMenu && <GameMenu />}
         <div
           ref={containerRef}
@@ -221,6 +222,7 @@ const PanZoomViewport = ({
             <div className="panzoom-children">{children}</div>
           </div>
         </div>
+        <div className="panzoom-sunlight"></div>
       </div>
       {activeModal && (
         <activeModal.component

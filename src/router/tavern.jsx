@@ -16,7 +16,7 @@ const Tavern = () => {
   ];
   return (
     <PanZoomViewport
-      backgroundSrc="/images/backgrounds/tavern.gif"
+      backgroundSrc="/images/backgrounds/tavern.png"
       hotspots={hotspots}
       dialogs={dialogs}
       width={width}

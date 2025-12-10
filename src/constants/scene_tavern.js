@@ -6,5 +6,5 @@ export const TAVERN_VIEWPORT = {
 };
 
 export const TAVERN_HOTSPOTS = [
-    { id: ID_TAVERN_HOTSPOTS.POTION, label: 'POTION SELLER', x: 205, y: 60, delay: 0 },
+    { id: ID_TAVERN_HOTSPOTS.POTION, label: 'POTION SELLER', x: 700, y: 78, delay: 0 },
 ];

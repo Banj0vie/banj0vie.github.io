@@ -882,7 +882,7 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
   return (
     <div>
       <PanZoomViewport
-        backgroundSrc="/images/backgrounds/farm.gif"
+        backgroundSrc="/images/backgrounds/farm.png"
         hotspots={hotspots}
         width={width}
         height={height}
