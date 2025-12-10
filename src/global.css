@@ -1,21 +1,24 @@
 /* Global styles for CryptoValley */
 
-/* ByteBounce Font Setup */
+/* CCThisManThisMonster W00 Rg Font Setup */
 @font-face {
-  font-family: "ByteBounce";
-  src: url("/public/fonts/ByteBounce.ttf") format("truetype");
-  font-weight: 100;
-  font-style: normal;
+  font-family: "CCThisManThisMonster W00 Rg";
+  src: url("https://db.onlinewebfonts.com/t/51abcf14d12d03a11a793c579575bc8c.eot");
+  src: url("https://db.onlinewebfonts.com/t/51abcf14d12d03a11a793c579575bc8c.eot?#iefix") format("embedded-opentype"),
+    url("https://db.onlinewebfonts.com/t/51abcf14d12d03a11a793c579575bc8c.woff2") format("woff2"),
+    url("https://db.onlinewebfonts.com/t/51abcf14d12d03a11a793c579575bc8c.woff") format("woff"),
+    url("https://db.onlinewebfonts.com/t/51abcf14d12d03a11a793c579575bc8c.ttf") format("truetype"),
+    url("https://db.onlinewebfonts.com/t/51abcf14d12d03a11a793c579575bc8c.svg#CCThisManThisMonster W00 Rg") format("svg");
   font-display: swap; /* Improves loading performance */
 }
 
 /* Global font application */
 * {
-  font-family: "ByteBounce", "Courier New", monospace;
+  font-family: "CCThisManThisMonster W00 Rg", "Courier New", monospace;
 }
 
 body {
-  font-family: "ByteBounce", "Courier New", monospace;
+  font-family: "CCThisManThisMonster W00 Rg", "Courier New", monospace;
   margin: 0;
   padding: 0;
   background-color: #2f2f2f;
@@ -27,7 +30,7 @@ button,
 input,
 select,
 textarea {
-  font-family: "ByteBounce", "Courier New", monospace;
+  font-family: "CCThisManThisMonster W00 Rg", "Courier New", monospace;
 }
 
 /* Smooth scrolling for better UX */

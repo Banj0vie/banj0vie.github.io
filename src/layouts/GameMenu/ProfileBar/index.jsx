@@ -43,11 +43,6 @@ const ProfileBar = ({ isFarmMenu }) => {
 
   return (
     <div className="profile-bar" style={{ display: isFarmMenu ? 'none' : 'flex' }}>
-      <img
-        alt="Profile"
-        src={profileAssets.profileBg}
-        className="profile-background"
-      />
       <Avatar />
       <ProfileView username={userData?.name} />
       <ProfileButton

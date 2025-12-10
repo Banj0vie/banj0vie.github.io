@@ -5,16 +5,19 @@ import WalletDialog from "../../../../containers/Menu_Wallet";
 
 const ProfileView = ({ username }) => {
   const [isWalletDlg, setIsWalletDlg] = useState(false);
-  
+
   return (
     <div className="name-pill">
-      <div>{username}</div>
-      <WalletButton
-        onClick={() => {
-          setIsWalletDlg(true);
-        }}
-      />
-      {isWalletDlg && <WalletDialog onClose={()=>setIsWalletDlg(false)}></WalletDialog>}
+      <img src="/images/profile_bar/profile_bg.png" alt="name pill bg" className="name-pill-bg"></img>
+      <div className="name-pill-content">
+        <div>{username}</div>
+        <WalletButton
+          onClick={() => {
+            setIsWalletDlg(true);
+          }}
+        />
+        {isWalletDlg && <WalletDialog onClose={() => setIsWalletDlg(false)}></WalletDialog>}
+      </div>
     </div>
   );
 };
