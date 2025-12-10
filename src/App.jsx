@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
 import { Provider } from 'react-redux';
 import { useSolanaWallet } from "./hooks/useSolanaWallet";
 import { NotificationProvider } from "./contexts/NotificationContext";
@@ -25,15 +25,39 @@ import Valley from "./router/valley.jsx";
 import ProfileBar from "./layouts/GameMenu/ProfileBar";
 import wallets from "./config/solanaWallet";
 import store from "./solana/store";
+import { BG_COLORS } from "./constants/background_colors";
 
 // Import wallet adapter CSS
 import '@solana/wallet-adapter-react-ui/styles.css';
 
 const AppContent = () => {
+  const location = useLocation();
   const [isFarmMenu, setIsFarmMenu] = useState(false);
   const { isConnected, account, hasProfile } = useSolanaWallet();
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [, setHasCheckedInitialState] = useState(false);
+
+  // Get background color based on current route
+  const backgroundColor = useMemo(() => {
+    const path = location.pathname;
+    let colorKey;
+    
+    if (path === '/house') {
+      colorKey = 'BLUE';
+    } else if (path === '/farm') {
+      colorKey = 'GREEN';
+    } else if (path === '/market') {
+      colorKey = 'YELLOW';
+    } else if (path === '/tavern') {
+      colorKey = 'RED';
+    } else {
+      // Default to blue for other routes
+      colorKey = 'BLUE';
+    }
+    
+    const colors = BG_COLORS[colorKey];
+    return `linear-gradient(135deg, ${colors.from}, ${colors.to})`;
+  }, [location.pathname]);
 
   useEffect(() => {
     if (isInitialLoad) {
@@ -67,7 +91,7 @@ const AppContent = () => {
       <div
         style={{
           minHeight: "100vh",
-          backgroundColor: "#2F2F2F",
+          background: backgroundColor,
           padding: "0",
           margin: "0",
           position: "relative",
