@@ -4,11 +4,10 @@
   justify-content: center;
   align-items: center;
   gap: 0.125rem;
-  /* border-image nine-slice based on provided sample */
-  border-image: var(--profile-btn-bg) 6 fill / 1rem / 0.5rem repeat;
-  border-style: solid;
-  background-size: 100% 100%;
+  margin-left:1px;
+  margin-right:1px;
   color: #fff;
+  height: 44px;
 }
 
 .profile-btn:hover {
@@ -26,7 +25,23 @@
 }
 
 .pb-bg {
-  display: none;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 44px;
+  height: 44px;
+  object-fit: fill;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.pb-bg-with-text {
+  position: absolute;
+  width: 100%;
+  object-fit: fill;
+  z-index: 0;
+  pointer-events: none;
 }
 
 .pb-icon {
@@ -34,12 +49,8 @@
 }
 
 .pb-icon img {
-  width: 16px;
-  height: 16px;
+  height: 32px;
   display: block;
-  image-rendering: pixelated;
-  image-rendering: -moz-crisp-edges;
-  image-rendering: crisp-edges;
 }
 
 .pb-text {
@@ -53,16 +64,11 @@
   cursor: pointer;
 }
 
-.profile-btn.only-icon .pb-icon,
-.profile-btn.only-icon .pb-icon img {
-  width: 2rem;
-  height: 2rem;
-}
-
 .profile-btn.with-text {
-  width: 5.5rem;
-  height: 1.5rem;
+  width: 130px;
   cursor: help;
+  justify-content: start;
+  gap: 8px;
 }
 
 .profile-btn.with-text .pb-icon,
@@ -75,4 +81,8 @@
 .profile-btn .pb-text {
   position: relative;
   z-index: 1;
+}
+
+.profile-btn.with-text .pb-icon {
+  padding-left: 10px;
 }

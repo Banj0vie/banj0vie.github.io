@@ -20,12 +20,12 @@ const ProfileBar = ({ isFarmMenu }) => {
   const gameToken = useSelector((state) => state.balance.gameToken);
   const stakedBalance = useSelector((state) => state.balance.stakedBalance);
   const isBalanceRefreshing = useSelector(selectBalanceRefreshing);
-  
+
   // Force re-render when balance refresh completes (less aggressive)
   const balanceKey = useMemo(() => {
     return `${gameToken}-${stakedBalance}-${isBalanceRefreshing}`;
   }, [gameToken, stakedBalance, isBalanceRefreshing]);
-  
+
   // Use balance slice data instead of user slice for consistency
   const lockedTokensUi = useMemo(() => {
     return stakedBalance || '0';
@@ -35,7 +35,7 @@ const ProfileBar = ({ isFarmMenu }) => {
     const formatted = formatNumber(lockedTokensUi);
     return formatted;
   }, [lockedTokensUi, stakedBalance, isBalanceRefreshing]);
-  
+
   const honeyBalance = useMemo(() => {
     const formatted = formatNumber((gameToken || "0").toString());
     return formatted;
@@ -44,35 +44,43 @@ const ProfileBar = ({ isFarmMenu }) => {
   return (
     <div className="profile-bar" style={{ display: isFarmMenu ? 'none' : 'flex' }}>
       <Avatar />
-      <ProfileView username={userData?.name} />
-      <ProfileButton
-        icon={<img alt="Settings" src={profileAssets.btnSettings} />}
-        title="Settings"
-        onClick={() => setIsSettingsDialog(true)}
-      />
-      <ProfileButton
-        icon={<img alt="Inventory" src={profileAssets.btnInventory} />}
-        title="Inventory"
-        onClick={() => setIsInventoryDialog(true)}
-      />
-      <div className="resource-badge" key={balanceKey}>
-        <ProfileButton
-          icon={
-            <img
-              alt="Locked Honey Balance"
-              src={profileAssets.btnLockedHoney}
-            />
-          }
-          text={isBalanceRefreshing ? "••••••" : lockedHoney}
-          title="Locked Honey Balance"
-          className={isBalanceRefreshing ? "balance-loading" : ""}
-        />
-        <ProfileButton
-          icon={<img alt="Honey Balance" src={profileAssets.btnHoney} />}
-          text={isBalanceRefreshing ? "••••••" : honeyBalance}
-          title="Honey Balance"
-          className={isBalanceRefreshing ? "balance-loading" : ""}
-        />
+      <div className="profile-bar-content">
+        <div className="profile-bar-content-top">
+          <ProfileView username={userData?.name} />
+          <ProfileButton
+            icon={<img alt="Settings" src="/images/profile_bar/btn_setting.png" />}
+            title="Settings"
+            bg="/images/profile_bar/profile_button_bg.png"
+            onClick={() => setIsSettingsDialog(true)}
+          />
+          <ProfileButton
+            icon={<img alt="Inventory" src="/images/profile_bar/btn_inventory.png" />}
+            title="Inventory"
+            bg="/images/profile_bar/profile_button_bg.png"
+            onClick={() => setIsInventoryDialog(true)}
+          />
+        </div>
+        <div className="resource-badge" key={balanceKey}>
+          <ProfileButton
+            icon={
+              <img
+                alt="Locked Honey Balance"
+                src="/images/profile_bar/locked_balance_icon.png"
+              />
+            }
+            text={isBalanceRefreshing ? "••••••" : lockedHoney}
+            title="Locked Honey Balance"
+            className={isBalanceRefreshing ? "balance-loading" : ""}
+            bg="/images/profile_bar/profile_badge_bg.png"
+          />
+          <ProfileButton
+            icon={<img alt="Honey Balance" src="/images/profile_bar/unlocked_balance_icon.png" />}
+            text={isBalanceRefreshing ? "••••••" : honeyBalance}
+            title="Honey Balance"
+            className={isBalanceRefreshing ? "balance-loading" : ""}
+            bg="/images/profile_bar/profile_badge_bg.png"
+          />
+        </div>
       </div>
       {isInventoryDialog && (
         <InventoryDialog

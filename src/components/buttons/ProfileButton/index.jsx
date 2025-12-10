@@ -29,8 +29,9 @@ const ProfileButton = ({ icon, text, title, ariaLabel, style, bg, onClick, disab
       tabIndex={disabled ? -1 : 0}
       onClick={handleClick}
       onKeyDown={handleKeyDown}
-      style={bg ? { '--profile-btn-bg': `url(${backgroundUrl})`, ...style } : style}
+      style={style}
     >
+      {bg && <img src={bg} alt="" className={`pb-bg${text ? '-with-text' : ''}`} aria-hidden="true" />}
       {icon ? <span className="pb-icon" aria-hidden>{icon}</span> : null}
       {text ? <span className="pb-text">{text}</span> : null}
     </div>
