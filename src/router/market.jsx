@@ -51,7 +51,7 @@ const Market = () => {
 
   return (
     <PanZoomViewport
-      backgroundSrc="/images/backgrounds/market.gif"
+      backgroundSrc="/images/backgrounds/market.png"
       hotspots={hotspots}
       dialogs={dialogs}
       width={width}

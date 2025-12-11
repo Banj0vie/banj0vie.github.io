@@ -18,6 +18,7 @@ const BaseButton = ({
           }
         }}
       >
+        <img className="base-button-bg" src="/images/button/base_button_bg.png" alt="base-button-image" />
         <p>{label}</p>
       </div>
     </div>
