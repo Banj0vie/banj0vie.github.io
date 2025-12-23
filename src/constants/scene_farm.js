@@ -6,9 +6,18 @@ export const FARM_VIEWPORT = {
 };
 
 export const FARM_HOTSPOTS = [
-  { id: ID_FARM_HOTSPOTS.FARMER, label: 'FARMER', x: 425, y: 20, delay: 0 },
+  { id: ID_FARM_HOTSPOTS.FARMER, label: 'PLANT', x: 400, y: 150, delay: 0 },
 ];
 
+export const FARM_BEES = [
+  {
+    image: "/images/bees/bee_2.png",
+    x: 425,
+    y: 200,
+    flip: false,
+    delay: 0,
+  },
+];
 // Left plot positioning
 export const FARM_LEFT_PLOT_START_X = 108;
 export const FARM_LEFT_PLOT_START_Y = 116;
