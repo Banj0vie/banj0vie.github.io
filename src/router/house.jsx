@@ -1,6 +1,6 @@
 import React from "react";
 import PanZoomViewport from "../layouts/PanZoomViewport";
-import { HOUSE_HOTSPOTS, HOUSE_VIEWPORT } from "../constants/scene_house";
+import { HOUSE_BEES, HOUSE_HOTSPOTS, HOUSE_VIEWPORT } from "../constants/scene_house";
 import { ID_HOUSE_HOTSPOTS } from "../constants/app_ids";
 import GoldDialog from "../containers/House_Gold";
 import GardnerDialog from "../containers/House_Gardner";
@@ -39,6 +39,7 @@ const House = () => {
       label: "QUIET POND",
     },
   ];
+  const bees = HOUSE_BEES;
   return (
     <PanZoomViewport
       backgroundSrc="/images/backgrounds/house.png"
@@ -46,6 +47,7 @@ const House = () => {
       dialogs={dialogs}
       width={width}
       height={height}
+      bees={bees}
     />
   );
 };

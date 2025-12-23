@@ -12,9 +12,53 @@ export const MARKET_HOTSPOTS = [
   // { id: ID_MARKET_HOTSPOTS.HELPER, label: 'HELPER', x: 360, y: 330, delay: 0.8 },
   { id: ID_MARKET_HOTSPOTS.MARKET, label: 'MARKET', x: 148, y: 283, delay: 0.2 },
   { id: ID_MARKET_HOTSPOTS.LEADERBOARD, label: 'LEADERBOARD', x: 487, y: 135, delay: 0.4 },
-  { id: ID_MARKET_HOTSPOTS.SAGE, label: 'SAGE', x: 204, y: 90, delay: 0.6 },
+  { id: ID_MARKET_HOTSPOTS.SAGE, label: 'SAGE', x: 204, y: -10, delay: 0.6 },
 ];
 
+export const MARKET_BEES = [
+  {
+    image: "/images/bees/bee_1.png",
+    x: 442,
+    y: -10,
+    flip: true,
+    delay: 2,
+  },
+  {
+    image: "/images/bees/bee_5.png",
+    x: 270,
+    y: 190,
+    flip: false,
+    delay: 0,
+  },
+  {
+    image: "/images/bees/bee_2.png",
+    x: 283,
+    y: 364,
+    flip: false,
+    delay: 4,
+  },
+  {
+    image: "/images/bees/bee_1.png",
+    x: 400,
+    y: 350,
+    flip: false,
+    delay: 8,
+  },
+  {
+    image: "/images/bees/bee_4.png",
+    x: 764,
+    y: 185,
+    flip: false,
+    delay: 6,
+  },
+  {
+    image: "/images/bees/bee_3.png",
+    x: 755,
+    y: 307,
+    flip: false,
+    delay: 6,
+  },  
+];
 export const PRIZES = [
   [
     {

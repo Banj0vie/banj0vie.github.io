@@ -13,4 +13,40 @@ export const HOUSE_HOTSPOTS = [
   { id: ID_HOUSE_HOTSPOTS.REFERRALS, label: "REFERRALS", x: 419, y: 300, delay: 0.8 },
 ];
 
-
+export const HOUSE_BEES = [
+  {
+    image: "/images/bees/bee_1.png",
+    x: 100,
+    y: 100,
+    flip: false,
+    delay: 0,
+  },
+  {
+    image: "/images/bees/bee_1.png",
+    x: 314,
+    y: 392,
+    flip: false,
+    delay: 0.2,
+  },
+  {
+    image: "/images/bees/bee_1.png",
+    x: 505,
+    y: 145,
+    flip: true,
+    delay: 0.8,
+  },
+  {
+    image: "/images/bees/bee_1.png",
+    x: 820,
+    y: 400,
+    flip: true,
+    delay: 0.6,
+  },
+  {
+    image: "/images/bees/bee_2.png",
+    x: 684,
+    y: 241,
+    flip: false,
+    delay: 0.4,
+  },
+];

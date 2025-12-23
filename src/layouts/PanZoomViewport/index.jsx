@@ -21,6 +21,7 @@ const PanZoomViewport = ({
   width,
   height,
   hideMenu = false,
+  bees = [],
   children,
   isBig = false,
 }) => {
@@ -200,6 +201,24 @@ const PanZoomViewport = ({
               />
             )}
 
+            {bees.map((b, index) => (
+              <div
+                key={`bee-${index}`}
+                className="bee-wrapper"
+                style={{ 
+                  left: b.x, 
+                  top: b.y, 
+                  transform: b.flip ? "scaleX(-1)" : "none"
+                }}
+              >
+                <img
+                  src={b.image}
+                  alt="Bee"
+                  className="img-bee"
+                  style={{ animationDelay: `${b.delay}s` }}
+                />
+              </div>
+            ))}
             {hotspots.map((h) => (
               <TooltipButton
                 key={h.id}

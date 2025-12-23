@@ -85,3 +85,30 @@
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
 }
+
+.bee-wrapper {
+  position: absolute;
+  pointer-events: none;
+}
+
+.img-bee {
+  position: relative;
+  display: block;
+  user-select: none;
+  pointer-events: none;
+  width: 100px;
+  height: auto;
+  animation: bee_float 6s ease-in-out infinite;
+}
+
+@keyframes bee_float {
+  0% {
+    transform: translateY(-5px);
+  }
+  50% {
+    transform: translateY(5px);
+  }
+  100% {
+    transform: translateY(-5px);
+  }
+}

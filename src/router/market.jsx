@@ -1,6 +1,6 @@
 import React from "react";
 import PanZoomViewport from "../layouts/PanZoomViewport";
-import { MARKET_VIEWPORT, MARKET_HOTSPOTS } from "../constants/scene_market";
+import { MARKET_VIEWPORT, MARKET_HOTSPOTS, MARKET_BEES } from "../constants/scene_market";
 import { dialogFrames } from "../constants/_baseimages";
 import DexDialog from "../containers/Market_Dex";
 import VendorDialog from "../containers/Market_Vendor";
@@ -48,7 +48,7 @@ const Market = () => {
       label: "SAGE",
     },
   ];
-
+  const bees = MARKET_BEES;
   return (
     <PanZoomViewport
       backgroundSrc="/images/backgrounds/market.png"
@@ -56,6 +56,7 @@ const Market = () => {
       dialogs={dialogs}
       width={width}
       height={height}
+      bees={bees}
     />
   );
 };
