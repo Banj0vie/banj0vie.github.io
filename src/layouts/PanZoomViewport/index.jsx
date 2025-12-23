@@ -24,6 +24,7 @@ const PanZoomViewport = ({
   bees = [],
   children,
   isBig = false,
+  stuffs = [],
 }) => {
   const containerRef = useRef(null);
   const navigate = useNavigate();
@@ -200,7 +201,6 @@ const PanZoomViewport = ({
                 decoding="sync"
               />
             )}
-
             {bees.map((b, index) => (
               <div
                 key={`bee-${index}`}
@@ -208,7 +208,8 @@ const PanZoomViewport = ({
                 style={{ 
                   left: b.x, 
                   top: b.y, 
-                  transform: b.flip ? "scaleX(-1)" : "none"
+                  transform: b.flip ? "scaleX(-1)" : "none",
+                  zIndex: b.zIndex ? b.zIndex : 0
                 }}
               >
                 <img
@@ -218,6 +219,15 @@ const PanZoomViewport = ({
                   style={{ animationDelay: `${b.delay}s` }}
                 />
               </div>
+            ))}
+            {stuffs.map((s, index) => (
+              <img
+                key={`stuff-${index}`}
+                src={s.image}
+                alt="Stuff"
+                className="img-stuff"
+                style={{ left: s.x, top: s.y, width: s.width, height: s.height, zIndex: s.zIndex ? s.zIndex : 0 }}
+              />
             ))}
             {hotspots.map((h) => (
               <TooltipButton

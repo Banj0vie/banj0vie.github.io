@@ -25,7 +25,7 @@
 }
 
 .tooltip-btn.map-btn {
-  animation: mapFloat 2.6s ease-in-out infinite;
+  animation: mapFloat 2.6s ease-in-out infinite bounce(0.68, -0.55, 0.265, 1.55);
   will-change: transform;
 }
 

@@ -45,6 +45,7 @@
 
   50% {
     transform: translateY(-4px);
+
   }
 
   100% {
@@ -58,8 +59,8 @@
 }
 
 .map-big-btn {
-  min-width: 20rem !important;
-  height: 4.5rem !important;
+  min-width: 25rem !important;
+  height: 5.5rem !important;
   font-size: 2rem !important;
 }
 
@@ -103,12 +104,19 @@
 
 @keyframes bee_float {
   0% {
-    transform: translateY(-5px);
+    transform: translateY(-2px);
   }
   50% {
-    transform: translateY(5px);
+    transform: translateY(2px);
   }
   100% {
-    transform: translateY(-5px);
+    transform: translateY(-2px);
   }
+}
+
+.img-stuff {
+  position: absolute;
+  display: block;
+  user-select: none;
+  pointer-events: none;
 }

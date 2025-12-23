@@ -42,7 +42,7 @@ const House = () => {
   const bees = HOUSE_BEES;
   return (
     <PanZoomViewport
-      backgroundSrc="/images/backgrounds/house.png"
+      backgroundSrc="/images/backgrounds/house.webp"
       hotspots={hotspots}
       dialogs={dialogs}
       width={width}

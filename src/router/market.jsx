@@ -51,7 +51,7 @@ const Market = () => {
   const bees = MARKET_BEES;
   return (
     <PanZoomViewport
-      backgroundSrc="/images/backgrounds/market.png"
+      backgroundSrc="/images/backgrounds/market.webp"
       hotspots={hotspots}
       dialogs={dialogs}
       width={width}
