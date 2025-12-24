@@ -13,9 +13,14 @@
 }
 
 .settings-row .left {
-  width: 40%;
+  width: 15%;
 }
-
+.settings-row .left img {
+  width: 100%;
+}
 .settings-row .right {
-  width: 60%;
+  width: 85%;
+}
+.sound-icon {
+  margin-left: 7px;
 }

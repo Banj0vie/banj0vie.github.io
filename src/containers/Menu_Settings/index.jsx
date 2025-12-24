@@ -40,10 +40,10 @@ const SettingsDialog = ({ onClose }) => {
   }, [soundVolume, musicVolume, isShowGrowthStage, isOverwritePlant, dexSlippage, baseGwei]);
 
   return (
-    <BaseDialog onClose={onClose} title="SETTINGS">
+    <BaseDialog onClose={onClose} title="SETTINGS" header="/images/dialog/modal-header-setting.png" headerWidth={120}>
       <div className="settings-dialog">
         <div className="settings-row">
-          <div className="left">Sound Volume</div>
+          <div className="left"><img className="sound-icon" src="/images/settings/sound.png" alt="sound"/></div>
           <div className="right">
             <Slider
               min="0"
@@ -54,7 +54,7 @@ const SettingsDialog = ({ onClose }) => {
           </div>
         </div>
         <div className="settings-row">
-          <div className="left">Music Volume</div>
+          <div className="left"><img src="/images/settings/music.png" alt="music"/></div>
           <div className="right">
             <Slider
               min="0"

@@ -1,7 +1,7 @@
 import React from 'react';
 import './style.css';
 
-const BaseDialog = ({ className = "", title, onClose, children, header = null }) => {
+const BaseDialog = ({ className = "", title, onClose, children, header = null, headerWidth = 210 }) => {
   return (
     <div className={`${className} modal-backdrop`} onClick={onClose}>
       <div className="modal-wrapper">
@@ -17,7 +17,7 @@ const BaseDialog = ({ className = "", title, onClose, children, header = null })
             {children}
             <div className="modal-header">
               <img className="modal-header-image" src="/images/dialog/top-baseheader.png" alt="header" />
-              {header && <img className="modal-header-additional-image" src={header} alt="header" />}
+              {header && <img style={{ width: headerWidth }} className="modal-header-additional-image" src={header} alt="header" />}
               <img className="modal-header-label-scroll" src="/images/dialog/label-scroll.png" alt="header" />
               <span className="modal-header-title">{title}</span>
             </div>
