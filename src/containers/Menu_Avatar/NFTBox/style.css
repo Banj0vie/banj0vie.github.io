@@ -1,7 +1,7 @@
 .nft-box .nft-card {
   width: 8rem;
   height: 8rem;
-  padding: 5px;
+  padding: 10px;
 }
 
 .nft-box .nft-card img {
@@ -15,10 +15,20 @@
   min-height: 2rem;
   line-height: 2rem;
   font-size: 1.5rem;
-  background: rgba(0, 0, 0, 0.25);
+  background: var(--primary-dlg-bg);
   border-radius: 0.5rem;
   min-width: 8rem;
   margin-top: 0.5rem;
+  color: #75514A;
+  text-shadow:
+    -1px -1px 0 #D89875,
+    1px -1px 0 #D89875,
+    -1px 1px 0 #D89875,
+    1px 1px 0 #D89875,
+    -1px 0 0 #D89875,
+    1px 0 0 #D89875,
+    0 -1px 0 #D89875,
+    0 1px 0 #D89875 !important;
 }
 
 .nft-box.clickable {

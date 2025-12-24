@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import './style.css';
-import CardView from '../../../components/boxes/CardView';
 import { useEquipmentRegistry } from '../../../hooks/useContracts';
 import BoostNFTSelector from '../BoostNFTSelector';
+import CardImgView from '../../../components/boxes/CardImgView';
 
 const NFTBox = ({ avatar, loading, slotIndex, onAvatarChange, allAvatars = [] }) => {
     const [nftData, setNftData] = useState(null);
@@ -19,7 +19,7 @@ const NFTBox = ({ avatar, loading, slotIndex, onAvatarChange, allAvatars = [] })
 
             try {
                 setIsLoading(true);
-                
+
                 // Use the hook function to get NFT metadata
                 const metadata = await getNFTMetadata(avatar.tokenId);
                 if (metadata) {
@@ -65,7 +65,7 @@ const NFTBox = ({ avatar, loading, slotIndex, onAvatarChange, allAvatars = [] })
             image: selectedNFT.image,
             boost: selectedNFT.boostPercentage.toFixed(2)
         });
-        
+
         // Notify parent component
         if (onAvatarChange) {
             onAvatarChange(slotIndex, selectedNFT);
@@ -74,11 +74,11 @@ const NFTBox = ({ avatar, loading, slotIndex, onAvatarChange, allAvatars = [] })
 
     if (loading || isLoading) {
         return <div className="nft-box">
-            <CardView className="nft-card">
+            <CardImgView className="nft-card">
                 <div className="loading-placeholder">
                     <div className="loading-spinner"></div>
                 </div>
-            </CardView>
+            </CardImgView>
             <div className="name">
                 Loading...
             </div>
@@ -88,12 +88,12 @@ const NFTBox = ({ avatar, loading, slotIndex, onAvatarChange, allAvatars = [] })
     return (
         <>
             <div className="nft-box clickable" onClick={handleClick}>
-                <CardView className="nft-card">
+                <CardImgView className="nft-card">
                     {!avatar || avatar.isEmpty ? (
                         <img src="/images/avatars/avatar-left-placeholder.png" alt="empty slot"></img>
                     ) : (
-                        <img 
-                            src={nftData?.image || `/images/avatars/character-${avatar.tokenId}.png`} 
+                        <img
+                            src={nftData?.image || `/images/avatars/character-${avatar.tokenId}.png`}
                             alt={`Character ${avatar.tokenId}`}
                             onError={(e) => {
                                 // Fallback to placeholder if specific character image doesn't exist
@@ -101,12 +101,12 @@ const NFTBox = ({ avatar, loading, slotIndex, onAvatarChange, allAvatars = [] })
                             }}
                         />
                     )}
-                </CardView>
+                </CardImgView>
                 <div className="name">
-                    {!avatar || avatar.isEmpty ? 'Empty' : (nftData ? nftData.name : `Character #${avatar.tokenId}`)}
+                    {!avatar || avatar.isEmpty ? 'EMPTY' : (nftData ? nftData.name : `Character #${avatar.tokenId}`)}
                 </div>
             </div>
-            
+
             {showSelector && (
                 <BoostNFTSelector
                     onClose={() => setShowSelector(false)}

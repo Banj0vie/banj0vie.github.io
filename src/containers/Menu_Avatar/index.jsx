@@ -2,10 +2,9 @@ import React, { useState, useEffect } from "react";
 import BaseDialog from "../_BaseDialog";
 import "./style.css";
 import NFTBox from "./NFTBox";
-import BaseDivider from "../../components/dividers/BaseDivider";
 import { useEquipmentRegistry } from "../../hooks/useContracts";
 import { useSolanaWallet } from "../../hooks/useSolanaWallet";
-
+import CardView from "../../components/boxes/CardView";
 const AvatarDialog = ({ onClose }) => {
   const { account } = useSolanaWallet();
   const { getAvatars, getTokenBoostPpm } = useEquipmentRegistry();
@@ -22,16 +21,16 @@ const AvatarDialog = ({ onClose }) => {
 
       try {
         setLoading(true);
-        
-        
-        
-        
+
+
+
+
         const [nfts, tokenIds] = await getAvatars(account);
-        
+
         // Get total boost
         const boostPpm = await getTokenBoostPpm(account);
         const boostPercentage = boostPpm ? boostPpm / 1000 : 0; // Convert from ppm to percentage, default to 0 if null
-        
+
         // Create avatar data array
         const avatarData = [];
         for (let i = 0; i < 2; i++) {
@@ -49,7 +48,7 @@ const AvatarDialog = ({ onClose }) => {
             });
           }
         }
-        
+
         setAvatars(avatarData);
         setTotalBoost(boostPercentage);
       } catch (error) {
@@ -83,39 +82,39 @@ const AvatarDialog = ({ onClose }) => {
 
   return <BaseDialog onClose={onClose} title="WORKERS" header="/images/dialog/modal-header-worker.png">
     <div className="avatar-dialog">
-        <div className="nft-list">
-            {loading ? (
-              <>
-                <NFTBox loading={true}></NFTBox>
-                <NFTBox loading={true}></NFTBox>
-              </>
-            ) : (
-              <>
-                <NFTBox 
-                  avatar={avatars[0]} 
-                  slotIndex={0}
-                  onAvatarChange={handleAvatarChange}
-                  allAvatars={avatars}
-                ></NFTBox>
-                <NFTBox 
-                  avatar={avatars[1]} 
-                  slotIndex={1}
-                  onAvatarChange={handleAvatarChange}
-                  allAvatars={avatars}
-                ></NFTBox>
-              </>
-            )}
-        </div>
-        <BaseDivider></BaseDivider>
+      <div className="nft-list">
         {loading ? (
-          <div className="text-center">Loading...</div>
-        ) : hasAnyNFTs ? (
-          <div className="text-center">Character NFTs equipped</div>
+          <>
+            <NFTBox loading={true}></NFTBox>
+            <NFTBox loading={true}></NFTBox>
+          </>
         ) : (
-          <div className="text-center">You don't have any character NFTs</div>
+          <>
+            <NFTBox
+              avatar={avatars[0]}
+              slotIndex={0}
+              onAvatarChange={handleAvatarChange}
+              allAvatars={avatars}
+            ></NFTBox>
+            <NFTBox
+              avatar={avatars[1]}
+              slotIndex={1}
+              onAvatarChange={handleAvatarChange}
+              allAvatars={avatars}
+            ></NFTBox>
+          </>
         )}
-        <BaseDivider></BaseDivider>
+      </div>
+      {loading ? (
+        <div className="text-center">Loading...</div>
+      ) : hasAnyNFTs ? (
+        <div className="text-center">Character NFTs equipped</div>
+      ) : (
+        <div className="text-center">You don't have any character NFTs</div>
+      )}
+      <CardView>
         <div className="text-center">Total Harvest Bonus: <span className="highlight">{totalBoost.toFixed(2)}%</span></div>
+      </CardView>
     </div>
   </BaseDialog>;
 };

@@ -1,5 +1,9 @@
 /* Global styles for CryptoValley */
 
+:root {
+  --primary-dlg-bg: #99633F;
+}
+
 /* GROBOLD Font Setup */
 @font-face {
   font-family: "GROBOLD";
@@ -73,7 +77,7 @@ button {
 
 div,
 p {
-  font-size: 1.75rem;
+  font-size: 1.25rem;
 }
 
 /* disable text selection globally */
