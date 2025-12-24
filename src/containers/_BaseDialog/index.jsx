@@ -1,6 +1,5 @@
 import React from 'react';
 import './style.css';
-import { dialogFrames } from '../../constants/_baseimages';
 
 const BaseDialog = ({ className = "", title, onClose, children, header = null }) => {
   return (

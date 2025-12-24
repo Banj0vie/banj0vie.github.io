@@ -161,6 +161,11 @@ a {
 .w-full {
   width: 100%;
 }
+
+.w-fit {
+  width: fit-content;
+}
+
 .w-50 {
   width: 50%;
 }
@@ -179,6 +184,11 @@ a {
 
 .h-fit {
   height: fit-content;
+}
+
+.mx-auto {
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .text-center {
