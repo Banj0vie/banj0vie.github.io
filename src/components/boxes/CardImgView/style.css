@@ -1,4 +1,4 @@
-.card-view {
+.card-img-view {
   min-height: 4rem;
   height: auto;
   padding: 10px;
@@ -6,7 +6,7 @@
   position: relative;
 }
 
-.card-view .card-bg {
+.card-img-view .card-bg {
   position: absolute;
   top: 0;
   left: 0;
@@ -15,7 +15,7 @@
   z-index: 0;
 }
 
-.card-view .card-content {
+.card-img-view .card-content {
   position: relative;
   z-index: 1;
   border-radius: 11px;
