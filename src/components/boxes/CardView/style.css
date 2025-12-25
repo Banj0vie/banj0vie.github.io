@@ -1,7 +1,6 @@
 .card-view {
   min-height: 4rem;
   height: auto;
-  padding: 10px;
   width: 100%;
   position: relative;
   background: var(--primary-dlg-bg);

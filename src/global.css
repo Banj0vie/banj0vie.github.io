@@ -248,3 +248,7 @@ a {
 .game-menu > * {
   pointer-events: auto;
 }
+
+.custom-modal-background .modal-body {
+  background-color: #B18060;
+}
