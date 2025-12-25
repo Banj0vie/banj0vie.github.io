@@ -30,7 +30,7 @@ const Market = () => {
       id: ID_MARKET_HOTSPOTS.BANKER,
       component: BankerDialog,
       label: "BANKER",
-      header: dialogFrames.modalHeaderBanker,
+      header: "/images/dialog/modal-header-dex.png",
     },
     {
       id: ID_MARKET_HOTSPOTS.MARKET,

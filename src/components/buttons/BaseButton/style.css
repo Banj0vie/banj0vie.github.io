@@ -43,6 +43,10 @@
   filter: brightness(1.2);
 }
 
+.base-button-focused {
+  filter: brightness(1.2);
+}
+
 @keyframes popup {
   0% {
     transform: scale(0.95);

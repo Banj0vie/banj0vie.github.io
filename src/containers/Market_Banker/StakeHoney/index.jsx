@@ -9,6 +9,7 @@ import { useNotification } from "../../../contexts/NotificationContext";
 import { isTransactionRejection } from "../../../utils/errorUtils";
 import { useSolanaWallet } from "../../../hooks/useSolanaWallet";
 import { selectBankerTotalGameToken, selectBankerTotalXGameToken, selectBankerLoading } from '../../../solana/store/slices/bankerSlice';
+import CardView from "../../../components/boxes/CardView";
 
 const StakeHoney = ({ onBack }) => {
   const [isStaking, setIsStaking] = useState(true);
@@ -144,25 +145,25 @@ const StakeHoney = ({ onBack }) => {
     setData(
       isStaking
         ? [
-            { label: "Ratio", value: `1 XHONEY - ${Number.isFinite(ratio) ? ratio.toFixed(3) : '0.000'} HONEY` },
-            {
-              label: "XHoney Balance",
-              value: `${xHoneyBalance} XHoney`,
-            },
-            { label: "Est. Honey Rewards", value: `${estRewards} Honey` },
-          ]
+          { label: "Ratio", value: `1 XHONEY - ${Number.isFinite(ratio) ? ratio.toFixed(3) : '0.000'} HONEY` },
+          {
+            label: "XHoney Balance",
+            value: `${xHoneyBalance} XHoney`,
+          },
+          { label: "Est. Honey Rewards", value: `${estRewards} Honey` },
+        ]
         : [
-            { label: "Ratio", value: `1 XHONEY - ${Number.isFinite(ratio) ? ratio.toFixed(3) : '0.000'} HONEY` },
-            {
-              label: "XHoney Balance",
-              value: `${xHoneyBalance} XHoney`,
-            },
-            {
-              label: "Honey Balance",
-              value: `${honeyBalance} Honey`,
-            },
-            { label: "Est. Honey Rewards", value: `${estRewards} Honey` },
-          ]
+          { label: "Ratio", value: `1 XHONEY - ${Number.isFinite(ratio) ? ratio.toFixed(3) : '0.000'} HONEY` },
+          {
+            label: "XHoney Balance",
+            value: `${xHoneyBalance} XHoney`,
+          },
+          {
+            label: "Honey Balance",
+            value: `${honeyBalance} Honey`,
+          },
+          { label: "Est. Honey Rewards", value: `${estRewards} Honey` },
+        ]
     );
   }, [isStaking, ratio, xHoneyBalance, honeyBalance, estRewards]);
 
@@ -175,13 +176,13 @@ const StakeHoney = ({ onBack }) => {
     <div className="stake-honey">
       <div className="stake-unstake-buttons">
         <BaseButton
-          className="h-4rem"
+          className="h-3rem"
           label="Stake"
           onClick={() => setIsStaking(true)}
           focused={isStaking}
         ></BaseButton>
         <BaseButton
-          className="h-4rem"
+          className="h-3rem"
           label="Unstake"
           onClick={() => setIsStaking(false)}
           focused={!isStaking}
@@ -196,15 +197,19 @@ const StakeHoney = ({ onBack }) => {
       ></TokenInputRow>
       <CardListView data={data}></CardListView>
       <BaseButton
+        className="h-3.5rem"
         label={loading ? "Processing..." : isStaking ? "Deposit" : "Withdraw"}
         onClick={isStaking ? onDeposit : onWithdraw}
         disabled={loading || !amount || amount === "0"}
+        large={true}
       ></BaseButton>
-      <BaseButton label="Back" onClick={onBack} disabled={loading}></BaseButton>
-      <div className="hint">
-        <span className="highlight">0.5%</span> of each gacha roll is
-        <br /> redirected to the Bank!
-      </div>
+      <BaseButton className="h-3.5rem" label="Back" onClick={onBack} disabled={loading} large={true} isError={true}></BaseButton>
+
+      <CardView className="min-h-0">
+        <div className="hint">
+          <span className="highlight">0.5%</span> of each gacha roll is redirected to the Bank!
+        </div>
+      </CardView>
     </div>
   );
 };

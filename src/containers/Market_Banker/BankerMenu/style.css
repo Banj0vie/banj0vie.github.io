@@ -1,7 +1,7 @@
 .banker-dialog {
-    width: 300px;
+    width: 250px;
     display:flex;
     flex-direction: column;
     gap: 0.75rem;
-    margin-top: 1rem;
+    margin: 1rem;
 }

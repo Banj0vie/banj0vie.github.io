@@ -22,16 +22,18 @@ const StakeLP = ({ onBack }) => {
     <div className="stake-lp">
       <CardListView data={data}></CardListView>
       <BaseButton
-        className="h-3rem"
+        className="h-3.5rem"
         label="Provide Liquidity on Thruster V2"
         onClick={onThrusterV2Click}
+        large={true}
       ></BaseButton>
       <BaseButton
-        className="h-3rem"
+        className="h-3.5rem"
         label="Boost LP on Hyperlock"
         onClick={onHyperlockClick}
+        large={true}
       ></BaseButton>
-      <BaseButton label="Back" onClick={onBack}></BaseButton>
+      <BaseButton className="h-3.5rem" label="Back" onClick={onBack} large={true} isError={true}></BaseButton>
     </div>
   );
 };

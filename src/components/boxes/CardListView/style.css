@@ -1,13 +1,10 @@
 .card-list-view {
   display: flex;
   flex-direction: column;
-  padding: 1.5rem;
+  padding: 1rem;
   gap: 0.5rem;
   min-height: 4rem;
   height: auto;
-  -o-border-image: var(--primary-bg)
-    6 repeat;
-  border-image: var(--primary-bg)
-    6 fill repeat;
-  border-image-width: 0.5rem;
+  background: var(--primary-dlg-bg);
+  border-radius: 11px;
 }
