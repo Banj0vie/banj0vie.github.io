@@ -21,7 +21,15 @@ const BaseButton = ({
           }
         }}
       >
-        <img className="base-button-bg" src={isError ? "/images/button/base_button_error_bg.png" : (large ? "/images/button/base_button_large_bg.png" : (small ? "/images/button/base_button_small_bg.png" : "/images/button/base_button_bg.png"))} alt="base-button-image" />
+        <img 
+          className="base-button-bg" 
+          src={
+            isError 
+              ? (large ? "/images/button/base_button_error_large_bg.png" : (small ? "/images/button/base_button_error_small_bg.png" : "/images/button/base_button_error_bg.png"))
+              : (large ? "/images/button/base_button_large_bg.png" : (small ? "/images/button/base_button_small_bg.png" : "/images/button/base_button_bg.png"))
+          } 
+          alt="base-button-image" 
+        />
         <p>{label}</p>
       </div>
     </div>

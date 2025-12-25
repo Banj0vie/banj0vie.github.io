@@ -8,22 +8,19 @@
 }
 
 .weekly-wage-card {
-  padding: 2rem;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  width: 100%;
 }
 
 .weekly-wage-header {
   position: absolute;
-  height: 3rem;
+  height: 3.5rem;
   width: 50%;
   min-height: 2rem;
   top: -1rem;
   cursor: pointer;
-  box-shadow: rgba(0, 0, 0, 0.25) 0px 0px 1rem;
-  user-select: none;
-  border-image: var(--profile-btn-bg) 6 fill / 1rem / 0 repeat;
   transition: 0.1s ease-in;
   padding: 0px 1rem;
   display: flex;
@@ -31,4 +28,14 @@
   justify-content: center;
   left: 50%;
   transform: translateX(-50%);
+}
+
+.weekly-wage-header-bg {
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+}
+
+.weekly-wage-header span {
+  position: absolute;
 }

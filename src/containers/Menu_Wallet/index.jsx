@@ -30,9 +30,10 @@ const WalletDialog = ({onClose}) => {
           </div>
         </div>
         <BaseButton
-          className="h-4rem w-fit mx-auto"
+          className="w-fit mx-auto h-4.5rem"
           label="Disconnect"
           onClick={onDisconnect}
+          small={true}
         ></BaseButton>
       </div>
     </BaseDialog>

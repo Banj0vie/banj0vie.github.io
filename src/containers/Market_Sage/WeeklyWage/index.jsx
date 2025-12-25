@@ -89,7 +89,7 @@ const WeeklyWage = ({ onBack }) => {
   }, [unlockWeeklyWage, sageData]);
   return (
     <div className="weekly-wage-wrapper">
-      <CardView className="p-0">
+      <CardView className="mt-1.5rem">
         <div className="weekly-wage-card">
           <LabelValueBox
             label="Unlock Amount"
@@ -107,18 +107,19 @@ const WeeklyWage = ({ onBack }) => {
             label="Next Wage in"
             value={sageData.canUnlockWage ? "Ready!" : formatDuration(remainedTime)}
           />
-          <div className="weekly-wage-header">Weekly Wage</div>
+
         </div>
       </CardView>
-
+      <div className="weekly-wage-header">
+        <img src="/images/label/grey-bg.png" alt="grey-bg" className="weekly-wage-header-bg" />
+        <span>Weekly Wage</span>
+      </div>
       {sageData.lockedAmount === 0 ? (
         <CardView className="p-0">
-          <br />
           <div className="text-center">{loading ? "Loading ..." : "No locked tokens to unlock"}</div>
         </CardView>
       ) : !sageData.canUnlockWage ? (
         <CardView className="p-0">
-          <br />
           <div className="text-center">Already Claimed!</div>
         </CardView>
       ) : (
@@ -127,9 +128,10 @@ const WeeklyWage = ({ onBack }) => {
           label={isUnlocking ? "Unlocking..." : "Unlock Honey"}
           onClick={handleUnlock}
           disabled={isUnlocking}
+          large={true}
         />
       )}
-      <BaseButton className="h-3rem" label="Back" onClick={onBack}></BaseButton>
+      <BaseButton className="h-3rem" label="Back" onClick={onBack} large={true} isError={true}></BaseButton>
     </div>
   );
 };

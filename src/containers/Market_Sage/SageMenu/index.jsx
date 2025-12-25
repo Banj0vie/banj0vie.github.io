@@ -6,14 +6,15 @@ const SageMenu = ({ onWeeklyWage, onWeeklyHarvest }) => {
   return (
     <div className="sage-menu-wrapper">
       <BaseButton
-        className="h-4rem"
+        className="h-4.5rem"
         label="Weekly Wage"
         onClick={onWeeklyWage}
-      ></BaseButton>
+        small={true}></BaseButton>
       <BaseButton
-        className="h-4rem"
+        className="h-4.5rem"
         label="Weekly Harvest"
         onClick={onWeeklyHarvest}
+        small={true}
       ></BaseButton>
     </div>
   );
