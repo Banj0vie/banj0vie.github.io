@@ -49,7 +49,7 @@ const TokenInputRow = ({
         clickable={!disabled && onBalanceClick}
       />
       <BaseInput
-        className={`${balance == null ? "w-70" : "w-50"} h-3\.5rem`}
+        className={`${balance == null ? "w-70" : "w-50"} h-3.5rem`}
         type="number"
         value={internalValue}
         setValue={handleValueChange}

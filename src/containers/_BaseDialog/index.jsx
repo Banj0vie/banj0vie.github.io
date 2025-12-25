@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import './style.css';
 
-const BaseDialog = ({ className = "", title, onClose, children, header = null, headerWidth = 210 }) => {
+const BaseDialog = ({ className = "", title, onClose, children, header = null, headerWidth = 210, headerOffset = 0 }) => {
   const titleRef = useRef(null);
 
   useEffect(() => {
@@ -69,7 +69,7 @@ const BaseDialog = ({ className = "", title, onClose, children, header = null, h
             {children}
             <div className="modal-header">
               <img className="modal-header-image" src="/images/dialog/top-baseheader.png" alt="header" />
-              {header && <img style={{ width: headerWidth }} className="modal-header-additional-image" src={header} alt="header" />}
+              {header && <img style={{ width: headerWidth, marginTop: headerOffset }} className="modal-header-additional-image" src={header} alt="header" />}
               <img className="modal-header-label-scroll" src="/images/dialog/label-scroll.png" alt="header" />
               <span ref={titleRef} className="modal-header-title">{title}</span>
             </div>

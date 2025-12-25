@@ -53,24 +53,8 @@
   }
 }
 
-.base-button-focused {
-  border-image: var(--base-button-active-bg) 15 fill repeat;
-  border-image-width: 2rem;
-  filter: brightness(1.2);
-}
-
-.base-button:active {
-  border-image: var(--base-button-active-bg) 15 fill repeat;
-  border-image-width: 2rem;
-}
-
 .base-button-disabled:hover {
   filter: none !important;
-}
-
-.base-button-disabled:active {
-  border-image: var(--base-button-bg) 15 fill repeat !important;
-  border-image-width: 2rem !important;
 }
 
 .base-button-disabled {

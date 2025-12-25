@@ -6,10 +6,10 @@ import { ID_SAGE_PAGES } from "../../constants/app_ids";
 import WeeklyWage from "./WeeklyWage";
 import WeeklyHarvest from "./WeeklyHarvest";
 
-const SageDialog = ({ onClose, label = "VENDOR", header = "" }) => {
+const SageDialog = ({ onClose, label = "VENDOR", header = "", headerOffset = 0 }) => {
   const [pageIndex, setPageIndex] = useState(ID_SAGE_PAGES.SAGE_MENU);
   return (
-    <BaseDialog onClose={onClose} title={label} header={header}>
+    <BaseDialog onClose={onClose} title={label} header={header} headerOffset={headerOffset}>
       {pageIndex === ID_SAGE_PAGES.SAGE_MENU && (
         <SageMenu
           onWeeklyWage={() => setPageIndex(ID_SAGE_PAGES.WEEKLY_WAGE)}

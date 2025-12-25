@@ -46,7 +46,9 @@ const Market = () => {
     {
       id: ID_MARKET_HOTSPOTS.SAGE,
       component: SageDialog,
-      label: "SAGE",
+      label: "QUEEN",
+      header: "/images/dialog/modal-header-queen.png",
+      headerOffset: 10,
     },
   ];
   const bees = MARKET_BEES;
