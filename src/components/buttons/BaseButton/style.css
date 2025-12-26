@@ -59,8 +59,10 @@
 
 .base-button-disabled:hover {
   filter: none !important;
+  filter: brightness(0.5) !important;
 }
 
 .base-button-disabled {
   cursor: not-allowed !important;
+  filter: brightness(0.5) !important;
 }

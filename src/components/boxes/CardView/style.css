@@ -5,7 +5,6 @@
   position: relative;
   background: var(--primary-dlg-bg);
   border-radius: 11px;
-  overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;

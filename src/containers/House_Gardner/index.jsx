@@ -6,17 +6,18 @@ import LabelValueBox from "../../components/boxes/LabelValueBox";
 import BaseButton from "../../components/buttons/BaseButton";
 import { useGardener } from "../../hooks/useContracts";
 import { useNotification } from "../../contexts/NotificationContext";
+import CardTopicView from "../../components/boxes/CardTopicView";
 
-const GardnerDialog = ({ onClose, label = "GARDENER", header = "" }) => {
-  const { 
-    currentLevel, 
-    maxLevel, 
-    levelUpCost, 
-    canLevelUp, 
-    levelUp, 
-    fetchGardenerData 
+const GardnerDialog = ({ onClose, label = "GARDENER", header = "/images/dialog/modal-header-gardner.png" }) => {
+  const {
+    currentLevel,
+    maxLevel,
+    levelUpCost,
+    canLevelUp,
+    levelUp,
+    fetchGardenerData
   } = useGardener();
-  
+
   const { show } = useNotification();
   const [isLevelingUp, setIsLevelingUp] = useState(false);
 
@@ -36,7 +37,7 @@ const GardnerDialog = ({ onClose, label = "GARDENER", header = "" }) => {
       show('Leveling up...', 'info');
       const targetLevel = currentLevel + 1;
       const tx = await levelUp(targetLevel);
-      
+
       if (tx) {
         show(`Successfully leveled up to Valley Level ${targetLevel}!`, 'success');
         // Refresh data after successful level up
@@ -57,10 +58,10 @@ const GardnerDialog = ({ onClose, label = "GARDENER", header = "" }) => {
     fetchGardenerData();
   }, [fetchGardenerData]);
   return (
-    <BaseDialog onClose={onClose} title={label}>
+    <BaseDialog onClose={onClose} title={label} header={header}>
       <div className="gardner-dialog-content">
         {/* Current Level Card */}
-        <CardView className="p-0">
+        <CardView className="mt-1rem">
           <div className="gardner-card">
             <LabelValueBox
               label="Farm Plots"
@@ -74,13 +75,13 @@ const GardnerDialog = ({ onClose, label = "GARDENER", header = "" }) => {
               label="Fishing Rod Level"
               value={getFishingRodLevel(currentLevel)}
             ></LabelValueBox>
-            <div className="gardner-header">Valley Lvl. {currentLevel}</div>
+            <CardTopicView title={`Valley Lvl. ${currentLevel}`} />
           </div>
         </CardView>
-
+        <br />
         {/* Next Level Card - only show if not at max level */}
         {currentLevel < maxLevel && (
-          <CardView className="p-0">
+          <CardView className="">
             <div className="gardner-card">
               <LabelValueBox
                 label="Farm Plots"
@@ -104,7 +105,7 @@ const GardnerDialog = ({ onClose, label = "GARDENER", header = "" }) => {
                 label="Cost"
                 value={`${levelUpCost.toFixed(2)} Honey`}
               ></LabelValueBox>
-              <div className="gardner-header">Valley Lvl. {currentLevel + 1}</div>
+              <CardTopicView title={`Valley Lvl. ${currentLevel + 1}`} />
             </div>
           </CardView>
         )}
@@ -112,7 +113,6 @@ const GardnerDialog = ({ onClose, label = "GARDENER", header = "" }) => {
         {/* Max Level Reached or Upgrade Button */}
         {currentLevel >= maxLevel ? (
           <CardView className="p-0">
-            <br />
             <div className="text-center font-bold">Max level reached</div>
           </CardView>
         ) : (

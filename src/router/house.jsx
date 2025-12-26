@@ -21,6 +21,7 @@ const House = () => {
       id: ID_HOUSE_HOTSPOTS.GARDNER,
       component: GardnerDialog,
       label: "GARDNER",
+      header: "/images/dialog/modal-header-gardner.png"
     },
     {
       id: ID_HOUSE_HOTSPOTS.REFERRALS,
