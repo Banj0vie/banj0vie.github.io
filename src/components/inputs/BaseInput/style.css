@@ -24,6 +24,12 @@
   font-weight: 600;
   color: #fff;
   margin: 0 0.75rem;
+  z-index: 1;
+}
+
+/* Smaller placeholder text */
+.base-input input::placeholder {
+  font-size: 1rem;
 }
 
 /* Hide spinner for number inputs */
@@ -45,5 +51,4 @@
   width: 100%;
   height: 100%;
   object-fit: fill;
-  z-index: -1;
 }
