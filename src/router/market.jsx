@@ -37,6 +37,8 @@ const Market = () => {
       id: ID_MARKET_HOTSPOTS.MARKET,
       component: MarketPlaceDialog,
       label: "MARKETPLACE",
+      header: "/images/dialog/modal-header-vendor.png",
+      headerOffset: 10,
     },
     {
       id: ID_MARKET_HOTSPOTS.LEADERBOARD,

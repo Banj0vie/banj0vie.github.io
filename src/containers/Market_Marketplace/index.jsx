@@ -9,8 +9,9 @@ import SellDialog from "./SellDialog";
 import BatchBuyDialog from "./BatchBuyDialog";
 import BuyDialog from "./BuyDialog";
 import { useSolanaWallet } from "../../hooks/useSolanaWallet";
+import CardTopicView from "../../components/boxes/CardTopicView";
 
-const MarketPlaceDialog = ({ onClose, label = "VENDOR", header = "" }) => {
+const MarketPlaceDialog = ({ onClose, label = "VENDOR", header = "", headerOffset = 0 }) => {
   const [pageIndex, setPageIndex] = useState(
     ID_MARKETPLACE_PAGES.MARKET_PLACE_MENU
   );
@@ -49,7 +50,7 @@ const MarketPlaceDialog = ({ onClose, label = "VENDOR", header = "" }) => {
       );
     default:
       return (
-        <BaseDialog onClose={onClose} header={header} title={label}>
+        <BaseDialog onClose={onClose} header={header} title={label} headerOffset={headerOffset}>
           <div className="marketplace-dialog">
             <BaseButton
               className="h-3rem"
@@ -66,9 +67,12 @@ const MarketPlaceDialog = ({ onClose, label = "VENDOR", header = "" }) => {
               label="Batch Buy"
               onClick={() => setPageIndex(ID_MARKETPLACE_PAGES.BATCH_BUY)}
             ></BaseButton>
-            <BaseDivider></BaseDivider>
-            <div className="text-center">Market Stats</div>
-            <CardListView data={data}></CardListView>
+            <CardListView data={data} className="market-stats-card">
+              <CardTopicView
+                title="Market Stats"
+                data={data}
+              ></CardTopicView>
+            </CardListView>
           </div>
         </BaseDialog>
       );

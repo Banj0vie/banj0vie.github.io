@@ -7,4 +7,5 @@
   height: auto;
   background: var(--primary-dlg-bg);
   border-radius: 11px;
+  position: relative;
 }
