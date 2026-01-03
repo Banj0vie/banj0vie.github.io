@@ -120,8 +120,9 @@
   left: 50%;
   width: 90%;
   transform: translate(-50%);
-  font-size: 2rem;
+  font-size: 1.75rem;
   color: #26120F;
+  white-space: nowrap;
   text-shadow:
     -2px -2px 0 white,
     2px -2px 0 white,

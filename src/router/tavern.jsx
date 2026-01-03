@@ -12,6 +12,7 @@ const Tavern = () => {
         id: ID_TAVERN_HOTSPOTS.POTION,
         component: PotionDialog,
         label: "POTION MASTER",
+        header: "/images/dialog/modal-header-potion.png",
     }
   ];
   return (

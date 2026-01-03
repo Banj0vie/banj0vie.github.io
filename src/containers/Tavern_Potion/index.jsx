@@ -21,7 +21,7 @@ const PotionDialog = ({ onClose, label = "POTION MASTER", header = "" }) => {
     setSelectedPotionId(id);
   };
   return (
-    <BaseDialog onClose={onClose} title={label} header={header}>
+    <BaseDialog onClose={onClose} title={label} header={header} className="custom-modal-background">
       <div className="potion-dialog">
         <CardView className="left-panel">
           <ItemCardList>
