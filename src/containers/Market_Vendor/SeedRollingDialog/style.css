@@ -2,6 +2,8 @@
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+  align-items: center;
+  width: 450px;
 }
 
 .seed-rolling-box-wrapper {
@@ -12,9 +14,6 @@
   width: 24rem;
   gap: 1.5rem;
   min-height: 8rem;
-  -o-border-image: var(--primary-bg) 6 repeat;
-  border-image: var(--primary-bg) 6 fill repeat;
-  border-image-width: 1rem;
 }
 
 .seed-rolling-buttons-wrapper {

@@ -6,7 +6,7 @@ import SeedRollingBox from "../../../components/boxes/SeedRollingBox";
 
 const SeedRollingDialog = ({ rollingInfo, onClose, onBack, onBuyAgain }) => {
   return (
-    <BaseDialog title="SEED GACHA" onClose={onClose}>
+    <BaseDialog title="SEED GACHA" onClose={onClose} header="/images/dialog/modal-header-gardner.png" headerOffset={10}>
       <div className="seed-gacha-wrapper">
         <div className="seed-rolling-box-wrapper">
           {(rollingInfo.revealedSeeds || []).map((seedId, idx) => (
@@ -18,11 +18,13 @@ const SeedRollingDialog = ({ rollingInfo, onClose, onBack, onBuyAgain }) => {
             className="h-4rem"
             label="Back"
             onClick={onBack}
+            small
           ></BaseButton>
           <BaseButton
             className="h-4rem"
             label="Buy Again"
             onClick={onBuyAgain}
+            small
           ></BaseButton>
         </div>
       </div>

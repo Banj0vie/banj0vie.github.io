@@ -79,6 +79,7 @@ const SeedRollingBox = ({ seedPackId, delay = 0 }) => {
   return (
     <div className="seed-rolling-box">
       <div className="seed-roller">
+        <img className="seed-roller-bg" src="/images/items/crop-bg.png" alt="Seed Roller Background"></img>
         <div
           className={`seed-rolling-image ${isRolling ? "rolling" : "finish"}`}
           style={

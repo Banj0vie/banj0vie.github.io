@@ -1,13 +1,27 @@
+.seed-rolling-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .seed-roller {
-  width: 7rem;
+  width: 6rem;
   height: 6rem;
   overflow: hidden;
   display: flex;
   justify-content: center;
   align-items: center;
-  -o-border-image: var(--primary-bg) 6 repeat;
-  border-image: var(--primary-bg) 6 fill repeat;
-  border-image-width: 1rem;
+  position: relative;
+}
+
+.seed-roller-bg {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  z-index: 0;
 }
 
 .seed-rolling-image {
@@ -19,6 +33,8 @@
   /* Scaled total height = 7076 * 0.308 ≈ 2179.4px */
   background-size: 3.06rem auto;
   background-repeat: no-repeat;
+  z-index: 1;
+  background-position-x: center;
 }
 
 .seed-rolling-image.rolling {
@@ -73,25 +89,19 @@
 
 .seed-label {
   background-color: rgba(0, 0, 0, 0.25);
-  border-radius: 0.25rem;
-  padding-top: 0.1rem;
-  padding-bottom: 0.1rem;
-  margin-top: 0.25rem;
+  border-radius: 5rem;
+  padding: 0.25rem 0rem;
   width: 7rem;
-  height: 2.5rem;
   display: flex;
   justify-content: center;
   align-items: center;
-  -o-border-image: var(--primary-bg) 6 repeat;
-  border-image: var(--primary-bg) 6 fill repeat;
-  border-image-width: 1rem;
 }
 
 .seed-label p {
   font-weight: 600;
   margin-top: 0;
   margin-bottom: 0.2rem;
-  font-size: 1.25rem;
+  font-size: 1rem;
   animation: slide-in-9e8ec30a 0.15s ease-in-out;
 }
 
