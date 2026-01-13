@@ -37,6 +37,7 @@
     2px 0 0 #031542,
     0 -2px 0 #031542,
     0 2px 0 #031542 !important;
+  text-transform: uppercase;
 }
 
 .base-button:hover {

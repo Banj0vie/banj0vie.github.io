@@ -54,8 +54,7 @@ const ProfileAuthBox = ({ onCreateProfile }) => {
 
   return (
     <div className="profile-auth-box">
-      <div>Create your Profile!</div>
-      <BaseDivider></BaseDivider>
+      <div className="profile-label">Create your Profile!</div>
       <BaseInput
         className="h-2.5rem w-75"
         type="text"

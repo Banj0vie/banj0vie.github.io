@@ -92,7 +92,7 @@ const ReferralDialog = ({ onClose, label = "REFERRAL", header = "" }) => {
     }
   };
   return (
-    <BaseDialog onClose={onClose} title={label}>
+    <BaseDialog onClose={onClose} title={label} header="/images/dialog/modal-header-wallet.png">
       <div className="referral-dialog">
         <div>Your Sponsor</div>
         <CardView className="p-0">

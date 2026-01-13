@@ -4,6 +4,10 @@
   position: absolute;
   top: 0;
   left: 0;
+  background: #47b2f5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .auth-background {
@@ -12,49 +16,199 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background: url(/public/images/backgrounds/valley.gif) no-repeat 50% fixed;
+  background: url(/public/images/backgrounds/valley.webp) no-repeat 50% fixed;
   background-size: cover;
   filter: blur(4px);
   z-index: 5;
 }
 
-.auth-box {
+.auth-wrapper {
+  position: relative;
+  display: inline-block;
+  margin-top: 5rem;
+}
+
+.auth-wrapper .modal-header-bg {
+  width: 300px;
   position: absolute;
-  width: 40rem;
-  height: max(40rem, 65%);
-  -o-border-image: var(--secondary-bg) 6 repeat;
-  border-image: var(--secondary-bg) 6 fill repeat;
-  border-image-width: 1rem;
-  box-shadow: 4px 4px 32px rgba(0, 0, 0, 0.424);
+  top: -45px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
+  pointer-events: none;
+}
+
+.auth-box {
+  position: relative;
+  width: fit-content;
+  height: auto;
+  min-height: 250px;
   display: flex;
-  flex-direction: column;
-  gap: 3rem;
-  justify-content: space-between;
-  align-items: center;
+  color: #fff;
+  padding: 16px;
+  background-image: var(--dialog-bg);
+  background-repeat: repeat-y, repeat-y, repeat-x, repeat-x;
+  background-position: 0px 0px, 100% 0px, 0px 0px, 0px 100%;
+  box-shadow: none;
+  border-radius: 70px;
+  padding: 75px;
   z-index: 6;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.auth-box::before {
+  background-image: var(--dialog-edge-bg);
+  background-repeat: no-repeat;
+  content: "";
+  display: block;
+  height: 100%;
+  image-rendering: pixelated;
+  left: 0px;
+  pointer-events: none;
+  position: absolute;
+  top: 0px;
+  width: 100%;
+  background-position: 0px 0px, 100% 0px, 0px 100%, 100% 100%;
+  z-index: 1;
+}
+
+.auth-box-content-background {
+  position: absolute;
+  width: 86%;
+  height: 88%;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
+  background: #b18060;
+  border-radius: 20px;
+  z-index: 2;
+}
+
+.auth-box .modal-left-top-image {
+  width: 4rem;
+  position: absolute;
+  top: -18px;
+  left: -16px;
+  z-index: 8;
+}
+
+.auth-box .modal-bottom-center-image {
+  width: 6rem;
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translate(-50%, 100%);
+  z-index: -1;
+}
+
+.auth-box .modal-bottom-center-emerald {
+  width: 4.7rem;
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translate(-50%, 50%);
+}
+
+.auth-box .modal-header {
+  position: absolute;
+  top: -185px;
+  transform: translate(-50%, -15px);
+  left: 50%;
+  font-weight: 700;
   text-align: center;
+  font-size: 1.5rem;
+  width: 280px;
+  z-index: 1;
+}
+
+.auth-box .modal-header-image {
+  width: 100%;
+}
+
+.auth-box .modal-header-additional-image {
+  position: absolute;
+  top: 40%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 80%;
+}
+
+.auth-box .modal-header-label-scroll {
+  position: absolute;
+  width: 110%;
+  top: 119px;
+  left: 50%;
+  transform: translate(-50%);
+}
+
+.auth-box .modal-header-title {
+  position: absolute;
+  top: 129px;
+  left: 50%;
+  width: 90%;
+  transform: translate(-50%);
+  font-size: 1.75rem;
+  color: #26120f;
+  white-space: nowrap;
+  text-shadow: -2px -2px 0 white, 2px -2px 0 white, -2px 2px 0 white,
+    2px 2px 0 white, -2px 0 0 white, 2px 0 0 white, 0 -2px 0 white,
+    0 2px 0 white !important;
+}
+
+.auth-box-content {
+  background: var(--secondary-dlg-bg);
+  width: 100%;
+  border-radius: 20px;
+  z-index: 7;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+  padding: 3rem 1rem;
 }
 
 .auth-box-logo {
-  max-height: 10rem;
+  width: 160px;
+  height: 160px;
+  position: relative;
+}
+
+.auth-box-logo-bg {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+}
+
+.auth-box-logo-image {
+  position: absolute;
+  width: 85%;
+  height: 85%;
+  top: 50%;
+  left: 50%; 
+  transform: translate(-50%, -50%);
+  border-radius: 10px;
 }
 
 .auth-box-footer {
   width: 75%;
   height: 3rem;
   display: flex;
-  gap: 1rem;
+  gap: 2.5rem;
   justify-content: center;
   align-items: center;
+  z-index: 3;
 }
 
 .auth-box-footer .divider {
-    width: 100%;
-    height: .1rem;
-    background-color: #743f39;
-    opacity: .5;
-    margin: .25rem 0;
+  width: 100%;
+  height: 0.1rem;
+  background-color: #743f39;
+  opacity: 0.5;
+  margin: 0.25rem 0;
 }

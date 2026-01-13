@@ -36,9 +36,9 @@ const RollChances = ({ onBack }) => {
   return (
     <div className="roll-chances-wrapper">
       <div className="relative">
-        <CardTopicView title="Unlocked ROI" />
         <CardListView data={primaryData} className="mt-1rem">
         </CardListView>
+        <CardTopicView title="Unlocked ROI" />
       </div>
       <div className="slider-wrapper">
         <div className="w-full text-center">

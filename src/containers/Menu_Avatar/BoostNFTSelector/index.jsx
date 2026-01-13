@@ -82,7 +82,7 @@ const BoostNFTSelector = ({ onClose, onSelect, slotIndex, equippedAvatars = [] }
   };
 
   return (
-    <BaseDialog onClose={onClose} title="SELECT CHARACTER">
+    <BaseDialog onClose={onClose} title="SELECT CHARACTER"  header="/images/dialog/modal-header-worker.png">
       <div className="select-character-dialog">
         <CardView className="p-0">
           <div className="character-list">
