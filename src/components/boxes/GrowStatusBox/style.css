@@ -12,24 +12,25 @@
 
 .grow-status-box .step {
   width: 20%;
-  height: 1rem;
+  height: 1.25rem;
   border-radius: 0.25rem;
 }
 
-.grow-status-box .active {
-  background-color: #5ab552;
-  border: 1px solid #743f39;
-}
-
-.grow-status-box .empty {
-  background-color: #743f39;
-  border: 1px solid #3f2832;
+.grow-status-box .step .step-image {
+  width: 100%;
+  height: 100%;
+  border-radius: 0.25rem;
 }
 
 .grow-status-box .time-display {
   text-align: center;
   color: #ffffff;
-  font-size: 1.8rem;
+  font-size: 1.25rem;
+  margin-left: auto;
+  margin-right: 0.75rem;
+  text-shadow: -1px -1px 0 #3f0503, 1px -1px 0 #3f0503, -1px 1px 0 #3f0503,
+    1px 1px 0 #3f0503, -1px 0 0 #3f0503, 1px 0 0 #3f0503, 0 -1px 0 #3f0503,
+    0 1px 0 #3f0503 !important;
 }
 
 .grow-status-box .reward-display {

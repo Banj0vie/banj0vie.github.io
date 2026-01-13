@@ -1,14 +1,24 @@
 import React, { useEffect, useMemo, useState } from "react";
 import ReactDOM from "react-dom";
 import "./style.css";
-import { TYPE_LABEL_COLOR, SEED_PACK_LIST, GROW_STATUS } from "../../../../constants/item_seed";
+import {
+  TYPE_LABEL_COLOR,
+  SEED_PACK_LIST,
+  GROW_STATUS,
+} from "../../../../constants/item_seed";
 import { ALL_ITEMS } from "../../../../constants/item_data";
 import BaseDivider from "../../../../components/dividers/BaseDivider";
 import GrowStatusBox from "../../../../components/boxes/GrowStatusBox";
-import { useSolanaWallet } from '../../../../hooks/useSolanaWallet';
+import { useSolanaWallet } from "../../../../hooks/useSolanaWallet";
 import { useFarming } from "../../../../hooks/useContracts";
 import CropCircleIcon from "../../../../components/boxes/CropCircleIcon";
-const CropTooltip = ({ container, pos = { x: 0, y: 0 }, data = {}, growthProgress = 0 }) => {
+import CardView from "../../../../components/boxes/CardView";
+const CropTooltip = ({
+  container,
+  pos = { x: 0, y: 0 },
+  data = {},
+  growthProgress = 0,
+}) => {
   const { account } = useSolanaWallet();
   const { previewHarvestForSeed } = useFarming();
   const [timeLeft, setTimeLeft] = useState(0);
@@ -46,7 +56,9 @@ const CropTooltip = ({ container, pos = { x: 0, y: 0 }, data = {}, growthProgres
   };
 
   // Keep style as state so updates trigger re-render immediately when viewport scale changes
-  const [styleState, setStyleState] = useState(() => computeStyleState(container, pos));
+  const [styleState, setStyleState] = useState(() =>
+    computeStyleState(container, pos)
+  );
 
   // Update style when container or position changes, and observe container for inline style/class updates.
   // Move computeStyleState logic inside the effect so we don't need to include the function as a dep.
@@ -88,13 +100,19 @@ const CropTooltip = ({ container, pos = { x: 0, y: 0 }, data = {}, growthProgres
     // Observe attribute changes (style/class) on the container to detect transform updates
     const mo = new MutationObserver((mutations) => {
       for (const m of mutations) {
-        if (m.type === "attributes" && (m.attributeName === "style" || m.attributeName === "class")) {
+        if (
+          m.type === "attributes" &&
+          (m.attributeName === "style" || m.attributeName === "class")
+        ) {
           update();
           break;
         }
       }
     });
-    mo.observe(container, { attributes: true, attributeFilter: ["style", "class"] });
+    mo.observe(container, {
+      attributes: true,
+      attributeFilter: ["style", "class"],
+    });
 
     // Also update on window resize as bounding rects may change
     window.addEventListener("resize", update);
@@ -132,19 +150,27 @@ const CropTooltip = ({ container, pos = { x: 0, y: 0 }, data = {}, growthProgres
     const loadRewards = async () => {
       try {
         if (!previewHarvestForSeed || !account || !data?.seedId) return;
-        
+
         const res = await previewHarvestForSeed(data.seedId);
-        
+
         if (!cancelled && res) {
           // Handle BigInt values properly
-          const lockedValue = res.lockedGameToken ? (typeof res.lockedGameToken === 'bigint' ? res.lockedGameToken.toString() : res.lockedGameToken.toString()) : "0";
-          const unlockedValue = res.unlockedGameToken ? (typeof res.unlockedGameToken === 'bigint' ? res.unlockedGameToken.toString() : res.unlockedGameToken.toString()) : "0";
-          
+          const lockedValue = res.lockedGameToken
+            ? typeof res.lockedGameToken === "bigint"
+              ? res.lockedGameToken.toString()
+              : res.lockedGameToken.toString()
+            : "0";
+          const unlockedValue = res.unlockedGameToken
+            ? typeof res.unlockedGameToken === "bigint"
+              ? res.unlockedGameToken.toString()
+              : res.unlockedGameToken.toString()
+            : "0";
+
           setLocked(lockedValue);
           setUnlocked(unlockedValue);
         }
       } catch (e) {
-        console.error('Failed to load harvest rewards:', e);
+        console.error("Failed to load harvest rewards:", e);
         // keep zeros on error
       }
     };
@@ -169,69 +195,113 @@ const CropTooltip = ({ container, pos = { x: 0, y: 0 }, data = {}, growthProgres
 
   const content = (
     <div className="crop-tooltip" style={styleState}>
-      <div className="content-info">
-        <CropCircleIcon seedId={data.seedId} size={104}></CropCircleIcon>
-        <div className="crop-info-name">
-          <div className="">{ALL_ITEMS[data.seedId]?.label || `Seed ${data.seedId}`}</div>
-          <div style={{ color: TYPE_LABEL_COLOR[ALL_ITEMS[data.seedId]?.type]?.color }}>
-            {TYPE_LABEL_COLOR[ALL_ITEMS[data.seedId]?.type]?.label}&nbsp;
-            {SEED_PACK_LIST[ALL_ITEMS[data.seedId]?.subCategory]?.label}
+      <div className="crop-tooltip-background">
+        <div className="content-info-layout">
+          <div className="content-info">
+            <div className="content-info-wrapper">
+              <img
+                src="/images/items/crop-bg.png"
+                className="content-info-bg"
+                alt="content info"
+              ></img>
+              <div style={{ marginLeft: "8px" }}>
+                <CropCircleIcon
+                  seedId={data.seedId}
+                  size={80}
+                  scale={0.7}
+                ></CropCircleIcon>
+              </div>
+            </div>
+            <div className="crop-info-name">
+              <div className="">
+                {ALL_ITEMS[data.seedId]?.label || `Seed ${data.seedId}`}
+              </div>
+              <div
+                style={{
+                  color: TYPE_LABEL_COLOR[ALL_ITEMS[data.seedId]?.type]?.color,
+                }}
+              >
+                {TYPE_LABEL_COLOR[ALL_ITEMS[data.seedId]?.type]?.label}&nbsp;
+                {SEED_PACK_LIST[ALL_ITEMS[data.seedId]?.subCategory]?.label}
+              </div>
+            </div>
+          </div>
+          <div className="flex-text growth-status-label">
+            <div>Growth Stage</div>
+            <div className="highlight">{GROW_STATUS[data.growStatus]}</div>
           </div>
         </div>
-      </div>
-      <BaseDivider />
-      <div className="flex-text">
-        <div>Growth Stage</div>
-        <div className="highlight">{GROW_STATUS[data.growStatus]}</div>
-      </div>
-      <GrowStatusBox 
-        seedId={data.seedId}
-        endTime={endTime}
-        isPlanted={!!data.seedId}
-        lockedAmount={locked}
-        unlockedAmount={unlocked}
-      />
-      <BaseDivider />
-      <div className="flex-text">
-        <div>Time Left:</div>
-        <div>{formatTime(timeLeft)}</div>
-      </div>
-      <div className="flex-text">
-        <div>Total Harvest</div>
-        <div>{((Number(locked || 0) + Number(unlocked || 0)) / 1e6).toFixed(2)} $HNY</div>
-      </div>
-      <div className="flex-text">
-        <div className="locked">locked</div>
-        <div className="locked">{(Number(locked || 0) / 1e6).toFixed(2)} $HNY</div>
-      </div>
-      <div className="flex-text">
-        <div className="highlight">unlocked</div>
-        <div className="highlight">{(Number(unlocked || 0) / 1e6).toFixed(2)} $HNY</div>
-      </div>
-      <BaseDivider/>
-      <div className="active-effect">
-        <div className="effect-header">Active Potion Effects:</div>
-        {data?.produceMultiplierX1000 > 1000 || data?.tokenMultiplierX1000 > 1000 || data?.growthElixirApplied ? (
-          <div className="effect-list">
-            {data?.produceMultiplierX1000 > 1000 && (
-              <div className="effect-item pesticide-effect">
-                🌱 <strong>Pesticide:</strong> +{(((data.produceMultiplierX1000 - 1000) / 1000) * 100).toFixed(0)}% Produce Output
+        <GrowStatusBox
+          seedId={data.seedId}
+          endTime={endTime}
+          isPlanted={!!data.seedId}
+          lockedAmount={locked}
+          unlockedAmount={unlocked}
+        />
+        <CardView className="p-0.5rem">
+          <div className="status-label-layout">
+            <div className="flex-text status-label">
+              <div>Time Left:</div>
+              <div className="highlight">{formatTime(timeLeft)}</div>
+            </div>
+            <div className="flex-text status-label">
+              <div>Total Harvest</div>
+              <div className="highlight">
+                {((Number(locked || 0) + Number(unlocked || 0)) / 1e6).toFixed(
+                  2
+                )}{" "}
+                $HNY
               </div>
-            )}
-            {data?.tokenMultiplierX1000 > 1000 && (
-              <div className="effect-item fertilizer-effect">
-                💰 <strong>Fertilizer:</strong> +{(((data.tokenMultiplierX1000 - 1000) / 1000) * 100).toFixed(0)}% Token Rewards
+            </div>
+            <div className="flex-text status-label">
+              <div className="">locked</div>
+              <div className="highlight">
+                {(Number(locked || 0) / 1e6).toFixed(2)} $HNY
               </div>
-            )}
-            {data?.growthElixirApplied && (
-              <div className="effect-item growth-elixir-effect">
-                ⏱️ <strong>Growth Elixir:</strong> Growth Time Reduced
+            </div>
+            <div className="flex-text status-label">
+              <div className="">unlocked</div>
+              <div className="highlight">
+                {(Number(unlocked || 0) / 1e6).toFixed(2)} $HNY
               </div>
-            )}
+            </div>
           </div>
-        ) : (
-          <div className="no-effect">No Active Potion Effects</div>
-        )}
+        </CardView>
+        <div className="active-effect">
+          <div className="effect-header">Active Potion Effects:</div>
+          {data?.produceMultiplierX1000 > 1000 ||
+          data?.tokenMultiplierX1000 > 1000 ||
+          data?.growthElixirApplied ? (
+            <div className="effect-list">
+              {data?.produceMultiplierX1000 > 1000 && (
+                <div className="effect-item pesticide-effect">
+                  🌱 <strong>Pesticide:</strong> +
+                  {(
+                    ((data.produceMultiplierX1000 - 1000) / 1000) *
+                    100
+                  ).toFixed(0)}
+                  % Produce Output
+                </div>
+              )}
+              {data?.tokenMultiplierX1000 > 1000 && (
+                <div className="effect-item fertilizer-effect">
+                  💰 <strong>Fertilizer:</strong> +
+                  {(((data.tokenMultiplierX1000 - 1000) / 1000) * 100).toFixed(
+                    0
+                  )}
+                  % Token Rewards
+                </div>
+              )}
+              {data?.growthElixirApplied && (
+                <div className="effect-item growth-elixir-effect">
+                  ⏱️ <strong>Growth Elixir:</strong> Growth Time Reduced
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="no-effect">No Active Potion Effects</div>
+          )}
+        </div>
       </div>
     </div>
   );

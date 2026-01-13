@@ -1,10 +1,6 @@
-
 /* Tooltip for crop items */
 .crop-tooltip {
   position: fixed;
-  border-image: var(--secondary-bg) 6 fill repeat;
-  border-image-width: 1rem;
-  box-shadow: 4px 4px 32px rgba(0, 0, 0, 0.094);
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
@@ -12,13 +8,69 @@
   z-index: 2000;
   width: 350px;
   /* animation: bounce-in 0.5s; */
-  padding: 1.5rem;
+  padding: 2.5rem 2.5rem;
   gap: 0.25rem;
+  background-image: var(--dialog-bg);
+  background-repeat: repeat-y, repeat-y, repeat-x, repeat-x;
+  box-shadow: none;
+  background-position: 0px 0px, 100% 0px, 0px 0px, 0px 100%;
+  border-radius: 80px;
 }
+
+.crop-tooltip::before {
+  background-image: var(--dialog-edge-bg);
+  background-repeat: no-repeat;
+  content: "";
+  display: block;
+  height: 100%;
+  image-rendering: pixelated;
+  left: 0px;
+  pointer-events: none;
+  position: absolute;
+  top: 0px;
+  width: 100%;
+  background-position: 0px 0px, 100% 0px, 0px 100%, 100% 100%;
+}
+
+.crop-tooltip .crop-tooltip-background {
+  background: var(--secondary-dlg-bg);
+  z-index: 1;
+  border-radius: 25px;
+  width: -webkit-fill-available;
+  height: 100%;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.content-info-layout {
+  background: #98633f;
+  border-radius: 10px;
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
 .crop-tooltip .content-info {
   display: flex;
   gap: 1rem;
+  width: -webkit-fill-available;
+}
+
+.crop-tooltip .content-info .content-info-wrapper {
+  position: relative;
+  width: 80px;
+  height: 80px;
+}
+
+.crop-tooltip .content-info .content-info-bg {
+  position: absolute;
   width: 100%;
+  height: 100%;
+  border-radius: 10px;
+  z-index: 0;
 }
 
 .crop-tooltip .content-info .crop-icon-bg {
@@ -43,7 +95,26 @@
 }
 
 .crop-tooltip .content-info .crop-info-name {
-  margin-top: 0.75rem;
+  margin-top: 0.25rem;
+}
+
+.crop-tooltip .content-info .crop-info-name div {
+  font-size: 1rem;
+  text-shadow: -1px -1px 0 #3f0503, 1px -1px 0 #3f0503, -1px 1px 0 #3f0503,
+    1px 1px 0 #3f0503, -1px 0 0 #3f0503, 1px 0 0 #3f0503, 0 -1px 0 #3f0503,
+    0 1px 0 #3f0503 !important;
+  text-transform: uppercase;
+}
+
+.crop-tooltip .growth-status-label {
+  text-shadow: -1px -1px 0 #3f0503, 1px -1px 0 #3f0503, -1px 1px 0 #3f0503,
+    1px 1px 0 #3f0503, -1px 0 0 #3f0503, 1px 0 0 #3f0503, 0 -1px 0 #3f0503,
+    0 1px 0 #3f0503 !important;
+}
+
+.crop-tooltip .growth-status-label div {
+  text-transform: uppercase;
+  font-size: 1rem;
 }
 
 .crop-tooltip .flex-text {
@@ -57,48 +128,73 @@
 }
 
 .crop-tooltip .active-effect {
-    padding: 0.5rem;
-    width: 100%;
+  padding: 0.5rem;
+  width: 100%;
 }
 
 .crop-tooltip .active-effect .effect-header {
-    font-weight: bold;
-    margin-bottom: 0.5rem;
-    color: #fff;
-    text-align: center;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+  color: #fff;
+  text-shadow: -1px -1px 0 #3f0503, 1px -1px 0 #3f0503, -1px 1px 0 #3f0503,
+    1px 1px 0 #3f0503, -1px 0 0 #3f0503, 1px 0 0 #3f0503, 0 -1px 0 #3f0503,
+    0 1px 0 #3f0503 !important;
+  text-transform: uppercase;
+  font-size: 1rem;
 }
 
 .crop-tooltip .active-effect .effect-list {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
 }
 
 .crop-tooltip .active-effect .effect-item {
-    border-radius: 6px;
-    padding: 0.5rem;
-    font-size: 0.85rem;
-    text-align: center;
-    border: 1px solid;
+  border-radius: 6px;
+  padding: 0.5rem;
+  font-size: 0.85rem;
+  border: 1px solid;
 }
 
 .crop-tooltip .active-effect .pesticide-effect {
-    background: rgba(255, 165, 0, 0.15);
-    border-color: rgba(255, 165, 0, 0.4);
-    color: #ffa500;
+  background: rgba(255, 165, 0, 0.15);
+  border-color: rgba(255, 165, 0, 0.4);
+  color: #ffa500;
+  font-size: 1rem;
+  text-shadow: -1px -1px 0 #3f0503, 1px -1px 0 #3f0503, -1px 1px 0 #3f0503,
+    1px 1px 0 #3f0503, -1px 0 0 #3f0503, 1px 0 0 #3f0503, 0 -1px 0 #3f0503,
+    0 1px 0 #3f0503 !important;
 }
 
 .crop-tooltip .active-effect .fertilizer-effect {
-    background: rgba(0, 255, 0, 0.15);
-    border-color: rgba(0, 255, 0, 0.4);
-    color: #00ff00;
+  background: rgba(0, 255, 0, 0.15);
+  border-color: rgba(0, 255, 0, 0.4);
+  color: #00ff00;
+  font-size: 1rem;
+  text-shadow: -1px -1px 0 #3f0503, 1px -1px 0 #3f0503, -1px 1px 0 #3f0503,
+    1px 1px 0 #3f0503, -1px 0 0 #3f0503, 1px 0 0 #3f0503, 0 -1px 0 #3f0503,
+    0 1px 0 #3f0503 !important;
 }
 
 .crop-tooltip .active-effect .no-effect {
-    text-align: center;
-    color: #888;
-    font-style: italic;
-    padding: 0.5rem;
+  color: #98633f;
+  text-transform: uppercase;
+  font-size: 1rem;
+}
+
+.crop-tooltip .status-label-layout {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.crop-tooltip .status-label div {
+  font-size: 1rem;
+  text-shadow: -1px -1px 0 #3f0503, 1px -1px 0 #3f0503, -1px 1px 0 #3f0503,
+    1px 1px 0 #3f0503, -1px 0 0 #3f0503, 1px 0 0 #3f0503, 0 -1px 0 #3f0503,
+    0 1px 0 #3f0503 !important;
+  text-transform: uppercase;
 }
 
 @keyframes bounce-in {
