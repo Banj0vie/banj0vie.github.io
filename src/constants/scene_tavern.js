@@ -46,7 +46,7 @@ export const TAVERN_STUFFS = [
 
 export const TAVERN_BEES = [
     {
-        image: "/images/bees/bee_1.png",
+        image: "/images/bees/bee_npc.gif",
         x: 33,
         y: 209,
         flip: false,
@@ -54,7 +54,7 @@ export const TAVERN_BEES = [
         zIndex: 0
     },
     {
-        image: "/images/bees/bee_1.png",
+        image: "/images/bees/bee_npc.gif",
         x: 6,
         y: 380,
         flip: false,
@@ -62,7 +62,7 @@ export const TAVERN_BEES = [
         zIndex: 0
     },
     {
-        image: "/images/bees/bee_1.png",
+        image: "/images/bees/bee_npc.gif",
         x: 117,
         y: 285,
         flip: true,
@@ -70,7 +70,7 @@ export const TAVERN_BEES = [
         zIndex: 0
     },
     {
-        image: "/images/bees/bee_3.png",
+        image: "/images/bees/bee_vendor.gif",
         x: 424,
         y: 113,
         flip: false,
@@ -78,7 +78,7 @@ export const TAVERN_BEES = [
         zIndex: 0
     },
     {
-        image: "/images/bees/bee_3.png",
+        image: "/images/bees/bee_vendor.gif",
         x: 694,
         y: 117,
         flip: false,
@@ -94,7 +94,7 @@ export const TAVERN_BEES = [
         zIndex: 10
     },
     {
-        image: "/images/bees/bee_1.png",
+        image: "/images/bees/bee_npc.gif",
         x: 361,
         y: 354,
         flip: false,
@@ -102,7 +102,7 @@ export const TAVERN_BEES = [
         zIndex: 10
     },
     {
-        image: "/images/bees/bee_1.png",
+        image: "/images/bees/bee_npc.gif",
         x: 468,
         y: 306,
         flip: true,
@@ -110,7 +110,7 @@ export const TAVERN_BEES = [
         zIndex: 10
     },
     {
-        image: "/images/bees/bee_1.png",
+        image: "/images/bees/bee_npc.gif",
         x: 574,
         y: 253,
         flip: false,
@@ -118,7 +118,7 @@ export const TAVERN_BEES = [
         zIndex: 4
     },
     {
-        image: "/images/bees/bee_1.png",
+        image: "/images/bees/bee_npc.gif",
         x: 538,
         y: 338,
         flip: false,
@@ -126,7 +126,7 @@ export const TAVERN_BEES = [
         zIndex: 10
     },
     {
-        image: "/images/bees/bee_1.png",
+        image: "/images/bees/bee_npc.gif",
         x: 621,
         y: 338,
         flip: true,
@@ -134,7 +134,7 @@ export const TAVERN_BEES = [
         zIndex: 10
     },
     {
-        image: "/images/bees/bee_1.png",
+        image: "/images/bees/bee_npc.gif",
         x: 739,
         y: 205,
         flip: true,
@@ -142,7 +142,7 @@ export const TAVERN_BEES = [
         zIndex: 10
     },
     {
-        image: "/images/bees/bee_1.png",
+        image: "/images/bees/bee_npc.gif",
         x: 821,
         y: 285,
         flip: true,
@@ -150,7 +150,7 @@ export const TAVERN_BEES = [
         zIndex: 0
     },
     {
-        image: "/images/bees/bee_1.png",
+        image: "/images/bees/bee_npc.gif",
         x: 809,
         y: 374,
         flip: true,
@@ -158,10 +158,10 @@ export const TAVERN_BEES = [
         zIndex: 10
     },
     {
-        image: "/images/bees/bee_4.png",
+        image: "/images/bees/bee_banker.gif",
         x: 715,
         y: 374,
-        flip: true,
+        flip: false,
         delay: Math.random() * (-10),
         zIndex: 10
     },
