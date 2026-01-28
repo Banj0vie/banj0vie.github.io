@@ -8,12 +8,6 @@ export async function getOrCreateAta(connection, payer, mint, owner) {
   const ata = await findAtaAddress(owner, mint);
   const info = await connection.getAccountInfo(ata);
   if (info) return ata;
-  const ix = createAssociatedTokenAccountInstruction(
-    payer,
-    ata,
-    owner,
-    mint
-  );
   // Caller should include IX in a transaction; for simplicity we return address only here
   return ata;
 }

@@ -1,13 +1,11 @@
 import { useState, useCallback } from 'react';
 import { useProgram } from './useProgram';
-import { useSolanaWallet } from './useSolanaWallet';
 import { getUserDataPDA, getReferralCodeOwnerPDA } from '../solana/utils/pdaUtils';
 import { SystemProgram } from '@solana/web3.js';
 import { sendTransactionForPhantom } from '../utils/transactionHelper';
 
 export const useProfile = () => {
-    const { publicKey, connection, sendTransaction } = useSolanaWallet();
-    const program = useProgram();
+    const { publicKey, connection, sendTransaction, program } = useProgram();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 

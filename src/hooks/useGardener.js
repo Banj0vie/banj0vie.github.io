@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useProgram } from './useProgram';
 import { useSolanaWallet } from './useSolanaWallet';
-import { getUserDataPDA, getGameRegistryPDA } from '../solana/utils/pdaUtils';
+import { getUserDataPDA, getGameRegistryPDA, getGameVaultPDA, getGameVaultAta } from '../solana/utils/pdaUtils';
 import { getAssociatedTokenAddress, TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import { GAME_TOKEN_MINT } from '../solana/constants/programId';
 import { handleContractError } from '../utils/errorHandler';
@@ -9,9 +9,7 @@ import { sendTransactionForPhantom } from '../utils/transactionHelper';
 
 export const useGardener = () => {
   const { publicKey, sendTransaction } = useSolanaWallet();
-  const valleyProgram = useProgram();
-  const program = valleyProgram.getProgram();
-  const connection = valleyProgram.getConnection();
+  const { program, connection } = useProgram();
   const [gardenerData, setGardenerData] = useState({
     currentLevel: 0,
     maxLevel: 15,
@@ -55,6 +53,8 @@ export const useGardener = () => {
       const gameRegistryPda = getGameRegistryPDA();
       const userDataPda = getUserDataPDA(publicKey);
       const userGameAta = await getAssociatedTokenAddress(GAME_TOKEN_MINT, publicKey, false);
+      const gameVaultPda = getGameVaultPDA();
+      const gameVaultAta = getGameVaultAta();
       const method = program.methods
         .levelUp(targetLevel)
         .accounts({ 
@@ -63,6 +63,8 @@ export const useGardener = () => {
           gameRegistry: gameRegistryPda, 
           gameTokenMint: GAME_TOKEN_MINT, 
           userGameAta, 
+          gameVault: gameVaultPda,
+          gameVaultAta: gameVaultAta,
           tokenProgram: TOKEN_PROGRAM_ID 
         });
       

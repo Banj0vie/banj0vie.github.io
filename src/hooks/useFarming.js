@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useProgram } from './useProgram';
 import { useSolanaWallet } from './useSolanaWallet';
-import { getUserDataPDA, getGameRegistryPDA, preIx, getPlantBatchRemainingAccounts, getGameTokenMintAuthPDA, getHarvestRemainingAccounts, getPotionUsageRemainingAccounts } from '../solana/utils/pdaUtils';
+import { getUserDataPDA, getGameRegistryPDA, preIx, getPlantBatchRemainingAccounts, getGameTokenMintAuthPDA, getHarvestRemainingAccounts, getPotionUsageRemainingAccounts, getGameVaultPDA, getGameVaultAta } from '../solana/utils/pdaUtils';
 import { SystemProgram, TransactionMessage, VersionedTransaction } from '@solana/web3.js';
 import { getAssociatedTokenAddress, TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import { GAME_TOKEN_MINT, LOOKUP_TABLE_ADDRESS } from '../solana/constants/programId';
@@ -13,9 +13,7 @@ import { useBalanceRefresh } from './useBalanceRefresh';
 
 export const useFarming = () => {
     const { publicKey, sendTransaction } = useSolanaWallet();
-    const valleyProgram = useProgram();
-    const program = valleyProgram.getProgram();
-    const connection = valleyProgram.getConnection();
+    const { program, connection } = useProgram();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const { refreshBalancesAfterTransaction } = useBalanceRefresh();
@@ -92,7 +90,7 @@ export const useFarming = () => {
             setError(errorMessage); 
             throw new Error(err);
         } finally { setLoading(false); }
-    }, [program, publicKey]);
+    }, [program, publicKey, connection, sendTransaction, refreshBalancesAfterTransaction]);
 
     const harvestMany = useCallback(async (slots) => {
         if (!program || !publicKey) { setError('Program or wallet not available'); return null; }
@@ -106,7 +104,8 @@ export const useFarming = () => {
             const gameRegistryPda = getGameRegistryPDA();
             const userDataPda = getUserDataPDA(publicKey);
             const userGameAta = await getAssociatedTokenAddress(GAME_TOKEN_MINT, publicKey, false);
-            const gameTokenMintAuth = getGameTokenMintAuthPDA();
+            const gameVaultPda = getGameVaultPDA();
+            const gameVaultAta = getGameVaultAta();
             const remainingAccounts = await getHarvestRemainingAccounts(slotsArray, publicKey, program);
             const harvestIx = await program.methods
                 .harvest(Buffer.from(slotsArray))
@@ -116,7 +115,8 @@ export const useFarming = () => {
                     userData: userDataPda,
                     gameTokenMint: GAME_TOKEN_MINT,
                     userGameAta: userGameAta,
-                    gameTokenMintAuth: gameTokenMintAuth,
+                    gameVault: gameVaultPda,
+                    gameVaultAta: gameVaultAta,
                     systemProgram: SystemProgram.programId, 
                     tokenProgram: TOKEN_PROGRAM_ID, 
                     associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID
@@ -176,7 +176,7 @@ export const useFarming = () => {
             setError(errorMessage); 
             throw new Error(err);
         } finally { setLoading(false); }
-    }, [program, publicKey]);
+    }, [program, publicKey, connection, sendTransaction, refreshBalancesAfterTransaction]);
 
     const getUserCrops = useCallback(async () => {
         if (!program || !publicKey) return [];
@@ -322,7 +322,7 @@ export const useFarming = () => {
         } finally { 
             setLoading(false); 
         }
-    }, [program, publicKey, loading]);
+    }, [program, publicKey, connection, sendTransaction, loading]);
 
     const applyPesticide = useCallback(async (plotNumber) => {
         if (!program || !publicKey) { setError('Program or wallet not available'); return null; }
@@ -353,7 +353,7 @@ export const useFarming = () => {
         } finally { 
             setLoading(false); 
         }
-    }, [program, publicKey, loading]);
+    }, [program, publicKey, connection, sendTransaction, loading]);
 
     const applyFertilizer = useCallback(async (plotNumber) => {
         if (!program || !publicKey) { setError('Program or wallet not available'); return null; }
@@ -384,7 +384,7 @@ export const useFarming = () => {
         } finally { 
             setLoading(false); 
         }
-    }, [program, publicKey, loading]);
+    }, [program, publicKey, connection, sendTransaction, loading]);
 
     return { plantBatch, harvestMany, getUserCrops, getMaxPlots, getPlantedPlotsCount, getCrop, applyGrowthElixir, applyPesticide, applyFertilizer, previewHarvestForSeed, loading, error };
 };

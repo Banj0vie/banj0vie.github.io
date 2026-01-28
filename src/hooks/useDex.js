@@ -1,8 +1,7 @@
 /* global BigInt */
 import { useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useSolanaWallet } from './useSolanaWallet';
-import { createSolanaValleyDexProgram } from '../solana/anchor/client';
+import { useProgram } from './useProgram';
 import {
   GAME_TOKEN_MINT,
   SOLANA_VALLEY_DEX_PROGRAM_ID
@@ -31,20 +30,13 @@ import { sendTransactionForPhantom } from '../utils/transactionHelper';
 import { useBalanceRefresh } from './useBalanceRefresh';
 
 export const useDex = () => {
-  const { publicKey, wallet, connection, sendTransaction } = useSolanaWallet();
+  const { publicKey, connection, sendTransaction, program } = useProgram(true);
   const dispatch = useDispatch();
   const { refreshBalancesAfterTransaction } = useBalanceRefresh();
   
   // Redux state
   const loading = useSelector(selectBalanceLoading);
   const error = useSelector(selectBalanceError);
-
-  // Get DEX program instance
-  const getDexProgram = useCallback(() => {
-    if (!publicKey || !wallet || !connection) return null;
-    const anchorWallet = wallet?.adapter?.signTransaction ? wallet.adapter : wallet;
-    return createSolanaValleyDexProgram(connection, anchorWallet);
-  }, [publicKey, wallet, connection]);
 
   // Calculate PDAs
   const getDexPoolPda = useCallback(() => {
@@ -102,14 +94,8 @@ export const useDex = () => {
 
   // Buy tokens with SOL
   const buyTokens = useCallback(async (solAmount) => {
-    if (!publicKey) {
+    if (!publicKey || !program) {
       dispatch(buyTokensFailure('Wallet not connected'));
-      return false;
-    }
-
-    const dexProgram = getDexProgram();
-    if (!dexProgram) {
-      dispatch(buyTokensFailure('DEX program not available'));
       return false;
     }
 
@@ -142,7 +128,6 @@ export const useDex = () => {
         true
       );
 
-      const program = dexProgram.getProgram();
       const method = program.methods
         .buyTokens(new BN(solAmountLamports))
         .accounts({
@@ -184,18 +169,12 @@ export const useDex = () => {
       dispatch(buyTokensFailure(errorMessage));
       return false;
     }
-  }, [publicKey, dispatch, getDexProgram, getDexPoolPda, getSolVaultPda, fetchBalances]);
+  }, [publicKey, dispatch, program, getDexPoolPda, getSolVaultPda, fetchBalances]);
 
   // Sell tokens for SOL
   const sellTokens = useCallback(async (tokenAmount) => {
-    if (!publicKey) {
+    if (!publicKey || !program) {
       dispatch(sellTokensFailure('Wallet not connected'));
-      return false;
-    }
-
-    const dexProgram = getDexProgram();
-    if (!dexProgram) {
-      dispatch(sellTokensFailure('DEX program not available'));
       return false;
     }
 
@@ -228,7 +207,6 @@ export const useDex = () => {
         true
       );
 
-      const program = dexProgram.getProgram();
       const method = program.methods
         .sellTokens(new BN(tokenAmountBaseUnits))
         .accounts({
@@ -270,18 +248,14 @@ export const useDex = () => {
       dispatch(sellTokensFailure(errorMessage));
       return false;
     }
-  }, [publicKey, dispatch, getDexProgram, getDexPoolPda, getSolVaultPda, fetchBalances]);
+  }, [publicKey, dispatch, program, getDexPoolPda, getSolVaultPda, fetchBalances]);
 
   // Fetch current pool state
   const fetchDexPool = useCallback(async () => {
     if (!publicKey) return null;
 
-    const dexProgram = getDexProgram();
-    if (!dexProgram) return null;
-
     try {
       const dexPoolPda = getDexPoolPda();
-      const program = dexProgram.getProgram();
       const poolData = await program.account.dexPool.fetch(dexPoolPda);
       
       return {
@@ -297,7 +271,7 @@ export const useDex = () => {
       console.error('Failed to fetch DEX pool:', err);
       return null;
     }
-  }, [publicKey, getDexProgram, getDexPoolPda]);
+  }, [publicKey, program, getDexPoolPda]);
 
 
   // Calculate tokens out for given SOL amount (preview)

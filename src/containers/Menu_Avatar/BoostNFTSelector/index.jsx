@@ -46,7 +46,7 @@ const BoostNFTSelector = ({ onClose, onSelect, slotIndex, equippedAvatars = [] }
     };
 
     fetchOwnedNFTs();
-  }, [account, equippedAvatars, getOwnedBoostNFTs]);
+  }, [account, equippedAvatars]); // Removed getOwnedBoostNFTs from deps to prevent infinite loops (it's a stub)
 
   const handleSelectNFT = async (nft) => {
     try {

@@ -2,7 +2,7 @@ import { ComputeBudgetProgram, PublicKey } from '@solana/web3.js';
 import { GAME_TOKEN_MINT, SOLANA_VALLEY_PROGRAM_ID } from '../constants/programId';
 import { SEEDS } from '../constants/seeds';
 import { getAssociatedTokenAddressSync } from '@solana/spl-token';
-import { CAT_CHEST, ID_BAIT_ITEMS, ID_CHEST_ITEMS, ID_POTION_ITEMS, ID_PRODUCE_ITEMS, ID_SEEDS } from '../../constants/app_ids';
+import { CAT_BASIC_PRODUCE, CAT_CHEST, CAT_PICO_PRODUCE, CAT_PREMIUM_PRODUCE, ID_BAIT_ITEMS, ID_CHEST_ITEMS, ID_POTION_ITEMS, ID_PRODUCE_ITEMS, ID_SEEDS } from '../../constants/app_ids';
 import { chestLootTable } from '../../utils/basic';
 import { BN } from 'bn.js';
 
@@ -54,11 +54,27 @@ export const getSeedIdsForTierFromAppIds = (tier) => {
 };
 
 export const getRevealSeedsRemainingAccounts = async (publicKey, tier) => {
-  const seedIds = getSeedIdsForTierFromAppIds(tier);
-  if (!Array.isArray(seedIds) || seedIds.length === 0) throw new Error('No seedIds for tier');
+  // Include all possible item mints for this tier, not just those in ID_SEEDS
+  // Based on contract's pick_sft_id: tier 1-4 can reveal subtypes 1-11 max
+  // Tier maps to category: 1->1, 2->2, 3->3, 4->4
+  const categoryByTier = { 1: 1, 2: 2, 3: 3, 4: 4 };
+  const category = categoryByTier[tier];
+  if (!category) throw new Error('Unsupported tier');
+  
+  // Maximum possible subtypes per tier based on contract's seed arrays:
+  // FEEBLE_SEED: [1,1,1,1,1] = max subtype 5
+  // PICO_SEED: [1,1,1,1,1] = max subtype 5
+  // BASIC_SEED: [4,3,2,2,1] = max subtype 12 (4+3+2+2+1)
+  // PRIMIUM_SEED: [3,3,2,2,1] = max subtype 11 (3+3+2+2+1)
+  const maxSubtypesByTier = { 1: 5, 2: 5, 3: 12, 4: 11 };
+  const maxSubtype = maxSubtypesByTier[tier] || 11;
+  
   const seen = new Set();
   const accounts = [];
-  for (const itemId of seedIds) {
+  
+  // Include all possible item mints for this tier (category + all possible subtypes)
+  for (let subtype = 1; subtype <= maxSubtype; subtype++) {
+    const itemId = category * 256 + subtype;
     const mint = getItemMintPDA(itemId);
     const ata = getAssociatedTokenAddressSync(mint, publicKey, false);
     const m = mint.toBase58();
@@ -66,9 +82,28 @@ export const getRevealSeedsRemainingAccounts = async (publicKey, tier) => {
     if (!seen.has(m)) { accounts.push({ pubkey: mint, isWritable: true, isSigner: false }); seen.add(m); }
     if (!seen.has(a)) { accounts.push({ pubkey: ata, isWritable: true, isSigner: false }); seen.add(a); }
   }
+  
   const itemMintAuth = getItemMintAuthPDA();
   const ak = itemMintAuth.toBase58();
   if (!seen.has(ak)) accounts.push({ pubkey: itemMintAuth, isWritable: false, isSigner: false });
+  return accounts;
+};
+
+/** Remaining accounts for prod_mint (category 0=Pico, 1=Basic, 2=Premium). */
+export const getProdMintRemainingAccounts = (publicKey, category) => {
+  const catByIndex = { 0: CAT_PICO_PRODUCE, 1: CAT_BASIC_PRODUCE, 2: CAT_PREMIUM_PRODUCE };
+  const cat = catByIndex[category];
+  if (cat === undefined) return [];
+  const itemIds = Object.values(ID_PRODUCE_ITEMS).filter((id) => (id >> 8) === cat);
+  const accounts = [];
+  for (const itemId of itemIds) {
+    const mint = getItemMintPDA(itemId);
+    const ata = getAssociatedTokenAddressSync(mint, publicKey, false);
+    accounts.push({ pubkey: mint, isWritable: true, isSigner: false });
+    accounts.push({ pubkey: ata, isWritable: true, isSigner: false });
+  }
+  const itemMintAuth = getItemMintAuthPDA();
+  accounts.push({ pubkey: itemMintAuth, isWritable: false, isSigner: false });
   return accounts;
 };
 
@@ -150,6 +185,31 @@ export const getBankerDataPDA = () => {
     [Buffer.from(SEEDS.BANKER_DATA)],
     SOLANA_VALLEY_PROGRAM_ID
   )[0];
+};
+
+export const getBankVaultPDA = (bankerDataPda) => {
+  return PublicKey.findProgramAddressSync(
+    [Buffer.from(SEEDS.BANK_VAULT), bankerDataPda.toBuffer()],
+    SOLANA_VALLEY_PROGRAM_ID
+  )[0];
+};
+
+export const getBankVaultAta = (bankerDataPda) => {
+  const bankVaultPda = getBankVaultPDA(bankerDataPda);
+  return getAssociatedTokenAddressSync(GAME_TOKEN_MINT, bankVaultPda, true);
+};
+
+export const getGameVaultPDA = () => {
+  const gameRegistryPda = getGameRegistryPDA();
+  return PublicKey.findProgramAddressSync(
+    [Buffer.from(SEEDS.GAME_VAULT), gameRegistryPda.toBuffer()],
+    SOLANA_VALLEY_PROGRAM_ID
+  )[0];
+};
+
+export const getGameVaultAta = () => {
+  const gameVaultPda = getGameVaultPDA();
+  return getAssociatedTokenAddressSync(GAME_TOKEN_MINT, gameVaultPda, true);
 };
 
 export const getGameRegistryPDA = () => {

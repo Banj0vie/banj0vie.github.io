@@ -24,8 +24,7 @@ function shortPk(pk) {
 
 export const useLeaderboard = () => {
   const { publicKey } = useSolanaWallet();
-  const programApi = useProgram();
-  const program = programApi.getProgram();
+  const { program } = useProgram();
   const dispatch = useDispatch();
 
   const leaderboardData = useSelector(selectLeaderboardItems);

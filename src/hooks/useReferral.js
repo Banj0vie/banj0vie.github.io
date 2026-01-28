@@ -8,8 +8,7 @@ import { sendTransactionForPhantom } from '../utils/transactionHelper';
 
 export const useReferral = () => {
   const { publicKey, connection, sendTransaction } = useSolanaWallet();
-  const valleyProgram = useProgram();
-  const program = valleyProgram.getProgram();
+  const { program } = useProgram();
   const [referralData, setReferralData] = useState({
     myReferralCode: null,
     sponsor: null,
@@ -22,6 +21,10 @@ export const useReferral = () => {
 
   const fetchReferralData = useCallback(async () => {
     if (!program || !publicKey) return;
+    if (!program.account || !program.account.userData) {
+      setReferralData(prev => ({ ...prev, loading: false, error: 'Program account client not initialized' }));
+      return;
+    }
     setReferralData(prev => ({ ...prev, loading: true, error: null }));
     try {
       const userDataPda = getUserDataPDA(publicKey);
@@ -86,6 +89,10 @@ export const useReferral = () => {
       const userDataPda = getUserDataPDA(publicKey);
       
       // Check if profile already exists
+      if (!program.account || !program.account.userData) {
+        setReferralData(p => ({ ...p, loading: false, error: 'Program account client not initialized' }));
+        return null;
+      }
       try {
         const existingProfile = await program.account.userData.fetch(userDataPda);
         if (existingProfile && existingProfile.name) {
@@ -111,6 +118,10 @@ export const useReferral = () => {
         }
         
         // Check if the referral code owner account exists
+        if (!program.account || !program.account.referralCodeOwner) {
+          setReferralData(p => ({ ...p, loading: false, error: 'Program account client not initialized' }));
+          return null;
+        }
         referralCodeOwnerPda = getReferralCodeOwnerPDA(referralBytes);
         try {
           await program.account.referralCodeOwner.fetch(referralCodeOwnerPda);
@@ -127,6 +138,10 @@ export const useReferral = () => {
         referralCodeOwnerPda = null; // null for empty referral code
       }
       
+      if (!program.methods || !program.methods.createProfile) {
+        setReferralData(p => ({ ...p, loading: false, error: 'Program methods not initialized' }));
+        return null;
+      }
       const method = program.methods
         .createProfile(name, referralBytes)
         .accounts({ user: publicKey, userData: userDataPda, codeOwner: referralCodeOwnerPda, systemProgram: SystemProgram.programId });

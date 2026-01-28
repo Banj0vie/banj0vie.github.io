@@ -146,7 +146,7 @@ const BuyDialog = ({ onBack, onClose }) => {
 
   const handleCancel = async (item) => {
     console.log('Cancelling item:', item);
-    if (!item.listingId) {
+    if (item.listingId === undefined || item.listingId === null) {
       console.error('No listing ID found for item:', item);
       return;
     }

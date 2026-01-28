@@ -11,9 +11,7 @@ import { sendTransactionForPhantom } from '../utils/transactionHelper';
 
 export const useChest = () => {
     const { publicKey, sendTransaction } = useSolanaWallet();
-    const valleyProgram = useProgram();
-    const program = valleyProgram.getProgram();
-    const connection = valleyProgram.getConnection();
+    const { program, connection } = useProgram();
     const [chestData, setChestData] = useState({
         nextChestTime: 0,
         canClaim: false,
@@ -186,7 +184,7 @@ export const useChest = () => {
             setChestData(p => ({ ...p, loading: false, error: message }));
             throw new Error(message);
         }
-    }, [program, publicKey]);
+    }, [program, publicKey, connection, sendTransaction]);
 
     useEffect(() => { fetchChestData(); }, [fetchChestData]);
 

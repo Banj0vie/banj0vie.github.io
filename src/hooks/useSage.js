@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import { useDispatch } from 'react-redux';
 import { useProgram } from './useProgram';
 import { useSolanaWallet } from './useSolanaWallet';
-import { getUserDataPDA, getGameRegistryPDA, getGameTokenMintAuthPDA } from '../solana/utils/pdaUtils';
+import { getUserDataPDA, getGameRegistryPDA, getGameTokenMintAuthPDA, getGameVaultPDA, getGameVaultAta } from '../solana/utils/pdaUtils';
 import { fetchUserDataSuccess } from '../solana/store/slices/userSlice';
 import { BN } from '@coral-xyz/anchor';
 import { GAME_TOKEN_MINT } from '../solana/constants/programId';
@@ -26,8 +26,7 @@ const getUnlockCost = (level) => {
 
 export const useSage = () => {
   const { publicKey, connection, sendTransaction } = useSolanaWallet();
-  const valleyProgram = useProgram();
-  const program = valleyProgram.getProgram();
+  const { program } = useProgram();
   const dispatch = useDispatch();
   const { refreshBalancesAfterTransaction } = useBalanceRefresh();
   const [sageData, setSageData] = useState({
@@ -135,6 +134,8 @@ export const useSage = () => {
       const userDataPda = getUserDataPDA(publicKey);
       const gameTokenMintAuthPda = getGameTokenMintAuthPDA();
       const userGameAta = await getAssociatedTokenAddress(GAME_TOKEN_MINT, publicKey, false);
+      const gameVaultPda = getGameVaultPDA();
+      const gameVaultAta = getGameVaultAta();
       const method = program.methods
         .unlockWeeklyHarvest()
         .accounts({ 
@@ -142,6 +143,8 @@ export const useSage = () => {
           userData: userDataPda, 
           gameTokenMint: GAME_TOKEN_MINT, 
           userGameAta, 
+          gameVault: gameVaultPda, 
+          gameVaultAta, 
           gameTokenMintAuth: gameTokenMintAuthPda, 
           user: publicKey, 
           tokenProgram: TOKEN_PROGRAM_ID 
@@ -181,6 +184,8 @@ export const useSage = () => {
       const userDataPda = getUserDataPDA(publicKey);
       const gameTokenMintAuthPda = getGameTokenMintAuthPDA();
       const userGameAta = await getAssociatedTokenAddress(GAME_TOKEN_MINT, publicKey, false);
+      const gameVaultPda = getGameVaultPDA();
+      const gameVaultAta = getGameVaultAta();
       const method = program.methods
         .unlockWeeklyWage()
         .accounts({ 
@@ -188,6 +193,8 @@ export const useSage = () => {
           userData: userDataPda, 
           gameTokenMint: GAME_TOKEN_MINT, 
           userGameAta, 
+          gameVault: gameVaultPda, 
+          gameVaultAta, 
           gameTokenMintAuth: gameTokenMintAuthPda, 
           user: publicKey, 
           tokenProgram: TOKEN_PROGRAM_ID 

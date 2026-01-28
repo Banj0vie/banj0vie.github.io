@@ -1,12 +1,12 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useWallet, useConnection } from '@solana/wallet-adapter-react';
+import { useWallet } from '@solana/wallet-adapter-react';
 import { useWalletModal } from '@solana/wallet-adapter-react-ui';
 import { useDispatch, useSelector } from 'react-redux';
 import { getUserPDAs, getGameRegistryPDA } from '../solana/utils/pdaUtils';
 import { setHasProfile, fetchUserDataSuccess } from '../solana/store/slices/userSlice';
 import { updateSolBalance, fetchBalancesSuccess } from '../solana/store/slices/balanceSlice';
 import { useProgram } from './useProgram';
-import { getBalance, getParsedTokenAccountsByOwner, getAccountInfo } from '../utils/requestQueue';
+import { getBalance, getParsedTokenAccountsByOwner } from '../utils/requestQueue';
 
 const serializePubkey = (pk) => (pk && typeof pk.toString === 'function' ? pk.toString() : pk);
 const toStringIfBN = (v) => (v && typeof v.toString === 'function' && typeof v !== 'string' ? v.toString() : v);
@@ -51,22 +51,18 @@ const serializeUserData = (ud) => {
 export const useSolanaWallet = () => {
   // Solana wallet adapter hooks
   const { 
-    publicKey, 
     wallet, 
     disconnect, 
-    connected, 
     connecting, 
     disconnecting,
     select,
-    sendTransaction,
     wallets,
     walletName
   } = useWallet();
   
-  const { connection } = useConnection();
   const { setVisible } = useWalletModal();
   const dispatch = useDispatch();
-  const program = useProgram();
+  const { program, connection, publicKey, connected, sendTransaction } = useProgram();
   
   // Redux derived state
   const hasProfile = useSelector(state => state.user.hasProfile);
@@ -108,11 +104,17 @@ export const useSolanaWallet = () => {
       try {
         setLoading(true);
         const { userData: userDataPda } = getUserPDAs(publicKey);
-        const info = await getAccountInfo(connection, userDataPda);
+        const userDataAccount = await program.account.userData.fetch(userDataPda);
+        const accountExists = !!userDataAccount;
         if (!cancelled) {
-          dispatch(setHasProfile(!!info));
+          dispatch(setHasProfile(accountExists));
+          if (accountExists) {
+            const serialized = serializeUserData(userDataAccount);
+            dispatch(fetchUserDataSuccess(serialized));
+          }
         }
       } catch (e) {
+        console.error('Error checking profile:', e);
         if (!cancelled) {
           dispatch(setHasProfile(false));
         }
@@ -122,7 +124,7 @@ export const useSolanaWallet = () => {
     };
     checkProfile();
     return () => { cancelled = true; };
-  }, [publicKey, connection, dispatch]);
+  }, [publicKey, connection, dispatch, program]);
 
   // When profile exists, fetch profile data and balances (with rate limiting)
   const fetchGuardRef = useRef({ inFlight: false, lastFetch: 0 });
@@ -143,7 +145,7 @@ export const useSolanaWallet = () => {
       try {
         // UserData
         const { userData: userDataPda } = getUserPDAs(publicKey);
-        const userDataRaw = await program.getProgram().account.userData.fetch(userDataPda);
+        const userDataRaw = await program.account.userData.fetch(userDataPda);
         const userData = serializeUserData(userDataRaw);
         if (!cancelled && userData) {
           dispatch(fetchUserDataSuccess(userData));
@@ -155,7 +157,7 @@ export const useSolanaWallet = () => {
 
         // Game token balance via GameRegistry.mint -> parsed token account
         const gameRegistryPda = getGameRegistryPDA();
-        const gameRegistry = await program.getProgram().account.gameRegistry.fetch(gameRegistryPda);
+        const gameRegistry = await program.account.gameRegistry.fetch(gameRegistryPda);
         const mint = gameRegistry.gameTokenMint;
         let gameTokenAmount = '0';
         try {
@@ -221,8 +223,8 @@ export const useSolanaWallet = () => {
     try {
       setLoading(true);
       const { userData: userDataPda } = getUserPDAs(publicKey);
-      const info = await getAccountInfo(connection, userDataPda);
-      const exists = !!info;
+      const userDataAccount = await program.account.userData.fetch(userDataPda);
+      const exists = !!userDataAccount;
       dispatch(setHasProfile(exists));
       return exists;
     } catch (err) {

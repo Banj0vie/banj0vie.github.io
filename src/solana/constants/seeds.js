@@ -1,6 +1,8 @@
 export const SEEDS = {
   USER_DATA: 'user_data',
   BANKER_DATA: 'banker_data',
+  BANK_VAULT: 'bank_vault',
+  GAME_VAULT: 'game_vault',
   GAME_REGISTRY: 'game_registry',
   REQUEST: 'request',
   FISHING_REQUEST: 'fishing_request',

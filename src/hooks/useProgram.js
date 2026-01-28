@@ -1,50 +1,38 @@
-import { useMemo, useState } from 'react';
-import { useConnection, useWallet } from '@solana/wallet-adapter-react';
-import { createSolanaValleyProgram } from '../solana/anchor/client';
+import { useMemo } from 'react';
+import { useAnchorWallet, useConnection, useWallet } from '@solana/wallet-adapter-react';
+import DEX_IDL from "../solana/anchor/dex.json";
+import SOLANA_VALLEY_IDL from "../solana/anchor/solana_valley.json";
+import { SOLANA_VALLEY_DEX_PROGRAM_ID, SOLANA_VALLEY_PROGRAM_ID } from '../solana/constants/programId';
+import { AnchorProvider, Program } from '@coral-xyz/anchor';
 
-export const useProgram = () => {
+export const useProgram = (isDex = false) => {
+  const { publicKey, connected, sendTransaction, signAllTransactions } = useWallet();
   const { connection } = useConnection();
-  const { wallet, publicKey, signTransaction, signAllTransactions } = useWallet();
-
+  const wallet = useAnchorWallet();
+  
   const program = useMemo(() => {
     if (!wallet || !publicKey) {
       return null;
     }
     try {
-      const anchorWallet = { publicKey, signTransaction, signAllTransactions };
-      return createSolanaValleyProgram(connection, anchorWallet);
+      const provider = new AnchorProvider(connection, wallet, {preflightCommitment: "confirmed",});
+      if (isDex) {
+        return new Program({ ...DEX_IDL, address: SOLANA_VALLEY_DEX_PROGRAM_ID.toString() }, provider);
+      } else {
+        return new Program({ ...SOLANA_VALLEY_IDL, address: SOLANA_VALLEY_PROGRAM_ID.toString() }, provider);
+      }
     } catch (error) {
-      console.error('Failed to create Solana Valley program:', error);
+      console.error('Failed to create program:', error);
       return null;
     }
-  }, [connection, wallet, publicKey, signTransaction, signAllTransactions]);
+  }, [connection, wallet, publicKey, isDex]);
 
-  return program;
-};
-
-export const useProgramWithError = () => {
-  const { connection } = useConnection();
-  const { wallet, publicKey, connecting, signTransaction, signAllTransactions } = useWallet();
-  const [error, setError] = useState(null);
-
-  const program = useMemo(() => {
-    if (connecting) {
-      return null;
-    }
-    if (!wallet || !publicKey) {
-      setError('Wallet not connected');
-      return null;
-    }
-    try {
-      setError(null);
-      const anchorWallet = { publicKey, signTransaction, signAllTransactions };
-      return createSolanaValleyProgram(connection, anchorWallet);
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to create program';
-      setError(errorMessage);
-      return null;
-    }
-  }, [connection, wallet, publicKey, connecting, signTransaction, signAllTransactions]);
-
-  return { program, error, loading: connecting };
+  return {
+    program: program,
+    connection: connection,
+    publicKey: publicKey,
+    connected: connected,
+    sendTransaction: sendTransaction,
+    signAllTransactions: signAllTransactions,
+  }
 };

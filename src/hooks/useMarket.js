@@ -1,20 +1,17 @@
 import { useState, useCallback } from 'react';
 import { useProgram } from './useProgram';
 import { useSolanaWallet } from './useSolanaWallet';
-import { getGameRegistryPDA, getUserDataPDA, getMarketDataPDA, getListingPDA, getItemMintPDA, getItemMintAuthPDA, getGameTokenMintAuthPDA, getEpochTop5PDA, getGameRegistryInfo, getSponsorGameAta } from '../solana/utils/pdaUtils';
-import { SystemProgram, PublicKey, TransactionMessage, VersionedTransaction } from '@solana/web3.js';
+import { getGameRegistryPDA, getUserDataPDA, getMarketDataPDA, getListingPDA, getItemMintPDA, getItemMintAuthPDA, getEpochTop5PDA, getGameRegistryInfo, getSponsorGameAta, getGameVaultPDA, getGameVaultAta } from '../solana/utils/pdaUtils';
+import { SystemProgram, PublicKey } from '@solana/web3.js';
 import { BN } from '@coral-xyz/anchor';
-import { GAME_TOKEN_MINT, LOOKUP_TABLE_ADDRESS } from '../solana/constants/programId';
+import { GAME_TOKEN_MINT } from '../solana/constants/programId';
 import { getAssociatedTokenAddress, TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID } from '@solana/spl-token';
-import { preIx } from '../solana/utils/pdaUtils';
 import { EPOCH_PERIOD } from '../utils/basic';
 import { sendTransactionForPhantom } from '../utils/transactionHelper';
 
 export const useMarket = () => {
     const { publicKey, sendTransaction } = useSolanaWallet();
-    const valleyProgram = useProgram();
-    const program = valleyProgram.getProgram();
-    const connection = valleyProgram.getConnection();
+    const { program, connection } = useProgram();
     const [marketData, setMarketData] = useState({ listings: [], nextId: 0, loading: false, error: null });
 
     function getRemainingAccounts({
@@ -58,8 +55,18 @@ export const useMarket = () => {
         setMarketData(prev => ({ ...prev, loading: true, error: null }));
         try {
             const marketDataPda = getMarketDataPDA();
-            const md = await program.account.marketData.fetch(marketDataPda);
-            const currentNextId = Number(md.nextId || 0);
+            let md;
+            try {
+                md = await program.account.marketData.fetch(marketDataPda);
+            } catch (e) {
+                // MarketData account may not exist until first listing
+                if (e?.message?.includes('Account does not exist') || e?.message?.includes('has no data')) {
+                    setMarketData(prev => ({ ...prev, listings: [], nextId: 0, loading: false }));
+                    return [];
+                }
+                throw e;
+            }
+            const currentNextId = Number(md.nextId?.toString?.() ?? md.nextId ?? 0);
             const allListings = [];
             for (let i = 0; i < currentNextId; i++) {
                 try {
@@ -104,16 +111,19 @@ export const useMarket = () => {
             const itemMintPda = getItemMintPDA(itemId);
             const buyerItemAta = await getAssociatedTokenAddress(itemMintPda, publicKey, false);
             const itemMintAuthPda = getItemMintAuthPDA();
-            const gameTokenMintAuthPda = getGameTokenMintAuthPDA();
             const gameRegistryInfo = await getGameRegistryInfo(program);
-            const epoch = (gameRegistryInfo.epochStart + EPOCH_PERIOD) > Date.now()/1000 ? gameRegistryInfo.epoch : gameRegistryInfo.epoch + 1;
-            const epochTop5Pda = getEpochTop5PDA(epoch);
+            const epochStart = Math.floor(Number(gameRegistryInfo.epochStart?.toString?.() ?? 0));
+            const epochCurrent = Math.floor(Number(gameRegistryInfo.epoch?.toString?.() ?? 0));
+            const nowSec = Math.floor(Date.now() / 1000);
+            const epoch = (epochStart + EPOCH_PERIOD) > nowSec ? epochCurrent : epochCurrent + 1;
+            const epochU32 = (epoch >>> 0) & 0xffffffff;
+            const epochTop5Pda = getEpochTop5PDA(epochU32);
             const sponsorGameAta = await getSponsorGameAta(program, publicKey);
             const remainingAccounts = [
                 { pubkey: sellerGameAta, isWritable: true, isSigner: false },
                 { pubkey: itemMintPda, isWritable: true, isSigner: false },
                 { pubkey: buyerItemAta, isWritable: true, isSigner: false },
-                { pubkey: itemMintAuthPda, isWritable: true, isSigner: false },
+                { pubkey: itemMintAuthPda, isWritable: false, isSigner: false },
                 { pubkey: epochTop5Pda, isWritable: true, isSigner: false },
                 { pubkey: sponsorGameAta, isWritable: true, isSigner: false },
             ];
@@ -121,7 +131,7 @@ export const useMarket = () => {
             // No client-side balance pre-check; centralized handler will format errors
             // Build transaction with compute budget
             const method = program.methods
-                .purchase(new BN(lid), new BN(amount), epoch)
+                .purchase(new BN(lid), new BN(amount), epochU32)
                 .accounts({
                     buyer: publicKey,
                     gameRegistry: gameRegistryPda,
@@ -129,7 +139,8 @@ export const useMarket = () => {
                     buyerData: userDataPda,
                     buyerGameAta: userGameAta,
                     gameTokenMint: GAME_TOKEN_MINT,
-                    gameTokenMintAuth: gameTokenMintAuthPda,
+                    gameVault: getGameVaultPDA(),
+                    gameVaultAta: getGameVaultAta(),
                     tokenProgram: TOKEN_PROGRAM_ID,
                     associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
                     systemProgram: SystemProgram.programId,
@@ -167,8 +178,18 @@ export const useMarket = () => {
         try {
             const gameRegistryPda = getGameRegistryPDA();
             const marketDataPda = getMarketDataPDA();
-            const marketData = await program.account.marketData.fetch(marketDataPda).catch(e => console.log(e));
-            const nextId = Number(marketData?.nextId || 0);
+            let marketData;
+            try {
+                marketData = await program.account.marketData.fetch(marketDataPda);
+            } catch (e) {
+                // MarketData account may not exist until first listing (init_if_needed in contract)
+                if (e?.message?.includes('Account does not exist') || e?.message?.includes('has no data')) {
+                    marketData = { nextId: new BN(0) };
+                } else {
+                    throw e;
+                }
+            }
+            const nextId = Number(marketData?.nextId?.toString?.() ?? marketData?.nextId ?? 0);
             const listingPda = getListingPDA(new BN(nextId));
             const itemMintPda = getItemMintPDA(id);
             const sellerItemAta = await getAssociatedTokenAddress(itemMintPda, publicKey, false);
@@ -271,10 +292,13 @@ export const useMarket = () => {
             const itemMintPda = getItemMintPDA(id);
             const buyerItemAta = await getAssociatedTokenAddress(itemMintPda, publicKey, false);
             const itemMintAuthPda = getItemMintAuthPDA();
-            const gameTokenMintAuthPda = getGameTokenMintAuthPDA();
             const gameRegistryInfo = await getGameRegistryInfo(program);
-            const epoch = (gameRegistryInfo.epochStart + EPOCH_PERIOD) > Date.now()/1000 ? gameRegistryInfo.epoch : gameRegistryInfo.epoch + 1;
-            const epochTop5Pda = getEpochTop5PDA(epoch);
+            const epochStart = Math.floor(Number(gameRegistryInfo.epochStart?.toString?.() ?? 0));
+            const epochCurrent = Math.floor(Number(gameRegistryInfo.epoch?.toString?.() ?? 0));
+            const nowSec = Math.floor(Date.now() / 1000);
+            const epoch = (epochStart + EPOCH_PERIOD) > nowSec ? epochCurrent : epochCurrent + 1;
+            const epochU32 = (epoch >>> 0) & 0xffffffff;
+            const epochTop5Pda = getEpochTop5PDA(epochU32);
             const sponsorGameAta = await getSponsorGameAta(program, publicKey);
             const listingPairs = await getListingPairs({ program, itemId: id, gameTokenMint: GAME_TOKEN_MINT });
 
@@ -282,14 +306,15 @@ export const useMarket = () => {
 
             // Build transaction with compute budget
             const method = program.methods
-                .batchBuy(id, new BN(Math.floor(maxPricePer * 1e6)), new BN(Math.floor(totalBudget * 1e6)), epoch)
+                .batchBuy(id, new BN(Math.floor(maxPricePer * 1e6)), new BN(Math.floor(totalBudget * 1e6)), epochU32)
                 .accounts({ 
                     buyer: publicKey, 
                     gameRegistry: gameRegistryPda, 
                     buyerData: userDataPda, 
                     buyerGameAta: userGameAta, 
                     gameTokenMint: GAME_TOKEN_MINT, 
-                    gameTokenMintAuth: gameTokenMintAuthPda,
+                    gameVault: getGameVaultPDA(),
+                    gameVaultAta: getGameVaultAta(),
                     tokenProgram: TOKEN_PROGRAM_ID, 
                     associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID, 
                     systemProgram: SystemProgram.programId 

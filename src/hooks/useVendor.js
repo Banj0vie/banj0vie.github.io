@@ -2,22 +2,20 @@ import { useState, useCallback } from 'react';
 import { useDispatch } from 'react-redux';
 import { useProgram } from './useProgram';
 import { useSolanaWallet } from './useSolanaWallet';
-import { getGameRegistryPDA, getUserDataPDA, getRequestPDA, getBankerDataPDA, getItemMintAuthPDA, getGameTokenMintAuthPDA, getEpochTop5PDA, getSponsorGameAta, getGameRegistryInfo, getRevealSeedsRemainingAccounts, preIx } from '../solana/utils/pdaUtils';
-import { SystemProgram, SYSVAR_SLOT_HASHES_PUBKEY, TransactionMessage, VersionedTransaction } from '@solana/web3.js';
+import { getGameRegistryPDA, getUserDataPDA, getRequestPDA, getBankerDataPDA, getItemMintAuthPDA, getEpochTop5PDA, getSponsorGameAta, getGameRegistryInfo, getRevealSeedsRemainingAccounts, getGameVaultPDA, getGameVaultAta } from '../solana/utils/pdaUtils';
+import { SystemProgram, SYSVAR_SLOT_HASHES_PUBKEY } from '@solana/web3.js';
 import { BN } from '@coral-xyz/anchor';
-import { GAME_TOKEN_MINT, LOOKUP_TABLE_ADDRESS } from '../solana/constants/programId';
+import { GAME_TOKEN_MINT } from '../solana/constants/programId';
 import { getAssociatedTokenAddress, TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import { EPOCH_PERIOD } from '../utils/basic';
 import { fetchBalancesSuccess } from '../solana/store/slices/balanceSlice';
 import { getBalance, getParsedTokenAccountsByOwner } from '../utils/requestQueue';
-import { sendTransaction as sendTransactionHelper, handleSimulationError, sendTransactionForPhantom } from '../utils/transactionHelper';
+import { sendTransactionForPhantom } from '../utils/transactionHelper';
 import { useBalanceRefresh } from './useBalanceRefresh';
 
 export const useVendor = () => {
   const { publicKey, sendTransaction } = useSolanaWallet();
-  const valleyProgram = useProgram();
-  const program = valleyProgram.getProgram();
-  const connection = valleyProgram.getConnection();
+  const { program, connection } = useProgram();
   const dispatch = useDispatch();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -62,44 +60,60 @@ export const useVendor = () => {
     if (loading) { setError('Transaction already in progress'); return null; }
     setLoading(true); setError(null);
     try {
+      const userDataPda = getUserDataPDA(publicKey);
+      // Require profile (UserData) to exist before buy; otherwise program fails with AccountDiscriminatorMismatch
+      try {
+        await program.account.userData.fetch(userDataPda);
+      } catch (e) {
+        setError('Please create a profile first before buying seed packs.');
+        setLoading(false);
+        return null;
+      }
       const pendingKey = `seedNonce:${publicKey.toBase58()}`;
       // Enforce one pending request per account
       const existing = localStorage.getItem(pendingKey);
       if (existing) {
-        const existingNonce = Number(existing.requestId);
+        const parsed = JSON.parse(existing);
+        const existingNonce = Math.floor(Number(parsed.requestId));
         const existingReqPda = getRequestPDA(publicKey, new BN(existingNonce));
         const reqData = await program.account.request.fetch(existingReqPda);
         if (!reqData.revealed) {
           setError('Pending seed pack request not revealed yet');
+          setLoading(false);
           return null;
         }
       }
-      // Generate a more unique nonce to prevent duplicate transactions
-      const nonce = Date.now() + Math.random() * 1000000;
+      // Generate a more unique nonce to prevent duplicate transactions (must be integer for Request PDA)
+      const nonce = Math.floor(Date.now() + Math.random() * 1000000);
       const gameRegistryPda = getGameRegistryPDA();
-      const userDataPda = getUserDataPDA(publicKey);
-      const bankerDataPda = getBankerDataPDA(publicKey);
+      const bankerDataPda = getBankerDataPDA();
+      const gameVaultPda = getGameVaultPDA();
+      const gameVaultAta = getGameVaultAta();
       const requestPda = getRequestPDA(publicKey, new BN(nonce));
       const userGameAta = await getAssociatedTokenAddress(GAME_TOKEN_MINT, publicKey, false);
-      const gameTokenMintAuthPda = getGameTokenMintAuthPDA();
       const gameRegistryInfo = await getGameRegistryInfo(program);
-      const epoch = (gameRegistryInfo.epochStart + EPOCH_PERIOD) > Date.now()/1000 ? gameRegistryInfo.epoch : gameRegistryInfo.epoch + 1;
-      const epochTop5Pda = getEpochTop5PDA(epoch);
+      const epochStart = Math.floor(Number(gameRegistryInfo.epochStart?.toString?.() ?? 0));
+      const epochCurrent = Math.floor(Number(gameRegistryInfo.epoch?.toString?.() ?? 0));
+      const nowSec = Math.floor(Date.now() / 1000);
+      const epoch = (epochStart + EPOCH_PERIOD) > nowSec ? epochCurrent : epochCurrent + 1;
+      const epochU32 = (epoch >>> 0) & 0xffffffff;
+      const epochTop5Pda = getEpochTop5PDA(epochU32);
       const sponsorGameAta = await getSponsorGameAta(program, publicKey);
       let remainingAccounts = [];
       remainingAccounts.push({ pubkey: userDataPda, isWritable: true, isSigner: false });
       remainingAccounts.push({ pubkey: bankerDataPda, isWritable: true, isSigner: false });
       remainingAccounts.push({ pubkey: userGameAta, isWritable: true, isSigner: false });
       remainingAccounts.push({ pubkey: epochTop5Pda, isWritable: true, isSigner: false });
-      remainingAccounts.push({ pubkey: sponsorGameAta, isWritable: false, isSigner: false });
+      remainingAccounts.push({ pubkey: sponsorGameAta, isWritable: true, isSigner: false });
       const method = program.methods
-        .buySeedPack(tier, new BN(count), new BN(nonce), epoch)
+        .buySeedPack(tier, new BN(count), new BN(nonce), epochU32)
         .accounts({
           buyer: publicKey,
           gameRegistry: gameRegistryPda,
           request: requestPda,
           gameTokenMint: GAME_TOKEN_MINT,
-          gameTokenMintAuth: gameTokenMintAuthPda,
+          gameVault: gameVaultPda,
+          gameVaultAta: gameVaultAta,
           tokenProgram: TOKEN_PROGRAM_ID,
           systemProgram: SystemProgram.programId,
         })
@@ -120,7 +134,11 @@ export const useVendor = () => {
       }
     } catch (err) { 
       console.log("🚀 ~ useVendor ~ err:", err); 
-      setError(err.message);
+      const msg = err?.message ?? String(err);
+      const isDiscriminatorMismatch = msg.includes('AccountDiscriminatorMismatch') || msg.includes('0xbba') || (err?.code === 3002);
+      setError(isDiscriminatorMismatch
+        ? 'A program account could not be loaded. Ensure you have created a profile first. If the issue persists, the program may need to be re-initialized for this epoch.'
+        : msg);
       return null; 
     } finally { 
       setLoading(false); 
@@ -136,8 +154,9 @@ export const useVendor = () => {
       const raw = localStorage.getItem(pendingKey);
       if (!raw) return [];
       const {requestId, tier, count} = JSON.parse(raw);
+      const requestIdInt = Math.floor(Number(requestId));
       try {
-        const requestPda = getRequestPDA(publicKey, new BN(requestId));
+        const requestPda = getRequestPDA(publicKey, new BN(requestIdInt));
         const requestData = await program.account.request.fetch(requestPda);
         if (requestData.revealed) {
           localStorage.removeItem(pendingKey);
@@ -156,10 +175,15 @@ export const useVendor = () => {
     if (!program || !publicKey) return null;
     setLoading(true); setError(null);
     try {
-      const tx = await connection.getTransaction(txSig, {
-        maxSupportedTransactionVersion: 0,
-        commitment: "confirmed",
-      });
+      let tx = null;
+      for (let attempt = 0; attempt < 8; attempt++) {
+        if (attempt > 0) await new Promise((r) => setTimeout(r, 1500));
+        tx = await connection.getTransaction(txSig, {
+          maxSupportedTransactionVersion: 0,
+          commitment: "confirmed",
+        });
+        if (tx) break;
+      }
       if (!tx) throw new Error("tx not found");
       const logs = tx.meta?.logMessages ?? [];
       const revealedSeeds = [];
@@ -171,7 +195,7 @@ export const useVendor = () => {
       }
       onRevealed({seedIds: revealedSeeds});
     } catch (err) { setError(err.message); return null; } finally { setLoading(false); }
-  }, [program, publicKey]);
+  }, [program, publicKey, connection]);
 
   const revealSeeds = useCallback(async () => {
     if (!program || !publicKey) { setError('Program or wallet not available'); return null; }
@@ -190,10 +214,11 @@ export const useVendor = () => {
         return null;
       }
       ({requestId, tier, count} = JSON.parse(raw));
+      const requestIdInt = Math.floor(Number(requestId));
       
       // Check if the request has already been revealed
       const gameRegistryPda = getGameRegistryPDA();
-      const requestPda = getRequestPDA(publicKey, new BN(requestId));
+      const requestPda = getRequestPDA(publicKey, new BN(requestIdInt));
       
       try {
         const requestData = await program.account.request.fetch(requestPda);
@@ -211,7 +236,7 @@ export const useVendor = () => {
       const itemMintAuthPda = getItemMintAuthPDA();
       const remainingAccounts = await getRevealSeedsRemainingAccounts(publicKey, tier);
       const method = program.methods
-        .revealSeeds(new BN(requestId))
+        .revealSeeds(new BN(requestIdInt))
         .accounts({
           buyer: publicKey,
           gameRegistry: gameRegistryPda,

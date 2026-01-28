@@ -6,7 +6,6 @@ import GoldDialog from "../containers/House_Gold";
 import GardnerDialog from "../containers/House_Gardner";
 import ReferralDialog from "../containers/House_Referral";
 import GoldChestDialog from "../containers/House_Gold_Chest";
-import { dialogFrames } from "../constants/_baseimages";
 import AnglerDialog from "../containers/House_Angler";
 const House = () => {
   const { width, height } = HOUSE_VIEWPORT;

@@ -44,7 +44,7 @@ const VendorDialog = ({ onClose, label = "VENDOR", header = "", headerOffset = 0
         if (isTransactionRejection(vendorError)) {
           show("Transaction was rejected by user.", "error");
         } else {
-          show(`Vendor operation failed.`, "error");
+          show(vendorError || "Vendor operation failed.", "error");
         }
       }
     }
@@ -101,6 +101,16 @@ const VendorDialog = ({ onClose, label = "VENDOR", header = "", headerOffset = 0
       [ID_CROP_CATEGORIES.PICO_SEED]: 2,
       [ID_CROP_CATEGORIES.BASIC_SEED]: 3,
       [ID_CROP_CATEGORIES.PREMIUM_SEED]: 4,
+    }),
+    []
+  );
+
+  const tierToCategory = useMemo(
+    () => ({
+      1: ID_CROP_CATEGORIES.FEEBLE_SEED,
+      2: ID_CROP_CATEGORIES.PICO_SEED,
+      3: ID_CROP_CATEGORIES.BASIC_SEED,
+      4: ID_CROP_CATEGORIES.PREMIUM_SEED,
     }),
     []
   );
@@ -273,15 +283,18 @@ const VendorDialog = ({ onClose, label = "VENDOR", header = "", headerOffset = 0
               setIsRevealing(false);
               setRevealCleanup(null);
 
-              // Reset seed status to NORMAL after successful reveal
-              setSeedStatus((prev) => ({
-                ...prev,
-                [tier]: {
-                  ...prev[tier],
-                  status: SEED_PACK_STATUS.NORMAL,
-                  count: 0,
-                },
-              }));
+              // Reset seed status to NORMAL after successful reveal (tier 1-4 -> category id)
+              const categoryId = tierToCategory[tier];
+              if (categoryId) {
+                setSeedStatus((prev) => ({
+                  ...prev,
+                  [categoryId]: {
+                    ...prev[categoryId],
+                    status: SEED_PACK_STATUS.NORMAL,
+                    count: 0,
+                  },
+                }));
+              }
 
               // Refresh pending requests after reveal
               setTimeout(async () => {
@@ -311,7 +324,7 @@ const VendorDialog = ({ onClose, label = "VENDOR", header = "", headerOffset = 0
         setRevealCleanup(null);
       }
     },
-    [listenForSeedsRevealed, revealSeeds, loadPendingRequests, revealCleanup]
+    [listenForSeedsRevealed, revealSeeds, loadPendingRequests, revealCleanup, tierToCategory]
   );
 
   // Cancel reveal process

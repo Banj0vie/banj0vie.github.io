@@ -12,8 +12,7 @@ import { sendTransactionForPhantom } from '../utils/transactionHelper';
 export const usePotion = () => {
   const [potionData, setPotionData] = useState({ loading: false, error: null });
   const { publicKey, connection, sendTransaction } = useSolanaWallet();
-  const valleyProgram = useProgram();
-  const program = valleyProgram.getProgram();
+  const { program } = useProgram();
 
   // Helper function to get remaining accounts for potion crafting
   const getPotionRemainingAccounts = (potionType) => {

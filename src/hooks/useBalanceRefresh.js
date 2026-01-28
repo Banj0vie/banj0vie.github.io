@@ -15,8 +15,7 @@ import { updateLockedTokens, updateXTokenShare } from '../solana/store/slices/us
 
 export const useBalanceRefresh = () => {
   const { publicKey, connection } = useSolanaWallet();
-  const valleyProgram = useProgram();
-  const program = valleyProgram.getProgram();
+  const { program } = useProgram();
   const dispatch = useDispatch();
   
   const isRefreshing = useSelector(selectBalanceRefreshing);

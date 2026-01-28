@@ -26,7 +26,7 @@ const Avatar = ({ src, alt = "avatar" }) => {
 
         // Get equipped avatars (cached via context when available)
         const avatarResult = await getAvatars(account);
-        const [nfts, tokenIds] = avatarResult;
+        const [nfts] = avatarResult;
 
         // Check if we have any equipped avatars
         if (nfts && Array.isArray(nfts) && nfts.length >= 2) {

@@ -1,5 +1,6 @@
-import { Connection, TransactionMessage, VersionedTransaction } from '@solana/web3.js';
+import { TransactionMessage, VersionedTransaction } from '@solana/web3.js';
 import { LOOKUP_TABLE_ADDRESS } from '../solana/constants/programId';
+import { preIx } from '../solana/utils/pdaUtils';
 
 // Detect user-rejection errors from wallet providers/adapters
 const isUserRejectError = (err) => {
@@ -22,7 +23,6 @@ export const sendTransaction = async (txOrMethod, connection, sendTransactionFn,
   const {
     skipPreflight = false,
     maxRetries = 3,
-    commitment = 'confirmed',
     onSuccess = null,
     onError = null
   } = options;
@@ -214,44 +214,46 @@ export const sendTransactionForPhantom = async (method, connection, sendTransact
   try {
     // Get the instruction from the Anchor method
     const instruction = await method.instruction();
-    
+    const instructions = [...preIx, instruction];
+
     // Get the Address Lookup Table
     const { value: alt } = await connection.getAddressLookupTable(LOOKUP_TABLE_ADDRESS);
     if (!alt) throw new Error('Address Lookup Table not found');
-    
+
     // Get fresh blockhash
     const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('finalized');
-    
-    // Create VersionedTransaction with ALT
+
+    // Create VersionedTransaction with ALT (compute budget + program ix)
     const msgV0 = new TransactionMessage({
       payerKey: publicKey,
       recentBlockhash: blockhash,
-      instructions: [instruction],
+      instructions,
     }).compileToV0Message([alt]);
-    
+
     const tx = new VersionedTransaction(msgV0);
-    
+
     // Pre-send simulation to surface errors/logs
     try {
-      const sim = await connection.simulateTransaction(tx, { 
-        sigVerify: false, 
-        commitment: 'processed' 
+      const sim = await connection.simulateTransaction(tx, {
+        sigVerify: false,
+        commitment: 'processed',
+        replaceRecentBlockhash: true,
       });
-      
+
       if (sim?.value?.err) {
-        console.log('Simulation error:', sim.value.err);
-        // Check if it's an "already processed" error
-        if (sim.value.err.toString().includes('already been processed')) {
-          console.log('Transaction already processed, treating as success');
+        console.warn('Simulation error:', sim.value.err);
+        if (sim.value.logs?.length) {
+          console.warn('Simulation logs:', sim.value.logs);
+        }
+        if (sim.value.err?.toString?.()?.includes('already been processed')) {
           return 'already_processed_' + Date.now();
         }
-        // If simulation fails, we should skip preflight
-        console.log('Simulation failed, will use skipPreflight=true');
         throw new Error('simulation failed');
       }
     } catch (simError) {
-      console.log('Simulation failed, proceeding with skipPreflight=true:', simError.message);
-      // If simulation fails, we should skip preflight
+      if (simError.message !== 'simulation failed') {
+        console.warn('Simulation exception:', simError.message);
+      }
       throw new Error('simulation failed');
     }
     
@@ -304,21 +306,21 @@ export const sendTransactionForPhantom = async (method, connection, sendTransact
     // Check if it's a simulation error or "Failed to simulate" error
     const errMsg = (error?.message || '').toLowerCase();
     if (errMsg && (errMsg.includes('simulation') || errMsg.includes('failed to simulate'))) {
-      console.log('Simulation failed, retrying with skipPreflight...');
-      
+      console.warn('Simulation failed, retrying with skipPreflight...');
+
       try {
-        // Retry with skipPreflight = true
         const instruction = await method.instruction();
+        const instructions = [...preIx, instruction];
         const { value: alt } = await connection.getAddressLookupTable(LOOKUP_TABLE_ADDRESS);
         if (!alt) throw new Error('Address Lookup Table not found');
-        
+
         const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('finalized');
         const msgV0 = new TransactionMessage({
           payerKey: publicKey,
           recentBlockhash: blockhash,
-          instructions: [instruction],
+          instructions,
         }).compileToV0Message([alt]);
-        
+
         const tx = new VersionedTransaction(msgV0);
         let signature;
 

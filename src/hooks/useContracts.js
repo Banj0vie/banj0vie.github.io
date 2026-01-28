@@ -16,4 +16,11 @@ export { useLeaderboard } from './useLeaderboard';
 export { useDex } from './useDex';
 
 
-export const useEquipmentRegistry = () => ({ });
+export const useEquipmentRegistry = () => ({
+  getOwnedBoostNFTs: async () => [],
+  setAvatar: async () => {},
+  getContract: () => null,
+  getAvatars: async () => [[], []], // Returns [nfts, tokenIds] tuple
+  getNFTMetadata: async () => null,
+  getTokenBoostPpm: async () => 0,
+});

@@ -2,13 +2,13 @@ import React, { useMemo, useState } from "react";
 import "./style.css";
 import Avatar from "./Avatar";
 import ProfileButton from "../../../components/buttons/ProfileButton";
-import { profileAssets } from "../../../constants/_baseimages";
 import ProfileView from "./ProfileView";
 import { formatNumber } from "../../../utils/basic";
 import InventoryDialog from "../../../containers/Menu_Inventory";
 import SettingsDialog from "../../../containers/Menu_Settings";
 import { useSelector } from "react-redux";
-import { selectBalanceRefreshing, selectGameTokenBalance } from "../../../solana/store/slices/balanceSlice";
+import { selectBalanceRefreshing } from "../../../solana/store/slices/balanceSlice";
+import { useProdMint } from "../../../hooks/useProdMint";
 // Removed bnToNumber; using plain parsing based on 1e6 decimals for locked tokens
 
 const ProfileBar = ({ isFarmMenu }) => {
@@ -17,6 +17,7 @@ const ProfileBar = ({ isFarmMenu }) => {
   const userData = useSelector((state) => state.user.userData);
   const [isInventoryDialog, setIsInventoryDialog] = useState(false);
   const [isSettingsDialog, setIsSettingsDialog] = useState(false);
+  const { prodMint, loading: prodMintLoading } = useProdMint();
   const gameToken = useSelector((state) => state.balance.gameToken);
   const stakedBalance = useSelector((state) => state.balance.stakedBalance);
   const isBalanceRefreshing = useSelector(selectBalanceRefreshing);
@@ -58,6 +59,27 @@ const ProfileBar = ({ isFarmMenu }) => {
             title="Inventory"
             bg="/images/profile_bar/profile_button_bg.png"
             onClick={() => setIsInventoryDialog(true)}
+          />
+          <ProfileButton
+            icon={<img alt="Test Mint" src="/images/profile_bar/btn_inventory.png" />}
+            title="Test Mint"
+            bg="/images/profile_bar/profile_button_bg.png"
+            onClick={() => prodMint(0)}
+            disabled={prodMintLoading}
+          />
+          <ProfileButton
+            icon={<img alt="Test Mint" src="/images/profile_bar/btn_inventory.png" />}
+            title="Test Mint"
+            bg="/images/profile_bar/profile_button_bg.png"
+            onClick={() => prodMint(1)}
+            disabled={prodMintLoading}
+          />
+          <ProfileButton
+            icon={<img alt="Test Mint" src="/images/profile_bar/btn_inventory.png" />}
+            title="Test Mint"
+            bg="/images/profile_bar/profile_button_bg.png"
+            onClick={() => prodMint(2)}
+            disabled={prodMintLoading}
           />
         </div>
         <div className="resource-badge" key={balanceKey}>

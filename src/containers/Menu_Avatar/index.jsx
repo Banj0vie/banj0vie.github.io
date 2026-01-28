@@ -22,10 +22,8 @@ const AvatarDialog = ({ onClose }) => {
       try {
         setLoading(true);
 
-
-
-
-        const [nfts, tokenIds] = await getAvatars(account);
+        const result = await getAvatars(account);
+        const [nfts = [], tokenIds = []] = Array.isArray(result) && result.length === 2 ? result : [[], []];
 
         // Get total boost
         const boostPpm = await getTokenBoostPpm(account);
@@ -34,7 +32,7 @@ const AvatarDialog = ({ onClose }) => {
         // Create avatar data array
         const avatarData = [];
         for (let i = 0; i < 2; i++) {
-          if (i < nfts.length && nfts[i] !== "0x0000000000000000000000000000000000000000") {
+          if (nfts && i < nfts.length && nfts[i] !== "0x0000000000000000000000000000000000000000") {
             avatarData.push({
               nft: nfts[i],
               tokenId: tokenIds[i],
@@ -59,7 +57,7 @@ const AvatarDialog = ({ onClose }) => {
     };
 
     fetchAvatarData();
-  }, [account, getAvatars, getTokenBoostPpm]);
+  }, [account]); // Removed getAvatars and getTokenBoostPpm from deps to prevent infinite loops (they're stubs)
 
   const hasAnyNFTs = avatars.some(avatar => !avatar.isEmpty);
 

@@ -2,10 +2,11 @@ import { useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useProgram } from './useProgram';
 import { useSolanaWallet } from './useSolanaWallet';
-import { getGameRegistryPDA, getUserDataPDA, getBankerDataPDA, getGameTokenMintAuthPDA } from '../solana/utils/pdaUtils';
+import { getGameRegistryPDA, getUserDataPDA, getBankerDataPDA, getBankVaultPDA, getBankVaultAta } from '../solana/utils/pdaUtils';
 import { BN } from '@coral-xyz/anchor';
 import { GAME_TOKEN_MINT } from '../solana/constants/programId';
-import { getAssociatedTokenAddress, TOKEN_PROGRAM_ID } from '@solana/spl-token';
+import { getAssociatedTokenAddress, TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID } from '@solana/spl-token';
+import { SystemProgram } from '@solana/web3.js';
 import { getBalance, getParsedTokenAccountsByOwner } from '../utils/requestQueue';
 import {
   fetchBankerDataSuccess,
@@ -22,9 +23,7 @@ import { useBalanceRefresh } from './useBalanceRefresh';
 
 export const useBanker = () => {
   const { publicKey, sendTransaction } = useSolanaWallet();
-  const validatorProgram = useProgram();
-  const program = validatorProgram.getProgram();
-  const connection = validatorProgram.getConnection();
+  const { program, connection } = useProgram();
   const dispatch = useDispatch();
   const { refreshBalancesAfterTransaction } = useBalanceRefresh();
   
@@ -49,16 +48,22 @@ export const useBanker = () => {
       const userDataPda = getUserDataPDA(publicKey);
       const bankerDataPda = getBankerDataPDA();
       const userGameAta = await getAssociatedTokenAddress(GAME_TOKEN_MINT, publicKey, false);
+      const bankVaultPda = getBankVaultPDA(bankerDataPda);
+      const bankVaultAta = getBankVaultAta(bankerDataPda);
       
       const method = program.methods
         .stake(new BN(amount * 1e6))
         .accounts({
+          user: publicKey,
           userData: userDataPda,
           bankerData: bankerDataPda,
           gameTokenMint: GAME_TOKEN_MINT,
           userGameAta,
-          user: publicKey,
+          bankVault: bankVaultPda,
+          bankVaultAta,
           tokenProgram: TOKEN_PROGRAM_ID,
+          associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+          systemProgram: SystemProgram.programId,
         });
       
       await sendTransactionForPhantom(method, connection, sendTransaction, publicKey);
@@ -112,18 +117,20 @@ export const useBanker = () => {
       const userDataPda = getUserDataPDA(publicKey);
       const bankerDataPda = getBankerDataPDA();
       const userGameAta = await getAssociatedTokenAddress(GAME_TOKEN_MINT, publicKey, false);
-      const gameTokenMintAuthPda = getGameTokenMintAuthPDA();
+      const bankVaultPda = getBankVaultPDA(bankerDataPda);
+      const bankVaultAta = getBankVaultAta(bankerDataPda);
       
       const method = program.methods
         .unstake(new BN(shares * 1e6))
         .accounts({
+          user: publicKey,
           gameRegistry: gameRegistryPda,
           userData: userDataPda,
           bankerData: bankerDataPda,
           gameTokenMint: GAME_TOKEN_MINT,
           userGameAta,
-          gameTokenMintAuth: gameTokenMintAuthPda,
-          user: publicKey,
+          bankVault: bankVaultPda,
+          bankVaultAta,
           tokenProgram: TOKEN_PROGRAM_ID,
         });
       

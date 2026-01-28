@@ -10,8 +10,7 @@ import { sendTransactionForPhantom } from '../utils/transactionHelper';
 
 export const useFishing = () => {
   const { publicKey, connection, sendTransaction } = useSolanaWallet();
-  const valleyProgram = useProgram();
-  const program = valleyProgram.getProgram();
+  const { program } = useProgram();
   const [fishingData, setFishingData] = useState({ loading: false, error: null, pendingRequests: [] });
 
   const storageKey = () => {
