@@ -1,5 +1,7 @@
 .loot-received-dialog {
     width: 350px;
+    margin-top: 1rem;
+    padding: 0.5rem;
 }
 
 .loot-received-dialog .items-grid {

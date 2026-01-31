@@ -14,7 +14,7 @@ const ItemSmallView = ({ itemId, count }) => {
       <CardView className="icon">
         <img src="/images/profile_bar/avatar_bg.png" className="icon-bg" alt="icon background"></img>
         {ALL_ITEMS[itemId].pos === -1 ? (
-          <img src={ALL_ITEMS[itemId].image} alt="icon"></img>
+          <img style={{scale: 0.2}} src={ALL_ITEMS[itemId].image} alt="icon"></img>
         ) : (
           <div
             className="crop-icon"

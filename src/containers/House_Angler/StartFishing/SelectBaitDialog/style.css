@@ -1,8 +1,13 @@
+.select-bait-dialog {
+  height: -webkit-fill-available;
+  padding-top: 1rem;
+}
+
 .select-bait-dialog .bait-list {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  padding: 1.25rem;
+  height: 100%;
 }
 
 .select-bait-dialog .bait-list .bait-list-item {
@@ -14,6 +19,10 @@
 .select-bait-dialog .bait-list .bait-list-item .icon {
   width: 64px;
   height: 64px;
+}
+
+.select-bait-dialog .bait-list .bait-list-item .base-image {
+  scale: 0.4;
 }
 
 .select-bait-dialog .bait-list .bait-list-item .icon img {

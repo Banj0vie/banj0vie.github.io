@@ -110,7 +110,7 @@ const Fishing = ({ baitId, amount, requestId, onBuyAgain, onBackToMenu }) => {
       <div className="loading">
         <img
           className="background"
-          src={fishingPanelImages.background}
+          src={"/images/label/left-panel-normal.png"}
           alt="fishing panel"
         ></img>
         <img className="pin" src={fishImages.catfish} alt="fish"></img>

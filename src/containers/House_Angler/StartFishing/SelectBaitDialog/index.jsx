@@ -18,7 +18,7 @@ const SelectBaitDialog = ({ onClose, onSelect }) => {
   return (
     <BaseDialog onClose={onClose} title="SELECT BAIT" header="/images/dialog/modal-header-angler.png" headerOffset={50}>
       <div className="select-bait-dialog">
-        <CardView className="p-0">
+        <div className="p-0 h-full">
           <div className="bait-list">
             {ownedBaits.length === 0 ? (
               <div className="no-baits">No baits available</div>
@@ -26,7 +26,7 @@ const SelectBaitDialog = ({ onClose, onSelect }) => {
               ownedBaits.map((baitItem, index) => (
                 <CardView key={index} className="p-0" secondary>
                   <div className="bait-list-item">
-                    <CardView className="p-0 icon">
+                    <CardView className="p-0 icon base-image">
                       <img src={baitItem.image} alt="base-icon"></img>
                     </CardView>
                     <div className="label">
@@ -43,13 +43,14 @@ const SelectBaitDialog = ({ onClose, onSelect }) => {
                       className="button"
                       label="Use"
                       onClick={() => onSelect(baitItem.id)}
+                      small
                     ></BaseButton>
                   </div>
                 </CardView>
               ))
             )}
           </div>
-        </CardView>
+        </div>
       </div>
     </BaseDialog>
   );

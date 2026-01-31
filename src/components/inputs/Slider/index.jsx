@@ -13,7 +13,7 @@ const Slider = ({ min = "0", max = "15", step = "1", value, setValue }) => {
   const minNum = parseFloat(min);
   const maxNum = parseFloat(max);
   const valueNum = parseFloat(value || min);
-  const percentage = ((valueNum - minNum) / (maxNum - minNum)) * 100;
+  const percentage = (valueNum - minNum) === 0 ? 0 : ((valueNum - minNum) / (maxNum - minNum)) * 100;
 
   return (
     <div className="slider-background" style={{ '--slider-progress': `${percentage}%` }}>

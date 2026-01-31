@@ -20,6 +20,10 @@
   scale: 0.5;
 }
 
+.item-view-usable .icon.base-image img {
+  scale: 0.2;
+}
+
 .item-view-usable .button {
   width: 130px;
 }

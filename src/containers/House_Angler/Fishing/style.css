@@ -7,17 +7,18 @@
 
 .fishing-wrapper .loading {
   position: relative;
+   margin-top: 3rem;
 }
 
 .fishing-wrapper .loading .background {
   width: 100%;
+  height: 80px;
 }
 
 .fishing-wrapper .loading .pin {
   position: absolute;
-  width: 32px;
-  height: 32px;
-  top: 55%;
+  height: 50px;
+  top: 50%;
   transform: translate(-50%, -50%);
   left: 20%;
   animation: pinMove 3s ease-in-out infinite;
@@ -47,6 +48,6 @@
 }
 
 .fishing-wrapper .button {
-  width: 80%;
+  width: 100%;
   margin: auto;
 }

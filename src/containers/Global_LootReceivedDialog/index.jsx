@@ -6,10 +6,10 @@ import ItemSmallView from "../../components/boxes/ItemViewSmall";
 
 const LootReceivedDialog = ({ onClose, items }) => {
   return (
-    <BaseDialog onClose={onClose} title="LOOT RECEIVED">
+    <BaseDialog onClose={onClose} title="LOOT RECEIVED" header="/images/dialog/modal-header-chest.png">
       <div className="loot-received-dialog">
         <div className="text-center">Items Received ({items.length})</div>
-        <BaseDivider></BaseDivider>
+        <br/>
         <div className="items-grid">
           {items.map((item, index) => (
             <ItemSmallView
