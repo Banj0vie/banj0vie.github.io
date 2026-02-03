@@ -9,7 +9,7 @@ import SettingsDialog from "../../../containers/Menu_Settings";
 import { useSelector } from "react-redux";
 import { selectBalanceRefreshing } from "../../../solana/store/slices/balanceSlice";
 import { useProdMint } from "../../../hooks/useProdMint";
-// Removed bnToNumber; using plain parsing based on 1e6 decimals for locked tokens
+// Removed bnToNumber; using plain parsing based on 1e9 decimals for locked tokens
 
 const ProfileBar = ({ isFarmMenu }) => {
 

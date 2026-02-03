@@ -55,7 +55,7 @@ export const useBalanceRefresh = () => {
       // Convert on-chain fields (assumed 6 decimals)
       const lockedTokensUi = (() => {
         try { 
-          return (parseFloat(userDataRaw.lockedTokens?.toString?.() ?? '0') / 1e6).toString(); 
+          return (parseFloat(userDataRaw.lockedTokens?.toString?.() ?? '0') / 1e9).toString(); 
         } catch { 
           return '0'; 
         }
@@ -63,7 +63,7 @@ export const useBalanceRefresh = () => {
       
       const xTokenShareUi = (() => {
         try { 
-          return (parseFloat(userDataRaw.xtokenShare?.toString?.() ?? '0') / 1e6).toString(); 
+          return (parseFloat(userDataRaw.xtokenShare?.toString?.() ?? '0') / 1e9).toString(); 
         } catch { 
           return '0'; 
         }
@@ -81,8 +81,8 @@ export const useBalanceRefresh = () => {
       dispatch(fetchBalancesSuccess(balanceUpdate));
 
       // Also update user slice to keep data in sync
-      dispatch(updateLockedTokens(parseFloat(lockedTokensUi) * 1e6)); // Convert back to lamports
-      dispatch(updateXTokenShare(parseFloat(xTokenShareUi) * 1e6)); // Convert back to lamports
+      dispatch(updateLockedTokens(parseFloat(lockedTokensUi) * 1e9)); // Convert back to lamports
+      dispatch(updateXTokenShare(parseFloat(xTokenShareUi) * 1e9)); // Convert back to lamports
 
       // Force immediate UI update by completing refresh state
       dispatch(completeBalanceRefresh());

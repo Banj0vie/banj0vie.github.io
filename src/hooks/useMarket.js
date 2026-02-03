@@ -78,7 +78,7 @@ export const useMarket = () => {
                             seller: listing.seller?.toString?.() || '',
                             id: Number(listing.itemId || 0),
                             amount: Number(listing.amount || 0),
-                            pricePer: Number(listing.pricePer || 0) / 1e6,
+                            pricePer: Number(listing.pricePer || 0) / 1e9,
                             active: !!listing.active,
                         });
                     }
@@ -196,7 +196,7 @@ export const useMarket = () => {
             const itemMintAuthPda = getItemMintAuthPDA();
             // Build transaction with compute budget
             const method = program.methods
-                .list(id, new BN(amount), new BN(Math.floor(pricePer * 1e6)))
+                .list(id, new BN(amount), new BN(Math.floor(pricePer * 1e9)))
                 .accounts({ 
                     seller: publicKey, 
                     gameRegistry: gameRegistryPda, 
@@ -306,7 +306,7 @@ export const useMarket = () => {
 
             // Build transaction with compute budget
             const method = program.methods
-                .batchBuy(id, new BN(Math.floor(maxPricePer * 1e6)), new BN(Math.floor(totalBudget * 1e6)), epochU32)
+                .batchBuy(id, new BN(Math.floor(maxPricePer * 1e9)), new BN(Math.floor(totalBudget * 1e9)), epochU32)
                 .accounts({ 
                     buyer: publicKey, 
                     gameRegistry: gameRegistryPda, 

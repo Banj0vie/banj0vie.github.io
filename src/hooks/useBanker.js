@@ -52,7 +52,7 @@ export const useBanker = () => {
       const bankVaultAta = getBankVaultAta(bankerDataPda);
       
       const method = program.methods
-        .stake(new BN(amount * 1e6))
+        .stake(new BN(amount * 1e9))
         .accounts({
           user: publicKey,
           userData: userDataPda,
@@ -71,8 +71,8 @@ export const useBanker = () => {
       // Fetch updated banker data after successful stake
       try {
         const bankerData = await program.account.bankerData.fetch(bankerDataPda);
-        const xGameToken = bankerData.xbalance / 1e6 || '0';
-        const gameToken = bankerData.balance / 1e6 || '0';
+        const xGameToken = bankerData.xbalance / 1e9 || '0';
+        const gameToken = bankerData.balance / 1e9 || '0';
         dispatch(fetchBankerDataSuccess({ totalGameToken: gameToken, totalXGameToken: xGameToken }));
       } catch (err) {
         console.error('Failed to update banker data:', err);
@@ -121,7 +121,7 @@ export const useBanker = () => {
       const bankVaultAta = getBankVaultAta(bankerDataPda);
       
       const method = program.methods
-        .unstake(new BN(shares * 1e6))
+        .unstake(new BN(shares * 1e9))
         .accounts({
           user: publicKey,
           gameRegistry: gameRegistryPda,
@@ -139,8 +139,8 @@ export const useBanker = () => {
       // Fetch updated banker data after successful unstake
       try {
         const bankerData = await program.account.bankerData.fetch(bankerDataPda);
-        const xGameToken = bankerData.xbalance / 1e6 || '0';
-        const gameToken = bankerData.balance / 1e6 || '0';
+        const xGameToken = bankerData.xbalance / 1e9 || '0';
+        const gameToken = bankerData.balance / 1e9 || '0';
         dispatch(fetchBankerDataSuccess({ totalGameToken: gameToken, totalXGameToken: xGameToken }));
       } catch (err) {
         console.error('Failed to update banker data:', err);
@@ -176,8 +176,8 @@ export const useBanker = () => {
     try {
       const bankerDataPda = getBankerDataPDA();
       const bankerData = await program.account.bankerData.fetch(bankerDataPda);
-      const xGameToken = bankerData.xbalance / 1e6 || '0';
-      const gameToken = bankerData.balance / 1e6 || '0';
+      const xGameToken = bankerData.xbalance / 1e9 || '0';
+      const gameToken = bankerData.balance / 1e9 || '0';
       const result = { totalGameToken: gameToken, totalXGameToken: xGameToken };
       dispatch(fetchBankerDataSuccess(result));
       
@@ -203,10 +203,10 @@ export const useBanker = () => {
 
       // Convert on-chain fields (assumed 6 decimals)
       const lockedTokensUi = (() => {
-        try { return (parseFloat(userDataRaw.lockedTokens?.toString?.() ?? '0') / 1e6).toString(); } catch { return '0'; }
+        try { return (parseFloat(userDataRaw.lockedTokens?.toString?.() ?? '0') / 1e9).toString(); } catch { return '0'; }
       })();
       const xTokenShareUi = (() => {
-        try { return (parseFloat(userDataRaw.xtokenShare?.toString?.() ?? '0') / 1e6).toString(); } catch { return '0'; }
+        try { return (parseFloat(userDataRaw.xtokenShare?.toString?.() ?? '0') / 1e9).toString(); } catch { return '0'; }
       })();
 
       // Update all balances at once

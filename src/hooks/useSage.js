@@ -18,9 +18,9 @@ const getUnlockPercentBps = (level) => {
   if (level >= 10) return 1000; // 10%
   return 100; // 1%
 };
-// 2.5 + 2.5 * level, program uses 6 decimals (1e6)
+// 2.5 + 2.5 * level, program uses 6 decimals (1e9)
 const getUnlockCost = (level) => {
-  const unit = 2_500_000; // 2.5e6
+  const unit = 2_500_000_000; // 2.5e9
   return unit + unit * (Number(level) || 0);
 };
 
@@ -105,7 +105,7 @@ export const useSage = () => {
       const canUnlockHarvest = (lastHarvestTime === 0 || now >= nextHarvestUnlockTime * 1000);
 
       // Convert to UI units (assume 6 decimals)
-      const toUi = (bn) => parseFloat(bn.toString()) / 1e6;
+      const toUi = (bn) => parseFloat(bn.toString()) / 1e9;
 
       setSageData({
         lockedAmount: toUi(lockedTokens),

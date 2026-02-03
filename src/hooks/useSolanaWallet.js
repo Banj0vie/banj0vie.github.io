@@ -169,8 +169,8 @@ export const useSolanaWallet = () => {
         if (!cancelled) {
           const lockedTokensStr = userData?.locked_tokens ? userData.locked_tokens.toString() : '0';
           const xTokenShareStr = userData?.xtoken_share ? userData.xtoken_share.toString() : '0';
-          const lockedTokensUi = (() => { try { return (parseFloat(lockedTokensStr) / 1e6).toString(); } catch { return '0'; } })();
-          const xTokenShareUi = (() => { try { return (parseFloat(xTokenShareStr) / 1e6).toString(); } catch { return '0'; } })();
+          const lockedTokensUi = (() => { try { return (parseFloat(lockedTokensStr) / 1e9).toString(); } catch { return '0'; } })();
+          const xTokenShareUi = (() => { try { return (parseFloat(xTokenShareStr) / 1e9).toString(); } catch { return '0'; } })();
           dispatch(fetchBalancesSuccess({
             gameToken: gameTokenAmount.toString(),
             stakedBalance: lockedTokensUi,

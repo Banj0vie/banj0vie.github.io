@@ -37,10 +37,10 @@ export const useVendor = () => {
 
       // Convert on-chain fields (assumed 6 decimals)
       const lockedTokensUi = (() => {
-        try { return (parseFloat(userDataRaw.lockedTokens?.toString?.() ?? '0') / 1e6).toString(); } catch { return '0'; }
+        try { return (parseFloat(userDataRaw.lockedTokens?.toString?.() ?? '0') / 1e9).toString(); } catch { return '0'; }
       })();
       const xTokenShareUi = (() => {
-        try { return (parseFloat(userDataRaw.xtokenShare?.toString?.() ?? '0') / 1e6).toString(); } catch { return '0'; }
+        try { return (parseFloat(userDataRaw.xtokenShare?.toString?.() ?? '0') / 1e9).toString(); } catch { return '0'; }
       })();
 
       // Update all balances at once

@@ -187,7 +187,7 @@ export const useDex = () => {
     dispatch(sellTokensStart());
 
     try {
-      const tokenAmountBaseUnits = Math.floor(tokenAmount * 1e6); // Assuming 6 decimals
+      const tokenAmountBaseUnits = Math.floor(tokenAmount * 1e9); // Assuming 6 decimals
       if (tokenAmountBaseUnits <= 0) {
         throw new Error('Invalid token amount');
       }
@@ -288,7 +288,7 @@ export const useDex = () => {
 
       // token_out = sol_in * t0 / s0
       const tokensOut = (BigInt(solIn) * t0) / s0;
-      return (Number(tokensOut) / 1e6).toFixed(6); // Convert back to UI units
+      return (Number(tokensOut) / 1e9).toFixed(6); // Convert back to UI units
     } catch (err) {
       console.error('Failed to calculate tokens out:', err);
       return '0';
@@ -301,7 +301,7 @@ export const useDex = () => {
     if (!poolData) return '0';
 
     try {
-      const tokenIn = Math.floor(tokenAmount * 1e6);
+      const tokenIn = Math.floor(tokenAmount * 1e9);
       const s0 = BigInt(poolData.virtualSolReserves) + BigInt(poolData.realSolReserves);
       const t0 = BigInt(poolData.virtualTokenReserves) + BigInt(poolData.realTokenReserves);
       

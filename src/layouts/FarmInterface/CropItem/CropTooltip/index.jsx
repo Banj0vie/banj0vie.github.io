@@ -247,7 +247,7 @@ const CropTooltip = ({
             <div className="flex-text status-label">
               <div>Total Harvest</div>
               <div className="highlight">
-                {((Number(locked || 0) + Number(unlocked || 0)) / 1e6).toFixed(
+                {((Number(locked || 0) + Number(unlocked || 0)) / 1e9).toFixed(
                   2
                 )}{" "}
                 $HNY
@@ -256,13 +256,13 @@ const CropTooltip = ({
             <div className="flex-text status-label">
               <div className="">locked</div>
               <div className="highlight">
-                {(Number(locked || 0) / 1e6).toFixed(2)} $HNY
+                {(Number(locked || 0) / 1e9).toFixed(2)} $HNY
               </div>
             </div>
             <div className="flex-text status-label">
               <div className="">unlocked</div>
               <div className="highlight">
-                {(Number(unlocked || 0) / 1e6).toFixed(2)} $HNY
+                {(Number(unlocked || 0) / 1e9).toFixed(2)} $HNY
               </div>
             </div>
           </div>
