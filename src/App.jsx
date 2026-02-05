@@ -198,9 +198,6 @@ const App = () => {
   }, []);
 
   const endpoint = useMemo(() => FINAL_RPC_ENDPOINT, []);
-  
-  const currentCluster = getCurrentCluster();
-  const clusterConfig = getCurrentClusterConfig();
   const clusterWarning = getClusterWarning();
   const clusterDisplayName = getClusterDisplayName();
 

@@ -85,8 +85,13 @@ const uiSlice = createSlice({
 
       let nextValue = value;
       if (numericSettings.has(key)) {
-        const parsed = parseFloat(value);
-        nextValue = Number.isNaN(parsed) ? 0 : parsed;
+        if(value.includes(".")){
+          nextValue = value
+        }else{
+          const parsed = parseFloat(value);
+          nextValue = Number.isNaN(parsed) ? 0 : parsed;
+        }
+        
       }
 
       state.settings = {

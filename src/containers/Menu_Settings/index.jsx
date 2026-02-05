@@ -13,6 +13,7 @@ const SettingsDialog = ({ onClose }) => {
   const settings = useAppSelector(selectSettings) || defaultSettings;
 
   const setSetting = (key) => (value) => {
+    console.log("value", value);
     dispatch(updateSetting({ key, value }));
   };
 

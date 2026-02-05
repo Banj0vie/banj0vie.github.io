@@ -2,14 +2,14 @@
 export const CLUSTER_CONFIGS = {
   'devnet': {
     name: 'devnet',
-    rpcEndpoint: 'https://devnet.helius-rpc.com/?api-key=dd3dcec5-f5df-473a-8696-f27d7a49cd26',
+    rpcEndpoint: 'https://devnet.helius-rpc.com/?api-key=bff16915-1b30-4947-9ab9-7b1d87a4a47d',
     wsEndpoint: 'wss://api.devnet.solana.com',
     isMainnet: false,
     isTestnet: true,
   },
   'mainnet-beta': {
     name: 'mainnet-beta',
-    rpcEndpoint: 'https://mainnet.helius-rpc.com/?api-key=dd3dcec5-f5df-473a-8696-f27d7a49cd26',
+    rpcEndpoint: 'https://mainnet.helius-rpc.com/?api-key=bff16915-1b30-4947-9ab9-7b1d87a4a47d',
     wsEndpoint: 'wss://api.mainnet-beta.solana.com',
     isMainnet: true,
     isTestnet: false,
@@ -36,7 +36,7 @@ export const getClusterFromUrl = () => {
 };
 
 export const getClusterConfig = (cluster) => {
-  const targetCluster = cluster || getClusterFromUrl();
+  const targetCluster = cluster || getClusterFromEnv();
   return CLUSTER_CONFIGS[targetCluster];
 };
 
@@ -67,9 +67,7 @@ export const getClusterDisplayName = (cluster) => {
 
 export const getClusterWarning = (cluster) => {
   const config = getClusterConfig(cluster);
-  if (config.isMainnet) {
-    return '⚠️ You are connected to Solana Mainnet. Real funds will be used!';
-  }
+
   return null;
 };
 
@@ -97,10 +95,11 @@ export const getClusterFromEnv = () => {
 };
 
 export const getFinalCluster = () => {
-  const urlCluster = getClusterFromUrl();
+  // const urlCluster = getClusterFromUrl();
   const envCluster = getClusterFromEnv();
-  if (urlCluster !== 'devnet' || (typeof window !== 'undefined' && window.location.search.includes('cluster'))) {
-    return urlCluster;
-  }
+  // if (urlCluster !== 'devnet' || (typeof window !== 'undefined' && window.location.search.includes('cluster'))) {
+  //   return urlCluster;
+  // }
+  console.log("envCluster", envCluster)
   return envCluster;
 };

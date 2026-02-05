@@ -115,6 +115,8 @@ const DexDialog = ({ onClose, label = "DEX", header = "" }) => {
     audio.currentTime = 0;
     audio.play().catch(() => {});
 
+    console.log("started dex;")
+
     if (isReversed) {
       // Game Token → SOL swap
       if (!gameTokenAmount || parseFloat(gameTokenAmount) <= 0) {
@@ -146,6 +148,7 @@ const DexDialog = ({ onClose, label = "DEX", header = "" }) => {
       }
 
       try {
+        console.log('buy token')
         const result = await buyTokens(parseFloat(solAmount));
 
         if (result && result.success) {
