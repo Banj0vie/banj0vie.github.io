@@ -6,7 +6,7 @@ export const SOLANA_VALLEY_DEX_PROGRAM_ID = undefined // new PublicKey('EVHHfpb4
 
 export const GAME_TOKEN_MINT = new PublicKey('3dgCCb15HMQSA4Pn3Tfii5vRk7aRqTH95LJjxzsG2Mug') // new PublicKey('ENiJaLrLtgtiPbPrt5ZjKKe6yHzaLQcJpiPmEbiwNyJT');
 
-export const LOOKUP_TABLE_ADDRESS = new PublicKey('Hbtok7JwiLN6ecQzVdEMGgFaRm5waWQRz6kr4ujqzxwd');
+export const LOOKUP_TABLE_ADDRESS = new PublicKey('41bppee4GAfxcZoLR2FEu7J5ke8oavYeq9HC2kx5YzKi');
 
 export const getCurrentCluster = () => getFinalCluster();
 export const getCurrentClusterConfig = () => getClusterConfig();
