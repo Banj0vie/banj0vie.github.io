@@ -1,10 +1,29 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import "./style.css";
 import BaseDialog from "../../_BaseDialog";
 import BaseButton from "../../../components/buttons/BaseButton";
 import SeedRollingBox from "../../../components/boxes/SeedRollingBox";
+import { useAppSelector } from "../../../solana/store";
+import { selectSettings } from "../../../solana/store/slices/uiSlice";
+import { defaultSettings } from "../../../utils/settings";
+import { clampVolume } from "../../../utils/basic";
 
 const SeedRollingDialog = ({ rollingInfo, onClose, onBack, onBuyAgain }) => {
+  const settings = useAppSelector(selectSettings) || defaultSettings;
+  const seedPurchaseAudioRef = useRef(null);
+
+  useEffect(() => {
+    if (!seedPurchaseAudioRef.current) {
+      seedPurchaseAudioRef.current = new Audio("/sounds/SeedPurchaseGachaSFX.wav");
+      seedPurchaseAudioRef.current.preload = "auto";
+    }
+    const audio = seedPurchaseAudioRef.current;
+    const volumeSetting = parseFloat(settings?.soundVolume ?? 0) / 100;
+    audio.volume = clampVolume(volumeSetting);
+    audio.currentTime = 0;
+    audio.play().catch(() => {});
+  }, [settings?.soundVolume]);
+
   return (
     <BaseDialog title="SEED GACHA" onClose={onClose} header="/images/dialog/modal-header-gardner.png" headerOffset={10}>
       <div className="seed-gacha-wrapper">

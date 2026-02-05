@@ -1,14 +1,25 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useRef, useState } from 'react';
 import { generateId } from '../utils/basic';
 
 const NotificationContext = createContext(null);
 
 export const NotificationProvider = ({ children }) => {
   const [toasts, setToasts] = useState([]);
+  const successAudioRef = useRef(null);
 
   const show = (message, kind = 'info', timeout = 3000) => {
     const id = generateId();
+    if (kind === 'success') {
+      if (!successAudioRef.current) {
+        successAudioRef.current = new Audio('/sounds/SuccessSFXTxnSignSuccess.wav');
+        successAudioRef.current.preload = 'auto';
+      }
+      const audio = successAudioRef.current;
+      audio.currentTime = 0;
+      audio.play().catch(() => {});
+    }
     setToasts((t) => [...t, { id, message, kind }]);
+    
     
     let timeoutId;
     if (timeout > 0) {

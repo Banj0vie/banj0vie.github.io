@@ -226,6 +226,7 @@ const VendorDialog = ({ onClose, label = "VENDOR", header = "", headerOffset = 0
   }, []);
 
   const handleReveal = useCallback(
+    
     async (requestId, tier, count) => {
       if (!requestId) return;
 

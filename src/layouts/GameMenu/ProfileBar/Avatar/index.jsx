@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import "./style.css";
 import AvatarDialog from "../../../../containers/Menu_Avatar";
 import { useEquipmentRegistry } from "../../../../hooks/useContracts";
@@ -8,6 +8,8 @@ const Avatar = ({ src, alt = "avatar" }) => {
   const [isAvatarDialog, setIsAvatarDialog] = useState(false);
   const [avatarImage, setAvatarImage] = useState(null);
   const [loading, setLoading] = useState(true);
+  const hoverAudioRef = useRef(null);
+  const clickAudioRef = useRef(null);
 
   const { account } = useSolanaWallet();
   const { getAvatars, getNFTMetadata } = useEquipmentRegistry();
@@ -55,6 +57,17 @@ const Avatar = ({ src, alt = "avatar" }) => {
     return () => window.removeEventListener('avatarsUpdated', handler);
   }, [account, getAvatars, getNFTMetadata]);
 
+  useEffect(() => {
+    if (!hoverAudioRef.current) {
+      hoverAudioRef.current = new Audio("/sounds/ButtonHover.wav");
+      hoverAudioRef.current.preload = "auto";
+    }
+    if (!clickAudioRef.current) {
+      clickAudioRef.current = new Audio("/sounds/ButtonClick.wav");
+      clickAudioRef.current.preload = "auto";
+    }
+  }, []);
+
   const resolvedSrc = src || avatarImage || fallbackSrc;
 
   return (
@@ -70,7 +83,20 @@ const Avatar = ({ src, alt = "avatar" }) => {
             src={resolvedSrc}
             alt={alt}
             className="avatar-img"
-            onClick={() => setIsAvatarDialog(true)}
+            onClick={() => {
+              const audio = clickAudioRef.current;
+              if (audio) {
+                audio.currentTime = 0;
+                audio.play().catch(() => {});
+              }
+              setIsAvatarDialog(true);
+            }}
+            onMouseEnter={() => {
+              const audio = hoverAudioRef.current;
+              if (!audio) return;
+              audio.currentTime = 0;
+              audio.play().catch(() => {});
+            }}
             onError={(e) => {
               e.target.src = fallbackSrc;
             }}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './style.css';
 import { useEquipmentRegistry } from '../../../hooks/useContracts';
 import BoostNFTSelector from '../BoostNFTSelector';
@@ -9,6 +9,8 @@ const NFTBox = ({ avatar, loading, slotIndex, onAvatarChange, allAvatars = [] })
     const [isLoading, setIsLoading] = useState(false);
     const [showSelector, setShowSelector] = useState(false);
     const { getNFTMetadata } = useEquipmentRegistry();
+    const hoverAudioRef = useRef(null);
+    const clickAudioRef = useRef(null);
 
     useEffect(() => {
         const fetchNFTData = async () => {
@@ -53,7 +55,23 @@ const NFTBox = ({ avatar, loading, slotIndex, onAvatarChange, allAvatars = [] })
         fetchNFTData();
     }, [avatar, loading, getNFTMetadata]);
 
+    useEffect(() => {
+        if (!hoverAudioRef.current) {
+            hoverAudioRef.current = new Audio("/sounds/ButtonHover.wav");
+            hoverAudioRef.current.preload = "auto";
+        }
+        if (!clickAudioRef.current) {
+            clickAudioRef.current = new Audio("/sounds/ButtonClick.wav");
+            clickAudioRef.current.preload = "auto";
+        }
+    }, []);
+
     const handleClick = () => {
+        const audio = clickAudioRef.current;
+        if (audio) {
+            audio.currentTime = 0;
+            audio.play().catch(() => {});
+        }
         setShowSelector(true);
     };
 
@@ -87,7 +105,16 @@ const NFTBox = ({ avatar, loading, slotIndex, onAvatarChange, allAvatars = [] })
 
     return (
         <>
-            <div className="nft-box clickable" onClick={handleClick}>
+            <div
+                className="nft-box clickable"
+                onClick={handleClick}
+                onMouseEnter={() => {
+                    const audio = hoverAudioRef.current;
+                    if (!audio) return;
+                    audio.currentTime = 0;
+                    audio.play().catch(() => {});
+                }}
+            >
                 <CardImgView className="nft-card">
                     {!avatar || avatar.isEmpty ? (
                         <img src="/images/avatars/avatar-left-placeholder.png" alt="empty slot"></img>

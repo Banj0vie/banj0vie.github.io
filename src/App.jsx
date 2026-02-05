@@ -26,6 +26,7 @@ import ProfileBar from "./layouts/GameMenu/ProfileBar";
 import wallets from "./config/solanaWallet";
 import store from "./solana/store";
 import { BG_COLORS } from "./constants/background_colors";
+import BackgroundMusic from "./components/audio/BackgroundMusic";
 
 // Import wallet adapter CSS
 import '@solana/wallet-adapter-react-ui/styles.css';
@@ -210,6 +211,7 @@ const App = () => {
           <WalletModalProvider>
             <NotificationProvider>
               <Router>
+                <BackgroundMusic />
                 {clusterWarning && (
                   <div style={{
                     position: 'fixed',

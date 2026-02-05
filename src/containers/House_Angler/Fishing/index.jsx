@@ -21,6 +21,7 @@ const Fishing = ({ baitId, amount, requestId, onBuyAgain, onBackToMenu }) => {
   
   // Use ref to track cleanup function, similar to handleReveal pattern
   const fishingCleanupRef = useRef(null);
+  const reelInAudioRef = useRef(null);
 
   // Initialize state when component mounts
   useEffect(() => {
@@ -42,8 +43,17 @@ const Fishing = ({ baitId, amount, requestId, onBuyAgain, onBackToMenu }) => {
     }
 
     setIsFishing(true);
+    if (!reelInAudioRef.current) {
+      reelInAudioRef.current = new Audio("/sounds/FishingReelInButton.wav");
+      reelInAudioRef.current.preload = "auto";
+    }
+    const audio = reelInAudioRef.current;
+    audio.currentTime = 0;
+    audio.play().catch(() => {});
     
     try {
+
+      
       // Reveal fishing on-chain - use requestId if available, otherwise use stored nonce
       const result = await revealFishing(requestId);
       

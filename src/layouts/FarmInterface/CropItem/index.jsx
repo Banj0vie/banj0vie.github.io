@@ -29,6 +29,8 @@ const CropItem = ({
   // tooltipRef removed; portal rendering handled by CropTooltip
   const rootRef = useRef(null);
   const [portalContainer, setPortalContainer] = useState(null);
+  const hoverAudioRef = useRef(null);
+  const clickAudioRef = useRef(null);
   const isPreview = useMemo(() => {
     if (!crops || !data?.seedId || index >= crops.getLength()) return false;
     return crops.getItem(index).seedId !== data.seedId;
@@ -42,6 +44,17 @@ const CropItem = ({
       setHighlighted(selectedIndexes.includes(index));
     }
   }, [isPlanting, selectedIndexes, index]);
+
+  useEffect(() => {
+    if (!hoverAudioRef.current) {
+      hoverAudioRef.current = new Audio("/sounds/ButtonHover.wav");
+      hoverAudioRef.current.preload = "auto";
+    }
+    if (!clickAudioRef.current) {
+      clickAudioRef.current = new Audio("/sounds/ButtonClick.wav");
+      clickAudioRef.current.preload = "auto";
+    }
+  }, []);
 
   // Update growth progress
   useEffect(() => {
@@ -112,7 +125,13 @@ const CropItem = ({
   };
 
   const handleMouseEnter = (e) => {
+    const hoverAudio = hoverAudioRef.current;
+    if (hoverAudio && !isDisabled) {
+      hoverAudio.currentTime = 0;
+      hoverAudio.play().catch(() => {});
+    }
     if (!data.seedId) return;
+    
     setTooltipVisible(true);
     // Ensure portal container is resolved before computing position
     if (!portalContainer && rootRef.current) {
@@ -297,14 +316,14 @@ const CropItem = ({
           if (isDisabled) {
             return; // Don't allow interaction with disabled plots
           }
-          console.log(`CropItem ${index} clicked:`, {
-            isDisabled,
-            isPlanting,
-            data,
-            index,
-          });
+
           if (isPlanting && data.seedId) {
             return; // Don't allow planting on already planted plots
+          }
+          const clickAudio = clickAudioRef.current;
+          if (clickAudio) {
+            clickAudio.currentTime = 0;
+            clickAudio.play().catch(() => {});
           }
           // Pass parameters in correct order: (isShift, index)
           // Don't update local highlighted state here - let parent handle it

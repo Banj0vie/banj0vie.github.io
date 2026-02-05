@@ -28,7 +28,6 @@ const StartFishing = ({ onBack, onStart }) => {
   const onConfirmBaitAmount = async (amount) => {
     setIsThrowingBait(true);
     setIsConfirmDialog(false);
-
     try {
       // Call fish() function when user confirms bait amount
       const result = await fish(selectedBaitId, amount);
