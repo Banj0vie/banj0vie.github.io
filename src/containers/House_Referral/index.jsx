@@ -96,8 +96,7 @@ const ReferralDialog = ({ onClose, label = "REFERRAL", header = "" }) => {
       <div className="referral-dialog">
         <div>Your Sponsor</div>
         <CardView className="p-0">
-          {myReferralCode ? (
-            // If user has registered their own referral code, show sponsor info or empty state
+          {
             sponsor ? (
               <div className="text-center">
                 {sponsor.slice(0, 6)}...{sponsor.slice(-6)}
@@ -107,23 +106,7 @@ const ReferralDialog = ({ onClose, label = "REFERRAL", header = "" }) => {
                 No sponsor
               </div>
             )
-          ) : (
-            // If user hasn't registered their own referral code yet, show registration form
-            <div className="sponsor-box">
-              <BaseInput
-                className="h-3rem"
-                value={code}
-                setValue={(v) => setCode(v)}
-                placeholder="Code (Max: 32 Characters)"
-              ></BaseInput>
-              <BaseButton
-                className="h-3rem mt-1rem"
-                label={isRegistering ? "Registering..." : "Register Code"}
-                onClick={onRegister}
-                disabled={isRegistering || currentLevel < 6 || !code.trim() || code.length > 32}
-              ></BaseButton>
-            </div>
-          )}
+          }
         </CardView>
         <BaseDivider></BaseDivider>
         <div>Your referral code</div>
@@ -142,27 +125,41 @@ const ReferralDialog = ({ onClose, label = "REFERRAL", header = "" }) => {
                   <div className="">Share your referral code:</div>
                   <div className="highlight">{ethers.decodeBytes32String(myReferralCode)}</div>
                 </div>
-                <div className="text-1.25">
+                <div className="text-1.25 margin-bottom-1rem">
                   Earn up to <span className="highlight">{Math.max(...Object.values(referralBpsByLevel)) / 100}%</span> of your
                   referrals' spendings!
                 </div>
+                <BaseButton
+                  className="h-4rem"
+                  label="Copy to clipboard"
+                  onClick={onCopy}
+                  disabled={loading}
+                ></BaseButton>
               </div>
             ) : (
-              <div className="register-referral-wrapper">
-                <div className="text-center">
-                  <div className="">Enter your referral code above and click "Register Code" to register it.</div>
+              <><div className="sponsor-box">
+                  <BaseInput
+                    className="h-3rem"
+                    value={code}
+                    setValue={(v) => setCode(v)}
+                    placeholder="Code (Max: 32 Characters)"
+                  ></BaseInput>
+                  <BaseButton
+                    className="h-3rem mt-1rem"
+                    label={isRegistering ? "Registering..." : "Register Code"}
+                    onClick={onRegister}
+                    disabled={isRegistering || currentLevel < 6 || !code.trim() || code.length > 32}
+                  ></BaseButton>
                 </div>
-              </div>
+                <div className="register-referral-wrapper">
+                  <div className="text-center">
+                    <div className="">Enter your referral code above and click "Register Code" to register it.</div>
+                  </div>
+                </div>
+              </>
+              
             )}
           </CardView>
-        )}
-        {currentLevel >= 6 && myReferralCode && (
-          <BaseButton
-            className="h-4rem"
-            label="Copy to clipboard"
-            onClick={onCopy}
-            disabled={loading}
-          ></BaseButton>
         )}
       </div>
     </BaseDialog>

@@ -65,12 +65,6 @@ export const getClusterDisplayName = (cluster) => {
   return config.name === 'mainnet-beta' ? 'Mainnet' : config.name.charAt(0).toUpperCase() + config.name.slice(1);
 };
 
-export const getClusterWarning = (cluster) => {
-  const config = getClusterConfig(cluster);
-
-  return null;
-};
-
 export const updateUrlWithCluster = (cluster) => {
   if (typeof window === 'undefined') return;
   const url = new URL(window.location.href);

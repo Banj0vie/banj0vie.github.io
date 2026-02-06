@@ -18,8 +18,8 @@ import Farm from "./router/farm.jsx";
 import House from "./router/house.jsx";
 import { ConnectionProvider, WalletProvider } from '@solana/wallet-adapter-react';
 import { WalletModalProvider } from '@solana/wallet-adapter-react-ui';
-import { FINAL_RPC_ENDPOINT, getCurrentCluster, getCurrentClusterConfig } from './solana/constants/programId';
-import { getClusterWarning, getClusterDisplayName } from './solana/utils/clusterUtils';
+import { FINAL_RPC_ENDPOINT } from './solana/constants/programId';
+import { getClusterDisplayName } from './solana/utils/clusterUtils';
 import Tavern from "./router/tavern.jsx";
 import Valley from "./router/valley.jsx";
 import ProfileBar from "./layouts/GameMenu/ProfileBar";
@@ -198,7 +198,6 @@ const App = () => {
   }, []);
 
   const endpoint = useMemo(() => FINAL_RPC_ENDPOINT, []);
-  const clusterWarning = getClusterWarning();
   const clusterDisplayName = getClusterDisplayName();
 
   return (
@@ -209,27 +208,9 @@ const App = () => {
             <NotificationProvider>
               <Router>
                 <BackgroundMusic />
-                {clusterWarning && (
-                  <div style={{
-                    position: 'fixed',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    backgroundColor: '#ff6b6b',
-                    color: 'white',
-                    padding: '8px 16px',
-                    textAlign: 'center',
-                    zIndex: 9999,
-                    fontSize: '14px',
-                    fontWeight: 'bold'
-                  }}>
-                    {clusterWarning}
-                  </div>
-                )}
                 
                 <div style={{
                   position: 'fixed',
-                  top: clusterWarning ? '40px' : '0',
                   right: '20px',
                   backgroundColor: 'rgba(0, 0, 0, 0.7)',
                   color: 'white',
