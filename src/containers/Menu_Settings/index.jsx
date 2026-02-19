@@ -1,42 +1,21 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import "./style.css";
 import BaseDialog from "../_BaseDialog";
 import Slider from "../../components/inputs/Slider";
 import BaseCheckBox from "../../components/inputs/BaseCheckBox";
 import BaseInput from "../../components/inputs/BaseInput";
-import { loadSettings, saveSettings, defaultSettings } from "../../utils/settings";
+import { defaultSettings } from "../../utils/settings";
+import { useAppDispatch, useAppSelector } from "../../solana/store";
+import { selectSettings, updateSetting } from "../../solana/store/slices/uiSlice";
 
 const SettingsDialog = ({ onClose }) => {
-  const [soundVolume, setSoundVolume] = useState(defaultSettings.soundVolume);
-  const [musicVolume, setMusicVolume] = useState(defaultSettings.musicVolume);
-  const [isShowGrowthStage, setIsShowGrowthStage] = useState(defaultSettings.isShowGrowthStage);
-  const [isOverwritePlant, setIsOverwritePlant] = useState(defaultSettings.isOverwritePlant);
-  const [dexSlippage, setDexSlippage] = useState(defaultSettings.dexSlippage);
-  const [baseGwei, setBaseGwei] = useState(defaultSettings.baseGwei);
+  const dispatch = useAppDispatch();
+  const settings = useAppSelector(selectSettings) || defaultSettings;
 
-  // Load settings on component mount
-  useEffect(() => {
-    const loadedSettings = loadSettings();
-    setSoundVolume(loadedSettings.soundVolume);
-    setMusicVolume(loadedSettings.musicVolume);
-    setIsShowGrowthStage(loadedSettings.isShowGrowthStage);
-    setIsOverwritePlant(loadedSettings.isOverwritePlant);
-    setDexSlippage(loadedSettings.dexSlippage);
-    setBaseGwei(loadedSettings.baseGwei);
-  }, []);
-
-  // Save settings whenever any setting changes
-  useEffect(() => {
-    const currentSettings = {
-      soundVolume,
-      musicVolume,
-      isShowGrowthStage,
-      isOverwritePlant,
-      dexSlippage,
-      baseGwei
-    };
-    saveSettings(currentSettings);
-  }, [soundVolume, musicVolume, isShowGrowthStage, isOverwritePlant, dexSlippage, baseGwei]);
+  const setSetting = (key) => (value) => {
+    console.log("value", value);
+    dispatch(updateSetting({ key, value }));
+  };
 
   return (
     <BaseDialog onClose={onClose} title="SETTINGS" header="/images/dialog/modal-header-setting.png" headerWidth={120} className="custom-modal-background">
@@ -48,8 +27,8 @@ const SettingsDialog = ({ onClose }) => {
               <Slider
                 min="0"
                 max="100"
-                value={soundVolume}
-                setValue={(val) => setSoundVolume(val)}
+                value={settings.soundVolume ?? defaultSettings.soundVolume}
+                setValue={setSetting("soundVolume")}
               ></Slider>
             </div>
           </div>
@@ -59,16 +38,16 @@ const SettingsDialog = ({ onClose }) => {
               <Slider
                 min="0"
                 max="100"
-                value={musicVolume}
-                setValue={(val) => setMusicVolume(val)}
+                value={settings.musicVolume ?? defaultSettings.musicVolume}
+                setValue={setSetting("musicVolume")}
               ></Slider>
             </div>
           </div>
           <div className="settings-row">
             <div>Show Growth Stages</div>
             <BaseCheckBox
-              isChecked={isShowGrowthStage}
-              onChange={(v) => setIsShowGrowthStage(v)}
+              isChecked={settings.isShowGrowthStage ?? defaultSettings.isShowGrowthStage}
+              onChange={setSetting("isShowGrowthStage")}
             ></BaseCheckBox>
           </div>
         </div>
@@ -83,8 +62,8 @@ const SettingsDialog = ({ onClose }) => {
           <div className="left">Dex Slippage %</div>
           <BaseInput
             className="right"
-            value={dexSlippage}
-            setValue={(val) => setDexSlippage(val)}
+            value={settings.dexSlippage ?? defaultSettings.dexSlippage}
+            setValue={setSetting("dexSlippage")}
             primary={true}
           ></BaseInput>
         </div>
@@ -92,8 +71,8 @@ const SettingsDialog = ({ onClose }) => {
           <div className="left">Base Gwei</div>
           <BaseInput
             className="right"
-            value={baseGwei}
-            setValue={(val) => setBaseGwei(val)}
+            value={settings.baseGwei ?? defaultSettings.baseGwei}
+            setValue={setSetting("baseGwei")}
             primary={true}
           ></BaseInput>
         </div>

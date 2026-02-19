@@ -1,4 +1,12 @@
 import { createSlice } from '@reduxjs/toolkit';
+import { loadSettings, saveSettings } from '../../../utils/settings';
+
+const numericSettings = new Set([
+  'soundVolume',
+  'musicVolume',
+  'dexSlippage',
+  'baseGwei',
+]);
 
 const initialState = {
   activeDialog: null,
@@ -6,6 +14,7 @@ const initialState = {
   isTransactionPending: false,
   loadingStates: {},
   errorStates: {},
+  settings: loadSettings(),
 };
 
 const uiSlice = createSlice({
@@ -68,6 +77,36 @@ const uiSlice = createSlice({
       state.loadingStates = {};
       state.errorStates = {};
     },
+    updateSetting: (state, action) => {
+      const { key, value } = action.payload || {};
+      if (!key) {
+        return;
+      }
+
+      let nextValue = value;
+      if (numericSettings.has(key)) {
+        if(value.includes(".")){
+          nextValue = value
+        }else{
+          const parsed = parseFloat(value);
+          nextValue = Number.isNaN(parsed) ? 0 : parsed;
+        }
+        
+      }
+
+      state.settings = {
+        ...state.settings,
+        [key]: nextValue,
+      };
+      saveSettings(state.settings);
+    },
+    setSettings: (state, action) => {
+      state.settings = {
+        ...state.settings,
+        ...(action.payload || {}),
+      };
+      saveSettings(state.settings);
+    },
   },
 });
 
@@ -85,6 +124,8 @@ export const {
   clearError,
   clearAllErrors,
   clearUIState,
+  updateSetting,
+  setSettings,
 } = uiSlice.actions;
 
 export default uiSlice.reducer;
@@ -95,3 +136,4 @@ export const selectHasActiveDialog = (state) => state.ui.activeDialog !== null;
 export const selectActiveNotifications = (state) => state.ui.notifications;
 export const selectNotificationsByType = (state, type) =>
   state.ui.notifications.filter(n => n.type === type);
+export const selectSettings = (state) => state.ui.settings;

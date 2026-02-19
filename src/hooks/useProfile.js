@@ -18,6 +18,8 @@ export const useProfile = () => {
         if (!program || !publicKey) { setError('Program or wallet not available'); return null; }
         if (loading) { setError('Transaction already in progress'); return null; }
         setLoading(true); setError(null);
+    console.log("asdffffffffffffffffffffffffffffffffffffffffffffff", connection)
+
         try {
             const userDataPda = getUserDataPDA(publicKey);
             const receiverPda = getReceiverPDA();

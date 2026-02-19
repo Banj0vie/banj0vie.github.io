@@ -1,10 +1,26 @@
-import React from "react";
+import React, { useRef } from "react";
 import "./style.css";
 import { sliderImages } from "../../../constants/_baseimages";
+import { useAppSelector } from "../../../solana/store";
+import { selectSettings } from "../../../solana/store/slices/uiSlice";
+import { defaultSettings } from "../../../utils/settings";
+import { clampVolume } from "../../../utils/basic";
 
 const Slider = ({ min = "0", max = "15", step = "1", value, setValue }) => {
+  const settings = useAppSelector(selectSettings) || defaultSettings;
+  const sliderAudioRef = useRef(null);
+
   const handleChange = (e) => {
     if (setValue && typeof setValue === 'function') {
+      if (!sliderAudioRef.current) {
+        sliderAudioRef.current = new Audio("/sounds/CustomSliderSFX.wav");
+        sliderAudioRef.current.preload = "auto";
+      }
+      const audio = sliderAudioRef.current;
+      const volumeSetting = parseFloat(settings?.soundVolume ?? 0) / 100;
+      audio.volume = clampVolume(volumeSetting);
+      audio.currentTime = 0;
+      audio.play().catch(() => {});
       setValue(e.target.value);
     }
   };

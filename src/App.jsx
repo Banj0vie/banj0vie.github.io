@@ -18,14 +18,15 @@ import Farm from "./router/farm.jsx";
 import House from "./router/house.jsx";
 import { ConnectionProvider, WalletProvider } from '@solana/wallet-adapter-react';
 import { WalletModalProvider } from '@solana/wallet-adapter-react-ui';
-import { FINAL_RPC_ENDPOINT, getCurrentCluster, getCurrentClusterConfig } from './solana/constants/programId';
-import { getClusterWarning, getClusterDisplayName } from './solana/utils/clusterUtils';
+import { FINAL_RPC_ENDPOINT } from './solana/constants/programId';
+import { getClusterDisplayName } from './solana/utils/clusterUtils';
 import Tavern from "./router/tavern.jsx";
 import Valley from "./router/valley.jsx";
 import ProfileBar from "./layouts/GameMenu/ProfileBar";
 import wallets from "./config/solanaWallet";
 import store from "./solana/store";
 import { BG_COLORS } from "./constants/background_colors";
+import BackgroundMusic from "./components/audio/BackgroundMusic";
 
 // Import wallet adapter CSS
 import '@solana/wallet-adapter-react-ui/styles.css';
@@ -125,6 +126,24 @@ const AppContent = () => {
 };
 
 const App = () => {
+  const appPassword = process.env.REACT_APP_APP_PASSWORD || "";
+  const [passwordInput, setPasswordInput] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+  const [isUnlocked, setIsUnlocked] = useState(() => {
+    return localStorage.getItem("sv:unlocked") === "true";
+  });
+
+  const handlePasswordSubmit = (event) => {
+    event.preventDefault();
+    if (passwordInput === appPassword) {
+      setIsUnlocked(true);
+      setPasswordError("");
+      localStorage.setItem("sv:unlocked", "true");
+      return;
+    }
+    setPasswordError("Incorrect password.");
+  };
+
   useEffect(() => {
     document.documentElement.style.setProperty(
       "--profile-btn-bg",
@@ -197,11 +216,76 @@ const App = () => {
   }, []);
 
   const endpoint = useMemo(() => FINAL_RPC_ENDPOINT, []);
-  
-  const currentCluster = getCurrentCluster();
-  const clusterConfig = getCurrentClusterConfig();
-  const clusterWarning = getClusterWarning();
   const clusterDisplayName = getClusterDisplayName();
+  if (!isUnlocked) {
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          background: "linear-gradient(135deg, #1b1f3b, #12121a)",
+          padding: "24px",
+        }}
+      >
+        <form
+          onSubmit={handlePasswordSubmit}
+          style={{
+            width: "100%",
+            maxWidth: "420px",
+            background: "rgba(0, 0, 0, 0.6)",
+            borderRadius: "12px",
+            padding: "24px",
+            color: "#fff",
+            boxShadow: "0 16px 40px rgba(0,0,0,0.35)",
+          }}
+        >
+          <h2 style={{ margin: "0 0 12px 0", fontSize: "20px" }}>
+            Enter Access Password
+          </h2>
+          <p style={{ margin: "0 0 16px 0", opacity: 0.75, fontSize: "14px" }}>
+            This experience is gated. Please enter the password to continue.
+          </p>
+          <input
+            type="password"
+            value={passwordInput}
+            onChange={(event) => setPasswordInput(event.target.value)}
+            placeholder="Password"
+            style={{
+              width: "100%",
+              padding: "12px",
+              borderRadius: "8px",
+              border: "1px solid rgba(255,255,255,0.15)",
+              background: "rgba(255,255,255,0.08)",
+              color: "#fff",
+              marginBottom: "12px",
+            }}
+          />
+          {passwordError && (
+            <div style={{ color: "#ff9c9c", marginBottom: "12px" }}>
+              {passwordError}
+            </div>
+          )}
+          <button
+            type="submit"
+            style={{
+              width: "100%",
+              padding: "12px",
+              borderRadius: "8px",
+              border: "none",
+              background: "#5b66ff",
+              color: "#fff",
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            Unlock
+          </button>
+        </form>
+      </div>
+    );
+  }
 
   return (
     <Provider store={store}>
@@ -210,27 +294,10 @@ const App = () => {
           <WalletModalProvider>
             <NotificationProvider>
               <Router>
-                {clusterWarning && (
-                  <div style={{
-                    position: 'fixed',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    backgroundColor: '#ff6b6b',
-                    color: 'white',
-                    padding: '8px 16px',
-                    textAlign: 'center',
-                    zIndex: 9999,
-                    fontSize: '14px',
-                    fontWeight: 'bold'
-                  }}>
-                    {clusterWarning}
-                  </div>
-                )}
+                <BackgroundMusic />
                 
                 <div style={{
                   position: 'fixed',
-                  top: clusterWarning ? '40px' : '0',
                   right: '20px',
                   backgroundColor: 'rgba(0, 0, 0, 0.7)',
                   color: 'white',

@@ -38,7 +38,7 @@ export const getSponsorGameAta = async (program, publicKey) => {
 
 export const preIx = [
   ComputeBudgetProgram.setComputeUnitLimit({ units: 1400000 }),
-  ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 1000 }),
+  ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 100000 }),
 ];
 
 export const getSeedIdsForTierFromAppIds = (tier) => {

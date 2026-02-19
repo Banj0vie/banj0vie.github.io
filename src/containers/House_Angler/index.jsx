@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, useRef } from "react";
 import "./style.css";
 import BaseDialog from "../_BaseDialog";
 import { ID_ANGLER_PAGES } from "../../constants/app_ids";
@@ -16,6 +16,7 @@ const AnglerDialog = ({ onClose, label = "QUIET POND", header = "/images/dialog/
   const [selectedRequestId, setSelectedRequestId] = useState(null);
   const [hasPendingRequests, setHasPendingRequests] = useState(false);
   const [pendingRequests, setPendingRequests] = useState([]);
+  const fishingButtonAudioRef = useRef(null);
 
   const { isConnected, account } = useSolanaWallet();
   const { checkPendingRequests, getAllPendingRequests } = useFishing();
@@ -66,7 +67,16 @@ const AnglerDialog = ({ onClose, label = "QUIET POND", header = "/images/dialog/
     <BaseDialog onClose={onClose} title={label} header={header} headerOffset={headerOffset} headerWidth={headerWidth} className="custom-modal-background">
       {pageIndex === ID_ANGLER_PAGES.ANGLER_MENU && (
         <AnglerMenu
-          onStartFish={() => setPageIndex(ID_ANGLER_PAGES.START_FISHING)}
+            onStartFish={() => {
+              if (!fishingButtonAudioRef.current) {
+                fishingButtonAudioRef.current = new Audio("/sounds/FishingButton.wav");
+                fishingButtonAudioRef.current.preload = "auto";
+              }
+              const audio = fishingButtonAudioRef.current;
+              audio.currentTime = 0;
+              audio.play().catch(() => {});
+              setPageIndex(ID_ANGLER_PAGES.START_FISHING);
+            }}
           onCraftBait={() => setPageIndex(ID_ANGLER_PAGES.CRAFT_BAIT)}
           hasPendingRequests={hasPendingRequests}
           pendingRequests={pendingRequests}

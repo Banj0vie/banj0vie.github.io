@@ -37,6 +37,13 @@ export function formatAddress(address, chars = 4) {
   return `${address.slice(0, chars + 2)}...${address.slice(-chars)}`;
 }
 
+export const clampVolume = (value) => {
+  if (Number.isNaN(value)) {
+    return 0;
+  }
+  return Math.min(1, Math.max(0, value));
+};
+
 export const formatDuration = (timestampMs) => {
   // If input is in seconds, convert to ms
   let totalSeconds = Math.floor(timestampMs / 1000);

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import PanZoomViewport from "../layouts/PanZoomViewport";
 import { FARM_BEES, FARM_HOTSPOTS, FARM_VIEWPORT } from "../constants/scene_farm";
 import { ID_FARM_HOTSPOTS } from "../constants/app_ids";
@@ -12,10 +12,14 @@ import { useNotification } from "../contexts/NotificationContext";
 import { CropItemArrayClass } from "../models/crop";
 import { handleContractError } from "../utils/errorHandler";
 import { ID_POTION_ITEMS } from "../constants/app_ids";
-import { getGrowthTime, getSubtype } from "../utils/basic";
+import { clampVolume, getGrowthTime, getSubtype } from "../utils/basic";
+import { useAppSelector } from "../solana/store";
+import { selectSettings } from "../solana/store/slices/uiSlice";
+import { defaultSettings } from "../utils/settings";
 const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
   const { width, height } = FARM_VIEWPORT;
   const hotspots = FARM_HOTSPOTS;
+  const settings = useAppSelector(selectSettings) || defaultSettings;
   const { seeds: currentSeeds, refetch: refetchSeeds } = useItems();
   const {
     plantBatch,
@@ -42,6 +46,8 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
   const [previewUpdateKey, setPreviewUpdateKey] = useState(0);
   const [userCropsLoaded, setUserCropsLoaded] = useState(false);
   const [usedSeedsInPreview, setUsedSeedsInPreview] = useState({});
+  const plantConfirmAudioRef = useRef(null);
+  const harvestConfirmAudioRef = useRef(null);
   
   const [isUsingPotion, setIsUsingPotion] = useState(false);
   const [selectedPotion, setSelectedPotion] = useState(null);
@@ -72,6 +78,30 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
       }))
       .filter((seed) => seed.count > 0);
   }, [currentSeeds, usedSeedsInPreview]);
+
+  const playPlantConfirmSound = useCallback(() => {
+    if (!plantConfirmAudioRef.current) {
+      plantConfirmAudioRef.current = new Audio("/sounds/FinalPlantConfirmButton.wav");
+      plantConfirmAudioRef.current.preload = "auto";
+    }
+    const audio = plantConfirmAudioRef.current;
+    const volumeSetting = parseFloat(settings?.soundVolume ?? 0) / 100;
+    audio.volume = clampVolume(volumeSetting);
+    audio.currentTime = 0;
+    audio.play().catch(() => {});
+  }, [settings?.soundVolume]);
+
+  const playHarvestConfirmSound = useCallback(() => {
+    if (!harvestConfirmAudioRef.current) {
+      harvestConfirmAudioRef.current = new Audio("/sounds/FinalHarvestConfirmButton.wav");
+      harvestConfirmAudioRef.current.preload = "auto";
+    }
+    const audio = harvestConfirmAudioRef.current;
+    const volumeSetting = parseFloat(settings?.soundVolume ?? 0) / 100;
+    audio.volume = clampVolume(volumeSetting);
+    audio.currentTime = 0;
+    audio.play().catch(() => {});
+  }, [settings?.soundVolume]);
 
   const loadCropsFromContract = useCallback(
     async () => {
@@ -312,7 +342,7 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
     let totalPlanted = 0;
     let remainingEmptyPlots = emptyPlots;
     const newUsedSeeds = { ...usedSeedsInPreview }; // Track seeds used in this plantAll operation
-
+    
     for (const seed of sortedSeeds) {
       if (remainingEmptyPlots <= 0) break;
 
@@ -385,6 +415,7 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
         show("No crops are ready to harvest!", "info");
         return;
       }
+      playHarvestConfirmSound();
 
       show(`Harvesting ${readySlots.length} ready crops...`, "info");
 
@@ -478,6 +509,7 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
         cropsToPlant.length === 1
           ? "Planting seed..."
           : `Planting ${cropsToPlant.length} seeds...`;
+      playPlantConfirmSound();
       loadingNotification = show(loadingMessage, "info", 300000); // 5 minutes timeout
 
       // Batch plant
@@ -599,7 +631,7 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
         );
         return;
       }
-
+      playHarvestConfirmSound();
       show(`Harvesting ${readyCrops.length} ready crops...`, "info");
 
       let successCount = 0;

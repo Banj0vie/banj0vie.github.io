@@ -56,7 +56,7 @@ const SeedRollingBox = ({ seedPackId, delay = 0 }) => {
         const randomSeed = getRandomSeedEntry();
         console.log('Using random seed fallback:', randomSeed);
         setSelectedSeed(randomSeed);
-      }, 3000 + delay); // stop after 3s
+      }, 5000 + delay); // stop after 3s
 
       return () => clearTimeout(timer); // cleanup
     } else {

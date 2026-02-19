@@ -6,7 +6,7 @@ import ExchangeButton from "../../components/buttons/ExchangeButton";
 import BaseButton from "../../components/buttons/BaseButton";
 import LabelValueBox from "../../components/boxes/LabelValueBox";
 import DividerLink from "../../components/links/DividerLink";
-import { generateId } from "../../utils/basic";
+import { clampVolume, generateId } from "../../utils/basic";
 import { useDex } from "../../hooks/useDex";
 import { useNotification } from "../../contexts/NotificationContext";
 import { isTransactionRejection } from "../../utils/errorUtils";
@@ -14,6 +14,8 @@ import { useSolanaWallet } from "../../hooks/useSolanaWallet";
 import { useAppSelector } from "../../solana/store";
 import { selectSolBalance, selectGameTokenBalance, selectDexLoading, selectDexError } from "../../solana/store/slices/balanceSlice";
 import CardView from "../../components/boxes/CardView";
+import { selectSettings } from "../../solana/store/slices/uiSlice";
+import { defaultSettings } from "../../utils/settings";
 const DexDialog = ({ onClose, label = "DEX", header = "" }) => {
   const { isConnected } = useSolanaWallet();
   const { buyTokens, sellTokens, getTokensOut, getSolOut, fetchBalances, error } = useDex();
@@ -23,6 +25,7 @@ const DexDialog = ({ onClose, label = "DEX", header = "" }) => {
   const gameTokenBalance = useAppSelector(selectGameTokenBalance);
   const dexLoading = useAppSelector(selectDexLoading);
   const dexError = useAppSelector(selectDexError);
+  const settings = useAppSelector(selectSettings) || defaultSettings;
 
   const [isReversed, setIsReversed] = useState(false);
   const [swapInfo, setSwapInfo] = useState([]);
@@ -30,6 +33,7 @@ const DexDialog = ({ onClose, label = "DEX", header = "" }) => {
   const [gameTokenAmount, setGameTokenAmount] = useState('0');
   const [isCalculating, setIsCalculating] = useState(false);
   const { show: showNotification } = useNotification();
+  const swapAudioRef = useRef(null);
 
   // Monitor errors and show notifications with duplicate prevention
   const lastNotificationTime = useRef(0);
@@ -101,6 +105,17 @@ const DexDialog = ({ onClose, label = "DEX", header = "" }) => {
       showNotification('Please connect your wallet first', 'warning');
       return;
     }
+    if (!swapAudioRef.current) {
+      swapAudioRef.current = new Audio("/sounds/DEXSwapButtonClick.wav");
+      swapAudioRef.current.preload = "auto";
+    }
+    const audio = swapAudioRef.current;
+    const volumeSetting = parseFloat(settings?.soundVolume ?? 0) / 100;
+    audio.volume = clampVolume(volumeSetting);
+    audio.currentTime = 0;
+    audio.play().catch(() => {});
+
+    console.log("started dex;")
 
     if (isReversed) {
       // Game Token → SOL swap
@@ -133,6 +148,7 @@ const DexDialog = ({ onClose, label = "DEX", header = "" }) => {
       }
 
       try {
+        console.log('buy token')
         const result = await buyTokens(parseFloat(solAmount));
 
         if (result && result.success) {

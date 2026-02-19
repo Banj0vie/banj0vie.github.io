@@ -2,14 +2,14 @@
 export const CLUSTER_CONFIGS = {
   'devnet': {
     name: 'devnet',
-    rpcEndpoint: 'https://devnet.helius-rpc.com/?api-key=3703575c-2aa8-46b5-b51f-f8c7c68ccb99',
+    rpcEndpoint: 'https://devnet.helius-rpc.com/?api-key=bff16915-1b30-4947-9ab9-7b1d87a4a47d',
     wsEndpoint: 'wss://api.devnet.solana.com',
     isMainnet: false,
     isTestnet: true,
   },
   'mainnet-beta': {
     name: 'mainnet-beta',
-    rpcEndpoint: 'https://mainnet.helius-rpc.com/?api-key=3703575c-2aa8-46b5-b51f-f8c7c68ccb99',
+    rpcEndpoint: 'https://mainnet.helius-rpc.com/?api-key=bff16915-1b30-4947-9ab9-7b1d87a4a47d',
     wsEndpoint: 'wss://api.mainnet-beta.solana.com',
     isMainnet: true,
     isTestnet: false,
@@ -36,7 +36,7 @@ export const getClusterFromUrl = () => {
 };
 
 export const getClusterConfig = (cluster) => {
-  const targetCluster = cluster || getClusterFromUrl();
+  const targetCluster = cluster || getClusterFromEnv();
   return CLUSTER_CONFIGS[targetCluster];
 };
 
@@ -65,14 +65,6 @@ export const getClusterDisplayName = (cluster) => {
   return config.name === 'mainnet-beta' ? 'Mainnet' : config.name.charAt(0).toUpperCase() + config.name.slice(1);
 };
 
-export const getClusterWarning = (cluster) => {
-  const config = getClusterConfig(cluster);
-  if (config.isMainnet) {
-    return '⚠️ You are connected to Solana Mainnet. Real funds will be used!';
-  }
-  return null;
-};
-
 export const updateUrlWithCluster = (cluster) => {
   if (typeof window === 'undefined') return;
   const url = new URL(window.location.href);
@@ -97,10 +89,11 @@ export const getClusterFromEnv = () => {
 };
 
 export const getFinalCluster = () => {
-  const urlCluster = getClusterFromUrl();
+  // const urlCluster = getClusterFromUrl();
   const envCluster = getClusterFromEnv();
-  if (urlCluster !== 'devnet' || (typeof window !== 'undefined' && window.location.search.includes('cluster'))) {
-    return urlCluster;
-  }
+  // if (urlCluster !== 'devnet' || (typeof window !== 'undefined' && window.location.search.includes('cluster'))) {
+  //   return urlCluster;
+  // }
+  console.log("envCluster", envCluster)
   return envCluster;
 };

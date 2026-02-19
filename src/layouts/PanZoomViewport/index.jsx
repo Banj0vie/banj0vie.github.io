@@ -3,8 +3,11 @@ import { useNavigate } from "react-router-dom";
 import "./style.css";
 import TooltipButton from "../../components/buttons/TooltipButton";
 import GameMenu from "../GameMenu";
-import { isWalletConnected } from "../../utils/basic";
+import { isWalletConnected, clampVolume } from "../../utils/basic";
 import AuthPage from "../AuthPage";
+import { useAppSelector } from "../../solana/store";
+import { selectSettings } from "../../solana/store/slices/uiSlice";
+import { defaultSettings } from "../../utils/settings";
 
 const defaultHotspots = [
   { id: "gold", label: "GOLD", x: 210, y: 110, delay: 0 },
@@ -28,6 +31,9 @@ const PanZoomViewport = ({
 }) => {
   const containerRef = useRef(null);
   const navigate = useNavigate();
+  const settings = useAppSelector(selectSettings) || defaultSettings;
+  const anglerHoverAudioRef = useRef(null);
+  const anglerClickAudioRef = useRef(null);
 
   // Center the layer in the viewport: (viewportWidth - layerWidth) / 2
   const computeInitialTx = useCallback(() => {
@@ -47,6 +53,50 @@ const PanZoomViewport = ({
   const [ty, setTy] = useState(() => computeInitialTy());
   const [scale, setScale] = useState(1);
   const [activeModal, setActiveModal] = useState(null);
+
+  useEffect(() => {
+    return () => {
+      if (anglerHoverAudioRef.current) {
+        anglerHoverAudioRef.current.pause();
+        anglerHoverAudioRef.current.currentTime = 0;
+      }
+      if (anglerClickAudioRef.current) {
+        anglerClickAudioRef.current.pause();
+        anglerClickAudioRef.current.currentTime = 0;
+      }
+    };
+  }, []);
+
+  const playAnglerHoverSound = useCallback(() => {
+    if (!anglerHoverAudioRef.current) {
+      anglerHoverAudioRef.current = new Audio("/sounds/FishingHoverLoop.wav");
+      anglerHoverAudioRef.current.preload = "auto";
+      anglerHoverAudioRef.current.loop = true;
+    }
+    const audio = anglerHoverAudioRef.current;
+    const volumeSetting = parseFloat(settings?.soundVolume ?? 0) / 100;
+    audio.volume = clampVolume(volumeSetting);
+    audio.play().catch(() => {});
+  }, [settings?.soundVolume]);
+
+  const stopAnglerHoverSound = useCallback(() => {
+    const audio = anglerHoverAudioRef.current;
+    if (!audio) return;
+    audio.pause();
+    audio.currentTime = 0;
+  }, []);
+
+  const playAnglerClickSound = useCallback(() => {
+    if (!anglerClickAudioRef.current) {
+      anglerClickAudioRef.current = new Audio("/sounds/AnglerButtonClick.wav");
+      anglerClickAudioRef.current.preload = "auto";
+    }
+    const audio = anglerClickAudioRef.current;
+    const volumeSetting = parseFloat(settings?.soundVolume ?? 0) / 100;
+    audio.volume = clampVolume(volumeSetting);
+    audio.currentTime = 0;
+    audio.play().catch(() => {});
+  }, [settings?.soundVolume]);
 
   const panState = useRef({
     active: false,
@@ -236,7 +286,21 @@ const PanZoomViewport = ({
                 className={`map-btn ${isBig ? "map-big-btn" : ""}`}
                 label={h.label}
                 style={{ left: h.x, top: h.y, animationDelay: `${h.delay}s` }}
+                onMouseEnter={() => {
+                  if (h.id === "ID_HOUSE_HOTSPOTS_ANGLER") {
+                    playAnglerHoverSound();
+                  }
+                }}
+                onMouseLeave={() => {
+                  if (h.id === "ID_HOUSE_HOTSPOTS_ANGLER") {
+                    stopAnglerHoverSound();
+                  }
+                }}
                 onClick={() => {
+                  if (h.id === "ID_HOUSE_HOTSPOTS_ANGLER") {
+                    console.log("angler click");
+                    playAnglerClickSound();
+                  }
                   if (h.link) {
                     // Navigate based on link content
                     navigate(h.link);

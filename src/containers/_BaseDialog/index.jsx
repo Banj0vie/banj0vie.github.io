@@ -3,6 +3,8 @@ import './style.css';
 
 const BaseDialog = ({ className = "", title, onClose, children, header = null, headerWidth = 210, headerOffset = 0 }) => {
   const titleRef = useRef(null);
+  const hoverAudioRef = useRef(null);
+  const clickAudioRef = useRef(null);
 
   useEffect(() => {
     const adjustFontSize = () => {
@@ -54,6 +56,17 @@ const BaseDialog = ({ className = "", title, onClose, children, header = null, h
     };
   }, [title]);
 
+  useEffect(() => {
+    if (!hoverAudioRef.current) {
+      hoverAudioRef.current = new Audio("/sounds/ButtonHover.wav");
+      hoverAudioRef.current.preload = "auto";
+    }
+    if (!clickAudioRef.current) {
+      clickAudioRef.current = new Audio("/sounds/ButtonClick.wav");
+      clickAudioRef.current.preload = "auto";
+    }
+  }, []);
+
   return (
     <div className={`${className} modal-backdrop`} onClick={onClose}>
       <div className="modal-wrapper">
@@ -73,7 +86,23 @@ const BaseDialog = ({ className = "", title, onClose, children, header = null, h
               <img className="modal-header-label-scroll" src="/images/dialog/label-scroll.png" alt="header" />
               <span ref={titleRef} className="modal-header-title">{title}</span>
             </div>
-            <div className="modal-close" onClick={onClose}></div>
+            <div
+              className="modal-close"
+              onMouseEnter={() => {
+                const audio = hoverAudioRef.current;
+                if (!audio) return;
+                audio.currentTime = 0;
+                audio.play().catch(() => {});
+              }}
+              onClick={(event) => {
+                const audio = clickAudioRef.current;
+                if (audio) {
+                  audio.currentTime = 0;
+                  audio.play().catch(() => {});
+                }
+                if (onClose) onClose(event);
+              }}
+            ></div>
           </div>
         </div>
       </div>
