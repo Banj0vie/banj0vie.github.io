@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useProgram } from './useProgram';
 import { useSolanaWallet } from './useSolanaWallet';
-import { getUserDataPDA, getReferralCodeOwnerPDA } from '../solana/utils/pdaUtils';
+import { getUserDataPDA, getReferralCodeOwnerPDA, getReceiverPDA } from '../solana/utils/pdaUtils';
 import { SystemProgram, PublicKey } from '@solana/web3.js';
 import { handleContractError } from '../utils/errorHandler';
 import { sendTransactionForPhantom } from '../utils/transactionHelper';
@@ -87,7 +87,10 @@ export const useReferral = () => {
     setReferralData(p => ({ ...p, loading: true, error: null }));
     try {
       const userDataPda = getUserDataPDA(publicKey);
-      
+      const receiverPda = getReceiverPDA();
+      const receiverInfo = await program.account.receiver.fetch(receiverPda);
+      const receiverWallet1 = receiverInfo.receiver1;
+      const receiverWallet2 = receiverInfo.receiver2;
       // Check if profile already exists
       if (!program.account || !program.account.userData) {
         setReferralData(p => ({ ...p, loading: false, error: 'Program account client not initialized' }));
@@ -144,7 +147,15 @@ export const useReferral = () => {
       }
       const method = program.methods
         .createProfile(name, referralBytes)
-        .accounts({ user: publicKey, userData: userDataPda, codeOwner: referralCodeOwnerPda, systemProgram: SystemProgram.programId });
+        .accounts({ 
+          user: publicKey, 
+          userData: userDataPda, 
+          receiver: receiverPda,
+          receiverWallet1: receiverWallet1,
+          receiverWallet2: receiverWallet2,
+          codeOwner: referralCodeOwnerPda, 
+          systemProgram: SystemProgram.programId,
+        });
       
       const tx = await sendTransactionForPhantom(method, connection, sendTransaction, publicKey);
       await fetchReferralData();

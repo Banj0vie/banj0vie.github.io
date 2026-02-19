@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useProgram } from './useProgram';
-import { getUserDataPDA, getReferralCodeOwnerPDA } from '../solana/utils/pdaUtils';
+import { getUserDataPDA, getReferralCodeOwnerPDA, getReceiverPDA } from '../solana/utils/pdaUtils';
 import { SystemProgram } from '@solana/web3.js';
 import { sendTransactionForPhantom } from '../utils/transactionHelper';
 
@@ -21,7 +21,11 @@ export const useProfile = () => {
     console.log("asdffffffffffffffffffffffffffffffffffffffffffffff", connection)
 
         try {
-            const [userDataPda] = getUserDataPDA(publicKey);
+            const userDataPda = getUserDataPDA(publicKey);
+            const receiverPda = getReceiverPDA();
+            const receiverInfo = await program.account.receiver.fetch(receiverPda);
+            const receiverWallet1 = receiverInfo.receiver1;
+            const receiverWallet2 = receiverInfo.receiver2;
             // Convert referralCode to [u8;32] per IDL
             let referralBytes = new Uint8Array(32);
             if (referralCode && typeof referralCode === 'string') {
@@ -32,7 +36,15 @@ export const useProfile = () => {
             const [codeOwnerPda] = getReferralCodeOwnerPDA(referralBytes);
             const method = program.methods
                 .createProfile(name, referralBytes)
-                .accounts({ user: publicKey, userData: userDataPda, codeOwner: codeOwnerPda, systemProgram: SystemProgram.programId });
+                .accounts({ 
+                  user: publicKey, 
+                  userData: userDataPda, 
+                  receiver: receiverPda, 
+                  receiverWallet1: receiverWallet1, 
+                  receiverWallet2: receiverWallet2, 
+                  codeOwner: codeOwnerPda, 
+                  systemProgram: SystemProgram.programId,
+                });
             
             const tx = await sendTransactionForPhantom(method, connection, sendTransaction, publicKey);
             return tx;

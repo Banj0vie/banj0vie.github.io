@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useProgram } from './useProgram';
 import { useSolanaWallet } from './useSolanaWallet';
-import { getUserDataPDA, getGameRegistryPDA, preIx, getPlantBatchRemainingAccounts, getGameTokenMintAuthPDA, getHarvestRemainingAccounts, getPotionUsageRemainingAccounts, getGameVaultPDA, getGameVaultAta } from '../solana/utils/pdaUtils';
+import { getUserDataPDA, getGameRegistryPDA, preIx, getPlantBatchRemainingAccounts, getGameTokenMintAuthPDA, getHarvestRemainingAccounts, getPotionUsageRemainingAccounts, getGameVaultPDA, getGameVaultAta, getReceiverPDA } from '../solana/utils/pdaUtils';
 import { SystemProgram, TransactionMessage, VersionedTransaction } from '@solana/web3.js';
 import { getAssociatedTokenAddress, TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import { GAME_TOKEN_MINT, LOOKUP_TABLE_ADDRESS } from '../solana/constants/programId';
@@ -35,43 +35,14 @@ export const useFarming = () => {
                     tokenProgram: TOKEN_PROGRAM_ID, 
                     systemProgram: SystemProgram.programId 
                 })
-                .remainingAccounts(remainingAccounts)
-                .instruction();
-            const { value: alt } = await connection.getAddressLookupTable(LOOKUP_TABLE_ADDRESS);
-            if (!alt) throw new Error('ALT not found');
-            const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
-            const msgV0 = new TransactionMessage({
-                payerKey: publicKey,
-                recentBlockhash: blockhash,
-                instructions: [...preIx, plantIx],
-            }).compileToV0Message([alt]);
-            const tx = new VersionedTransaction(msgV0);
-            
-            // Pre-send simulation to surface errors/logs
-            try {
-                const sim = await connection.simulateTransaction(tx, { sigVerify: false, commitment: 'processed' });
-                if (sim?.value?.err) {
-                    console.error('🚨 plantBatch simulate error:', sim.value.err, sim.value.logs);
-                    console.log('🚨 Simulation failed, but proceeding with transaction...');
-                }
-            } catch (simErr) {
-                console.error('🚨 plantBatch simulation threw:', simErr);
-                console.log('🚨 Simulation error caught, but proceeding with transaction...');
-            }
-            
-            let sig;
-            try {
-                sig = await sendTransaction(tx, connection, { skipPreflight: false, maxRetries: 3 });
-            } catch (sendError) {
-                console.log('🚨 Normal send failed, retrying with skipPreflight...', sendError.message);
-                sig = await sendTransaction(tx, connection, { skipPreflight: true, maxRetries: 3 });
-            }
-            await connection.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight });
+                .remainingAccounts(remainingAccounts);
+
+            const tx = await sendTransactionForPhantom(plantIx, connection, sendTransaction, publicKey);
             
             // Refresh balances after successful plant
             await refreshBalancesAfterTransaction(1000);
             
-            return sig;
+            return tx;
         } catch (err) {
             console.error("🚀 ~ plantBatch ~ err:", err)
             
@@ -107,6 +78,10 @@ export const useFarming = () => {
             const gameVaultPda = getGameVaultPDA();
             const gameVaultAta = getGameVaultAta();
             const remainingAccounts = await getHarvestRemainingAccounts(slotsArray, publicKey, program);
+            const receiverPda = getReceiverPDA();
+            const receiverInfo = await program.account.receiver.fetch(receiverPda);
+            const receiverWallet1 = receiverInfo.receiver1;
+            const receiverWallet2 = receiverInfo.receiver2;
             const harvestIx = await program.methods
                 .harvest(Buffer.from(slotsArray))
                 .accounts({
@@ -119,45 +94,18 @@ export const useFarming = () => {
                     gameVaultAta: gameVaultAta,
                     systemProgram: SystemProgram.programId, 
                     tokenProgram: TOKEN_PROGRAM_ID, 
-                    associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID
+                    associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+                    receiver: receiverPda,
+                    receiverWallet1: receiverWallet1,
+                    receiverWallet2: receiverWallet2,
                 })
-                .remainingAccounts(remainingAccounts)
-                .instruction();
-            const { value: alt } = await connection.getAddressLookupTable(LOOKUP_TABLE_ADDRESS);
-            if (!alt) throw new Error('ALT not found');
-            const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
-            const msgV0 = new TransactionMessage({
-                payerKey: publicKey,
-                recentBlockhash: blockhash,
-                instructions: [...preIx, harvestIx],
-            }).compileToV0Message([alt]);  
-            const tx = new VersionedTransaction(msgV0);
+                .remainingAccounts(remainingAccounts);
             
-            // Pre-send simulation to surface errors/logs
-            try {
-                const sim = await connection.simulateTransaction(tx, { sigVerify: false, commitment: 'processed' });
-                if (sim?.value?.err) {
-                    console.error('🚨 harvestMany simulate error:', sim.value.err, sim.value.logs);
-                    console.log('🚨 Simulation failed, but proceeding with transaction...');
-                }
-            } catch (simErr) {
-                console.error('🚨 harvestMany simulation threw:', simErr);
-                console.log('🚨 Simulation error caught, but proceeding with transaction...');
-            }
-            
-            let sig;
-            try {
-                sig = await sendTransaction(tx, connection, { skipPreflight: false, maxRetries: 3 });
-            } catch (sendError) {
-                console.log('🚨 Normal send failed, retrying with skipPreflight...', sendError.message);
-                sig = await sendTransaction(tx, connection, { skipPreflight: true, maxRetries: 3 });
-            }
-            await connection.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight });
-            
+            const tx = await sendTransactionForPhantom(harvestIx, connection, sendTransaction, publicKey);
             // Refresh balances after successful harvest
             await refreshBalancesAfterTransaction(1000);
             
-            return sig;
+            return tx;
         } catch (err) {
             console.error("🚀 ~ harvestMany ~ err:", err)
             

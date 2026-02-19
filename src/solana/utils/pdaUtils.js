@@ -180,6 +180,13 @@ export const getUserDataPDA = (wallet) => {
   )[0];
 };
 
+export const getReceiverPDA = () => {
+  return PublicKey.findProgramAddressSync(
+    [Buffer.from(SEEDS.RECEIVER)],
+    SOLANA_VALLEY_PROGRAM_ID
+  )[0];
+};
+
 export const getBankerDataPDA = () => {
   return PublicKey.findProgramAddressSync(
     [Buffer.from(SEEDS.BANKER_DATA)],

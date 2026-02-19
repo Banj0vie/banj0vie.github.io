@@ -1,5 +1,5 @@
 {
-  "address": "yVmgGdYVzA2Hu9QjG7TeqCNf3ppm4vF8XJB5gV4SPdq",
+  "address": "J8d34R91DhbxtsrJZMjckrCiq2F36dcQaQuwWghzCZjR",
   "metadata": {
     "name": "solana_valley",
     "version": "0.1.0",
@@ -790,6 +790,34 @@
           }
         },
         {
+          "name": "receiver",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  99,
+                  101,
+                  105,
+                  118,
+                  101,
+                  114
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "receiver_wallet1",
+          "writable": true
+        },
+        {
+          "name": "receiver_wallet2",
+          "writable": true
+        },
+        {
           "name": "system_program",
           "address": "11111111111111111111111111111111"
         },
@@ -877,6 +905,34 @@
               }
             ]
           }
+        },
+        {
+          "name": "receiver",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  99,
+                  101,
+                  105,
+                  118,
+                  101,
+                  114
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "receiver_wallet1",
+          "writable": true
+        },
+        {
+          "name": "receiver_wallet2",
+          "writable": true
         },
         {
           "name": "system_program",
@@ -976,6 +1032,34 @@
           }
         },
         {
+          "name": "receiver",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  99,
+                  101,
+                  105,
+                  118,
+                  101,
+                  114
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "receiver_wallet1",
+          "writable": true
+        },
+        {
+          "name": "receiver_wallet2",
+          "writable": true
+        },
+        {
           "name": "system_program",
           "address": "11111111111111111111111111111111"
         },
@@ -1073,6 +1157,34 @@
           }
         },
         {
+          "name": "receiver",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  99,
+                  101,
+                  105,
+                  118,
+                  101,
+                  114
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "receiver_wallet1",
+          "writable": true
+        },
+        {
+          "name": "receiver_wallet2",
+          "writable": true
+        },
+        {
           "name": "system_program",
           "address": "11111111111111111111111111111111"
         },
@@ -1160,6 +1272,34 @@
               }
             ]
           }
+        },
+        {
+          "name": "receiver",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  99,
+                  101,
+                  105,
+                  118,
+                  101,
+                  114
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "receiver_wallet1",
+          "writable": true
+        },
+        {
+          "name": "receiver_wallet2",
+          "writable": true
         },
         {
           "name": "system_program",
@@ -1251,6 +1391,34 @@
           }
         },
         {
+          "name": "receiver",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  99,
+                  101,
+                  105,
+                  118,
+                  101,
+                  114
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "receiver_wallet1",
+          "writable": true
+        },
+        {
+          "name": "receiver_wallet2",
+          "writable": true
+        },
+        {
           "name": "system_program",
           "address": "11111111111111111111111111111111"
         },
@@ -1313,6 +1481,35 @@
               }
             ]
           }
+        },
+        {
+          "name": "receiver",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  99,
+                  101,
+                  105,
+                  118,
+                  101,
+                  114
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "receiver_wallet1",
+          "writable": true
+        },
+        {
+          "name": "receiver_wallet2",
+          "writable": true
         },
         {
           "name": "code_owner",
@@ -1408,6 +1605,34 @@
               }
             ]
           }
+        },
+        {
+          "name": "receiver",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  99,
+                  101,
+                  105,
+                  118,
+                  101,
+                  114
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "receiver_wallet1",
+          "writable": true
+        },
+        {
+          "name": "receiver_wallet2",
+          "writable": true
         },
         {
           "name": "request",
@@ -1700,6 +1925,34 @@
           }
         },
         {
+          "name": "receiver",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  99,
+                  101,
+                  105,
+                  118,
+                  101,
+                  114
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "receiver_wallet1",
+          "writable": true
+        },
+        {
+          "name": "receiver_wallet2",
+          "writable": true
+        },
+        {
           "name": "game_token_mint",
           "writable": true
         },
@@ -1943,6 +2196,84 @@
         {
           "name": "token_program",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "initialize_receiver",
+      "discriminator": [
+        7,
+        98,
+        93,
+        43,
+        14,
+        85,
+        137,
+        104
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "receiver",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  99,
+                  101,
+                  105,
+                  118,
+                  101,
+                  114
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "game_registry",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  97,
+                  109,
+                  101,
+                  95,
+                  114,
+                  101,
+                  103,
+                  105,
+                  115,
+                  116,
+                  114,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "receiver1"
+        },
+        {
+          "name": "receiver2"
         },
         {
           "name": "system_program",
@@ -2282,6 +2613,34 @@
               }
             ]
           }
+        },
+        {
+          "name": "receiver",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  99,
+                  101,
+                  105,
+                  118,
+                  101,
+                  114
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "receiver_wallet1",
+          "writable": true
+        },
+        {
+          "name": "receiver_wallet2",
+          "writable": true
         },
         {
           "name": "slot_hashes"
@@ -3784,6 +4143,34 @@
           }
         },
         {
+          "name": "receiver",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  99,
+                  101,
+                  105,
+                  118,
+                  101,
+                  114
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "receiver_wallet1",
+          "writable": true
+        },
+        {
+          "name": "receiver_wallet2",
+          "writable": true
+        },
+        {
           "name": "game_token_mint",
           "writable": true
         },
@@ -3830,6 +4217,10 @@
         {
           "name": "token_program",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
         }
       ],
       "args": [
@@ -3917,6 +4308,19 @@
         54,
         18,
         172
+      ]
+    },
+    {
+      "name": "Receiver",
+      "discriminator": [
+        114,
+        15,
+        132,
+        64,
+        170,
+        10,
+        171,
+        215
       ]
     },
     {
@@ -4146,6 +4550,16 @@
       "code": 6023,
       "name": "InvalidPDA",
       "msg": "Invalid PDA"
+    },
+    {
+      "code": 6024,
+      "name": "DivByZero",
+      "msg": "Div by zero"
+    },
+    {
+      "code": 6025,
+      "name": "MathOverflow",
+      "msg": "Math overflow"
     }
   ],
   "types": [
@@ -4462,6 +4876,22 @@
           {
             "name": "amount",
             "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Receiver",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "receiver1",
+            "type": "pubkey"
+          },
+          {
+            "name": "receiver2",
+            "type": "pubkey"
           }
         ]
       }

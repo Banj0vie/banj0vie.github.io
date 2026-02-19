@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useProgram } from './useProgram';
 import { useSolanaWallet } from './useSolanaWallet';
-import { getUserDataPDA, getGameRegistryPDA, preIx, getChestRemainingAccounts, getChestOpenRemainingAccounts } from '../solana/utils/pdaUtils';
+import { getUserDataPDA, getGameRegistryPDA, preIx, getChestRemainingAccounts, getChestOpenRemainingAccounts, getReceiverPDA } from '../solana/utils/pdaUtils';
 import { SystemProgram, SYSVAR_SLOT_HASHES_PUBKEY, TransactionMessage, VersionedTransaction } from '@solana/web3.js';
 import { TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import { handleContractError } from '../utils/errorHandler';
@@ -82,6 +82,10 @@ export const useChest = () => {
             const gameRegistryPda = getGameRegistryPDA();
             const userDataPda = getUserDataPDA(publicKey);
             const remainingAccounts = getChestOpenRemainingAccounts(chestType, publicKey);
+            const receiverPda = getReceiverPDA();
+            const receiverInfo = await program.account.receiver.fetch(receiverPda);
+            const receiverWallet1 = receiverInfo.receiver1;
+            const receiverWallet2 = receiverInfo.receiver2;
             const ix = await program.methods
                 .openChest(chestType)
                 .accounts({
@@ -92,6 +96,9 @@ export const useChest = () => {
                     systemProgram: SystemProgram.programId,
                     tokenProgram: TOKEN_PROGRAM_ID,
                     associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+                    receiver: receiverPda,
+                    receiverWallet1: receiverWallet1,
+                    receiverWallet2: receiverWallet2,
                 })
                 .remainingAccounts(remainingAccounts)
                 .instruction();

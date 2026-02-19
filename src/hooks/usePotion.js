@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useProgram } from './useProgram';
 import { useSolanaWallet } from './useSolanaWallet';
-import { getUserDataPDA, getGameRegistryPDA, getItemMintPDA, getItemMintAuthPDA } from '../solana/utils/pdaUtils';
+import { getUserDataPDA, getGameRegistryPDA, getItemMintPDA, getItemMintAuthPDA, getReceiverPDA } from '../solana/utils/pdaUtils';
 import { SystemProgram } from '@solana/web3.js';
 import { BN } from '@coral-xyz/anchor';
 import { TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddressSync } from '@solana/spl-token';
@@ -83,7 +83,10 @@ export const usePotion = () => {
       const gameRegistryPda = getGameRegistryPDA();
       const userDataPda = getUserDataPDA(publicKey);
       const remainingAccounts = getPotionRemainingAccounts('growth_elixir');
-      
+      const receiverPda = getReceiverPDA();
+      const receiverInfo = await program.account.receiver.fetch(receiverPda);
+      const receiverWallet1 = receiverInfo.receiver1;
+      const receiverWallet2 = receiverInfo.receiver2;
       const method = program.methods
         .craftGrowthElixir(new BN(count))
         .accounts({
@@ -93,6 +96,9 @@ export const usePotion = () => {
           systemProgram: SystemProgram.programId,
           tokenProgram: TOKEN_PROGRAM_ID,
           associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+          receiver: receiverPda,
+          receiverWallet1: receiverWallet1,
+          receiverWallet2: receiverWallet2,
         })
         .remainingAccounts(remainingAccounts);
       
@@ -118,7 +124,10 @@ export const usePotion = () => {
       const gameRegistryPda = getGameRegistryPDA();
       const userDataPda = getUserDataPDA(publicKey);
       const remainingAccounts = getPotionRemainingAccounts('pesticide');
-      
+      const receiverPda = getReceiverPDA();
+      const receiverInfo = await program.account.receiver.fetch(receiverPda);
+      const receiverWallet1 = receiverInfo.receiver1;
+      const receiverWallet2 = receiverInfo.receiver2;
       const method = program.methods
         .craftPesticide(new BN(count))
         .accounts({
@@ -128,6 +137,9 @@ export const usePotion = () => {
           systemProgram: SystemProgram.programId,
           tokenProgram: TOKEN_PROGRAM_ID,
           associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+          receiver: receiverPda,
+          receiverWallet1: receiverWallet1,
+          receiverWallet2: receiverWallet2,
         })
         .remainingAccounts(remainingAccounts);
       
@@ -153,7 +165,10 @@ export const usePotion = () => {
       const gameRegistryPda = getGameRegistryPDA();
       const userDataPda = getUserDataPDA(publicKey);
       const remainingAccounts = getPotionRemainingAccounts('fertilizer');
-      
+      const receiverPda = getReceiverPDA();
+      const receiverInfo = await program.account.receiver.fetch(receiverPda);
+      const receiverWallet1 = receiverInfo.receiver1;
+      const receiverWallet2 = receiverInfo.receiver2;
       const method = program.methods
         .craftFertilizer(new BN(count))
         .accounts({
@@ -163,6 +178,9 @@ export const usePotion = () => {
           systemProgram: SystemProgram.programId,
           tokenProgram: TOKEN_PROGRAM_ID,
           associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+          receiver: receiverPda,
+          receiverWallet1: receiverWallet1,
+          receiverWallet2: receiverWallet2,
         })
         .remainingAccounts(remainingAccounts);
       
