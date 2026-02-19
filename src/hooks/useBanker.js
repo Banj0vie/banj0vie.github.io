@@ -2,7 +2,7 @@ import { useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useProgram } from './useProgram';
 import { useSolanaWallet } from './useSolanaWallet';
-import { getGameRegistryPDA, getUserDataPDA, getBankerDataPDA, getBankVaultPDA, getBankVaultAta } from '../solana/utils/pdaUtils';
+import { getGameRegistryPDA, getUserDataPDA, getBankerDataPDA, getBankVaultPDA, getBankVaultAta, getReceiverPDA } from '../solana/utils/pdaUtils';
 import { BN } from '@coral-xyz/anchor';
 import { GAME_TOKEN_MINT } from '../solana/constants/programId';
 import { getAssociatedTokenAddress, TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID } from '@solana/spl-token';
@@ -119,7 +119,11 @@ export const useBanker = () => {
       const userGameAta = await getAssociatedTokenAddress(GAME_TOKEN_MINT, publicKey, false);
       const bankVaultPda = getBankVaultPDA(bankerDataPda);
       const bankVaultAta = getBankVaultAta(bankerDataPda);
-      
+
+      const receiverPda = getReceiverPDA();
+      const receiverInfo = await program.account.receiver.fetch(receiverPda);
+      const receiverWallet1 = receiverInfo.receiver1;
+      const receiverWallet2 = receiverInfo.receiver2;
       const method = program.methods
         .unstake(new BN(shares * 1e9))
         .accounts({
@@ -132,6 +136,9 @@ export const useBanker = () => {
           bankVault: bankVaultPda,
           bankVaultAta,
           tokenProgram: TOKEN_PROGRAM_ID,
+          receiver: receiverPda,
+          receiverWallet1: receiverWallet1,
+          receiverWallet2: receiverWallet2,
         });
       
       const tx = await sendTransactionForPhantom(method, connection, sendTransaction, publicKey);

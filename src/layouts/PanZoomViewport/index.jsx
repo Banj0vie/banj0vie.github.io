@@ -9,7 +9,7 @@ import AuthPage from "../AuthPage";
 const defaultHotspots = [
   { id: "gold", label: "GOLD", x: 210, y: 110, delay: 0 },
   { id: "angler", label: "ANGLER", x: 70, y: 260, delay: 0.2 },
-  { id: "gold-chest", label: "GOLD CHEST", x: 500, y: 160, delay: 0.4 },
+  { id: "gold-chest", label: "DAILY CHEST", x: 500, y: 160, delay: 0.4 },
   { id: "gardener", label: "GARDENER", x: 720, y: 100, delay: 0.6 },
   { id: "referrals", label: "REFERRALS", x: 600, y: 240, delay: 0.8 },
 ];

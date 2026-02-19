@@ -239,12 +239,9 @@ export const sendTransactionForPhantom = async (method, connection, sendTransact
         commitment: 'processed',
         replaceRecentBlockhash: true,
       });
+      console.log("🚀 ~ sendTransactionForPhantom ~ sim:", sim);
 
       if (sim?.value?.err) {
-        console.warn('Simulation error:', sim.value.err);
-        if (sim.value.logs?.length) {
-          console.warn('Simulation logs:', sim.value.logs);
-        }
         if (sim.value.err?.toString?.()?.includes('already been processed')) {
           return 'already_processed_' + Date.now();
         }

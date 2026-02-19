@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useProgram } from './useProgram';
 import { useSolanaWallet } from './useSolanaWallet';
-import { getUserDataPDA, getGameRegistryPDA, getFishingRequestPDA, getItemMintAuthPDA, getCraftBaitRemainingAccounts, getCraftBaitSpecificRemainingAccounts, getCraftBait1RemainingAccounts, getRevealFishingRemainingAccounts } from '../solana/utils/pdaUtils';
+import { getUserDataPDA, getGameRegistryPDA, getFishingRequestPDA, getItemMintAuthPDA, getCraftBaitRemainingAccounts, getCraftBaitSpecificRemainingAccounts, getCraftBait1RemainingAccounts, getRevealFishingRemainingAccounts, getReceiverPDA } from '../solana/utils/pdaUtils';
 import { SystemProgram, SYSVAR_SLOT_HASHES_PUBKEY } from '@solana/web3.js';
 import { TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import { BN } from '@coral-xyz/anchor';
@@ -70,7 +70,10 @@ export const useFishing = () => {
       const gameRegistryPda = getGameRegistryPDA();
       const userDataPda = getUserDataPDA(publicKey);
       const remainingAccounts = getCraftBait1RemainingAccounts(publicKey);
-      
+      const receiverPda = getReceiverPDA();
+      const receiverInfo = await program.account.receiver.fetch(receiverPda);
+      const receiverWallet1 = receiverInfo.receiver1;
+      const receiverWallet2 = receiverInfo.receiver2;
       const method = program.methods
         .craftBait1(new BN(baitCount))
         .accounts({
@@ -80,6 +83,9 @@ export const useFishing = () => {
           systemProgram: SystemProgram.programId,
           tokenProgram: TOKEN_PROGRAM_ID,
           associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+          receiver: receiverPda,
+          receiverWallet1: receiverWallet1,
+          receiverWallet2: receiverWallet2,
         })
         .remainingAccounts(remainingAccounts);
       
@@ -117,7 +123,10 @@ export const useFishing = () => {
       setFishingData(prev => ({ ...prev, loading: true, error: null }));
       const gameRegistryPda = getGameRegistryPDA();
       const userDataPda = getUserDataPDA(publicKey);
-      
+      const receiverPda = getReceiverPDA();
+      const receiverInfo = await program.account.receiver.fetch(receiverPda);
+      const receiverWallet1 = receiverInfo.receiver1;
+      const receiverWallet2 = receiverInfo.receiver2;
       // Use specific remaining accounts if itemIds is valid, otherwise fall back to general
       let remainingAccounts;
       if (Array.isArray(itemIds) && itemIds.length > 0) {
@@ -135,6 +144,9 @@ export const useFishing = () => {
           systemProgram: SystemProgram.programId,
           tokenProgram: TOKEN_PROGRAM_ID,
           associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+          receiver: receiverPda,
+          receiverWallet1: receiverWallet1,
+          receiverWallet2: receiverWallet2,
         })
         .remainingAccounts(remainingAccounts);
       
@@ -172,7 +184,10 @@ export const useFishing = () => {
       setFishingData(prev => ({ ...prev, loading: true, error: null }));
       const gameRegistryPda = getGameRegistryPDA();
       const userDataPda = getUserDataPDA(publicKey);
-      
+      const receiverPda = getReceiverPDA();
+      const receiverInfo = await program.account.receiver.fetch(receiverPda);
+      const receiverWallet1 = receiverInfo.receiver1;
+      const receiverWallet2 = receiverInfo.receiver2;
       // Use specific remaining accounts if itemIds is valid, otherwise fall back to general
       let remainingAccounts;
       if (Array.isArray(itemIds) && itemIds.length > 0) {
@@ -190,6 +205,9 @@ export const useFishing = () => {
           systemProgram: SystemProgram.programId,
           tokenProgram: TOKEN_PROGRAM_ID,
           associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+          receiver: receiverPda,
+          receiverWallet1: receiverWallet1,
+          receiverWallet2: receiverWallet2,
         })
         .remainingAccounts(remainingAccounts);
       
@@ -245,7 +263,10 @@ export const useFishing = () => {
       const gameRegistryPda = getGameRegistryPDA();
       const userDataPda = getUserDataPDA(publicKey);
       const fishingRequestPda = getFishingRequestPDA(publicKey, new BN(finalNonce));
-      
+      const receiverPda = getReceiverPDA();
+      const receiverInfo = await program.account.receiver.fetch(receiverPda);
+      const receiverWallet1 = receiverInfo.receiver1;
+      const receiverWallet2 = receiverInfo.receiver2;
       // Add remaining accounts for bait burning
       const remainingAccounts = getCraftBaitSpecificRemainingAccounts(publicKey, [baitId], baitId);
       
@@ -258,6 +279,9 @@ export const useFishing = () => {
           request: fishingRequestPda,
           systemProgram: SystemProgram.programId,
           tokenProgram: TOKEN_PROGRAM_ID,
+          receiver: receiverPda,
+          receiverWallet1: receiverWallet1,
+          receiverWallet2: receiverWallet2,
         })
         .remainingAccounts(remainingAccounts);
       

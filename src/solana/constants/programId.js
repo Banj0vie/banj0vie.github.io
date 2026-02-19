@@ -1,12 +1,12 @@
 import { PublicKey } from '@solana/web3.js';
 import { getClusterConfig, getRpcEndpoint, getWsEndpoint, getFinalCluster } from '../utils/clusterUtils';
 
-export const SOLANA_VALLEY_PROGRAM_ID = new PublicKey('gzxT81zxzrKXt6awQF1vUkaAtKLRW94rSSwFWxceDw1');
+export const SOLANA_VALLEY_PROGRAM_ID = new PublicKey('J8d34R91DhbxtsrJZMjckrCiq2F36dcQaQuwWghzCZjR');
 export const SOLANA_VALLEY_DEX_PROGRAM_ID = new PublicKey('EVHHfpb4sarb9D2UWSXB6kkyWcS34hWTkd2qGEJhBJJe');
 
 export const GAME_TOKEN_MINT = new PublicKey('ENiJaLrLtgtiPbPrt5ZjKKe6yHzaLQcJpiPmEbiwNyJT');
 
-export const LOOKUP_TABLE_ADDRESS = new PublicKey('AaHwdXsEEgBpP7ZPexoCaNqr9rYuEvzojxPCo1MZtFn7');
+export const LOOKUP_TABLE_ADDRESS = new PublicKey('8tESsXZwvZibNGomDdUJYd3UiV2TTAQ1hVHgtbatej3K');
 
 export const getCurrentCluster = () => getFinalCluster();
 export const getCurrentClusterConfig = () => getClusterConfig();
