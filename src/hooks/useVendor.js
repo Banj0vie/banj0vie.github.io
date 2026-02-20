@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { useProgram } from './useProgram';
 import { useSolanaWallet } from './useSolanaWallet';
 import { getGameRegistryPDA, getUserDataPDA, getRequestPDA, getBankerDataPDA, getItemMintAuthPDA, getEpochTop5PDA, getSponsorGameAta, getGameRegistryInfo, getRevealSeedsRemainingAccounts, getGameVaultPDA, getGameVaultAta } from '../solana/utils/pdaUtils';
@@ -8,15 +8,17 @@ import { BN } from '@coral-xyz/anchor';
 import { GAME_TOKEN_MINT } from '../solana/constants/programId';
 import { getAssociatedTokenAddress, TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import { EPOCH_PERIOD } from '../utils/basic';
-import { fetchBalancesSuccess } from '../solana/store/slices/balanceSlice';
+import { fetchBalancesSuccess, selectGameTokenBalance } from '../solana/store/slices/balanceSlice';
 import { getBalance, getParsedTokenAccountsByOwner } from '../utils/requestQueue';
 import { sendTransactionForPhantom } from '../utils/transactionHelper';
 import { useBalanceRefresh } from './useBalanceRefresh';
+import { SEED_PACK_PRICE } from '../constants/item_seed';
 
 export const useVendor = () => {
   const { publicKey, sendTransaction } = useSolanaWallet();
   const { program, connection } = useProgram();
   const dispatch = useDispatch();
+  const gameToken = useSelector(selectGameTokenBalance);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const { refreshBalancesAfterTransaction } = useBalanceRefresh();
@@ -83,6 +85,16 @@ export const useVendor = () => {
           return null;
         }
       }
+      // Check user has enough GAME tokens to buy the requested seed packs (from Redux)
+      const gameTokenBalance = Math.floor(Number(gameToken || 0) * 1e9);
+      const tierU8 = Number(tier);
+      const pricePerPack = Number(SEED_PACK_PRICE[tierU8] ?? 0);
+      const totalCost = Math.floor(pricePerPack * 1e9 * Number(count));
+      if (gameTokenBalance < totalCost) {
+        setError(`Insufficient $HNY balance: Need ${totalCost / 1e9} but you have ${gameTokenBalance / 1e9}`);
+        setLoading(false);
+        return null;
+      }
       // Generate a more unique nonce to prevent duplicate transactions (must be integer for Request PDA)
       const nonce = Math.floor(Date.now() + Math.random() * 1000000);
       const gameRegistryPda = getGameRegistryPDA();
@@ -143,7 +155,7 @@ export const useVendor = () => {
     } finally { 
       setLoading(false); 
     }
-  }, [program, publicKey]);
+  }, [program, publicKey, gameToken]);
 
   const getPackPrice = (tier) => { if (tier == 1) return 1000000; if (tier == 2) return 2000000; if (tier == 3) return 10000000; if (tier == 4) return 25000000; return 0; };
 

@@ -25,6 +25,8 @@ import {
   updateGameTokenBalance,
   selectBalanceLoading,
   selectBalanceError,
+  selectSolBalance,
+  selectGameTokenBalance,
 } from '../solana/store/slices/balanceSlice';
 import { sendTransactionForPhantom } from '../utils/transactionHelper';
 import { useBalanceRefresh } from './useBalanceRefresh';
@@ -41,6 +43,8 @@ export const useDex = () => {
   // Redux state
   const loading = useSelector(selectBalanceLoading);
   const error = useSelector(selectBalanceError);
+  const solBalance = useSelector(selectSolBalance);
+  const gameTokenBalance = useSelector(selectGameTokenBalance);
   const settings = useSelector(selectSettings) || defaultSettings;
 
   // Calculate PDAs
@@ -116,6 +120,11 @@ export const useDex = () => {
         if (solAmountLamports <= 0) {
           throw new Error('Invalid SOL amount');
         }
+        const solBalanceNum = parseFloat(solBalance || 0);
+        if (solBalanceNum < solAmount) {
+          dispatch(buyTokensFailure(`Insufficient SOL balance: Need ${solAmount} SOL but you have ${solBalanceNum} SOL`));
+          return false;
+        }
 
         const dexPoolPda = getDexPoolPda();
         const solVaultPda = getSolVaultPda();
@@ -173,8 +182,13 @@ export const useDex = () => {
         dispatch(buyTokensFailure(errorMessage));
         return false;
       }
-    }else{
-      try{
+    } else {
+      try {
+        const solBalanceNum = parseFloat(solBalance || 0);
+        if (solBalanceNum < solAmount) {
+          dispatch(buyTokensFailure(`Insufficient SOL balance: Need ${solAmount} SOL but you have ${solBalanceNum} SOL`));
+          return false;
+        }
         const tx = await swapRaydiumBaseIn(solAmount, true, connection, publicKey, sendTransaction, settings.dexSlippage);
         dispatch(buyTokensSuccess());
         
@@ -204,7 +218,7 @@ export const useDex = () => {
         return false;
       }
     }
-  }, [publicKey, dispatch, program, getDexPoolPda, getSolVaultPda, fetchBalances, connection]);
+  }, [publicKey, dispatch, program, getDexPoolPda, getSolVaultPda, fetchBalances, connection, solBalance]);
 
   // Sell tokens for SOL
   const sellTokens = useCallback(async (tokenAmount) => {
@@ -225,6 +239,11 @@ export const useDex = () => {
         const tokenAmountBaseUnits = Math.floor(tokenAmount * 1e9); // Assuming 6 decimals
         if (tokenAmountBaseUnits <= 0) {
           throw new Error('Invalid token amount');
+        }
+        const gameTokenBalanceNum = parseFloat(gameTokenBalance || 0);
+        if (gameTokenBalanceNum < tokenAmount) {
+          dispatch(sellTokensFailure(`Insufficient token balance: Need ${tokenAmount} but you have ${gameTokenBalanceNum}`));
+          return false;
         }
 
         const dexPoolPda = getDexPoolPda();
@@ -283,8 +302,13 @@ export const useDex = () => {
         dispatch(sellTokensFailure(errorMessage));
         return false;
       }
-    }else{
-      try{
+    } else {
+      try {
+        const gameTokenBalanceNum = parseFloat(gameTokenBalance || 0);
+        if (gameTokenBalanceNum < tokenAmount) {
+          dispatch(sellTokensFailure(`Insufficient token balance: Need ${tokenAmount} but you have ${gameTokenBalanceNum}`));
+          return false;
+        }
         const tx = await swapRaydiumBaseIn(tokenAmount, false, connection, publicKey, sendTransaction, settings.dexSlippage);
         dispatch(sellTokensSuccess());
         
@@ -314,7 +338,7 @@ export const useDex = () => {
         return false;
       }
     }
-  }, [publicKey, dispatch, program, getDexPoolPda, getSolVaultPda, fetchBalances]);
+  }, [publicKey, dispatch, program, getDexPoolPda, getSolVaultPda, fetchBalances, gameTokenBalance]);
 
   // Fetch current pool state
   const fetchDexPool = useCallback(async () => {
