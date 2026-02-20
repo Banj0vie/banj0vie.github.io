@@ -270,7 +270,7 @@ export const sendTransactionForPhantom = async (method, connection, sendTransact
       try {
         signature = await sendTransactionFn(tx, connection, { 
           skipPreflight: false,
-          maxRetries: 3,
+          maxRetries: 1,
           preflightCommitment: 'processed'
         });
       } catch (adapterErr) {
