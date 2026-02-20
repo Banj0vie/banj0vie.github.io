@@ -89,12 +89,18 @@ export const getRevealSeedsRemainingAccounts = async (publicKey, tier) => {
   return accounts;
 };
 
-/** Remaining accounts for prod_mint (category 0=Pico, 1=Basic, 2=Premium). */
-export const getProdMintRemainingAccounts = (publicKey, category) => {
+/** Remaining accounts for prod_mint (category 0=Pico, 1=Basic, 2=Premium).
+ *  For Basic (category 1), batch splits items: batch 0 = first 6, batch 1 = last 6 (avoids MaxInstructionTraceLengthExceeded). */
+export const getProdMintRemainingAccounts = (publicKey, category, batch = 0) => {
   const catByIndex = { 0: CAT_PICO_PRODUCE, 1: CAT_BASIC_PRODUCE, 2: CAT_PREMIUM_PRODUCE };
   const cat = catByIndex[category];
   if (cat === undefined) return [];
-  const itemIds = Object.values(ID_PRODUCE_ITEMS).filter((id) => (id >> 8) === cat);
+  let itemIds = Object.values(ID_PRODUCE_ITEMS).filter((id) => (id >> 8) === cat);
+  if (category === 1) {
+    const start = batch === 0 ? 0 : 6;
+    const end = batch === 0 ? 6 : 12;
+    itemIds = itemIds.slice(start, end);
+  }
   const accounts = [];
   for (const itemId of itemIds) {
     const mint = getItemMintPDA(itemId);

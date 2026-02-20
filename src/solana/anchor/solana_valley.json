@@ -1,5 +1,5 @@
 {
-  "address": "J8d34R91DhbxtsrJZMjckrCiq2F36dcQaQuwWghzCZjR",
+  "address": "4pw66F7wd1S5QHVy3FEnhhrA7t71ox7PGWQiATyVnKiU",
   "metadata": {
     "name": "solana_valley",
     "version": "0.1.0",
@@ -2396,6 +2396,38 @@
           "writable": true
         },
         {
+          "name": "receiver",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  99,
+                  101,
+                  105,
+                  118,
+                  101,
+                  114
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "receiver_wallet1",
+          "writable": true
+        },
+        {
+          "name": "receiver_wallet2",
+          "writable": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
           "name": "token_program",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         }
@@ -2843,6 +2875,10 @@
         {
           "name": "category",
           "type": "u8"
+        },
+        {
+          "name": "batch",
+          "type": "u8"
         }
       ]
     },
@@ -3059,6 +3095,34 @@
               }
             ]
           }
+        },
+        {
+          "name": "receiver",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  99,
+                  101,
+                  105,
+                  118,
+                  101,
+                  114
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "receiver_wallet1",
+          "writable": true
+        },
+        {
+          "name": "receiver_wallet2",
+          "writable": true
         },
         {
           "name": "system_program",

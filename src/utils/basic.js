@@ -248,7 +248,6 @@ export const chestLootTable = (chestType) => {
         growth,
         pesticide,
         fertilizer,
-        ...feebleSeeds,
         ...picoSeeds,
         ...basicSeeds,
         ...premiumSeeds,

@@ -63,12 +63,19 @@ export const useReferral = () => {
         codeBytes.set(code.slice(0, 32));
       }
       const referralCodeOwnerPda = getReferralCodeOwnerPDA(codeBytes);
+      const receiverPda = getReceiverPDA();
+      const receiverInfo = await program.account.receiver.fetch(receiverPda);
+      const receiverWallet1 = receiverInfo.receiver1;
+      const receiverWallet2 = receiverInfo.receiver2;
       const method = program.methods
         .registerMyReferralCode(codeBytes)
         .accounts({ 
           player: publicKey, 
           userData: userDataPda, 
           codeOwner: referralCodeOwnerPda, 
+          receiver: receiverPda,
+          receiverWallet1: receiverWallet1,
+          receiverWallet2: receiverWallet2,
           systemProgram: SystemProgram.programId 
         });
       

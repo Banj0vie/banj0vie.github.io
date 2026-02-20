@@ -60,27 +60,29 @@ const ProfileBar = ({ isFarmMenu }) => {
             bg="/images/profile_bar/profile_button_bg.png"
             onClick={() => setIsInventoryDialog(true)}
           />
-          {/* <ProfileButton
-            icon={<img alt="Test Mint" src="/images/profile_bar/btn_inventory.png" />}
-            title="Test Mint"
-            bg="/images/profile_bar/profile_button_bg.png"
-            onClick={() => prodMint(0)}
-            disabled={prodMintLoading}
-          />
-          <ProfileButton
-            icon={<img alt="Test Mint" src="/images/profile_bar/btn_inventory.png" />}
-            title="Test Mint"
-            bg="/images/profile_bar/profile_button_bg.png"
-            onClick={() => prodMint(1)}
-            disabled={prodMintLoading}
-          />
-          <ProfileButton
-            icon={<img alt="Test Mint" src="/images/profile_bar/btn_inventory.png" />}
-            title="Test Mint"
-            bg="/images/profile_bar/profile_button_bg.png"
-            onClick={() => prodMint(2)}
-            disabled={prodMintLoading}
-          /> */}
+          <div style={{ display: 'none' }}>
+            <ProfileButton
+              icon={<img alt="Test Mint" src="/images/profile_bar/btn_inventory.png" />}
+              title="Test Mint"
+              bg="/images/profile_bar/profile_button_bg.png"
+              onClick={() => prodMint(0)}
+              disabled={prodMintLoading}
+            />
+            <ProfileButton
+              icon={<img alt="Test Mint" src="/images/profile_bar/btn_inventory.png" />}
+              title="Test Mint"
+              bg="/images/profile_bar/profile_button_bg.png"
+              onClick={() => prodMint(1)}
+              disabled={prodMintLoading}
+            />
+            <ProfileButton
+              icon={<img alt="Test Mint" src="/images/profile_bar/btn_inventory.png" />}
+              title="Test Mint"
+              bg="/images/profile_bar/profile_button_bg.png"
+              onClick={() => prodMint(2)}
+              disabled={prodMintLoading}
+            />
+          </div>
         </div>
         <div className="resource-badge" key={balanceKey}>
           <ProfileButton
