@@ -2,6 +2,7 @@
   "name": "react-default-app",
   "version": "1.0.0",
   "private": true,
+  "homepage": ".",
   "dependencies": {
     "@coral-xyz/anchor": "^0.32.1",
     "@raydium-io/raydium-sdk-v2": "^0.2.32-alpha",
