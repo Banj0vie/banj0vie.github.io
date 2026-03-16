@@ -4,6 +4,20 @@ import { ALL_ITEMS, IMAGE_URL_CROP } from '../constants/item_data';
 import { useSolanaWallet } from './useSolanaWallet';
 import { fetchAllItemBalances } from '../solana/utils/inventoryUtils';
 
+const TRANSPARENT_PIXEL = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
+
+// Inject sandbox items with a transparent pixel to hide their massive images in the UI
+if (!ALL_ITEMS[9990]) ALL_ITEMS[9990] = { id: 9990, label: 'Stone Pipe', image: TRANSPARENT_PIXEL, category: ID_ITEM_CATEGORIES.LOOT, subCategory: "MATERIALS", type: ID_RARE_TYPE.COMMON, usable: false };
+if (!ALL_ITEMS[9991]) ALL_ITEMS[9991] = { id: 9991, label: 'Axe', image: TRANSPARENT_PIXEL, category: ID_ITEM_CATEGORIES.LOOT, subCategory: "MATERIALS", type: ID_RARE_TYPE.COMMON, usable: false };
+if (!ALL_ITEMS[9992]) ALL_ITEMS[9992] = { id: 9992, label: 'Pickaxe', image: TRANSPARENT_PIXEL, category: ID_ITEM_CATEGORIES.LOOT, subCategory: "MATERIALS", type: ID_RARE_TYPE.COMMON, usable: false };
+if (!ALL_ITEMS[9993]) ALL_ITEMS[9993] = { id: 9993, label: 'Wood Log', image: TRANSPARENT_PIXEL, category: ID_ITEM_CATEGORIES.LOOT, subCategory: "MATERIALS", type: ID_RARE_TYPE.COMMON, usable: false };
+if (!ALL_ITEMS[9994]) ALL_ITEMS[9994] = { id: 9994, label: 'Stone', image: TRANSPARENT_PIXEL, category: ID_ITEM_CATEGORIES.LOOT, subCategory: "MATERIALS", type: ID_RARE_TYPE.COMMON, usable: false };
+if (!ALL_ITEMS[9995]) ALL_ITEMS[9995] = { id: 9995, label: 'Sticks', image: TRANSPARENT_PIXEL, category: ID_ITEM_CATEGORIES.LOOT, subCategory: "MATERIALS", type: ID_RARE_TYPE.COMMON, usable: false };
+if (!ALL_ITEMS[9996]) ALL_ITEMS[9996] = { id: 9996, label: 'Iron Ore', image: TRANSPARENT_PIXEL, category: ID_ITEM_CATEGORIES.LOOT, subCategory: "MATERIALS", type: ID_RARE_TYPE.UNCOMMON, usable: false };
+if (!ALL_ITEMS[9997]) ALL_ITEMS[9997] = { id: 9997, label: 'Gold Ore', image: TRANSPARENT_PIXEL, category: ID_ITEM_CATEGORIES.LOOT, subCategory: "MATERIALS", type: ID_RARE_TYPE.RARE, usable: false };
+ALL_ITEMS[9998] = { id: 9998, label: 'Water Sprinkler', image: TRANSPARENT_PIXEL, category: ID_ITEM_CATEGORIES.POTION, subCategory: "FARM_GEAR", type: ID_RARE_TYPE.COMMON, usable: true };
+ALL_ITEMS[9999] = { id: 9999, label: 'Umbrella', image: TRANSPARENT_PIXEL, category: ID_ITEM_CATEGORIES.POTION, subCategory: "FARM_GEAR", type: ID_RARE_TYPE.COMMON, usable: true };
+
 export const useItems = () => {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -26,24 +40,88 @@ export const useItems = () => {
     setError(null);
 
     try {
-      const balances = await fetchAllItemBalances(connection, publicKey);
+      let balances = {};
+      try {
+        balances = await fetchAllItemBalances(connection, publicKey) || {};
+      } catch (err) {
+        console.warn("Sandbox Mode: Bypassing on-chain inventory fetch.");
+      }
+
+      // --- SANDBOX HACK: Give 10 of every seed ---
+      Object.values(ID_SEEDS).forEach(seedId => {
+        if (typeof seedId === 'number') {
+          balances[seedId] = 10;
+        }
+      });
+
+      // --- SANDBOX HACK: Load harvested produce ---
+      try {
+        const sandboxProduce = JSON.parse(localStorage.getItem('sandbox_produce') || '{}');
+        
+        let needsFix = false;
+        const fixedProduce = {};
+        Object.entries(sandboxProduce).forEach(([produceId, val]) => {
+          const count = Array.isArray(val) ? val.length : Number(val);
+          if (Array.isArray(val)) needsFix = true;
+          fixedProduce[produceId] = count;
+          balances[produceId] = (balances[produceId] || 0) + count;
+        });
+        if (needsFix) {
+          localStorage.setItem('sandbox_produce', JSON.stringify(fixedProduce));
+        }
+      } catch(e) {}
+
+      // --- SANDBOX HACK: Load crafted loot/bait ---
+      try {
+        const sandboxLoot = JSON.parse(localStorage.getItem('sandbox_loot') || '{}');
+        
+        let needsSave = false;
+        if (sandboxLoot[ID_POTION_ITEMS.SCARECROW] === undefined) {
+          sandboxLoot[ID_POTION_ITEMS.SCARECROW] = 10;
+          needsSave = true;
+        }
+        if (sandboxLoot[ID_POTION_ITEMS.LADYBUG] === undefined) {
+          sandboxLoot[ID_POTION_ITEMS.LADYBUG] = 10;
+          needsSave = true;
+        }
+        if (sandboxLoot[9998] === undefined) {
+          sandboxLoot[9998] = 10;
+          needsSave = true;
+        }
+        if (sandboxLoot[9999] === undefined) {
+          sandboxLoot[9999] = 10;
+          needsSave = true;
+        }
+        if (needsSave) {
+          localStorage.setItem('sandbox_loot', JSON.stringify(sandboxLoot));
+        }
+
+        Object.entries(sandboxLoot).forEach(([id, count]) => {
+          balances[id] = (balances[id] || 0) + count;
+        });
+      } catch(e) {}
       
+      // Add starter tools to match forest tracking logic
+      balances[9991] = (balances[9991] || 0) + 5; // Axe
+      balances[9992] = (balances[9992] || 0) + 5; // Pickaxe
+      balances[9996] = (balances[9996] || 0) + 10; // Iron Ore
+
       // Include ALL items (even with 0 balance) for crafting interface
       const userItems = [];
-      Object.entries(balances).forEach(([itemId, balance]) => {
+      Object.entries(balances).forEach(([itemIdStr, balance]) => {
         // Convert balance to number for comparison
         const balanceNum = typeof balance === 'object' && balance.toNumber ? balance.toNumber() : Number(balance);
-        
-        
+        const itemId = Number(itemIdStr);
+        if (isNaN(itemId)) return; // Auto-heals corrupted undefined items
+
         const itemData = ALL_ITEMS[itemId];
         if (itemData) {
         // Item exists in ALL_ITEMS, use its data
           const item = {
-            id: Number(itemId), // Ensure id is always a number
+            ...itemData,
+            id: itemId, // Ensure id is always a number
             count: balanceNum,
-            ...itemData
           };
-          
           
           userItems.push(item);
         } else {
@@ -57,6 +135,9 @@ export const useItems = () => {
           } else if (Object.values(ID_BAIT_ITEMS).includes(itemId)) {
             category = ID_ITEM_CATEGORIES.LOOT;
             subCategory = ID_LOOT_CATEGORIES.BAIT;
+          } else if (Object.values(ID_FISH_ITEMS).includes(itemId)) {
+            category = ID_ITEM_CATEGORIES.LOOT;
+            subCategory = ID_LOOT_CATEGORIES.FISH;
           } else if (Object.values(ID_POTION_ITEMS).includes(itemId)) {
             category = ID_ITEM_CATEGORIES.POTION;
             // Determine potion subcategory based on the specific potion
@@ -66,6 +147,10 @@ export const useItems = () => {
               subCategory = ID_POTION_CATEGORIES.GROWTH_ELIXIR;
             } else if (itemId === ID_POTION_ITEMS.POTION_PESTICIDE) {
               subCategory = ID_POTION_CATEGORIES.PESTICIDE;
+            } else if (itemId === ID_POTION_ITEMS.SCARECROW) {
+              subCategory = ID_POTION_CATEGORIES.SCARECROW;
+            } else if (itemId === ID_POTION_ITEMS.LADYBUG) {
+              subCategory = ID_POTION_CATEGORIES.LADYBUG;
             }
           }
 
@@ -83,6 +168,12 @@ export const useItems = () => {
             if (baitEntry) {
               label = baitEntry[0]; // Use the key as label (e.g., "BAIT_I")
             }
+          } else if (Object.values(ID_FISH_ITEMS).includes(itemId)) {
+            // Find the fish label from ID_FISH_ITEMS
+            const fishEntry = Object.entries(ID_FISH_ITEMS).find(([key, value]) => value === itemId);
+            if (fishEntry) {
+              label = fishEntry[0]; // Use the key as label
+            }
           } else if (Object.values(ID_POTION_ITEMS).includes(itemId)) {
             // Find the potion label from ID_POTION_ITEMS
             const potionEntry = Object.entries(ID_POTION_ITEMS).find(([key, value]) => value === itemId);
@@ -93,7 +184,7 @@ export const useItems = () => {
 
           // Create item data with proper categories
           userItems.push({
-            id: Number(itemId), // Ensure id is always a number
+            id: itemId, // Ensure id is always a number
             count: balanceNum,
             category,
             subCategory,
@@ -159,13 +250,18 @@ export const useItems = () => {
             // Handle potion subcategories
             if (node.id === ID_POTION_CATEGORIES.GROWTH_ELIXIR ||
               node.id === ID_POTION_CATEGORIES.FERTILIZER ||
-              node.id === ID_POTION_CATEGORIES.PESTICIDE) {
+              node.id === ID_POTION_CATEGORIES.PESTICIDE ||
+              node.id === ID_POTION_CATEGORIES.SCARECROW ||
+              node.id === ID_POTION_CATEGORIES.LADYBUG ||
+              node.id === "FARM_GEAR") {
               return item.subCategory === node.id;
             }
 
             // Handle loot subcategories
             if (node.id === ID_LOOT_CATEGORIES.CHEST ||
-              node.id === ID_LOOT_CATEGORIES.BAIT) {
+                node.id === ID_LOOT_CATEGORIES.BAIT ||
+                node.id === ID_LOOT_CATEGORIES.FISH ||
+                node.id === "MATERIALS") {
               return item.subCategory === node.id;
             }
 
@@ -217,6 +313,14 @@ export const useItems = () => {
                   { id: ID_PRODUCE_ITEMS.CABBAGE, label: "Cabbage" },
                   { id: ID_PRODUCE_ITEMS.ONION, label: "Onion" },
                   { id: ID_PRODUCE_ITEMS.RADISH, label: "Radish" },
+                ]
+              },
+              {
+                id: "FARM_GEAR",
+                label: "Farm Gear",
+                children: [
+                  { id: 9998, label: "Water Sprinkler" },
+                  { id: 9999, label: "Umbrella" }
                 ]
               },
               {
@@ -286,6 +390,34 @@ export const useItems = () => {
                   { id: ID_POTION_ITEMS.PESTICIDE_II, label: "Pesticide II" },
                   { id: ID_POTION_ITEMS.PESTICIDE_III, label: "Pesticide III" },
                 ]
+              },
+              {
+                id: ID_POTION_CATEGORIES.SCARECROW,
+                label: "Scarecrows",
+                children: [
+                  { id: ID_POTION_ITEMS.SCARECROW, label: "Scarecrow" },
+                ]
+              },
+              {
+                id: ID_POTION_CATEGORIES.LADYBUG,
+                label: "Ladybugs",
+                children: [
+                  { id: ID_POTION_ITEMS.LADYBUG, label: "Ladybug" },
+                ]
+              },
+              {
+                id: "MATERIALS",
+                label: "Materials",
+                children: [
+                  { id: 9991, label: "Axe" },
+                  { id: 9992, label: "Pickaxe" },
+                  { id: 9993, label: "Wood Log" },
+                  { id: 9994, label: "Stone" },
+                  { id: 9995, label: "Sticks" },
+                  { id: 9990, label: "Stone Pipe" },
+                  { id: 9996, label: "Iron Ore" },
+                  { id: 9997, label: "Gold Ore" }
+                ]
               }
             ]
           },
@@ -310,6 +442,13 @@ export const useItems = () => {
                   { id: ID_BAIT_ITEMS.BAIT_I, label: "Bait I" },
                   { id: ID_BAIT_ITEMS.BAIT_II, label: "Bait II" },
                   { id: ID_BAIT_ITEMS.BAIT_III, label: "Bait III" }
+                ]
+              },
+              {
+                id: ID_LOOT_CATEGORIES.FISH,
+                label: "Fishes",
+                children: [
+                  { id: ID_FISH_ITEMS.NORMAL_FISH, label: "Normal fish" }
                 ]
               }
             ]

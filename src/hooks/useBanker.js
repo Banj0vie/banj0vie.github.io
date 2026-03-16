@@ -71,8 +71,8 @@ export const useBanker = () => {
       // Fetch updated banker data after successful stake
       try {
         const bankerData = await program.account.bankerData.fetch(bankerDataPda);
-        const xGameToken = bankerData.xbalance / 1e9 || '0';
-        const gameToken = bankerData.balance / 1e9 || '0';
+        const xGameToken = Number(bankerData.xbalance?.toString() || 0) / 1e9 || '0';
+        const gameToken = Number(bankerData.balance?.toString() || 0) / 1e9 || '0';
         dispatch(fetchBankerDataSuccess({ totalGameToken: gameToken, totalXGameToken: xGameToken }));
       } catch (err) {
         console.error('Failed to update banker data:', err);
@@ -146,8 +146,8 @@ export const useBanker = () => {
       // Fetch updated banker data after successful unstake
       try {
         const bankerData = await program.account.bankerData.fetch(bankerDataPda);
-        const xGameToken = bankerData.xbalance / 1e9 || '0';
-        const gameToken = bankerData.balance / 1e9 || '0';
+        const xGameToken = Number(bankerData.xbalance?.toString() || 0) / 1e9 || '0';
+        const gameToken = Number(bankerData.balance?.toString() || 0) / 1e9 || '0';
         dispatch(fetchBankerDataSuccess({ totalGameToken: gameToken, totalXGameToken: xGameToken }));
       } catch (err) {
         console.error('Failed to update banker data:', err);
@@ -183,8 +183,8 @@ export const useBanker = () => {
     try {
       const bankerDataPda = getBankerDataPDA();
       const bankerData = await program.account.bankerData.fetch(bankerDataPda);
-      const xGameToken = bankerData.xbalance / 1e9 || '0';
-      const gameToken = bankerData.balance / 1e9 || '0';
+      const xGameToken = Number(bankerData.xbalance?.toString() || 0) / 1e9 || '0';
+      const gameToken = Number(bankerData.balance?.toString() || 0) / 1e9 || '0';
       const result = { totalGameToken: gameToken, totalXGameToken: xGameToken };
       dispatch(fetchBankerDataSuccess(result));
       

@@ -76,9 +76,9 @@ export const useMarket = () => {
                         allListings.push({
                             lid: i,
                             seller: listing.seller?.toString?.() || '',
-                            id: Number(listing.itemId || 0),
-                            amount: Number(listing.amount || 0),
-                            pricePer: Number(listing.pricePer || 0) / 1e9,
+                            id: Number(listing.itemId?.toString?.() || listing.itemId || 0),
+                            amount: Number(listing.amount?.toString?.() || listing.amount || 0),
+                            pricePer: Number(listing.pricePer?.toString?.() || listing.pricePer || 0) / 1e9,
                             active: !!listing.active,
                         });
                     }
@@ -404,5 +404,3 @@ export const useMarket = () => {
 
     return { marketData, getAllListings, purchase, list, cancel, batchBuy, send };
 };
-
-

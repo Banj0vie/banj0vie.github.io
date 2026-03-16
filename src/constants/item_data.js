@@ -801,6 +801,14 @@ export const ALL_ITEMS = {
     image: fishImages.smallShark,
     pos: -1,
   },
+  [ID_FISH_ITEMS.NORMAL_FISH]: {
+    label: "Normal fish",
+    category: ID_ITEM_CATEGORIES.LOOT,
+    subCategory: ID_LOOT_CATEGORIES.FISH,
+    type: ID_RARE_TYPE.COMMON,
+    image: "/images/fish/Normal Ocean Fish (2).png",
+    pos: -1,
+  },
 
   // Chest items
   [ID_CHEST_ITEMS.CHEST_WOOD]: {
@@ -944,6 +952,26 @@ export const ALL_ITEMS = {
     lockedHoney: 0,
     exp: 250,
   },
+  [ID_POTION_ITEMS.SCARECROW]: {
+    label: "Scarecrow",
+    category: ID_ITEM_CATEGORIES.POTION,
+    subCategory: ID_POTION_CATEGORIES.SCARECROW,
+    type: ID_RARE_TYPE.EPIC,
+    image: "/images/scarecrow/Scarecrow1.png",
+    pos: -1,
+    honey: 0,
+    lockedHoney: 0,
+  },
+  [ID_POTION_ITEMS.LADYBUG]: {
+    label: "Ladybug",
+    category: ID_ITEM_CATEGORIES.POTION,
+    subCategory: ID_POTION_CATEGORIES.LADYBUG,
+    type: ID_RARE_TYPE.EPIC,
+    image: "/images/ladybug/ladybug.jpg",
+    pos: -1,
+    honey: 0,
+    lockedHoney: 0,
+  },
   [ID_FISHING_RODS.LVL1]: {
     label: "Fishing Rod 1",
     type: ID_RARE_TYPE.COMMON,
@@ -1046,6 +1074,16 @@ export const ALL_ITEM_TREE = [
               { id: ID_POTION_ITEMS.PESTICIDE, label: "Pesticide" },
               { id: ID_POTION_ITEMS.PESTICIDE_II, label: "Pesticide II" },
               { id: ID_POTION_ITEMS.PESTICIDE_III, label: "Pesticide III" },
+            ]
+          },
+          {
+            id: ID_POTION_CATEGORIES.SCARECROW, label: "Scarecrows", children: [
+              { id: ID_POTION_ITEMS.SCARECROW, label: "Scarecrow" },
+            ]
+          },
+          {
+            id: ID_POTION_CATEGORIES.LADYBUG, label: "Ladybugs", children: [
+              { id: ID_POTION_ITEMS.LADYBUG, label: "Ladybug" },
             ]
           }
         ]

@@ -3,6 +3,8 @@ import { TAVERN_BEES, TAVERN_HOTSPOTS, TAVERN_STUFFS, TAVERN_VIEWPORT } from "..
 import PanZoomViewport from "../layouts/PanZoomViewport";
 import { ID_TAVERN_HOTSPOTS } from "../constants/app_ids";
 import PotionDialog from "../containers/Tavern_Potion";
+import AdminPanel from "./index";
+import WeatherOverlay from "../components/WeatherOverlay";
 
 const Tavern = () => {
   const { width, height } = TAVERN_VIEWPORT;
@@ -16,15 +18,19 @@ const Tavern = () => {
     }
   ];
   return (
-    <PanZoomViewport
-      backgroundSrc="/images/backgrounds/tavern.webp"
-      hotspots={hotspots}
-      dialogs={dialogs}
-      width={width}
-      height={height}
-      stuffs={TAVERN_STUFFS}
-      bees={TAVERN_BEES}
-    />
+    <>
+      <WeatherOverlay />
+      <PanZoomViewport
+        backgroundSrc="/images/backgrounds/tavern.webp"
+        hotspots={hotspots}
+        dialogs={dialogs}
+        width={width}
+        height={height}
+        stuffs={TAVERN_STUFFS}
+        bees={TAVERN_BEES}
+      />
+      <AdminPanel />
+    </>
   );
 };
 

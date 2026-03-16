@@ -8,6 +8,8 @@ import { ID_MARKET_HOTSPOTS } from "../constants/app_ids";
 import MarketPlaceDialog from "../containers/Market_Marketplace";
 import LeaderboardDialog from "../containers/Market_Leaderboard";
 import SageDialog from "../containers/Market_Sage";
+import AdminPanel from "./index";
+import WeatherOverlay from "../components/WeatherOverlay";
 
 const Market = () => {
   const { width, height } = MARKET_VIEWPORT;
@@ -56,15 +58,19 @@ const Market = () => {
   ];
   const bees = MARKET_BEES;
   return (
-    <PanZoomViewport
-      backgroundSrc="/images/backgrounds/market.webp"
-      hotspots={hotspots}
-      dialogs={dialogs}
-      width={width}
-      height={height}
-      stuffs={MARKET_STUFFS}
-      bees={bees}
-    />
+    <>
+      <WeatherOverlay />
+      <PanZoomViewport
+        backgroundSrc="/images/backgrounds/market.webp"
+        hotspots={hotspots}
+        dialogs={dialogs}
+        width={width}
+        height={height}
+        stuffs={MARKET_STUFFS}
+        bees={bees}
+      />
+      <AdminPanel />
+    </>
   );
 };
 

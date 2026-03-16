@@ -73,8 +73,8 @@ export const useDex = () => {
       if (!connection) return;
 
       // Get SOL balance
-      const solBalance = await getBalance(connection, publicKey);
-      const solBalanceFormatted = (solBalance / LAMPORTS_PER_SOL).toFixed(6);
+      const fetchedSolBalance = await getBalance(connection, publicKey);
+      const solBalanceFormatted = (fetchedSolBalance / LAMPORTS_PER_SOL).toFixed(6);
 
       // Get game token balance
       const userGameTokenAta = await getAssociatedTokenAddress(

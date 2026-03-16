@@ -5,7 +5,7 @@ import { getUserDataPDA, getGameRegistryPDA, getFishingRequestPDA, getItemMintAu
 import { SystemProgram, SYSVAR_SLOT_HASHES_PUBKEY } from '@solana/web3.js';
 import { TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import { BN } from '@coral-xyz/anchor';
-import { ID_BAIT_ITEMS } from '../constants/app_ids';
+import { ID_BAIT_ITEMS, ID_CHEST_ITEMS, ID_FISH_ITEMS } from '../constants/app_ids';
 import { sendTransactionForPhantom } from '../utils/transactionHelper';
 
 export const useFishing = () => {
@@ -59,188 +59,51 @@ export const useFishing = () => {
   }, [program, publicKey]);
 
   const craftBait1 = useCallback(async (baitCount) => {
-    if (!program || !publicKey) return null;
-    if (fishingData.loading) {
-      setFishingData(prev => ({ ...prev, error: 'Transaction already in progress' }));
-      return null;
-    }
-    
     try {
       setFishingData(prev => ({ ...prev, loading: true, error: null }));
-      const gameRegistryPda = getGameRegistryPDA();
-      const userDataPda = getUserDataPDA(publicKey);
-      const remainingAccounts = getCraftBait1RemainingAccounts(publicKey);
-      const receiverPda = getReceiverPDA();
-      const receiverInfo = await program.account.receiver.fetch(receiverPda);
-      const receiverWallet1 = receiverInfo.receiver1;
-      const receiverWallet2 = receiverInfo.receiver2;
-      const method = program.methods
-        .craftBait1(new BN(baitCount))
-        .accounts({
-          user: publicKey,
-          gameRegistry: gameRegistryPda,
-          userData: userDataPda,
-          systemProgram: SystemProgram.programId,
-          tokenProgram: TOKEN_PROGRAM_ID,
-          associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-          receiver: receiverPda,
-          receiverWallet1: receiverWallet1,
-          receiverWallet2: receiverWallet2,
-        })
-        .remainingAccounts(remainingAccounts);
-      
-      const tx = await sendTransactionForPhantom(method, connection, sendTransaction, publicKey);
+      const sandboxLoot = JSON.parse(localStorage.getItem('sandbox_loot') || '{}');
+      sandboxLoot[ID_BAIT_ITEMS.BAIT_1] = (sandboxLoot[ID_BAIT_ITEMS.BAIT_1] || 0) + Number(baitCount);
+      localStorage.setItem('sandbox_loot', JSON.stringify(sandboxLoot));
+      await new Promise(r => setTimeout(r, 500));
       setFishingData(prev => ({ ...prev, loading: false }));
-      return { txHash: tx, isPending: false };
+      return { txHash: "SANDBOX_TX_CRAFT_BAIT1", isPending: false };
     } catch (err) {
-      console.error('craftBait1 error:', err);
-      
-      // Handle specific transaction errors
-      let errorMessage = err.message;
-      if (err.message.includes('already been processed')) {
-        errorMessage = 'Transaction already submitted. Please wait and try again.';
-      } else if (err.message.includes('insufficient funds')) {
-        errorMessage = 'Insufficient funds for this transaction.';
-      } else if (err.message.includes('User rejected')) {
-        errorMessage = 'Transaction was cancelled by user.';
-      } else if (err.message.includes('encoding overruns Uint8Array')) {
-        errorMessage = 'Transaction too large. Please try with fewer items.';
-      }
-      
-      setFishingData(prev => ({ ...prev, loading: false, error: errorMessage }));
+      setFishingData(prev => ({ ...prev, loading: false, error: err.message }));
       return null;
     }
-  }, [program, publicKey, fishingData.loading]);
+  }, []);
 
   const craftBait2 = useCallback(async (itemIds, amounts) => {
-    if (!program || !publicKey) return null;
-    if (fishingData.loading) {
-      setFishingData(prev => ({ ...prev, error: 'Transaction already in progress' }));
-      return null;
-    }
-    
     try {
       setFishingData(prev => ({ ...prev, loading: true, error: null }));
-      const gameRegistryPda = getGameRegistryPDA();
-      const userDataPda = getUserDataPDA(publicKey);
-      const receiverPda = getReceiverPDA();
-      const receiverInfo = await program.account.receiver.fetch(receiverPda);
-      const receiverWallet1 = receiverInfo.receiver1;
-      const receiverWallet2 = receiverInfo.receiver2;
-      // Use specific remaining accounts if itemIds is valid, otherwise fall back to general
-      let remainingAccounts;
-      if (Array.isArray(itemIds) && itemIds.length > 0) {
-        remainingAccounts = getCraftBaitSpecificRemainingAccounts(publicKey, itemIds, ID_BAIT_ITEMS.BAIT_2);
-      } else {
-        remainingAccounts = getCraftBaitRemainingAccounts(publicKey);
-      }
-      
-      const method = program.methods
-        .craftBait2(itemIds, amounts.map(a => new BN(a)))
-        .accounts({
-          user: publicKey,
-          gameRegistry: gameRegistryPda,
-          userData: userDataPda,
-          systemProgram: SystemProgram.programId,
-          tokenProgram: TOKEN_PROGRAM_ID,
-          associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-          receiver: receiverPda,
-          receiverWallet1: receiverWallet1,
-          receiverWallet2: receiverWallet2,
-        })
-        .remainingAccounts(remainingAccounts);
-      
-      const tx = await sendTransactionForPhantom(method, connection, sendTransaction, publicKey);
+      const sandboxLoot = JSON.parse(localStorage.getItem('sandbox_loot') || '{}');
+      sandboxLoot[ID_BAIT_ITEMS.BAIT_2] = (sandboxLoot[ID_BAIT_ITEMS.BAIT_2] || 0) + 1;
+      localStorage.setItem('sandbox_loot', JSON.stringify(sandboxLoot));
+      await new Promise(r => setTimeout(r, 500));
       setFishingData(prev => ({ ...prev, loading: false }));
-      return { txHash: tx, isPending: false };
+      return { txHash: "SANDBOX_TX_CRAFT_BAIT2", isPending: false };
     } catch (err) {
-      console.error('craftBait2 error:', err);
-      
-      // Handle specific transaction errors
-      let errorMessage = err.message;
-      if (err.message.includes('already been processed')) {
-        errorMessage = 'Transaction already submitted. Please wait and try again.';
-      } else if (err.message.includes('insufficient funds')) {
-        errorMessage = 'Insufficient funds for this transaction.';
-      } else if (err.message.includes('User rejected')) {
-        errorMessage = 'Transaction was cancelled by user.';
-      } else if (err.message.includes('encoding overruns Uint8Array')) {
-        errorMessage = 'Transaction too large. Please try with fewer items.';
-      }
-      
-      setFishingData(prev => ({ ...prev, loading: false, error: errorMessage }));
-      throw new Error(errorMessage); // Re-throw with better error message
+      setFishingData(prev => ({ ...prev, loading: false, error: err.message }));
+      throw new Error(err.message);
     }
-  }, [program, publicKey, fishingData.loading]);
+  }, []);
 
   const craftBait3 = useCallback(async (itemIds, amounts) => {
-    if (!program || !publicKey) return null;
-    if (fishingData.loading) {
-      setFishingData(prev => ({ ...prev, error: 'Transaction already in progress' }));
-      return null;
-    }
-    
     try {
       setFishingData(prev => ({ ...prev, loading: true, error: null }));
-      const gameRegistryPda = getGameRegistryPDA();
-      const userDataPda = getUserDataPDA(publicKey);
-      const receiverPda = getReceiverPDA();
-      const receiverInfo = await program.account.receiver.fetch(receiverPda);
-      const receiverWallet1 = receiverInfo.receiver1;
-      const receiverWallet2 = receiverInfo.receiver2;
-      // Use specific remaining accounts if itemIds is valid, otherwise fall back to general
-      let remainingAccounts;
-      if (Array.isArray(itemIds) && itemIds.length > 0) {
-        remainingAccounts = getCraftBaitSpecificRemainingAccounts(publicKey, itemIds, ID_BAIT_ITEMS.BAIT_3);
-      } else {
-        remainingAccounts = getCraftBaitRemainingAccounts(publicKey);
-      }
-      
-      const method = program.methods
-        .craftBait3(itemIds, amounts.map(a => new BN(a)))
-        .accounts({
-          user: publicKey,
-          gameRegistry: gameRegistryPda,
-          userData: userDataPda,
-          systemProgram: SystemProgram.programId,
-          tokenProgram: TOKEN_PROGRAM_ID,
-          associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-          receiver: receiverPda,
-          receiverWallet1: receiverWallet1,
-          receiverWallet2: receiverWallet2,
-        })
-        .remainingAccounts(remainingAccounts);
-      
-      const tx = await sendTransactionForPhantom(method, connection, sendTransaction, publicKey);
+      const sandboxLoot = JSON.parse(localStorage.getItem('sandbox_loot') || '{}');
+      sandboxLoot[ID_BAIT_ITEMS.BAIT_3] = (sandboxLoot[ID_BAIT_ITEMS.BAIT_3] || 0) + 1;
+      localStorage.setItem('sandbox_loot', JSON.stringify(sandboxLoot));
+      await new Promise(r => setTimeout(r, 500));
       setFishingData(prev => ({ ...prev, loading: false }));
-      return { txHash: tx, isPending: false };
+      return { txHash: "SANDBOX_TX_CRAFT_BAIT3", isPending: false };
     } catch (err) {
-      console.error('craftBait3 error:', err);
-      
-      // Handle specific transaction errors
-      let errorMessage = err.message;
-      if (err.message.includes('already been processed')) {
-        errorMessage = 'Transaction already submitted. Please wait and try again.';
-      } else if (err.message.includes('insufficient funds')) {
-        errorMessage = 'Insufficient funds for this transaction.';
-      } else if (err.message.includes('User rejected')) {
-        errorMessage = 'Transaction was cancelled by user.';
-      } else if (err.message.includes('encoding overruns Uint8Array')) {
-        errorMessage = 'Transaction too large. Please try with fewer items.';
-      }
-      
-      setFishingData(prev => ({ ...prev, loading: false, error: errorMessage }));
-      throw new Error(errorMessage); // Re-throw with better error message
+      setFishingData(prev => ({ ...prev, loading: false, error: err.message }));
+      throw new Error(err.message);
     }
-  }, [program, publicKey, fishingData.loading]);
+  }, []);
 
   const fish = useCallback(async (baitId, amount = 1, nonce = null) => {
-    if (!program || !publicKey) return null;
-    if (fishingData.loading) {
-      setFishingData(prev => ({ ...prev, error: 'Transaction already in progress' }));
-      return null;
-    }
-    
     try {
       setFishingData(prev => ({ ...prev, loading: true, error: null }));
       // Do not allow a new request if there is an unrevealed one
@@ -259,84 +122,31 @@ export const useFishing = () => {
       
       // Generate a unique nonce if not provided
       const finalNonce = nonce || Date.now() + Math.random() * 1000000;
-      
-      const gameRegistryPda = getGameRegistryPDA();
-      const userDataPda = getUserDataPDA(publicKey);
-      const fishingRequestPda = getFishingRequestPDA(publicKey, new BN(finalNonce));
-      const receiverPda = getReceiverPDA();
-      const receiverInfo = await program.account.receiver.fetch(receiverPda);
-      const receiverWallet1 = receiverInfo.receiver1;
-      const receiverWallet2 = receiverInfo.receiver2;
-      // Add remaining accounts for bait burning
-      const remainingAccounts = getCraftBaitSpecificRemainingAccounts(publicKey, [baitId], baitId);
-      
-      const method = program.methods
-        .fish(baitId, amount, new BN(finalNonce))
-        .accounts({
-          user: publicKey,
-          gameRegistry: gameRegistryPda,
-          userData: userDataPda,
-          request: fishingRequestPda,
-          systemProgram: SystemProgram.programId,
-          tokenProgram: TOKEN_PROGRAM_ID,
-          receiver: receiverPda,
-          receiverWallet1: receiverWallet1,
-          receiverWallet2: receiverWallet2,
-        })
-        .remainingAccounts(remainingAccounts);
-      
-      const tx = await sendTransactionForPhantom(method, connection, sendTransaction, publicKey);
       writeStoredNonce(finalNonce, baitId, amount);
+      await new Promise(r => setTimeout(r, 500));
       setFishingData(prev => ({ ...prev, loading: false }));
-      return { txHash: tx, isPending: false };
+      return { txHash: "SANDBOX_TX_FISH", isPending: false };
     } catch (err) {
-      console.error('fish error:', err);
-      
-      // Handle specific transaction errors
-      let errorMessage = err.message;
-      if (err.message.includes('already been processed')) {
-        errorMessage = 'Transaction already submitted. Please wait and try again.';
-      } else if (err.message.includes('insufficient funds')) {
-        errorMessage = 'Insufficient funds for this transaction.';
-      } else if (err.message.includes('User rejected')) {
-        errorMessage = 'Transaction was cancelled by user.';
-      } else if (err.message.includes('encoding overruns Uint8Array')) {
-        errorMessage = 'Transaction too large. Please try with fewer items.';
-      }
-      
-      setFishingData(prev => ({ ...prev, loading: false, error: errorMessage }));
+      setFishingData(prev => ({ ...prev, loading: false, error: err.message }));
       return null;
     }
-  }, [program, publicKey, ensureNoUnrevealedPending, fishingData.loading]);
+  }, [ensureNoUnrevealedPending]);
 
   const getAllPendingRequests = useCallback(async () => {
-    if (!program || !publicKey) return [];
     try {
       const raw = localStorage.getItem(storageKey());
       if (!raw) return [];
       const {requestId, baitId, amount} = JSON.parse(raw);
-      try {
-        const reqPda = getFishingRequestPDA(publicKey, new BN(requestId));
-        const req = await program.account.fishingRequest.fetch(reqPda);
-        if (req.revealed) {
-          localStorage.removeItem(storageKey());
-          return [];
-        }
-        return [{
-          requestId: requestId,
-          baitId: Number(baitId || 0),
-          amount: Number(amount || 0),
-          level: Number(req.level || 0),
-        }];
-      } catch {
-        // If account missing, clear and return none
-        localStorage.removeItem(storageKey());
-        return [];
-      }
+      return [{
+        requestId: requestId,
+        baitId: Number(baitId || 0),
+        amount: Number(amount || 0),
+        level: 1,
+      }];
     } catch {
       return [];
     }
-  }, [program, publicKey]);
+  }, []);
 
   const checkPendingRequests = useCallback(async () => {
     const list = await getAllPendingRequests();
@@ -344,12 +154,6 @@ export const useFishing = () => {
   }, [getAllPendingRequests]);
 
   const revealFishing = useCallback(async (requestId) => {
-    if (!program || !publicKey) return null;
-    if (fishingData.loading) {
-      setFishingData(prev => ({ ...prev, error: 'Transaction already in progress' }));
-      return null;
-    }
-    
     try {
       setFishingData(prev => ({ ...prev, loading: true, error: null }));
       
@@ -359,92 +163,117 @@ export const useFishing = () => {
         setFishingData(prev => ({ ...prev, loading: false, error: 'No pending fishing request found' }));
         return null;
       }
-      const {requestId: storedRequestId} = JSON.parse(raw);
       
-      // Check if the fishing request has already been revealed
-      try {
-        const fishingRequestPda = getFishingRequestPDA(publicKey, new BN(storedRequestId));
-        const request = await program.account.fishingRequest.fetch(fishingRequestPda);
-        if (request.revealed) {
-          setFishingData(prev => ({ ...prev, loading: false, error: 'This fishing request has already been revealed' }));
-          localStorage.removeItem(storageKey()); // Clean up
-          return null;
-        }
-      } catch (err) {
-      }
-      
-      const gameRegistryPda = getGameRegistryPDA();
-      const fishingRequestPda = getFishingRequestPDA(publicKey, new BN(storedRequestId));
-      const itemMintAuthPda = getItemMintAuthPDA();
-      const remainingAccounts = getRevealFishingRemainingAccounts(publicKey);
-      
-      const method = program.methods
-        .revealFishing(new BN(storedRequestId))
-        .accounts({
-          user: publicKey,
-          gameRegistry: gameRegistryPda,
-          itemMintAuth: itemMintAuthPda,
-          request: fishingRequestPda,
-          slotHashes: SYSVAR_SLOT_HASHES_PUBKEY,
-          tokenProgram: TOKEN_PROGRAM_ID,
-          associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-          systemProgram: SystemProgram.programId,
-        })
-        .remainingAccounts(remainingAccounts);
-      
-      const tx = await sendTransactionForPhantom(method, connection, sendTransaction, publicKey);
+      // Save the bait type so we know what table to use in the results
+      const requestData = JSON.parse(raw);
+      localStorage.setItem('sandbox_last_bait', requestData.baitId || ID_BAIT_ITEMS.BAIT_1);
       
       localStorage.removeItem(storageKey());
+      await new Promise(r => setTimeout(r, 500));
       setFishingData(prev => ({ ...prev, loading: false }));
-      return { txHash: tx, isPending: false };
+      return { txHash: "SANDBOX_TX_REVEAL", isPending: false };
     } catch (err) {
-      console.error('revealFishing error:', err);
-      
-      // Handle specific transaction errors
-      let errorMessage = err.message;
-      if (err.message.includes('already been processed')) {
-        errorMessage = 'Transaction already submitted. Please wait and try again.';
-      } else if (err.message.includes('insufficient funds')) {
-        errorMessage = 'Insufficient funds for this transaction.';
-      } else if (err.message.includes('User rejected')) {
-        errorMessage = 'Transaction was cancelled by user.';
-      } else if (err.message.includes('encoding overruns Uint8Array')) {
-        errorMessage = 'Transaction too large. Please try with fewer items.';
-      }
-      
-      setFishingData(prev => ({ ...prev, loading: false, error: errorMessage }));
+      setFishingData(prev => ({ ...prev, loading: false, error: err.message }));
       return null;
     }
-  }, [program, publicKey, fishingData.loading]);
+  }, []);
 
   const listenForFishingResults = useCallback(async (txSig, onResults) => {
-    if (!program || !publicKey) return null;
     setFishingData(prev => ({ ...prev, loading: true, error: null }));
     try {
-      const { connection } = program.provider;
-      const tx = await connection.getTransaction(txSig, {
-        maxSupportedTransactionVersion: 0,
-        commitment: "confirmed",
-      });
-      if (!tx) throw new Error("tx not found");
-      const logs = tx.meta?.logMessages ?? [];
-      const fishingResults = [];
-      for (const log of logs) {
-        if (log.includes("FishingItem")) {
-          const itemId = log.split(";;")[1];
-          fishingResults.push(Number(itemId));
-        }
+      const rewards = [];
+      const roll = Math.random() * 100;
+      
+      // Retrieve the bait we saved during reveal
+      const baitId = Number(localStorage.getItem('sandbox_last_bait')) || ID_BAIT_ITEMS.BAIT_1;
+
+      // Define drop rates based on Bait Level
+      let legendaryChance = 1, epicChance = 10, rareChance = 30, uncommonChance = 60;
+      let chestGold = 1, chestSilver = 5, chestBronze = 15, chestWood = 30;
+
+      if (baitId === ID_BAIT_ITEMS.BAIT_2) {
+        // Bait II: Boosts chances moderately
+        legendaryChance = 3;  // 3% 
+        epicChance = 18;      // 15% 
+        rareChance = 45;      // 27%
+        uncommonChance = 75;  // 30%
+        
+        chestGold = 3; chestSilver = 10; chestBronze = 25; chestWood = 45;
+      } else if (baitId === ID_BAIT_ITEMS.BAIT_3) {
+        // Bait III: Massive boosts for high-tier loot
+        legendaryChance = 8;  // 8%
+        epicChance = 30;      // 22%
+        rareChance = 65;      // 35%
+        uncommonChance = 90;  // 25%
+        
+        chestGold = 8; chestSilver = 20; chestBronze = 45; chestWood = 60;
       }
-      onResults({itemIds: fishingResults});
+
+      let difficulty = 0; // 0: Common, 1: Uncommon, 2: Rare, 3: Epic, 4: Legendary
+
+      // 1. Pick a Fish based on percentage
+      if (roll < legendaryChance) {
+        rewards.push(ID_FISH_ITEMS.SMALL_SHARK); // Legendary
+        difficulty = 4;
+      } else if (roll < epicChance) {
+        rewards.push(Math.random() < 0.5 ? ID_FISH_ITEMS.ORANGE_ROUGHY : ID_FISH_ITEMS.CATFISH); // Epic
+        difficulty = 3;
+      } else if (roll < rareChance) {
+        rewards.push(Math.random() < 0.5 ? ID_FISH_ITEMS.YELLOW_PERCH : ID_FISH_ITEMS.SALMON); // Rare
+        difficulty = 2;
+      } else if (roll < uncommonChance) {
+        rewards.push(Math.random() < 0.5 ? ID_FISH_ITEMS.HERRING : ID_FISH_ITEMS.SMALL_TROUT); // Uncommon
+        difficulty = 1;
+      } else {
+        const commons = [ID_FISH_ITEMS.ANCHOVY, ID_FISH_ITEMS.SARDINE, ID_FISH_ITEMS.NORMAL_FISH];
+        rewards.push(commons[Math.floor(Math.random() * commons.length)]); // Common
+        difficulty = 0;
+      }
+
+      // 2. Bonus: 30% chance to also fish up a Chest!
+      const chestRoll = Math.random() * 100;
+      if (chestRoll < chestGold) rewards.push(ID_CHEST_ITEMS.CHEST_GOLD || ID_CHEST_ITEMS.GOLDEN_CHEST);
+      else if (chestRoll < chestSilver) rewards.push(ID_CHEST_ITEMS.CHEST_SILVER || ID_CHEST_ITEMS.SILVER_CHEST);
+      else if (chestRoll < chestBronze) rewards.push(ID_CHEST_ITEMS.CHEST_BRONZE || ID_CHEST_ITEMS.BRONZE_CHEST);
+      else if (chestRoll < chestWood) rewards.push(ID_CHEST_ITEMS.CHEST_WOOD || ID_CHEST_ITEMS.WOODEN_CHEST);
+
+      // Trigger the Stardew Valley Fishing Minigame
+      const catchSuccess = await new Promise((resolve) => {
+        let isResolved = false;
+        let isIntercepted = false;
+        const safeResolve = (val) => {
+          if (!isResolved) {
+            isResolved = true;
+            resolve(val);
+          }
+        };
+        window.dispatchEvent(new CustomEvent('startFishingMinigame', { 
+          detail: { difficulty, callback: safeResolve, onIntercept: () => { isIntercepted = true; } } 
+        }));
+        // Fallback: Auto-win if the minigame UI isn't currently rendered on screen
+        setTimeout(() => { if (!isIntercepted) safeResolve(true); }, 500);
+      });
+
+      if (!catchSuccess) {
+        onResults({itemIds: []}); // No rewards if fish escapes!
+        return;
+      }
+
+      const validRewards = rewards.filter(Boolean);
+      const sandboxLoot = JSON.parse(localStorage.getItem('sandbox_loot') || '{}');
+      validRewards.forEach(id => {
+        sandboxLoot[id] = (sandboxLoot[id] || 0) + 1;
+      });
+      localStorage.setItem('sandbox_loot', JSON.stringify(sandboxLoot));
+      
+      onResults({itemIds: validRewards});
     } catch (err) { 
       setFishingData(prev => ({ ...prev, loading: false, error: err.message })); 
       return null; 
     } finally { 
       setFishingData(prev => ({ ...prev, loading: false })); 
     }
-  }, [program, publicKey]);
+  }, []);
 
   return { fishingData, craftBait1, craftBait2, craftBait3, fish, revealFishing, listenForFishingResults, getAllPendingRequests, checkPendingRequests };
 };
-
-

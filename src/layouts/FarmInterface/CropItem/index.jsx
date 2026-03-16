@@ -31,6 +31,21 @@ const CropItem = ({
   const [portalContainer, setPortalContainer] = useState(null);
   const hoverAudioRef = useRef(null);
   const clickAudioRef = useRef(null);
+  const [showDebug, setShowDebug] = useState(() => localStorage.getItem('show_debug_labels') !== 'false');
+  const [plotPrep, setPlotPrep] = useState(() => JSON.parse(localStorage.getItem('sandbox_plot_prep') || '{}'));
+
+  useEffect(() => {
+    const handlePrepUpdate = (e) => setPlotPrep(e.detail);
+    window.addEventListener('plotPrepUpdated', handlePrepUpdate);
+    return () => window.removeEventListener('plotPrepUpdated', handlePrepUpdate);
+  }, []);
+
+  useEffect(() => {
+    const handler = (e) => setShowDebug(e.detail);
+    window.addEventListener('toggleDebugLabels', handler);
+    return () => window.removeEventListener('toggleDebugLabels', handler);
+  }, []);
+
   const isPreview = useMemo(() => {
     if (!crops || !data?.seedId || index >= crops.getLength()) return false;
     return crops.getItem(index).seedId !== data.seedId;
@@ -157,7 +172,10 @@ const CropItem = ({
 
   const getStatusClass = () => {
     if (isDisabled) return "disabled";
-    if (!data.seedId) return "empty";
+    if (!data.seedId || data.seedId === 0n) {
+      if (plotPrep[index]?.status === 3) return "empty";
+      return "prep-stage";
+    }
     if (data.growStatus === -1) return "newly-planted";
     if (data.growStatus === 1) return "growing";
     if (data.growStatus === 2) return "ready-to-harvest";
@@ -206,6 +224,9 @@ const CropItem = ({
   };
 
   const filledSegments = getFilledSegments();
+  
+  const prep = plotPrep[index] || { status: 0 };
+  const isPrepStage = (!data.seedId || data.seedId === 0n) && prep.status !== 3;
 
   return (
     <div
@@ -223,8 +244,47 @@ const CropItem = ({
           data.seedId && ALL_ITEMS[data.seedId]
             ? 0 - ALL_ITEMS[data.seedId].pos * ONE_SEED_HEIGHT
             : 0,
+        backgroundImage: isPrepStage ? 'none' : undefined,
+        backgroundColor: isPrepStage ? 'transparent' : undefined,
       }}
     >
+      {/* --- DEBUG: PLOT INDEX LABEL --- */}
+      {showDebug && (
+        <div style={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          backgroundColor: 'rgba(0,0,0,0.8)',
+          color: '#ff00ff',
+          border: '1px solid #ff00ff',
+          padding: '2px 6px',
+          fontSize: '14px',
+          fontWeight: 'bold',
+          zIndex: 10000,
+          pointerEvents: 'none'
+        }}>
+          Plot: {index}
+        </div>
+      )}
+
+      {/* Prep Stage Overlays */}
+      {!isDisabled && isPrepStage && (
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', justifyContent: 'center', alignItems: 'center', pointerEvents: 'none' }}>
+          {prep.status === 0 && (
+            <div style={{ fontSize: '40px', color: '#ff4444', textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}>❌</div>
+          )}
+          {prep.status === 1 && (
+            <div style={{ width: '40px', height: '15px', backgroundColor: '#1a1008', borderRadius: '50%', border: '2px solid #000', boxShadow: 'inset 0 5px 10px rgba(0,0,0,0.8)' }}></div>
+          )}
+          {prep.status === 2 && (
+            <div style={{ position: 'relative', width: '40px', height: '15px', backgroundColor: '#1a1008', borderRadius: '50%', border: '2px solid #000', boxShadow: 'inset 0 5px 10px rgba(0,0,0,0.8)', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+              <img src={ALL_ITEMS[prep.fishId]?.image} alt="fish" style={{ width: '35px', height: '35px', position: 'absolute', top: '-15px', transform: 'rotate(-20deg)', filter: 'drop-shadow(0 2px 2px rgba(0,0,0,0.5))' }} />
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Growth progress bar */}
       {data.seedId && data.seedId !== 0n && (
         <div className="growth-progress">
@@ -317,9 +377,6 @@ const CropItem = ({
             return; // Don't allow interaction with disabled plots
           }
 
-          if (isPlanting && data.seedId) {
-            return; // Don't allow planting on already planted plots
-          }
           const clickAudio = clickAudioRef.current;
           if (clickAudio) {
             clickAudio.currentTime = 0;
@@ -335,6 +392,157 @@ const CropItem = ({
         }}
         style={{ cursor: isDisabled ? "not-allowed" : "pointer" }}
       ></div>
+
+      {/* Bug indicator and countdown */}
+      {data.bugCountdown !== undefined && data.bugCountdown > 0 && (
+        <div 
+          className="bug-container"
+          onPointerDown={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            window.dispatchEvent(new CustomEvent('squashBug', { detail: { plotIndex: index } }));
+          }}
+          style={{
+            position: "absolute",
+            top: "35%", // Overlay directly on the plant
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            zIndex: 9999, // Ensure it's above the bounding box
+            cursor: "crosshair",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            pointerEvents: "auto" // Make sure it captures clicks
+          }}
+        >
+          <div style={{
+            color: '#ff4444',
+            fontWeight: 'bold',
+            fontSize: '18px', // Slightly larger so it's easier to see
+            textShadow: '1px 1px 2px black, -1px -1px 2px black, 1px -1px 2px black, -1px 1px 2px black',
+            marginBottom: '-5px',
+            zIndex: 31
+          }}>
+            {data.bugCountdown}s
+          </div>
+          <img
+            src="/images/bug/bug.jpg"
+            alt="bug"
+            style={{ 
+              width: "45px", // Slightly bigger bug
+              height: "45px",
+              filter: "drop-shadow(0px 0px 5px rgba(255,0,0,0.8))" // Add a glowing red shadow to make it pop
+            }}
+          />
+        </div>
+      )}
+
+      {/* Crow indicator and countdown */}
+      {data.crowCountdown !== undefined && data.crowCountdown > 0 && (
+        <div 
+          className="crow-container"
+          onPointerDown={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            window.dispatchEvent(new CustomEvent('scareCrow', { detail: { plotIndex: index } }));
+          }}
+          style={{
+            position: "absolute",
+            top: "35%", 
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            zIndex: 9999, 
+            cursor: "crosshair",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            pointerEvents: "auto",
+            animation: "crowFlyIn 1.2s ease-out forwards"
+          }}
+        >
+          <style>{`
+            @keyframes crowFlyIn {
+              0% { top: -80vh; left: 80%; transform: translate(-50%, -50%) scale(3); opacity: 0; }
+              100% { top: 35%; left: 50%; transform: translate(-50%, -50%) scale(1); opacity: 1; }
+            }
+          `}</style>
+          <div style={{
+            color: '#ff4444',
+            fontWeight: 'bold',
+            fontSize: '18px',
+            textShadow: '1px 1px 2px black, -1px -1px 2px black, 1px -1px 2px black, -1px 1px 2px black',
+            marginBottom: '-5px',
+            zIndex: 31
+          }}>
+            {data.crowCountdown}s
+          </div>
+          <img
+            src="/images/crow/crow.jpg"
+            alt="crow"
+            style={{ 
+              width: "55px", // Make the crow slightly larger than the bug!
+              height: "55px",
+              filter: "drop-shadow(0px 0px 5px rgba(255,0,0,0.8))"
+            }}
+          />
+        </div>
+      )}
+
+      {/* Rat indicator and countdown */}
+      {data.ratCountdown !== undefined && data.ratCountdown > 0 && (
+        <div 
+          className="rat-container"
+          onPointerDown={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            window.dispatchEvent(new CustomEvent('scareRat', { detail: { plotIndex: index } }));
+          }}
+          style={{
+            position: "absolute",
+            top: "35%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            zIndex: 9999, 
+            cursor: "crosshair",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            pointerEvents: "auto",
+            animation: "ratAppear 0.8s ease-out forwards"
+          }}
+        >
+          <div style={{
+            color: '#ff4444',
+            fontWeight: 'bold',
+            fontSize: '18px',
+            textShadow: '1px 1px 2px black, -1px -1px 2px black, 1px -1px 2px black, -1px 1px 2px black',
+            marginBottom: '-5px',
+            zIndex: 31
+          }}>
+            {data.ratCountdown}s
+          </div>
+          <img
+            src="/images/bug/rat.png"
+            alt="rat"
+            style={{ width: "45px", height: "45px", filter: "drop-shadow(0px 0px 5px rgba(255,0,0,0.8))" }}
+          />
+        </div>
+      )}
+      {/* Needs Water Indicator */}
+      {data.needsWater && (
+        <div style={{
+          position: "absolute",
+          top: "-25px",
+          left: "50%",
+          transform: "translateX(-50%)",
+          zIndex: 9999,
+          pointerEvents: "none",
+          animation: "waterBounce 1.5s infinite"
+        }}>
+          <style>{`@keyframes waterBounce { 0%, 100% { transform: translateX(-50%) translateY(0); } 50% { transform: translateX(-50%) translateY(-10px); } }`}</style>
+          <div style={{ fontSize: '28px', filter: 'drop-shadow(0px 2px 2px black)' }}>💧</div>
+        </div>
+      )}
     </div>
   );
 };

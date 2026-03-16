@@ -3,10 +3,14 @@ export class CropItemClass {
         this.seedId = null;
         this.growStatus = 0; // 0: empty, -1: newly planted, 1: growing, 2: ready to harvest
         this.plantedAt = null; // timestamp when planted
+        this.contractPlantedAt = undefined;
+        this.needsWater = false;
         this.growthTime = 0; // time in seconds to grow
         this.produceMultiplierX1000 = 1000; // produce multiplier (1000 = 1x, 2000 = 2x)
         this.tokenMultiplierX1000 = 1000; // token multiplier (1000 = 1x, 1040 = 1.04x)
         this.growthElixirApplied = false;
+        this.bugCountdown = undefined;
+        this.crowCountdown = undefined;
     }
 }
 
@@ -47,10 +51,14 @@ export class CropItemArrayClass {
             c.seedId = it.seedId;
             c.growStatus = it.growStatus;
             c.plantedAt = it.plantedAt;
+            c.contractPlantedAt = it.contractPlantedAt;
+            c.needsWater = it.needsWater;
             c.growthTime = it.growthTime;
             c.produceMultiplierX1000 = it.produceMultiplierX1000 || 1000;
             c.tokenMultiplierX1000 = it.tokenMultiplierX1000 || 1000;
             c.growthElixirApplied = it.growthElixirApplied || false;
+            c.bugCountdown = it.bugCountdown;
+            c.crowCountdown = it.crowCountdown;
             return c;
         });
     }
@@ -65,10 +73,14 @@ export class CropItemArrayClass {
         item.seedId = seedId;
         item.growStatus = -1; // newly planted
         item.plantedAt = Date.now();
+        item.contractPlantedAt = item.plantedAt;
+        item.needsWater = false;
         item.growthTime = growthTime; // default 60 seconds
         item.produceMultiplierX1000 = 1000; // default 1x multiplier
         item.tokenMultiplierX1000 = 1000; // default 1x multiplier
         item.growthElixirApplied = false;
+        item.bugCountdown = undefined;
+        item.crowCountdown = undefined;
         return true;
     }
 
@@ -80,10 +92,14 @@ export class CropItemArrayClass {
         item.seedId = null;
         item.growStatus = 0;
         item.plantedAt = null;
+        item.contractPlantedAt = undefined;
+        item.needsWater = false;
         item.growthTime = 0;
         item.produceMultiplierX1000 = 1000;
         item.tokenMultiplierX1000 = 1000;
         item.growthElixirApplied = false;
+        item.bugCountdown = undefined;
+        item.crowCountdown = undefined;
         return true;
     }
 
@@ -115,6 +131,8 @@ export class CropItemArrayClass {
                 item.seedId = seedId;
                 item.growStatus = -1;
                 item.plantedAt = Date.now();
+                item.contractPlantedAt = item.plantedAt;
+                item.needsWater = false;
                 item.growthTime = growthTime;
                 planted++;
             } else {

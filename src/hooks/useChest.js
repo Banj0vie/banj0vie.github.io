@@ -8,6 +8,7 @@ import { handleContractError } from '../utils/errorHandler';
 import { CHEST_PERIOD } from '../utils/basic';
 import { LOOKUP_TABLE_ADDRESS } from '../solana/constants/programId';
 import { sendTransactionForPhantom } from '../utils/transactionHelper';
+import { ID_CHEST_ITEMS, ID_POTION_ITEMS, ID_SEEDS } from '../constants/app_ids';
 
 export const useChest = () => {
     const { publicKey, sendTransaction } = useSolanaWallet();
@@ -45,153 +46,76 @@ export const useChest = () => {
     }, [program, publicKey]);
 
     const claimDailyChest = useCallback(async () => {
-        if (!program || !publicKey) { setChestData(p => ({ ...p, error: 'Program or wallet not available' })); return null; }
         setChestData(p => ({ ...p, loading: true, error: null }));
         try {
-            const gameRegistryPda = getGameRegistryPDA();
-            const userDataPda = getUserDataPDA(publicKey);
-            const remainingAccounts = getChestRemainingAccounts(publicKey);
-            const method = program.methods
-                .claimDailyChest()
-                .accounts({
-                    user: publicKey,
-                    gameRegistry: gameRegistryPda,
-                    userData: userDataPda,
-                    systemProgram: SystemProgram.programId,
-                    tokenProgram: TOKEN_PROGRAM_ID,
-                    associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-                })
-                .remainingAccounts(remainingAccounts);
+            await new Promise(r => setTimeout(r, 500));
+            const sandboxLoot = JSON.parse(localStorage.getItem('sandbox_loot') || '{}');
+            const woodChest = ID_CHEST_ITEMS.CHEST_WOOD || ID_CHEST_ITEMS.WOODEN_CHEST;
+            sandboxLoot[woodChest] = (sandboxLoot[woodChest] || 0) + 1;
+            localStorage.setItem('sandbox_loot', JSON.stringify(sandboxLoot));
             
-            const sig = await sendTransactionForPhantom(method, connection, sendTransaction, publicKey);
-            await fetchChestData();
-            setChestData(p => ({ ...p, loading: false, error: null }));
-            return sig;
+            setChestData(p => ({ ...p, loading: false, error: null, canClaim: false, nextChestTime: Math.floor(Date.now() / 1000) + 300 }));
+            return "SANDBOX_TX_CLAIM_CHEST";
         } catch (err) {
-            const { message } = handleContractError(err, 'claiming daily chest');
-            setChestData(p => ({ ...p, loading: false, error: message }));
-            throw new Error(message);
+            setChestData(p => ({ ...p, loading: false, error: err.message }));
+            throw new Error(err.message);
         }
-    }, [program, publicKey, fetchChestData]);
+    }, []);
 
     const openChest = useCallback(async (chestType) => {
         console.log("🚀 ~ useChest ~ chestType:", chestType)
-        if (!program || !publicKey) { setChestData(p => ({ ...p, error: 'Program or wallet not available' })); return null; }
         setChestData(p => ({ ...p, loading: true, error: null }));
         try {
-            const gameRegistryPda = getGameRegistryPDA();
-            const userDataPda = getUserDataPDA(publicKey);
-            const remainingAccounts = getChestOpenRemainingAccounts(chestType, publicKey);
-            const receiverPda = getReceiverPDA();
-            const receiverInfo = await program.account.receiver.fetch(receiverPda);
-            const receiverWallet1 = receiverInfo.receiver1;
-            const receiverWallet2 = receiverInfo.receiver2;
-            const ix = await program.methods
-                .openChest(chestType)
-                .accounts({
-                    user: publicKey,
-                    gameRegistry: gameRegistryPda,
-                    userData: userDataPda,
-                    slotHashes: SYSVAR_SLOT_HASHES_PUBKEY,
-                    systemProgram: SystemProgram.programId,
-                    tokenProgram: TOKEN_PROGRAM_ID,
-                    associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-                    receiver: receiverPda,
-                    receiverWallet1: receiverWallet1,
-                    receiverWallet2: receiverWallet2,
-                })
-                .remainingAccounts(remainingAccounts)
-                .instruction();
+            // --- SANDBOX HACK: Instant Chest Opening ---
+            await new Promise(resolve => setTimeout(resolve, 800)); // Cool delay for suspense
             
-            const { value: alt } = await connection.getAddressLookupTable(LOOKUP_TABLE_ADDRESS);
-            if (!alt) throw new Error('ALT not found');
-            const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
-            const msgV0 = new TransactionMessage({
-                payerKey: publicKey,
-                recentBlockhash: blockhash,
-                instructions: [...preIx, ix],
-            }).compileToV0Message([alt]);
-            const tx = new VersionedTransaction(msgV0);
+            const sandboxLoot = JSON.parse(localStorage.getItem('sandbox_loot') || '{}');
             
-            // Pre-send simulation to surface errors/logs
-            try {
-                const sim = await connection.simulateTransaction(tx, { sigVerify: false, commitment: 'processed' });
-                if (sim?.value?.err) {
-                    console.error('🚨 openChest simulate error:', sim.value.err, sim.value.logs);
-                    // Don't throw error for simulation failures - let the transaction proceed
-                    console.log('🚨 Simulation failed, but proceeding with transaction...');
-                }
-            } catch (simErr) {
-                console.error('🚨 openChest simulation threw:', simErr);
-                // Don't throw error for simulation failures - let the transaction proceed
-                console.log('🚨 Simulation error caught, but proceeding with transaction...');
+            // 1. Deduct the exact chest from inventory
+            let chestIdToDeduct = null;
+            if (Number(chestType) === 1) chestIdToDeduct = ID_CHEST_ITEMS.CHEST_WOOD || ID_CHEST_ITEMS.WOODEN_CHEST;
+            if (Number(chestType) === 2) chestIdToDeduct = ID_CHEST_ITEMS.CHEST_BRONZE || ID_CHEST_ITEMS.BRONZE_CHEST;
+            if (Number(chestType) === 3) chestIdToDeduct = ID_CHEST_ITEMS.CHEST_SILVER || ID_CHEST_ITEMS.SILVER_CHEST;
+            if (Number(chestType) === 4) chestIdToDeduct = ID_CHEST_ITEMS.CHEST_GOLD || ID_CHEST_ITEMS.GOLDEN_CHEST;
+            
+            if (chestIdToDeduct && sandboxLoot[chestIdToDeduct] > 0) {
+                sandboxLoot[chestIdToDeduct] -= 1;
+            } else {
+                // Fallback: just decrement any chest we find
+                const existingChestId = Object.keys(sandboxLoot).find(id => 
+                    Object.values(ID_CHEST_ITEMS).includes(Number(id)) && sandboxLoot[id] > 0
+                );
+                if (existingChestId) sandboxLoot[existingChestId] -= 1;
             }
-            
-            let sig;
-            try {
-                sig = await sendTransaction(tx, connection, { skipPreflight: false, maxRetries: 3 });
-            } catch (sendError) {
-                console.log('🚨 Normal send failed, retrying with skipPreflight...', sendError.message);
-                // Retry with skipPreflight = true to bypass simulation
-                sig = await sendTransaction(tx, connection, { skipPreflight: true, maxRetries: 3 });
-            }
-            const confirmation = await connection.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight });
-            
-            // Parse transaction logs to get chest opening results
-            let chestResults = [];
-            console.log("🔍 Chest opening - checking logs:", confirmation.value?.logs);
-            
-            // Try to get transaction details if logs are not available in confirmation
-            let transactionDetails = null;
-            if (!confirmation.value?.logs || confirmation.value.logs.length === 0) {
-                console.log("🔍 No logs in confirmation, fetching transaction details...");
-                try {
-                    transactionDetails = await connection.getTransaction(sig, {
-                        commitment: 'confirmed',
-                        maxSupportedTransactionVersion: 0
-                    });
-                    console.log("🔍 Transaction details:", transactionDetails?.meta?.logMessages);
-                } catch (err) {
-                    console.error("🔍 Error fetching transaction details:", err);
-                }
-            }
-            
-            const logsToCheck = confirmation.value?.logs || transactionDetails?.meta?.logMessages || [];
-            console.log("🔍 Checking logs:", logsToCheck);
-            
-            if (logsToCheck.length > 0) {
-                for (const log of logsToCheck) {
-                    console.log("🔍 Checking log:", log);
-                    if (log.includes("reward_cat:") && log.includes("reward_local_id:")) {
-                        console.log("🎯 Found reward log:", log);
-                        const match = log.match(/reward_cat: (\d+), reward_local_id: (\d+)/);
-                        if (match) {
-                            const rewardCat = parseInt(match[1]);
-                            const rewardLocalId = parseInt(match[2]);
-                            // Convert to full item ID (category << 8 | local_id)
-                            const fullItemId = (rewardCat << 8) | rewardLocalId;
-                            console.log("🎁 Parsed reward:", { rewardCat, rewardLocalId, fullItemId });
-                            chestResults.push(fullItemId);
-                        }
-                    }
-                }
-            }
-            console.log("🎁 Final chest results:", chestResults);
-            
+
+            // 2. Grant Sandbox Rewards! 
+            // Let's guarantee some God-Tier potions and a random premium seed
+            const premiumSeed = Object.values(ID_SEEDS).find(id => typeof id === 'number' && id > 1000) || Object.values(ID_SEEDS).find(id => typeof id === 'number');
+            const rewardIds = [
+                ID_POTION_ITEMS.POTION_GROWTH_ELIXIR_III || ID_POTION_ITEMS.GROWTH_ELIXIR_III,
+                ID_POTION_ITEMS.POTION_FERTILIZER_III || ID_POTION_ITEMS.FERTILIZER_III,
+                premiumSeed
+            ].filter(Boolean);
+
+            rewardIds.forEach(id => {
+                sandboxLoot[id] = (sandboxLoot[id] || 0) + 1;
+            });
+
+            localStorage.setItem('sandbox_loot', JSON.stringify(sandboxLoot));
+
             setChestData(p => ({ ...p, loading: false, error: null }));
             return { 
                 success: true, 
-                txHash: sig, 
+                txHash: "SANDBOX_TX_OPEN_CHEST", 
                 message: 'Chest opened successfully!',
-                results: chestResults
+                results: rewardIds
             };
         } catch (err) {
             console.error("🚀 ~ openChest ~ err:", err)
-            const { message } = handleContractError(err, 'opening chest');
-            setChestData(p => ({ ...p, loading: false, error: message }));
-            throw new Error(message);
+            setChestData(p => ({ ...p, loading: false, error: err.message }));
+            throw new Error(err.message);
         }
-    }, [program, publicKey, connection, sendTransaction]);
+    }, []);
 
     useEffect(() => { fetchChestData(); }, [fetchChestData]);
 
@@ -203,5 +127,3 @@ export const useChest = () => {
 
     return { ...chestData, claimDailyChest, openChest, getTimeUntilNextChest, fetchChestData };
 };
-
-

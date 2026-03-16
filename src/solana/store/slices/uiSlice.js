@@ -85,9 +85,9 @@ const uiSlice = createSlice({
 
       let nextValue = value;
       if (numericSettings.has(key)) {
-        if(value.includes(".")){
-          nextValue = value
-        }else{
+        if (typeof value === 'string' && value.includes(".")) {
+          nextValue = value;
+        } else {
           const parsed = parseFloat(value);
           nextValue = Number.isNaN(parsed) ? 0 : parsed;
         }

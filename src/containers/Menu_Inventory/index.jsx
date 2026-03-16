@@ -12,6 +12,7 @@ import { useChest } from "../../hooks/useChest";
 import { useNotification } from "../../contexts/NotificationContext";
 import { ID_CHEST_ITEMS, ID_POTION_ITEMS } from "../../constants/app_ids";
 import ChestRollingDialog from "./ChestRollingDialog";
+import ProduceListDialog from "../../components/boxes/ItemViewMarketplace";
 
 const menus = [
   { id: ID_INVENTORY_MENUS.SEEDS, label: "Seeds" },
@@ -39,6 +40,7 @@ const InventoryDialog = ({ onClose }) => {
   const [usingItemId, setUsingItemId] = useState(null);
   const [chestResult, setChestResult] = useState(null);
   const [showChestDialog, setShowChestDialog] = useState(false);
+  const [selectedProduce, setSelectedProduce] = useState(null);
 
   const onUseItem = async (itemId) => {
     setUsingItemId(itemId);
@@ -151,6 +153,62 @@ const InventoryDialog = ({ onClose }) => {
         }
         return;
       }
+
+      if (itemId === ID_POTION_ITEMS.SCARECROW) {
+        if (isOnFarmPage()) {
+          // Directly trigger farm placement mode
+          window.dispatchEvent(new CustomEvent('startPotionUsage', {
+            detail: { id: itemId, name: 'Scarecrow' }
+          }));
+          onClose(); // Close inventory dialog
+        } else {
+          localStorage.setItem("pendingScarecrowPlacement", "true");
+          window.location.href = "/farm";
+        }
+        return;
+      }
+
+      if (itemId === ID_POTION_ITEMS.LADYBUG) {
+        if (isOnFarmPage()) {
+          // Directly trigger farm placement mode
+          window.dispatchEvent(new CustomEvent('startPotionUsage', {
+            detail: { id: itemId, name: 'Ladybug' }
+          }));
+          onClose(); // Close inventory dialog
+        } else {
+          localStorage.setItem("pendingLadybugPlacement", "true");
+          window.location.href = "/farm";
+        }
+        return;
+      }
+
+      if (itemId === 9998) {
+        if (isOnFarmPage()) {
+          // Directly trigger farm placement mode
+          window.dispatchEvent(new CustomEvent('startPotionUsage', {
+            detail: { id: itemId, name: 'Water Sprinkler' }
+          }));
+          onClose(); // Close inventory dialog
+        } else {
+          localStorage.setItem("pendingSprinklerPlacement", "true");
+          window.location.href = "/farm";
+        }
+        return;
+      }
+
+      if (itemId === 9999) {
+        if (isOnFarmPage()) {
+          // Directly trigger farm placement mode
+          window.dispatchEvent(new CustomEvent('startPotionUsage', {
+            detail: { id: itemId, name: 'Umbrella' }
+          }));
+          onClose(); // Close inventory dialog
+        } else {
+          localStorage.setItem("pendingUmbrellaPlacement", "true");
+          window.location.href = "/farm";
+        }
+        return;
+      }
       
       // Default case
       show("This item cannot be used directly from inventory.", "warning");
@@ -175,7 +233,7 @@ const InventoryDialog = ({ onClose }) => {
         setList(produce);
         break;
       case ID_INVENTORY_MENUS.FISHES:
-        const fishes = allItems.filter(item => item.category === 'ID_ITEM_LOOT' && item.subCategory === 'ID_LOOT_CATEGORY_BAIT' && item.count > 0);
+        const fishes = allItems.filter(item => item.category === 'ID_ITEM_LOOT' && item.subCategory === 'ID_LOOT_CATEGORY_FISH' && item.count > 0);
         setList(fishes);
         break;
       case ID_INVENTORY_MENUS.ITEMS:
@@ -183,8 +241,10 @@ const InventoryDialog = ({ onClose }) => {
         const regularItems = allItems.filter(item => {
           const isChest = item.category === 'ID_ITEM_LOOT' && item.subCategory === 'ID_LOOT_CATEGORY_CHEST';
           const isPotion = item.category === 'ID_ITEM_POTION';
+          const isTool = item.category === 'ID_ITEM_TOOL';
+          const isResource = item.id === 9993 || item.id === 9994;
           const hasCount = item.count > 0;
-          return (isChest || isPotion) && hasCount;
+          return (isChest || isPotion || isTool || isResource) && hasCount;
         });
         
         setList(regularItems);
@@ -196,6 +256,19 @@ const InventoryDialog = ({ onClose }) => {
 
   return (
     <>
+      <style>{`
+        .produce-hover {
+          transition: transform 0.2s ease, filter 0.2s ease;
+          cursor: pointer;
+        }
+        .produce-hover:hover {
+          transform: scale(1.1);
+          filter: drop-shadow(0px 0px 8px rgba(0, 255, 65, 0.8));
+        }
+        img[src*="rock.png"] {
+          transform: scale(0.2);
+        }
+      `}</style>
       <BaseDialog onClose={onClose} title="INVENTORY" header="/images/dialog/modal-header-inventory.png" headerOffset={10} className="custom-modal-background">
         <div className="inventory-dialog">
           <div className="layout">
@@ -213,18 +286,27 @@ const InventoryDialog = ({ onClose }) => {
             </div>
             <div className="seed-row">
               {selectedMenu !== ID_INVENTORY_MENUS.ITEMS && (
-                <div className="seed-row-wrapper">
+                <div className="seed-row-wrapper" style={{ maxHeight: '400px', overflowY: 'auto', paddingRight: '5px' }}>
                   {list.map((item, index) => (
+                  <div 
+                    key={index}
+                    className={(selectedMenu === ID_INVENTORY_MENUS.PRODUCE || selectedMenu === ID_INVENTORY_MENUS.FISHES) ? "produce-hover" : ""}
+                    onClick={() => {
+                      if (selectedMenu === ID_INVENTORY_MENUS.PRODUCE || selectedMenu === ID_INVENTORY_MENUS.FISHES) {
+                        setSelectedProduce(item);
+                      }
+                    }}
+                  >
                     <ItemSmallView
-                      key={index}
                       itemId={item.id}
                       count={item.count}
                     ></ItemSmallView>
+                  </div>
                   ))}
                 </div>
               )}
               {selectedMenu === ID_INVENTORY_MENUS.ITEMS && (
-                <div className="seed-list">
+                <div className="seed-list" style={{ maxHeight: '400px', overflowY: 'auto', paddingRight: '5px' }}>
                   {list.map((item, index) => {
                     
                     // Regular item (chest or potion)
@@ -247,6 +329,14 @@ const InventoryDialog = ({ onClose }) => {
         </div>
       </BaseDialog>
       
+      {/* Produce List Dialog */}
+      {selectedProduce && (
+        <ProduceListDialog 
+          item={selectedProduce} 
+          onClose={() => setSelectedProduce(null)} 
+        />
+      )}
+
       {/* Chest Result Dialog */}
       {console.log("🔍 Dialog render check - showChestDialog:", showChestDialog, "chestResult:", chestResult)}
       {showChestDialog && chestResult && (

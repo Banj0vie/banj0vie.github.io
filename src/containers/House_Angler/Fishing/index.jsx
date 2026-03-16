@@ -62,11 +62,12 @@ const Fishing = ({ baitId, amount, requestId, onBuyAgain, onBackToMenu }) => {
         
         // Listen for fishing results from transaction logs
         await listenForFishingResults(result.txHash, (results) => {
-          // Transform itemIds array into items array with id and count
-          const items = results.itemIds.map(itemId => ({
-            id: itemId,
-            count: 1 // Each fishing result gives 1 of each item
-          }));
+          // Transform itemIds array into items array with id, count, and randomized weight
+          const items = results.itemIds.map(itemId => {
+            const randomFactor = Math.pow(Math.random(), 2.5);
+            const weight = (1.0 + randomFactor * 14.0).toFixed(2); // Match fish weights (1.0kg - 15.0kg)
+            return { id: itemId, count: 1, weight: weight };
+          });
           
           setFishingResult(items);
           setIsLootReceivedDialog(true);
@@ -141,10 +142,30 @@ const Fishing = ({ baitId, amount, requestId, onBuyAgain, onBackToMenu }) => {
         ></BaseButton>
       )}
       {isLootReceivedDialog && (
-        <LootReceivedDialog
-          onClose={onCloseLootReceiveDialog}
-          items={fishingResult}
-        ></LootReceivedDialog>
+        <>
+          <LootReceivedDialog
+            onClose={onCloseLootReceiveDialog}
+            items={fishingResult}
+          ></LootReceivedDialog>
+          {/* Overlay weight for caught fish directly on top of the modal */}
+          {fishingResult && fishingResult[0] && (
+            <div style={{
+              position: 'fixed',
+              top: '58%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              zIndex: 10005,
+              color: '#00ff41',
+              fontWeight: 'bold',
+              fontSize: '24px',
+              textShadow: '2px 2px 4px #000',
+              fontFamily: 'monospace',
+              pointerEvents: 'none'
+            }}>
+              Weight: {fishingResult[0].weight}kg
+            </div>
+          )}
+        </>
       )}
     </div>
   );
