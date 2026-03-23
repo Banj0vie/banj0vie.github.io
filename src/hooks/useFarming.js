@@ -1,22 +1,10 @@
 import { useState, useCallback } from 'react';
-import { useProgram } from './useProgram';
-import { useSolanaWallet } from './useSolanaWallet';
-import { getUserDataPDA, getGameRegistryPDA, preIx, getPlantBatchRemainingAccounts, getGameTokenMintAuthPDA, getHarvestRemainingAccounts, getPotionUsageRemainingAccounts, getGameVaultPDA, getGameVaultAta, getReceiverPDA } from '../solana/utils/pdaUtils';
-import { SystemProgram, TransactionMessage, VersionedTransaction } from '@solana/web3.js';
-import { getAssociatedTokenAddress, TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID } from '@solana/spl-token';
-import { GAME_TOKEN_MINT, LOOKUP_TABLE_ADDRESS } from '../solana/constants/programId';
-import { sendTransactionForPhantom } from '../utils/transactionHelper';
-import { ID_POTION_ITEMS, ID_PRODUCE_ITEMS } from '../constants/app_ids';
-import { PRICE_BY_CATEGORY, LOCKED_BPS } from '../constants/farming';
-import { getMultiplier, getSubtype, getGrowthTime } from '../utils/basic';
-import { useBalanceRefresh } from './useBalanceRefresh';
+import { ID_PRODUCE_ITEMS } from '../constants/app_ids';
+import { getGrowthTime } from '../utils/basic';
 
 export const useFarming = () => {
-    const { publicKey, sendTransaction } = useSolanaWallet();
-    const { program, connection } = useProgram();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
-    const { refreshBalancesAfterTransaction } = useBalanceRefresh();
 
     // --- SANDBOX HELPERS (LOCAL STORAGE) ---
     const getSandboxCrops = () => {
@@ -55,7 +43,7 @@ export const useFarming = () => {
             setError(err.message);
             return null;
         } finally { setLoading(false); }
-    }, [program, publicKey, connection, sendTransaction, refreshBalancesAfterTransaction]);
+    }, []);
 
     const harvestMany = useCallback(async (slots) => {
         setLoading(true); setError(null);
@@ -98,7 +86,7 @@ export const useFarming = () => {
             setError(err.message);
             return null;
         } finally { setLoading(false); }
-    }, [program, publicKey, connection, sendTransaction, refreshBalancesAfterTransaction]);
+    }, []);
 
     const getUserCrops = useCallback(async () => {
         setLoading(true); setError(null);
@@ -114,20 +102,20 @@ export const useFarming = () => {
                 isReady: Number(crop.id || 0) !== 0 && Number(crop.endTime || 0) <= Math.floor(Date.now() / 1000),
             }));
         } catch (err) { setError(err.message); return []; } finally { setLoading(false); }
-    }, [program, publicKey]);
+    }, []);
 
     const getMaxPlots = useCallback(async () => {
         return 30; // Sandbox max plots
-    }, [program, publicKey]);
+    }, []);
 
     const getPlantedPlotsCount = useCallback(async () => {
         return getSandboxCrops().filter(c => c.id !== 0).length;
-    }, [program, publicKey]);
+    }, []);
 
     // Preview harvest amounts for a given seed (based on on-chain rules in farming.rs)
     const previewHarvestForSeed = useCallback(async (seedId) => {
         return { lockedGameToken: '50', unlockedGameToken: '150' };
-    }, [program, publicKey]);
+    }, []);
 
     const getCrop = useCallback(async (plotIndex) => {
         const crop = getSandboxCrops()[plotIndex];
@@ -139,7 +127,7 @@ export const useFarming = () => {
             tokenMultiplierX1000: Number(crop.tokenMultiplier || 1000),
             growthElixirApplied: Boolean(crop.growthElixir),
         };
-    }, [program, publicKey]);
+    }, []);
 
     const applyGrowthElixir = useCallback(async (plotNumber) => {
         setLoading(true); setError(null);
@@ -155,7 +143,7 @@ export const useFarming = () => {
         } finally { 
             setLoading(false); 
         }
-    }, [program, publicKey, connection, sendTransaction, loading]);
+    }, []);
 
     const applyPesticide = useCallback(async (plotNumber) => {
         setLoading(true); setError(null);
@@ -171,7 +159,7 @@ export const useFarming = () => {
         } finally { 
             setLoading(false); 
         }
-    }, [program, publicKey, connection, sendTransaction, loading]);
+    }, []);
 
     const applyFertilizer = useCallback(async (plotNumber) => {
         setLoading(true); setError(null);
@@ -187,7 +175,7 @@ export const useFarming = () => {
         } finally { 
             setLoading(false); 
         }
-    }, [program, publicKey, connection, sendTransaction, loading]);
+    }, []);
 
     const destroyCrop = useCallback(async (plotNumber) => {
         setLoading(true); setError(null);

@@ -7,7 +7,7 @@ module.exports = function override(config, env) {
     "crypto": require.resolve("crypto-browserify"),
     "stream": require.resolve("stream-browserify"),
     "buffer": require.resolve("buffer"),
-    "process": require.resolve("process/browser.js"),
+    "process": require.resolve("process"),
     "util": require.resolve("util"),
     "assert": require.resolve("assert"),
     "url": require.resolve("url"),
@@ -23,7 +23,7 @@ module.exports = function override(config, env) {
     ...config.plugins,
     new webpack.ProvidePlugin({
       Buffer: ['buffer', 'Buffer'],
-      process: 'process/browser.js',
+      process: 'process',
     }),
   ];
 

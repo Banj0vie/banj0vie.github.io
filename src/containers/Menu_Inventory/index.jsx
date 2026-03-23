@@ -17,13 +17,16 @@ import ProduceListDialog from "../../components/boxes/ItemViewMarketplace";
 const menus = [
   { id: ID_INVENTORY_MENUS.SEEDS, label: "Seeds" },
   { id: ID_INVENTORY_MENUS.PRODUCE, label: "Produce" },
+  { id: ID_INVENTORY_MENUS.BAITS, label: "Baits" },
   { id: ID_INVENTORY_MENUS.FISHES, label: "Fishes" },
+  { id: ID_INVENTORY_MENUS.CHESTS, label: "Chests" },
+  { id: ID_INVENTORY_MENUS.POTIONS, label: "Potions" },
   { id: ID_INVENTORY_MENUS.ITEMS, label: "Items" },
 ];
 
 const InventoryDialog = ({ onClose }) => {
   const [selectedMenu, setSelectedMenu] = useState(ID_INVENTORY_MENUS.SEEDS);
-  const { all: allItems, refetch } = useItems();
+  const { seeds, productions, baits, fish, chests, potions, items, refetch } = useItems();
   const [list, setList] = useState([]);
   // Use chest opening from useChest (transaction construction and submission)
   const { openChest } = useChest();
@@ -210,6 +213,20 @@ const InventoryDialog = ({ onClose }) => {
         return;
       }
       
+      if (itemId === 9955) {
+        if (isOnFarmPage()) {
+          // Directly trigger yarn interaction mode
+          window.dispatchEvent(new CustomEvent('startPotionUsage', {
+            detail: { id: itemId, name: 'Yarn' }
+          }));
+          onClose(); // Close inventory dialog
+        } else {
+          localStorage.setItem("pendingYarnPlacement", "true");
+          window.location.href = "/farm";
+        }
+        return;
+      }
+
       // Default case
       show("This item cannot be used directly from inventory.", "warning");
       
@@ -225,34 +242,30 @@ const InventoryDialog = ({ onClose }) => {
     
     switch (selectedMenu) {
       case ID_INVENTORY_MENUS.SEEDS:
-        const seeds = allItems.filter(item => item.category === 'ID_ITEM_SEED' && item.count > 0);
-        setList(seeds);
+        setList(seeds.filter(item => item.count > 0));
         break;
       case ID_INVENTORY_MENUS.PRODUCE:
-        const produce = allItems.filter(item => item.category === 'ID_ITEM_CROP' && item.count > 0);
-        setList(produce);
+        setList(productions.filter(item => item.count > 0));
+        break;
+      case ID_INVENTORY_MENUS.BAITS:
+        setList(baits.filter(item => item.count > 0));
         break;
       case ID_INVENTORY_MENUS.FISHES:
-        const fishes = allItems.filter(item => item.category === 'ID_ITEM_LOOT' && item.subCategory === 'ID_LOOT_CATEGORY_FISH' && item.count > 0);
-        setList(fishes);
+        setList(fish.filter(item => item.count > 0));
+        break;
+      case ID_INVENTORY_MENUS.CHESTS:
+        setList(chests.filter(item => item.count > 0));
+        break;
+      case ID_INVENTORY_MENUS.POTIONS:
+        setList(potions.filter(item => item.count > 0));
         break;
       case ID_INVENTORY_MENUS.ITEMS:
-        // Regular items (chests and potions)
-        const regularItems = allItems.filter(item => {
-          const isChest = item.category === 'ID_ITEM_LOOT' && item.subCategory === 'ID_LOOT_CATEGORY_CHEST';
-          const isPotion = item.category === 'ID_ITEM_POTION';
-          const isTool = item.category === 'ID_ITEM_TOOL';
-          const isResource = item.id === 9993 || item.id === 9994;
-          const hasCount = item.count > 0;
-          return (isChest || isPotion || isTool || isResource) && hasCount;
-        });
-        
-        setList(regularItems);
+        setList(items.filter(item => item.count > 0));
         break;
       default:
         break;
     }
-  }, [selectedMenu, allItems]);
+  }, [selectedMenu, seeds, productions, baits, fish, chests, potions, items]);
 
   return (
     <>
@@ -285,7 +298,7 @@ const InventoryDialog = ({ onClose }) => {
               ))}
             </div>
             <div className="seed-row">
-              {selectedMenu !== ID_INVENTORY_MENUS.ITEMS && (
+              {selectedMenu !== ID_INVENTORY_MENUS.CHESTS && selectedMenu !== ID_INVENTORY_MENUS.POTIONS && selectedMenu !== ID_INVENTORY_MENUS.ITEMS && (
                 <div className="seed-row-wrapper" style={{ maxHeight: '400px', overflowY: 'auto', paddingRight: '5px' }}>
                   {list.map((item, index) => (
                   <div 
@@ -305,7 +318,7 @@ const InventoryDialog = ({ onClose }) => {
                   ))}
                 </div>
               )}
-              {selectedMenu === ID_INVENTORY_MENUS.ITEMS && (
+              {(selectedMenu === ID_INVENTORY_MENUS.CHESTS || selectedMenu === ID_INVENTORY_MENUS.POTIONS || selectedMenu === ID_INVENTORY_MENUS.ITEMS) && (
                 <div className="seed-list" style={{ maxHeight: '400px', overflowY: 'auto', paddingRight: '5px' }}>
                   {list.map((item, index) => {
                     

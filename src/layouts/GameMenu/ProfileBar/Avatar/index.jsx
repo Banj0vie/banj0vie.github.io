@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import "./style.css";
 import AvatarDialog from "../../../../containers/Menu_Avatar";
-import { useEquipmentRegistry } from "../../../../hooks/useContracts";
-import { useSolanaWallet } from "../../../../hooks/useSolanaWallet";
 
 const Avatar = ({ src, alt = "avatar" }) => {
   const [isAvatarDialog, setIsAvatarDialog] = useState(false);
@@ -11,28 +9,19 @@ const Avatar = ({ src, alt = "avatar" }) => {
   const hoverAudioRef = useRef(null);
   const clickAudioRef = useRef(null);
 
-  const { account } = useSolanaWallet();
-  const { getAvatars, getNFTMetadata } = useEquipmentRegistry();
 
   const fallbackSrc = "/images/avatars/avatar-left-placeholder.png";
 
   useEffect(() => {
     const fetchAvatarImage = async () => {
-      if (!account || !getAvatars || !getNFTMetadata) {
-        setLoading(false);
-        return;
-      }
-
       try {
         setLoading(true);
 
-        // Get equipped avatars (cached via context when available)
-        const avatarResult = await getAvatars(account);
-        const [nfts] = avatarResult;
-
-        // Check if we have any equipped avatars
-        if (nfts && Array.isArray(nfts) && nfts.length >= 2) {
-          setAvatarImage(nfts[0].image);
+        // Fetch from local storage instead of smart contract
+        const sandboxAvatars = JSON.parse(localStorage.getItem('sandbox_avatars') || '{}');
+        
+        if (sandboxAvatars[0] && sandboxAvatars[0].image) {
+          setAvatarImage(sandboxAvatars[0].image);
           setLoading(false);
           return;
         }
@@ -55,7 +44,7 @@ const Avatar = ({ src, alt = "avatar" }) => {
     };
     window.addEventListener('avatarsUpdated', handler);
     return () => window.removeEventListener('avatarsUpdated', handler);
-  }, [account, getAvatars, getNFTMetadata]);
+  }, []);
 
   useEffect(() => {
     if (!hoverAudioRef.current) {

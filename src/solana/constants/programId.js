@@ -1,15 +1,16 @@
 import { PublicKey } from '@solana/web3.js';
 import { getClusterConfig, getRpcEndpoint, getWsEndpoint, getFinalCluster } from '../utils/clusterUtils';
 
-// We're using a dummy ID so the game engine can start without crypto
-export const programId = new PublicKey("11111111111111111111111111111111");
+const fallbackKey = '11111111111111111111111111111111';
 
-export const SOLANA_VALLEY_PROGRAM_ID = new PublicKey(process.env.REACT_APP_SOLANA_VALLEY_PROGRAM_ID || "11111111111111111111111111111111") //new PublicKey('gzxT81zxzrKXt6awQF1vUkaAtKLRW94rSSwFWxceDw1');
-export const SOLANA_VALLEY_DEX_PROGRAM_ID = new PublicKey(process.env.REACT_APP_SOLANA_VALLEY_DEX_PROGRAM_ID || "11111111111111111111111111111111") // new PublicKey('EVHHfpb4sarb9D2UWSXB6kkyWcS34hWTkd2qGEJhBJJe');
+export const programId = new PublicKey(process.env.REACT_APP_PROGRAM_ID || fallbackKey);
 
-export const GAME_TOKEN_MINT = new PublicKey(process.env.REACT_APP_GAME_TOKEN_MINT || "11111111111111111111111111111111") // new PublicKey('ENiJaLrLtgtiPbPrt5ZjKKe6yHzaLQcJpiPmEbiwNyJT');
+export const SOLANA_VALLEY_PROGRAM_ID = new PublicKey(process.env.REACT_APP_SOLANA_VALLEY_PROGRAM_ID || fallbackKey) //new PublicKey('gzxT81zxzrKXt6awQF1vUkaAtKLRW94rSSwFWxceDw1');
+export const SOLANA_VALLEY_DEX_PROGRAM_ID = process.env.REACT_APP_SOLANA_VALLEY_DEX_PROGRAM_ID && new PublicKey(process.env.REACT_APP_SOLANA_VALLEY_DEX_PROGRAM_ID) // new PublicKey('EVHHfpb4sarb9D2UWSXB6kkyWcS34hWTkd2qGEJhBJJe');
 
-export const LOOKUP_TABLE_ADDRESS = new PublicKey(process.env.REACT_APP_LOOKUP_TABLE_ADDRESS || "11111111111111111111111111111111");
+export const GAME_TOKEN_MINT = new PublicKey(process.env.REACT_APP_GAME_TOKEN_MINT || fallbackKey) // new PublicKey('ENiJaLrLtgtiPbPrt5ZjKKe6yHzaLQcJpiPmEbiwNyJT');
+
+export const LOOKUP_TABLE_ADDRESS = new PublicKey(process.env.REACT_APP_LOOKUP_TABLE_ADDRESS || fallbackKey);
 
 export const getCurrentCluster = () => getFinalCluster();
 export const getCurrentClusterConfig = () => getClusterConfig();

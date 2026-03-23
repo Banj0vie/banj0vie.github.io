@@ -8,34 +8,28 @@ import CardView from "../../components/boxes/CardView";
 const AvatarDialog = ({ onClose }) => {
   const { account } = useSolanaWallet();
   const { getAvatars, getTokenBoostPpm } = useEquipmentRegistry();
-  const [avatars, setAvatars] = useState([]);
+  const [avatars, setAvatars] = useState([{isEmpty: true}, {isEmpty: true}]);
   const [totalBoost, setTotalBoost] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchAvatarData = async () => {
-      if (!account) {
-        setLoading(false);
-        return;
-      }
-
       try {
         setLoading(true);
 
-        const result = await getAvatars(account);
-        const [nfts = [], tokenIds = []] = Array.isArray(result) && result.length === 2 ? result : [[], []];
+        // Fetch from local sandbox memory instead of the blockchain
+        const sandboxAvatars = JSON.parse(localStorage.getItem('sandbox_avatars') || '{}');
 
-        // Get total boost
-        const boostPpm = await getTokenBoostPpm(account);
-        const boostPercentage = boostPpm ? boostPpm / 1000 : 0; // Convert from ppm to percentage, default to 0 if null
+        let boostPercentage = 0;
 
         // Create avatar data array
         const avatarData = [];
         for (let i = 0; i < 2; i++) {
-          if (nfts && i < nfts.length && nfts[i] !== "0x0000000000000000000000000000000000000000") {
+          if (sandboxAvatars[i]) {
+            boostPercentage += sandboxAvatars[i].boostPercentage || 0;
             avatarData.push({
-              nft: nfts[i],
-              tokenId: tokenIds[i],
+              nft: sandboxAvatars[i], // Pass the whole object so the UI has access to the image
+              tokenId: sandboxAvatars[i].tokenId,
               isEmpty: false
             });
           } else {
@@ -65,17 +59,21 @@ const AvatarDialog = ({ onClose }) => {
     // Update the avatars state
     setAvatars(prevAvatars => {
       const newAvatars = [...prevAvatars];
-      newAvatars[slotIndex] = {
-        nft: selectedNFT.tokenId,
-        tokenId: selectedNFT.tokenId,
-        isEmpty: false
-      };
+      if (!selectedNFT) {
+        newAvatars[slotIndex] = { nft: null, tokenId: null, isEmpty: true };
+      } else {
+        newAvatars[slotIndex] = {
+          nft: selectedNFT,
+          tokenId: selectedNFT.tokenId,
+          isEmpty: false
+        };
+      }
+
+      // Recalculate total boost dynamically based on the updated slots
+      const newTotalBoost = (newAvatars[0].isEmpty ? 0 : (newAvatars[0].nft?.boostPercentage || 0)) + (newAvatars[1].isEmpty ? 0 : (newAvatars[1].nft?.boostPercentage || 0));
+      setTotalBoost(newTotalBoost);
       return newAvatars;
     });
-
-    // Recalculate total boost
-    const newTotalBoost = selectedNFT.boostPercentage;
-    setTotalBoost(newTotalBoost);
   };
 
   return <BaseDialog onClose={onClose} title="WORKERS" header="/images/dialog/modal-header-worker.png">

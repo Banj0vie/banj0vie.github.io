@@ -20,7 +20,7 @@ import { useSolanaWallet } from "../../hooks/useSolanaWallet";
 import { useNotification } from "../../contexts/NotificationContext";
 import { isTransactionRejection } from "../../utils/errorUtils";
 import CustomSeedsDialog from "./CustomSeedsDialog";
-import SeedRollingDialog from "./SeedRollingDialog";
+import PokemonPackRipDialog from "./PokemonPackRipDialog";
 const VendorDialog = ({ onClose, label = "VENDOR", header = "", headerOffset = 0 }) => {
   const { isConnected, account } = useSolanaWallet();
   const {
@@ -64,6 +64,16 @@ const VendorDialog = ({ onClose, label = "VENDOR", header = "", headerOffset = 0
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [dataLoaded, setDataLoaded] = useState(false);
   const [buyingItem, setBuyingItem] = useState(null);
+  const [tutorialStep, setTutorialStep] = useState(() => parseInt(localStorage.getItem('sandbox_tutorial_step') || '0', 10));
+
+  useEffect(() => {
+    window.isVendorOpen = true;
+    window.dispatchEvent(new Event('vendorDialogToggled'));
+    return () => {
+      window.isVendorOpen = false;
+      window.dispatchEvent(new Event('vendorDialogToggled'));
+    };
+  }, []);
 
   // Memoized initial seed status to prevent unnecessary re-renders
   const initialSeedStatus = useMemo(
@@ -200,6 +210,24 @@ const VendorDialog = ({ onClose, label = "VENDOR", header = "", headerOffset = 0
 
   const onSeedsClicked = useCallback(
     (id) => {
+      if (seedStatus[id]?.status !== SEED_PACK_STATUS.COMMITED) {
+        const tier = tierMap[id];
+        const farmingLevel = Math.floor(Math.sqrt((parseInt(localStorage.getItem('sandbox_farming_xp') || '0', 10) || 0) / 150)) + 1;
+
+        if (tier === 2 && farmingLevel < 4) {
+           show("You need Farming Level 4 to unlock Pico Seed Packs!", "warning");
+           return;
+        }
+        if (tier === 3 && farmingLevel < 7) {
+           show("You need Farming Level 7 to unlock Basic Seed Packs!", "warning");
+           return;
+        }
+        if (tier === 4 && farmingLevel < 10) {
+           show("You need Farming Level 10 to unlock Premium Seed Packs!", "warning");
+           return;
+        }
+      }
+
       setSelectedSeed(id);
       if (seedStatus[id].status === SEED_PACK_STATUS.COMMITED) {
         setSeedStatus((prev) => ({
@@ -218,7 +246,7 @@ const VendorDialog = ({ onClose, label = "VENDOR", header = "", headerOffset = 0
         setPageIndex(ID_SEED_SHOP_PAGES.SEED_PACK_DETAIL);
       }
     },
-    [seedStatus]
+    [seedStatus, tierMap, show]
   );
 
   const onRollChancesClicked = useCallback(() => {
@@ -371,6 +399,22 @@ const VendorDialog = ({ onClose, label = "VENDOR", header = "", headerOffset = 0
         show("Please connect your wallet first", "warning");
         return;
       }
+      
+      const tier = tierMap[selectedSeed];
+      const farmingLevel = Math.floor(Math.sqrt((parseInt(localStorage.getItem('sandbox_farming_xp') || '0', 10) || 0) / 150)) + 1;
+
+      if (tier === 2 && farmingLevel < 4) {
+         show("You need Farming Level 4 to buy Pico Seed Packs!", "error");
+         return;
+      }
+      if (tier === 3 && farmingLevel < 7) {
+         show("You need Farming Level 7 to buy Basic Seed Packs!", "error");
+         return;
+      }
+      if (tier === 4 && farmingLevel < 10) {
+         show("You need Farming Level 10 to buy Premium Seed Packs!", "error");
+         return;
+      }
 
       // Set buying state for this specific item
       setBuyingItem({
@@ -389,7 +433,6 @@ const VendorDialog = ({ onClose, label = "VENDOR", header = "", headerOffset = 0
        
        try {
          
-         const tier = tierMap[selectedSeed];
          const result = await buySeedPack(tier, item.count);
          
          // Show success message (loading notification will auto-dismiss after 5 minutes)
@@ -411,7 +454,21 @@ const VendorDialog = ({ onClose, label = "VENDOR", header = "", headerOffset = 0
            show(successMessage, "success");
 
            // Refresh pending requests after successful purchase
-           await loadPendingRequests();
+           const currentRequests = await getAllPendingRequests();
+           setHasPendingRequests(currentRequests.length > 0);
+           setPendingRequests(currentRequests);
+
+           // Auto-Reveal: Skip the extra button click!
+           const reqToReveal = currentRequests.find(r => Number(r.tier) === tier);
+           if (reqToReveal) {
+             handleReveal(reqToReveal.requestId, tier, item.count);
+           }
+
+           if (tutorialStep === 11) {
+             setTutorialStep(12);
+             localStorage.setItem('sandbox_tutorial_step', '12');
+             window.dispatchEvent(new Event('tutorialStepChanged'));
+           }
         } else {
           throw new Error("Purchase failed");
         }
@@ -432,7 +489,7 @@ const VendorDialog = ({ onClose, label = "VENDOR", header = "", headerOffset = 0
 
       setPageIndex(ID_SEED_SHOP_PAGES.SEED_PACK_LIST);
     },
-    [isConnected, selectedSeed, tierMap, buySeedPack, loadPendingRequests, show]
+    [isConnected, selectedSeed, tierMap, buySeedPack, loadPendingRequests, show, getAllPendingRequests, handleReveal]
   );
 
   const onBuy = useCallback(
@@ -475,6 +532,7 @@ const VendorDialog = ({ onClose, label = "VENDOR", header = "", headerOffset = 0
           isRevealing={isRevealing}
           isLoading={isLoadingData}
           buyingItem={buyingItem}
+          tutorialStep={tutorialStep}
         ></VendorMenu>
       )}
       {pageIndex === ID_SEED_SHOP_PAGES.SEED_PACK_DETAIL && (
@@ -506,9 +564,24 @@ const VendorDialog = ({ onClose, label = "VENDOR", header = "", headerOffset = 0
           }}
         ></CustomSeedsDialog>
       )}
+      
+      {tutorialStep === 11 && (
+        <div style={{ position: 'fixed', right: '40px', top: '50%', transform: 'translateY(-50%)', zIndex: 100000, display: 'flex', justifyContent: 'center', alignItems: 'center', pointerEvents: 'none' }}>
+          <div style={{ position: 'relative', width: '320px', backgroundColor: 'rgba(0,0,0,0.9)', border: '4px solid #ffea00', borderRadius: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '25px', gap: '15px', boxShadow: '0 10px 25px rgba(0,0,0,0.8)', pointerEvents: 'auto' }}>
+             <img src="/images/bees/sir.png" alt="Sir" style={{ height: '100px', objectFit: 'contain' }} />
+             <div style={{ color: 'white', fontFamily: 'monospace', fontSize: '14px', textAlign: 'center' }}>
+               <h3 style={{ color: '#ffea00', margin: '0 0 10px 0', fontSize: '20px' }}>Great Uncle Sir Bee</h3>
+               <p style={{ margin: 0, lineHeight: '1.5' }}>Here you can buy seed packs! Each pack gives you a random crop seed.</p>
+               <br/>
+               <p style={{ margin: 0, lineHeight: '1.5', color: '#00ff41' }}>Buy a Seed Pack to get started, and don't forget to rip it open!</p>
+             </div>
+          </div>
+        </div>
+      )}
+
     </BaseDialog>
   ) : (
-    <SeedRollingDialog
+    <PokemonPackRipDialog
       rollingInfo={rollingInfo}
       onClose={cancelReveal}
       onBack={cancelReveal}
@@ -516,7 +589,7 @@ const VendorDialog = ({ onClose, label = "VENDOR", header = "", headerOffset = 0
         cancelReveal();
         handleBuy(rollingInfo);
       }}
-    ></SeedRollingDialog>
+    ></PokemonPackRipDialog>
   );
 };
 

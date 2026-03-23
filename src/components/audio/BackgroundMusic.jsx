@@ -9,7 +9,7 @@ const BackgroundMusic = () => {
   const [isUnlocked, setIsUnlocked] = useState(false);
 
   useEffect(() => {
-    const audio = new Audio("/sounds/Theme.wav");
+    const audio = new Audio("/sounds/newthemesong.mp3");
     audio.loop = true;
     audio.preload = "auto";
     audioRef.current = audio;

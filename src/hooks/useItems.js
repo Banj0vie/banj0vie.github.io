@@ -1,22 +1,49 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { ID_SEEDS, ID_PRODUCE_ITEMS, ID_BAIT_ITEMS, ID_FISH_ITEMS, ID_CHEST_ITEMS, ID_POTION_ITEMS, ID_CROP_CATEGORIES, ID_ITEM_CATEGORIES, ID_POTION_CATEGORIES, ID_LOOT_CATEGORIES, ID_RARE_TYPE } from '../constants/app_ids';
 import { ALL_ITEMS, IMAGE_URL_CROP } from '../constants/item_data';
 import { useSolanaWallet } from './useSolanaWallet';
 import { fetchAllItemBalances } from '../solana/utils/inventoryUtils';
 
-const TRANSPARENT_PIXEL = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
+const SB_CAT = ID_ITEM_CATEGORIES?.ITEM ?? ID_ITEM_CATEGORIES?.ITEMS ?? ID_ITEM_CATEGORIES?.TOOL ?? ID_ITEM_CATEGORIES?.LOOT ?? 4;
 
-// Inject sandbox items with a transparent pixel to hide their massive images in the UI
-if (!ALL_ITEMS[9990]) ALL_ITEMS[9990] = { id: 9990, label: 'Stone Pipe', image: TRANSPARENT_PIXEL, category: ID_ITEM_CATEGORIES.LOOT, subCategory: "MATERIALS", type: ID_RARE_TYPE.COMMON, usable: false };
-if (!ALL_ITEMS[9991]) ALL_ITEMS[9991] = { id: 9991, label: 'Axe', image: TRANSPARENT_PIXEL, category: ID_ITEM_CATEGORIES.LOOT, subCategory: "MATERIALS", type: ID_RARE_TYPE.COMMON, usable: false };
-if (!ALL_ITEMS[9992]) ALL_ITEMS[9992] = { id: 9992, label: 'Pickaxe', image: TRANSPARENT_PIXEL, category: ID_ITEM_CATEGORIES.LOOT, subCategory: "MATERIALS", type: ID_RARE_TYPE.COMMON, usable: false };
-if (!ALL_ITEMS[9993]) ALL_ITEMS[9993] = { id: 9993, label: 'Wood Log', image: TRANSPARENT_PIXEL, category: ID_ITEM_CATEGORIES.LOOT, subCategory: "MATERIALS", type: ID_RARE_TYPE.COMMON, usable: false };
-if (!ALL_ITEMS[9994]) ALL_ITEMS[9994] = { id: 9994, label: 'Stone', image: TRANSPARENT_PIXEL, category: ID_ITEM_CATEGORIES.LOOT, subCategory: "MATERIALS", type: ID_RARE_TYPE.COMMON, usable: false };
-if (!ALL_ITEMS[9995]) ALL_ITEMS[9995] = { id: 9995, label: 'Sticks', image: TRANSPARENT_PIXEL, category: ID_ITEM_CATEGORIES.LOOT, subCategory: "MATERIALS", type: ID_RARE_TYPE.COMMON, usable: false };
-if (!ALL_ITEMS[9996]) ALL_ITEMS[9996] = { id: 9996, label: 'Iron Ore', image: TRANSPARENT_PIXEL, category: ID_ITEM_CATEGORIES.LOOT, subCategory: "MATERIALS", type: ID_RARE_TYPE.UNCOMMON, usable: false };
-if (!ALL_ITEMS[9997]) ALL_ITEMS[9997] = { id: 9997, label: 'Gold Ore', image: TRANSPARENT_PIXEL, category: ID_ITEM_CATEGORIES.LOOT, subCategory: "MATERIALS", type: ID_RARE_TYPE.RARE, usable: false };
-ALL_ITEMS[9998] = { id: 9998, label: 'Water Sprinkler', image: TRANSPARENT_PIXEL, category: ID_ITEM_CATEGORIES.POTION, subCategory: "FARM_GEAR", type: ID_RARE_TYPE.COMMON, usable: true };
-ALL_ITEMS[9999] = { id: 9999, label: 'Umbrella', image: TRANSPARENT_PIXEL, category: ID_ITEM_CATEGORIES.POTION, subCategory: "FARM_GEAR", type: ID_RARE_TYPE.COMMON, usable: true };
+// Inject sandbox items with actual images to show up in the UI, keeping iconSize: 'text' to match text sizing
+ALL_ITEMS[9987] = { id: 9987, label: 'Easter Basket', image: '/images/items/seeds.png', category: SB_CAT, subCategory: "FARM_GEAR", type: ID_RARE_TYPE.EPIC, usable: true, iconSize: 'text' };
+ALL_ITEMS[9998] = { id: 9998, label: 'Water Sprinkler', image: '/images/items/watersprinkler.png', category: SB_CAT, subCategory: "FARM_GEAR", type: ID_RARE_TYPE.COMMON, usable: true, iconSize: 'text' };
+ALL_ITEMS[9999] = { id: 9999, label: 'Umbrella', image: '/images/items/umbrella.png', category: SB_CAT, subCategory: "FARM_GEAR", type: ID_RARE_TYPE.COMMON, usable: true, iconSize: 'text' };
+if (!ALL_ITEMS[9940]) ALL_ITEMS[9940] = { id: 9940, label: 'Egg Basket', image: '/images/barn/basket.png', category: SB_CAT, subCategory: "FARM_GEAR", type: ID_RARE_TYPE.COMMON, usable: false, iconSize: 'text' };
+if (!ALL_ITEMS[9939]) ALL_ITEMS[9939] = { id: 9939, label: 'Wool', image: '/images/barn/wool.png', category: SB_CAT, subCategory: "MATERIALS", type: ID_RARE_TYPE.COMMON, usable: false, iconSize: 'text' };
+if (!ALL_ITEMS[9938]) ALL_ITEMS[9938] = { id: 9938, label: 'Milk', image: '/images/barn/milk.png', category: SB_CAT, subCategory: "MATERIALS", type: ID_RARE_TYPE.COMMON, usable: false, iconSize: 'text' };
+if (!ALL_ITEMS[9941]) ALL_ITEMS[9941] = { id: 9941, label: 'Normal Egg', image: '/images/barn/egg.png', category: SB_CAT, subCategory: "MATERIALS", type: ID_RARE_TYPE.COMMON, usable: false, iconSize: 'text' };
+if (!ALL_ITEMS[ID_BAIT_ITEMS?.BAIT_I || 30001]) ALL_ITEMS[ID_BAIT_ITEMS?.BAIT_I || 30001] = { id: ID_BAIT_ITEMS?.BAIT_I || 30001, label: 'Bait I', image: '/images/items/seeds.png', category: ID_ITEM_CATEGORIES.LOOT, subCategory: "BAIT", type: ID_RARE_TYPE.COMMON, usable: false, iconSize: 'text' };
+if (!ALL_ITEMS[ID_BAIT_ITEMS?.BAIT_II || 30002]) ALL_ITEMS[ID_BAIT_ITEMS?.BAIT_II || 30002] = { id: ID_BAIT_ITEMS?.BAIT_II || 30002, label: 'Bait II', image: '/images/items/seeds.png', category: ID_ITEM_CATEGORIES.LOOT, subCategory: "BAIT", type: ID_RARE_TYPE.UNCOMMON, usable: false, iconSize: 'text' };
+if (!ALL_ITEMS[ID_BAIT_ITEMS?.BAIT_III || 30003]) ALL_ITEMS[ID_BAIT_ITEMS?.BAIT_III || 30003] = { id: ID_BAIT_ITEMS?.BAIT_III || 30003, label: 'Bait III', image: '/images/items/seeds.png', category: ID_ITEM_CATEGORIES.LOOT, subCategory: "BAIT", type: ID_RARE_TYPE.RARE, usable: false, iconSize: 'text' };
+if (!ALL_ITEMS[9955]) ALL_ITEMS[9955] = { id: 9955, label: 'Yarn', image: '/images/pets/yarn.png', category: SB_CAT, subCategory: "FARM_GEAR", type: ID_RARE_TYPE.COMMON, usable: true, iconSize: 'text' };
+if (!ALL_ITEMS[9979]) ALL_ITEMS[9979] = { id: 9979, label: 'Ladybug Scarecrow', image: '/images/scarecrow/ladybug_scarecrow.png', category: ID_ITEM_CATEGORIES.POTION, subCategory: ID_POTION_CATEGORIES.SCARECROW, type: ID_RARE_TYPE.EPIC, usable: true, iconSize: 'text' };
+if (!ALL_ITEMS[9978]) ALL_ITEMS[9978] = { id: 9978, label: 'Tier 2 Scarecrow', image: '/images/scarecrow/tier2.png', category: ID_ITEM_CATEGORIES.POTION, subCategory: ID_POTION_CATEGORIES.SCARECROW, type: ID_RARE_TYPE.UNCOMMON, usable: true, iconSize: 'text' };
+if (!ALL_ITEMS[9977]) ALL_ITEMS[9977] = { id: 9977, label: 'Tier 3 Scarecrow', image: '/images/scarecrow/tier3.png', category: ID_ITEM_CATEGORIES.POTION, subCategory: ID_POTION_CATEGORIES.SCARECROW, type: ID_RARE_TYPE.RARE, usable: true, iconSize: 'text' };
+if (!ALL_ITEMS[9976]) ALL_ITEMS[9976] = { id: 9976, label: 'Max Tier Scarecrow', image: '/images/scarecrow/tier4.png', category: ID_ITEM_CATEGORIES.POTION, subCategory: ID_POTION_CATEGORIES.SCARECROW, type: ID_RARE_TYPE.LEGENDARY, usable: true, iconSize: 'text' };
+if (!ALL_ITEMS[9975]) ALL_ITEMS[9975] = { id: 9975, label: 'Tesla Tower', image: '/images/items/tesla.png', category: SB_CAT, subCategory: "FARM_GEAR", type: ID_RARE_TYPE.EPIC, usable: true, iconSize: 'text' };
+if (!ALL_ITEMS[9974]) ALL_ITEMS[9974] = { id: 9974, label: 'Copper Ore', image: '/images/forest/copperrock.png', category: SB_CAT, subCategory: "MATERIALS", type: ID_RARE_TYPE.COMMON, usable: false, iconSize: 'text' };
+if (!ALL_ITEMS[9973]) ALL_ITEMS[9973] = { id: 9973, label: 'Coal', image: '/images/forest/coalrock.png', category: SB_CAT, subCategory: "MATERIALS", type: ID_RARE_TYPE.COMMON, usable: false, iconSize: 'text' };
+if (!ALL_ITEMS[9972]) ALL_ITEMS[9972] = { id: 9972, label: 'Hemp', image: '/images/crafting/hemp_rope.png', category: SB_CAT, subCategory: "MATERIALS", type: ID_RARE_TYPE.COMMON, usable: false, iconSize: 'text' };
+if (!ALL_ITEMS[9971]) ALL_ITEMS[9971] = { id: 9971, label: 'Cotton', image: '/images/crafting/cotton.png', category: SB_CAT, subCategory: "MATERIALS", type: ID_RARE_TYPE.COMMON, usable: false, iconSize: 'text' };
+if (!ALL_ITEMS[9970]) ALL_ITEMS[9970] = { id: 9970, label: 'Rope', image: '/images/crafting/hemp_rope.png', category: SB_CAT, subCategory: "MATERIALS", type: ID_RARE_TYPE.COMMON, usable: false, iconSize: 'text' };
+if (!ALL_ITEMS[9969]) ALL_ITEMS[9969] = { id: 9969, label: 'Canvas', image: '/images/crafting/canvas.png', category: SB_CAT, subCategory: "MATERIALS", type: ID_RARE_TYPE.COMMON, usable: false, iconSize: 'text' };
+if (!ALL_ITEMS[9968]) ALL_ITEMS[9968] = { id: 9968, label: 'Copper Nails', image: '/images/crafting/copper_nails.png', category: SB_CAT, subCategory: "MATERIALS", type: ID_RARE_TYPE.COMMON, usable: false, iconSize: 'text' };
+if (!ALL_ITEMS[9967]) ALL_ITEMS[9967] = { id: 9967, label: 'Steel Plate', image: '/images/crafting/steel_plate.png', category: SB_CAT, subCategory: "MATERIALS", type: ID_RARE_TYPE.COMMON, usable: false, iconSize: 'text' };
+if (!ALL_ITEMS[9966]) ALL_ITEMS[9966] = { id: 9966, label: 'Crab Pot', image: '/images/items/crab_pot.png', category: SB_CAT, subCategory: "FARM_GEAR", type: ID_RARE_TYPE.UNCOMMON, usable: false, iconSize: 'text' };
+if (!ALL_ITEMS[9965]) ALL_ITEMS[9965] = { id: 9965, label: 'Rowboat', image: '/images/items/rowboat.png', category: SB_CAT, subCategory: "FARM_GEAR", type: ID_RARE_TYPE.RARE, usable: false, iconSize: 'text' };
+if (!ALL_ITEMS[9964]) ALL_ITEMS[9964] = { id: 9964, label: 'Sailboat', image: '/images/items/sailboat.png', category: SB_CAT, subCategory: "FARM_GEAR", type: ID_RARE_TYPE.EPIC, usable: false, iconSize: 'text' };
+if (!ALL_ITEMS[9963]) ALL_ITEMS[9963] = { id: 9963, label: 'Trawler', image: '/images/items/trawler.png', category: SB_CAT, subCategory: "FARM_GEAR", type: ID_RARE_TYPE.LEGENDARY, usable: false, iconSize: 'text' };
+if (!ALL_ITEMS[9962]) ALL_ITEMS[9962] = { id: 9962, label: 'Engine', image: '/images/crafting/engine.png', category: SB_CAT, subCategory: "MATERIALS", type: ID_RARE_TYPE.EPIC, usable: false, iconSize: 'text' };
+if (!ALL_ITEMS[9956]) ALL_ITEMS[9956] = { id: 9956, label: 'Leaves', image: '/images/items/seeds.png', category: SB_CAT, subCategory: "MATERIALS", type: ID_RARE_TYPE.COMMON, usable: false, iconSize: 'text' };
+
+// Create an instant lookup map for labels to avoid repetitive loops
+const REVERSE_LABEL_MAP = Object.fromEntries(
+  Object.entries({
+    ...ID_CHEST_ITEMS, ...ID_BAIT_ITEMS, ...ID_FISH_ITEMS, ...ID_POTION_ITEMS
+  }).map(([key, value]) => [value, key])
+);
 
 export const useItems = () => {
   const [items, setItems] = useState([]);
@@ -34,7 +61,7 @@ export const useItems = () => {
     ...Object.values(ID_POTION_ITEMS),
   ], []);
   
-  const fetchItems = async () => {
+  const fetchItems = useCallback(async () => {
 
     setLoading(true);
     setError(null);
@@ -46,13 +73,6 @@ export const useItems = () => {
       } catch (err) {
         console.warn("Sandbox Mode: Bypassing on-chain inventory fetch.");
       }
-
-      // --- SANDBOX HACK: Give 10 of every seed ---
-      Object.values(ID_SEEDS).forEach(seedId => {
-        if (typeof seedId === 'number') {
-          balances[seedId] = 10;
-        }
-      });
 
       // --- SANDBOX HACK: Load harvested produce ---
       try {
@@ -75,36 +95,17 @@ export const useItems = () => {
       try {
         const sandboxLoot = JSON.parse(localStorage.getItem('sandbox_loot') || '{}');
         
-        let needsSave = false;
-        if (sandboxLoot[ID_POTION_ITEMS.SCARECROW] === undefined) {
-          sandboxLoot[ID_POTION_ITEMS.SCARECROW] = 10;
-          needsSave = true;
-        }
-        if (sandboxLoot[ID_POTION_ITEMS.LADYBUG] === undefined) {
-          sandboxLoot[ID_POTION_ITEMS.LADYBUG] = 10;
-          needsSave = true;
-        }
-        if (sandboxLoot[9998] === undefined) {
-          sandboxLoot[9998] = 10;
-          needsSave = true;
-        }
-        if (sandboxLoot[9999] === undefined) {
-          sandboxLoot[9999] = 10;
-          needsSave = true;
-        }
-        if (needsSave) {
-          localStorage.setItem('sandbox_loot', JSON.stringify(sandboxLoot));
-        }
-
         Object.entries(sandboxLoot).forEach(([id, count]) => {
           balances[id] = (balances[id] || 0) + count;
         });
       } catch(e) {}
       
-      // Add starter tools to match forest tracking logic
-      balances[9991] = (balances[9991] || 0) + 5; // Axe
-      balances[9992] = (balances[9992] || 0) + 5; // Pickaxe
-      balances[9996] = (balances[9996] || 0) + 10; // Iron Ore
+      // Pre-fill balances with 0 for all known items to ensure they show up in UI
+      Object.keys(ALL_ITEMS).forEach(id => {
+        if (balances[id] === undefined) {
+          balances[id] = 0;
+        }
+      });
 
       // Include ALL items (even with 0 balance) for crafting interface
       const userItems = [];
@@ -155,32 +156,7 @@ export const useItems = () => {
           }
 
           // Get proper label from constants
-          let label = itemId.toString();
-          if (Object.values(ID_CHEST_ITEMS).includes(itemId)) {
-            // Find the chest label from ID_CHEST_ITEMS
-            const chestEntry = Object.entries(ID_CHEST_ITEMS).find(([key, value]) => value === itemId);
-            if (chestEntry) {
-              label = chestEntry[0]; // Use the key as label (e.g., "CHEST_WOOD")
-            }
-          } else if (Object.values(ID_BAIT_ITEMS).includes(itemId)) {
-            // Find the bait label from ID_BAIT_ITEMS
-            const baitEntry = Object.entries(ID_BAIT_ITEMS).find(([key, value]) => value === itemId);
-            if (baitEntry) {
-              label = baitEntry[0]; // Use the key as label (e.g., "BAIT_I")
-            }
-          } else if (Object.values(ID_FISH_ITEMS).includes(itemId)) {
-            // Find the fish label from ID_FISH_ITEMS
-            const fishEntry = Object.entries(ID_FISH_ITEMS).find(([key, value]) => value === itemId);
-            if (fishEntry) {
-              label = fishEntry[0]; // Use the key as label
-            }
-          } else if (Object.values(ID_POTION_ITEMS).includes(itemId)) {
-            // Find the potion label from ID_POTION_ITEMS
-            const potionEntry = Object.entries(ID_POTION_ITEMS).find(([key, value]) => value === itemId);
-            if (potionEntry) {
-              label = potionEntry[0]; // Use the key as label (e.g., "POTION_FERTILIZER")
-            }
-          }
+          const label = REVERSE_LABEL_MAP[itemId] || itemId.toString();
 
           // Create item data with proper categories
           userItems.push({
@@ -190,11 +166,13 @@ export const useItems = () => {
             subCategory,
             label,
             type: ID_RARE_TYPE.COMMON,
+            iconSize: 'default', // Ensure iconSize defaults if not set in ALL_ITEMS
             image: IMAGE_URL_CROP,
-            pos: 0
+        pos: 0
           });
         }
       });
+
       setItems(userItems);
     } catch (err) {
       console.error('Failed to fetch items:', err);
@@ -203,10 +181,12 @@ export const useItems = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [connection, publicKey]);
+
   useEffect(() => {
     fetchItems();
-  }, [connection, publicKey, allItemIds]);
+  }, [fetchItems, allItemIds]);
+
 
   // Organize items into tree structure like ALL_ITEM_TREE but exclude seeds
   const itemsTree = useMemo(() => {
@@ -233,7 +213,9 @@ export const useItems = () => {
               // Include items with loot category or undefined category (like chests)
               return item.category === ID_ITEM_CATEGORIES.LOOT ||
                 item.category === undefined ||
-                item.label?.includes('CHEST');
+                item.label?.includes('CHEST') ||
+                item.category === 'ITEM' ||
+                item.category === SB_CAT;
             }
 
             // Handle crop subcategories (for crops that are organized by seed tier)
@@ -252,8 +234,7 @@ export const useItems = () => {
               node.id === ID_POTION_CATEGORIES.FERTILIZER ||
               node.id === ID_POTION_CATEGORIES.PESTICIDE ||
               node.id === ID_POTION_CATEGORIES.SCARECROW ||
-              node.id === ID_POTION_CATEGORIES.LADYBUG ||
-              node.id === "FARM_GEAR") {
+              node.id === ID_POTION_CATEGORIES.LADYBUG) {
               return item.subCategory === node.id;
             }
 
@@ -261,7 +242,8 @@ export const useItems = () => {
             if (node.id === ID_LOOT_CATEGORIES.CHEST ||
                 node.id === ID_LOOT_CATEGORIES.BAIT ||
                 node.id === ID_LOOT_CATEGORIES.FISH ||
-                node.id === "MATERIALS") {
+                node.id === "MATERIALS" ||
+                node.id === "FARM_GEAR") {
               return item.subCategory === node.id;
             }
 
@@ -316,14 +298,6 @@ export const useItems = () => {
                 ]
               },
               {
-                id: "FARM_GEAR",
-                label: "Farm Gear",
-                children: [
-                  { id: 9998, label: "Water Sprinkler" },
-                  { id: 9999, label: "Umbrella" }
-                ]
-              },
-              {
                 id: ID_CROP_CATEGORIES.BASIC_SEED,
                 label: "Basic Crops",
                 children: [
@@ -357,7 +331,7 @@ export const useItems = () => {
                   { id: ID_PRODUCE_ITEMS.LAVENDER, label: "Lavender" },
                   { id: ID_PRODUCE_ITEMS.DRAGONFRUIT, label: "Dragon Fruit" },
                 ]
-              },
+              }
             ],
           },
           {
@@ -396,6 +370,10 @@ export const useItems = () => {
                 label: "Scarecrows",
                 children: [
                   { id: ID_POTION_ITEMS.SCARECROW, label: "Scarecrow" },
+                  { id: 9978, label: "Tier 2 Scarecrow" },
+                  { id: 9977, label: "Tier 3 Scarecrow" },
+                  { id: 9976, label: "Max Tier Scarecrow" },
+                  { id: 9979, label: "Ladybug Scarecrow" }
                 ]
               },
               {
@@ -403,20 +381,6 @@ export const useItems = () => {
                 label: "Ladybugs",
                 children: [
                   { id: ID_POTION_ITEMS.LADYBUG, label: "Ladybug" },
-                ]
-              },
-              {
-                id: "MATERIALS",
-                label: "Materials",
-                children: [
-                  { id: 9991, label: "Axe" },
-                  { id: 9992, label: "Pickaxe" },
-                  { id: 9993, label: "Wood Log" },
-                  { id: 9994, label: "Stone" },
-                  { id: 9995, label: "Sticks" },
-                  { id: 9990, label: "Stone Pipe" },
-                  { id: 9996, label: "Iron Ore" },
-                  { id: 9997, label: "Gold Ore" }
                 ]
               }
             ]
@@ -450,6 +414,67 @@ export const useItems = () => {
                 children: [
                   { id: ID_FISH_ITEMS.NORMAL_FISH, label: "Normal fish" }
                 ]
+              },
+              {
+                id: "FARM_GEAR",
+                label: "Farm Gear",
+                children: [
+                  { id: 9998, label: "Water Sprinkler" },
+                  { id: 9999, label: "Umbrella" },
+                  { id: 9987, label: "Easter Basket" },
+                  { id: 9953, label: "Bucket" },
+                  { id: 9954, label: "Magic Ring" },
+                  { id: 9955, label: "Yarn" },
+                  { id: 9940, label: "Egg Basket" },
+                  { id: 9975, label: "Tesla Tower" },
+                  { id: 9966, label: "Crab Pot" },
+                  { id: 9965, label: "Rowboat" },
+                  { id: 9964, label: "Sailboat" },
+                  { id: 9963, label: "Trawler" }
+                ]
+              },
+              {
+                id: "MATERIALS",
+                label: "Materials",
+                children: [
+                  { id: 9991, label: "Axe" },
+                  { id: 9992, label: "Pickaxe" },
+                  { id: 9981, label: "Iron Pickaxe" },
+                  { id: 9993, label: "Wood Log" },
+                  { id: 9942, label: "Special Wood" },
+                  { id: 9994, label: "Stone" },
+                  { id: 9995, label: "Sticks" },
+                  { id: 9989, label: "Wooden Plank" },
+                  { id: 9990, label: "Stone Pipe" },
+                  { id: 9996, label: "Iron Ore" },
+                  { id: 9997, label: "Gold Ore" },
+                  { id: 9960, label: "Blue Gem" },
+                  { id: 9961, label: "Red Gem" },
+                  { id: 9962, label: "Green Gem" },
+                  { id: 9963, label: "Yellow Gem" },
+                  { id: 9950, label: "Hearty Stew" },
+                  { id: 9951, label: "Fish & Chips" },
+                  { id: 9952, label: "Tomato Soup" },
+                  { id: 9988, label: "Bug Net" },
+                  { id: 9982, label: "Red Egg" },
+                  { id: 9983, label: "Yellow Egg" },
+                  { id: 9984, label: "Blue Egg" },
+                  { id: 9985, label: "Purple Egg" },
+                  { id: 9986, label: "Green Egg" },
+                  { id: 9939, label: "Wool" },
+                  { id: 9938, label: "Milk" },
+                  { id: 9941, label: "Normal Egg" },
+                  { id: 9974, label: "Copper Ore" },
+                  { id: 9973, label: "Coal" },
+                  { id: 9972, label: "Hemp" },
+                  { id: 9971, label: "Cotton" },
+                  { id: 9970, label: "Rope" },
+                  { id: 9969, label: "Canvas" },
+                  { id: 9968, label: "Copper Nails" },
+                  { id: 9967, label: "Steel Plate" },
+                  { id: 9962, label: "Engine" },
+                  { id: 9956, label: "Leaves" }
+                ]
               }
             ]
           }
@@ -468,11 +493,13 @@ export const useItems = () => {
     fish: items.filter(item => item.category === ID_ITEM_CATEGORIES.FISH),
     chests: items.filter(item => item.category === ID_ITEM_CATEGORIES.CHEST),
     potions: items.filter(item => item.category === ID_ITEM_CATEGORIES.POTION),
+    items: items.filter(item => item.category === ID_ITEM_CATEGORIES.LOOT || item.label?.includes('CHEST') || item.category === 'ITEM' || item.category === SB_CAT),
+    loot: items.filter(item => item.category === ID_ITEM_CATEGORIES.LOOT || item.category === 'ITEM' || item.category === SB_CAT),
   };
 
   return {
     // Tree structure (same as ALL_ITEM_TREE format)
-    items: itemsTree,
+    itemsTree: itemsTree,
     seeds: itemsByCategory.seeds,
     // Legacy flat structure
     ...itemsByCategory,
@@ -481,4 +508,5 @@ export const useItems = () => {
     error,
     refetch: fetchItems,
   };
+
 };

@@ -17,7 +17,8 @@ const VendorMenu = ({
   onRevealClicked,
   isRevealing = false,
   isLoading = false,
-  buyingItem = null
+  buyingItem = null,
+  tutorialStep = 0
 }) => {
   const seedOrder = [
     ID_CROP_CATEGORIES.FEEBLE_SEED,
@@ -65,14 +66,14 @@ const VendorMenu = ({
                 isThisSeedBuying
                   ? "Buying..."
                   : isThisTierRevealing
-                    ? "Revealing..."
+                    ? "Ripping open..."
                     : isPendingTier
-                      ? `Reveal ${totalCount} ${seedStatus[id].label}`
+                      ? `Rip open ${totalCount} ${seedStatus[id].label}`
                       : seedStatus[id].status === SEED_PACK_STATUS.NORMAL
                         ? seedStatus[id].label
                         : seedStatus[id].status === SEED_PACK_STATUS.COMMITING
                           ? "Committing..."
-                          : `Reveal ${seedStatus[id].count} ${seedStatus[id].label}`
+                          : `Rip open ${seedStatus[id].count} ${seedStatus[id].label}`
               }
               key={id}
               onClick={() => {
@@ -98,7 +99,7 @@ const VendorMenu = ({
         disabled={hasPendingRequests || buyingItem !== null || isRevealing}
       ></BaseButton>
       <ErrorLabel
-        text={<div>Caution: Please reveal <br/>within ~8 minutes!</div>}
+        text={<div>Caution: Please rip open <br/>within ~8 minutes!</div>}
       ></ErrorLabel>
     </div>
   );

@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { useDispatch } from 'react-redux';
 import { setHasProfile, fetchUserDataSuccess } from '../solana/store/slices/userSlice';
 import { fetchBalancesSuccess } from '../solana/store/slices/balanceSlice';
+import { auth } from '../firebase';
+import { onAuthStateChanged } from 'firebase/auth';
 
 // --- SANDBOX HELPERS ---
 const generateFakeCrops = () => {
@@ -27,27 +29,61 @@ export const useSolanaWallet = () => {
 
   // 2. Force the App to think we are logged in with a profile
   useEffect(() => {
-    // Set a fake profile in Redux
-    dispatch(setHasProfile(true));
-    
-    // Set fake user stats (Level 99, lots of XP)
-    dispatch(fetchUserDataSuccess({
-      name: 'Logan_Dev',
-      level: 99,
-      xp: 5000,
-      active_plot_ids: [0, 1, 2],
-      user_crops: generateFakeCrops(),
-      locked_tokens: "1000000000",
-      xtoken_share: "500000000"
-    }));
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        const storedLockedHoney = localStorage.getItem('sandbox_locked_honey') || "0.00";
+        dispatch(setHasProfile(true));
+        dispatch(fetchUserDataSuccess({
+          name: user.displayName || 'Player',
+          level: 1,
+          xp: 0,
+          active_plot_ids: [],
+          user_crops: generateFakeCrops(),
+          locked_tokens: (parseFloat(storedLockedHoney) * 1e9).toString(),
+          xtoken_share: "0"
+        }));
+        const storedHoney = localStorage.getItem('sandbox_honey') || "0.00";
+        dispatch(fetchBalancesSuccess({
+          gameToken: storedHoney,
+          stakedBalance: storedLockedHoney,
+          xTokenShare: "0.00",
+          solBalance: "0.00"
+        }));
+      } else {
+        dispatch(setHasProfile(false));
+      }
+    });
+    return () => unsubscribe();
+  }, [dispatch]);
 
-    // Set fake balances (10,000 Game Tokens and 50 SOL)
-    dispatch(fetchBalancesSuccess({
-      gameToken: "10000.00",
-      stakedBalance: "1000.00",
-      xTokenShare: "500.00",
-      solBalance: "50.00"
-    }));
+  useEffect(() => {
+    const handleHoney = (e) => {
+      const currentLocked = localStorage.getItem('sandbox_locked_honey') || "0.00";
+      dispatch(fetchBalancesSuccess({
+        gameToken: e.detail,
+        stakedBalance: currentLocked,
+        xTokenShare: "0.00",
+        solBalance: "0.00"
+      }));
+    };
+    
+    const handleLockedHoney = (e) => {
+      const currentHoney = localStorage.getItem('sandbox_honey') || "0.00";
+      dispatch(fetchBalancesSuccess({
+        gameToken: currentHoney,
+        stakedBalance: e.detail,
+        xTokenShare: "0.00",
+        solBalance: "0.00"
+      }));
+    };
+    
+    window.addEventListener('sandboxHoneyChanged', handleHoney);
+    window.addEventListener('sandboxLockedHoneyChanged', handleLockedHoney);
+    
+    return () => {
+      window.removeEventListener('sandboxHoneyChanged', handleHoney);
+      window.removeEventListener('sandboxLockedHoneyChanged', handleLockedHoney);
+    }
   }, [dispatch]);
 
   // 3. Fake functions so buttons don't crash when clicked
@@ -98,4 +134,3 @@ export const useSolanaWallet = () => {
     isWalletReady: true
   };
 };
-

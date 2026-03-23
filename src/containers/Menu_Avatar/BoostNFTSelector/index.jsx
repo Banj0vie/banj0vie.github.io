@@ -3,41 +3,49 @@ import React, { useState, useEffect } from 'react';
 import BaseDialog from '../../_BaseDialog';
 import './style.css';
 import { useSolanaWallet } from '../../../hooks/useSolanaWallet';
-import { useEquipmentRegistry } from '../../../hooks/useContracts';
 import CardView from '../../../components/boxes/CardView';
 import BaseButton from '../../../components/buttons/BaseButton';
 
 const BoostNFTSelector = ({ onClose, onSelect, slotIndex, equippedAvatars = [] }) => {
   const { account } = useSolanaWallet();
-  const { setAvatar, getOwnedBoostNFTs, getContract } = useEquipmentRegistry();
   // const { invalidate } = useAppData();
   const [ownedNFTs, setOwnedNFTs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
   useEffect(() => {
     const fetchOwnedNFTs = async () => {
-      if (!account) {
-        setLoading(false);
-        return;
-      }
-
       try {
         setLoading(true);
         setError(null);
 
-        const nfts = await getOwnedBoostNFTs(account);
+        // Provide a static list of default characters instead of fetching from the blockchain
+        let nfts = [
+          {
+            tokenId: 1, // Unique ID for this custom character
+            name: "Worker Bee",
+            image: "/pfp/beepfp.png", // Path to your public folder image
+            boostPercentage: 5.0
+          },
+          {
+            tokenId: 2, 
+            name: "Golden Bee",
+            image: "/pfp/beepfp.png", // Path to your public folder image
+            boostPercentage: 15.0
+          }
+        ];
         
-        // Filter out NFTs that are already equipped as avatars
+        // Filter out characters that are already equipped
         const equippedTokenIds = equippedAvatars
           .filter(avatar => !avatar.isEmpty && avatar.tokenId)
-          .map(avatar => BigInt(avatar.tokenId));
+          .map(avatar => String(avatar.tokenId));
         
-        const availableNFTs = (nfts || []).filter(nft => 
-          !equippedTokenIds.includes(BigInt(nft.tokenId))
+        const availableNFTs = nfts.filter(nft => 
+          !equippedTokenIds.includes(String(nft.tokenId))
         );
         setOwnedNFTs(availableNFTs);
       } catch (err) {
-        console.error('Failed to fetch owned NFTs:', err);
+        console.error('Failed to load characters:', err);
         setError(err.message);
         setOwnedNFTs([]);
       } finally {
@@ -46,38 +54,28 @@ const BoostNFTSelector = ({ onClose, onSelect, slotIndex, equippedAvatars = [] }
     };
 
     fetchOwnedNFTs();
-  }, [account, equippedAvatars]); // Removed getOwnedBoostNFTs from deps to prevent infinite loops (it's a stub)
+  }, [equippedAvatars]);
 
   const handleSelectNFT = async (nft) => {
     try {
-      // Get the BoostNFT contract address
-      const boostNFT = getContract('BOOST_NFT');
-      if (!boostNFT) {
-        throw new Error('BoostNFT contract not available');
-      }
-
-      // Equip the NFT to the selected slot
-      await setAvatar(slotIndex, boostNFT.address, nft.tokenId);
-
-      // Invalidate cached avatars/boost and notify listeners to refresh UI
-      // try {
-      //   if (invalidate) {
-      //     invalidate('avatars');
-      //     invalidate('boost');
-      //   }
-      // } catch {}
+      // Save to local storage so the sandbox remembers your equipped character
+      const sandboxAvatars = JSON.parse(localStorage.getItem('sandbox_avatars') || '{}');
+      sandboxAvatars[slotIndex] = nft;
+      localStorage.setItem('sandbox_avatars', JSON.stringify(sandboxAvatars));
+      
       try {
         window.dispatchEvent(new CustomEvent('avatarsUpdated'));
       } catch {}
       
-      // Call the onSelect callback to update the parent
-      onSelect(nft);
+      if (typeof onSelect === 'function') {
+        onSelect(nft);
+      }
       
       // Close the dialog
       onClose();
     } catch (error) {
-      console.error('Failed to equip NFT:', error);
-      setError('Failed to equip NFT. Please try again.');
+      console.error('Failed to equip character:', error);
+      setError('Failed to equip character. Please try again.');
     }
   };
 
@@ -87,12 +85,12 @@ const BoostNFTSelector = ({ onClose, onSelect, slotIndex, equippedAvatars = [] }
         <CardView className="p-0">
           <div className="character-list">
             {loading ? (
-              <div className="loading">Loading your NFTs...</div>
+              <div className="loading">Loading your characters...</div>
             ) : error ? (
               <div className="error">Error: {error}</div>
             ) : ownedNFTs.length === 0 ? (
               <div className="no-nfts">
-                <p>You don't own any BoostNFTs yet.</p>
+                <p>You don't have any characters available to equip.</p>
               </div>
             ) : (
               ownedNFTs.map((nft) => (

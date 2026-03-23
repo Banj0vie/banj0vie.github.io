@@ -11,7 +11,7 @@ import { useFarming } from "../hooks/useContracts";
 import { useNotification } from "../contexts/NotificationContext";
 import { CropItemArrayClass } from "../models/crop";
 import { handleContractError } from "../utils/errorHandler";
-import { ID_POTION_ITEMS, ID_PRODUCE_ITEMS, ID_CHEST_ITEMS, ID_FISH_ITEMS } from "../constants/app_ids";
+import { ID_POTION_ITEMS, ID_PRODUCE_ITEMS, ID_CHEST_ITEMS, ID_FISH_ITEMS, ID_SEEDS, ID_BAIT_ITEMS } from "../constants/app_ids";
 import { ALL_ITEMS } from "../constants/item_data";
 import { clampVolume, getGrowthTime, getSubtype } from "../utils/basic";
 import { ONE_SEED_HEIGHT, ONE_SEED_WIDTH } from "../constants/item_seed";
@@ -22,7 +22,636 @@ import BaseDialog from "../containers/_BaseDialog";
 import BaseButton from "../components/buttons/BaseButton";
 import ChestRollingDialog from "../containers/Menu_Inventory/ChestRollingDialog";
 import Forest from "./forest";
+import Mine from "./mine";
+import AnimalFarm from "./animal";
 import AdminPanel from "./index";
+import WeatherOverlay, { getSimulatedDateInfo, getWeatherForDay } from "../components/WeatherOverlay";
+
+export const getQuestData = () => [
+  {
+    id: "q1_pabee_intro",
+    type: "main",
+    sender: "Pabee",
+    subject: "Welcome to the Farm",
+    body: [
+      "Hey son, thanks for watching over my farm! There is alot for you to do and alot for you achieve, this is your farm now so make it yours and make it the best farm it can be!",
+      "Ive left you some supplies make sure to read what they do...",
+      "Also before I left the cat ran away again, please leave him a bowl of water and a nice fish, he should come back when he smells it, thank you and enjoy the wonders of being a farmer!"
+    ],
+    rewards: [
+      { id: 9993, count: 12, name: "Wood Logs", image: "/images/forest/wood.png" },
+      { id: 9994, count: 6, name: "Stones", image: "/images/forest/rock.png" },
+      { id: ID_SEEDS?.PUMPKIN || 131846, count: 1, name: "Pumpkin Seed", image: "/images/items/seeds.png" }
+    ],
+    reqs: [],
+    unlockCondition: (step, completed) => true
+  },
+  {
+    id: "q2_rebuild_tavern",
+    type: "main",
+    sender: "Great Uncle Sir Bee",
+    subject: "Rebuild the Tavern",
+    body: [
+      "Nephew.",
+      "The local Tavern has fallen into ruin. It's an absolute disgrace to our family name.",
+      "I need you to gather materials to fix it up so the Potion Master can resume his brewing.",
+      "Bring me 50 Wood Logs, 50 Stones, and 10 Potatoes. Do not dawdle."
+    ],
+    rewards: [
+      { id: 'honey', count: 500, name: "Honey", image: "/images/items/honey.png" }
+    ],
+    reqs: [
+      { id: 9993, count: 50, name: "Wood Logs", image: "/images/forest/wood.png" },
+      { id: 9994, count: 50, name: "Stones", image: "/images/forest/rock.png" },
+      { id: ID_PRODUCE_ITEMS?.POTATO || 131586, count: 10, name: "Potatoes", image: ALL_ITEMS[ID_PRODUCE_ITEMS?.POTATO]?.image || "/images/items/potato.png" }
+    ],
+    unlockCondition: (step, completed) => completed.includes("q1_pabee_intro") && step >= 32
+  },
+  {
+    id: "q3_potion_master",
+    type: "main",
+    sender: "Potion Master",
+    subject: "Alchemical Needs",
+    body: [
+      "Ah, the new farmer! The Tavern is looking much better.",
+      "Your grandfather used to supply me with the rarest ingredients for my brews.",
+      "I am currently working on a highly volatile concoction and I desperately need 15 Ladybugs.",
+      "Catch them in the forest bushes using a Bug Net and I'll share a prototype potion with you."
+    ],
+    rewards: [
+      { id: ID_POTION_ITEMS?.POTION_GROWTH_ELIXIR || 132104, count: 1, name: "Growth Elixir", image: ALL_ITEMS[ID_POTION_ITEMS?.POTION_GROWTH_ELIXIR]?.image || "/images/items/potion1.png" }
+    ],
+    reqs: [
+      { id: ID_POTION_ITEMS?.LADYBUG || 132101, count: 15, name: "Ladybugs", image: "/images/items/ladybug.png" }
+    ],
+    unlockCondition: (step, completed) => completed.includes("q2_rebuild_tavern")
+  },
+  {
+    id: "q3b_pabee_fish_fertilizer",
+    type: "main",
+    sender: "Pabee",
+    subject: "A Secret Farming Trick",
+    body: [
+      "Hey son! I see you're getting the hang of farming. You're level 5 now!",
+      "I wanted to share an old family secret with you.",
+      "Before you place dirt in a hole, try adding a fish first! It acts as an amazing fertilizer and will make your crops grow bigger and faster.",
+      "Give it a try next time you plant something!"
+    ],
+    rewards: [
+      { id: ID_BAIT_ITEMS?.BAIT_II || 30002, count: 3, name: "Bait II", image: "/images/items/seeds.png" }
+    ],
+    reqs: [],
+    unlockCondition: (step, completed) => {
+      const xp = parseInt(localStorage.getItem('sandbox_farming_xp') || '0', 10);
+      const level = Math.floor(Math.sqrt((xp || 0) / 150)) + 1;
+      return level >= 5;
+    }
+  },
+  {
+    id: "q4_prezibee_dock",
+    type: "main",
+    sender: "Mayor Prezibee",
+    subject: "Town Appreciation",
+    body: [
+      "Dear Farmer,",
+      "On behalf of the entire valley, I want to thank you for repairing the town dock! The anglers are thrilled.",
+      "Please accept this premium bait as a token of our gratitude. It should make fishing a breeze!"
+    ],
+    rewards: [
+      { id: ID_BAIT_ITEMS?.BAIT_I || 30001, count: 1, name: "Bait I", image: "/images/items/seeds.png" }
+    ],
+    reqs: [],
+    unlockCondition: (step, completed) => localStorage.getItem('sandbox_dock_repaired') === 'true' || localStorage.getItem('sandbox_dock_unlocked') === 'true'
+  },
+  {
+    id: "q7_a_bigger_catch",
+    type: "fishing",
+    sender: "Fisherman Finn",
+    subject: "A Bigger Catch",
+    body: [
+      "Not bad, kid! You've got a real knack for angling.",
+      "But if you want to catch the really big ones, you can't just stand on the dock all day.",
+      "Gather some materials so we can build you a Rowboat. Bring me 30 Wood Logs, 20 Sticks, and 10 Iron Ore!"
+    ],
+    rewards: [
+      { id: ID_BAIT_ITEMS?.BAIT_II || 30002, count: 5, name: "Bait II", image: "/images/items/seeds.png" },
+      { id: 'honey', count: 500, name: "Honey", image: "/images/items/honey.png" }
+    ],
+    reqs: [
+      { id: 9993, count: 30, name: "Wood Logs", image: "/images/forest/wood.png" },
+      { id: 9995, count: 20, name: "Sticks", image: "/images/forest/wood.png" },
+      { id: 9996, count: 10, name: "Iron Ore", image: "/images/forest/rock.png" }
+    ],
+    unlockCondition: (step, completed) => completed.includes("q6_hungry_town")
+  },
+  {
+    id: "q8_first_harvest",
+    type: "farming",
+    sender: "Farmer Bob",
+    subject: "Your First Big Harvest",
+    body: [
+      "Howdy neighbor!",
+      "I see you've got the plots cleared out. Let's get to work.",
+      "Grow 10 Potatoes and bring them to me. I'll give you some seeds to keep you going!"
+    ],
+    rewards: [
+      { id: ID_SEEDS?.CARROT || 131848, count: 5, name: "Carrot Seeds", image: "/images/items/seeds.png" },
+      { id: 'honey', count: 200, name: "Honey", image: "/images/items/honey.png" }
+    ],
+    reqs: [
+      { id: ID_PRODUCE_ITEMS?.POTATO || 131586, count: 10, name: "Potatoes", image: ALL_ITEMS[ID_PRODUCE_ITEMS?.POTATO]?.image || "/images/items/potato.png" }
+    ],
+    unlockCondition: (step, completed) => completed.includes("q2_rebuild_tavern")
+  },
+  {
+    id: "q9_cornucopia",
+    type: "farming",
+    sender: "Tavern Barkeep",
+    subject: "Salad Days",
+    body: [
+      "We're updating the Tavern menu and we need fresh greens!",
+      "Can you supply us with 20 Corn and 10 Tomatoes?",
+      "I'll trade you some shiny Bronze Chests for them."
+    ],
+    rewards: [
+      { id: ID_CHEST_ITEMS?.CHEST_BRONZE || 20001, count: 2, name: "Bronze Chests", image: "/images/items/chest.png" }
+    ],
+    reqs: [
+      { id: ID_PRODUCE_ITEMS?.CORN || 131590, count: 20, name: "Corn", image: ALL_ITEMS[ID_PRODUCE_ITEMS?.CORN]?.image || "/images/items/corn.png" },
+      { id: ID_PRODUCE_ITEMS?.TOMATO || 131589, count: 10, name: "Tomatoes", image: ALL_ITEMS[ID_PRODUCE_ITEMS?.TOMATO]?.image || "/images/items/tomato.png" }
+    ],
+    unlockCondition: (step, completed) => completed.includes("q8_first_harvest")
+  },
+  {
+    id: "q10_crab_mentality",
+    type: "fishing",
+    sender: "Fisherman Finn",
+    subject: "Crab Mentality",
+    body: [
+      "Hook and line is fine, but if you want passive income, you need Crab Pots.",
+      "Craft 3 Crab Pots and set them up. Bring me 5 Crabs to prove they work!"
+    ],
+    rewards: [
+      { id: 'honey', count: 250, name: "Honey", image: "/images/items/honey.png" },
+      { id: ID_CHEST_ITEMS?.CHEST_BRONZE || 20001, count: 1, name: "Bronze Chest", image: "/images/items/chest.png" }
+    ],
+    reqs: [
+      { id: 9966, count: 3, name: "Crab Pots", image: "/images/items/crab_pot.png" },
+      { id: 10002, count: 5, name: "Crabs", image: "/images/items/fish.png" }
+    ],
+    unlockCondition: (step, completed) => completed.includes("q7_a_bigger_catch")
+  },
+  {
+    id: "q11_rainy_day",
+    type: "fishing",
+    sender: "Potion Master",
+    subject: "Rainy Day Blues",
+    body: [
+      "I need the scales of a Gloomfish for a new potion.",
+      "They only surface when it's raining. Take your Rowboat out on the next rainy day and catch one!"
+    ],
+    rewards: [
+      { id: ID_POTION_ITEMS?.POTION_GROWTH_ELIXIR || 132104, count: 2, name: "Growth Elixir", image: "/images/items/potion1.png" },
+      { id: 9998, count: 1, name: "Water Sprinkler", image: "/images/items/watersprinkler.png" }
+    ],
+    reqs: [
+      { id: 10003, count: 1, name: "Gloomfish", image: "/images/items/fish.png" }
+    ],
+    unlockCondition: (step, completed) => completed.includes("q10_crab_mentality")
+  },
+  {
+    id: "q12_sailing",
+    type: "fishing",
+    sender: "Great Uncle Sir Bee",
+    subject: "Sailing the Open Seas",
+    body: [
+      "A Rowboat? How pedestrian. If you want to make this family proud, you need a vessel worthy of the open ocean.",
+      "Build a Sailboat so you can catch the real prizes."
+    ],
+    rewards: [
+      { id: ID_BAIT_ITEMS?.BAIT_III || 30003, count: 10, name: "Bait III", image: "/images/items/seeds.png" }
+    ],
+    reqs: [
+      { id: 9964, count: 1, name: "Sailboat", image: "/images/items/sailboat.png" }
+    ],
+    unlockCondition: (step, completed) => completed.includes("q11_rainy_day")
+  },
+  {
+    id: "q13_storm_chaser",
+    type: "fishing",
+    sender: "Fisherman Finn",
+    subject: "Storm Chaser",
+    body: [
+      "You're crazy if you go out there during a lightning storm... but if you do, the legendary Spark Eel is said to ride the waves.",
+      "You'll need a Tesla Tower on your boat to survive!"
+    ],
+    rewards: [
+      { id: 9954, count: 1, name: "Magic Ring", image: "/images/items/seeds.png" },
+      { id: ID_CHEST_ITEMS?.CHEST_GOLD || 20003, count: 1, name: "Gold Chest", image: "/images/items/chest.png" }
+    ],
+    reqs: [
+      { id: 10004, count: 1, name: "Spark Eel", image: "/images/items/fish.png" }
+    ],
+    unlockCondition: (step, completed) => completed.includes("q12_sailing")
+  },
+  {
+    id: "q14_industrial",
+    type: "main",
+    sender: "Mayor Prezibee",
+    subject: "Industrial Revolution",
+    body: [
+      "The town is booming, and we need more resources.",
+      "Forging Steel Plates from Iron and Coal will let you build the ultimate fishing vessel."
+    ],
+    rewards: [
+      { id: 9962, count: 1, name: "Engine", image: "/images/crafting/engine.png" }
+    ],
+    reqs: [
+      { id: 9967, count: 50, name: "Steel Plates", image: "/images/crafting/steel_plate.png" }
+    ],
+    unlockCondition: (step, completed) => completed.includes("q13_storm_chaser")
+  },
+  {
+    id: "q15_trawler",
+    type: "fishing",
+    sender: "Fisherman Finn",
+    subject: "Industrial Fishing",
+    body: [
+      "With that Engine, you can finally build the Trawler.",
+      "It's massive, loud, and can reach the deepest parts of the ocean."
+    ],
+    rewards: [
+      { id: 'honey', count: 1000, name: "Honey", image: "/images/items/honey.png" }
+    ],
+    reqs: [
+      { id: 9963, count: 1, name: "Trawler", image: "/images/items/trawler.png" }
+    ],
+    unlockCondition: (step, completed) => completed.includes("q14_industrial")
+  },
+  {
+    id: "q5_first_catch",
+    type: "fishing",
+    sender: "Fisherman Finn",
+    subject: "The Basics of Angling",
+    body: [
+      "Ahoy there, Farmer!",
+      "I heard you finally fixed up the old dock. Bout time!",
+      "Why don't you try out that bait the Mayor gave you? Cast a line off the dock and bring me 3 Fish. Let's see what you've got!"
+    ],
+    rewards: [
+      { id: ID_BAIT_ITEMS?.BAIT_I || 30001, count: 3, name: "Bait I", image: "/images/items/seeds.png" },
+      { id: 'honey', count: 150, name: "Honey", image: "/images/items/honey.png" }
+    ],
+    reqs: [
+      { 
+        id: 'tracked_fish_q5', 
+        count: 3, 
+        name: "Any Fish", 
+        image: ALL_ITEMS[ID_FISH_ITEMS?.NORMAL_FISH || 10001]?.image || "/images/items/fish.png",
+        fn: () => {
+          const start = parseInt(localStorage.getItem('q5_start_catches') || '0', 10);
+          const current = parseInt(localStorage.getItem('sandbox_fishing_catches') || '0', 10);
+          return current - start;
+        }
+      }
+    ],
+    unlockCondition: (step, completed) => {
+      const unlocked = localStorage.getItem('sandbox_dock_repaired') === 'true' || localStorage.getItem('sandbox_dock_unlocked') === 'true';
+      if (unlocked && localStorage.getItem('q5_start_catches') === null) localStorage.setItem('q5_start_catches', localStorage.getItem('sandbox_fishing_catches') || '0');
+      return unlocked;
+    }
+  },
+  {
+    id: "q6_hungry_town",
+    type: "fishing",
+    sender: "Tavern Barkeep",
+    subject: "Fish Fry Friday!",
+    body: [
+      "Hey Farmer,",
+      "The town is craving a massive fish fry, but Finn is too busy untangling his nets.",
+      "Can you head to the pond and catch 5 more Fish for us? I'll make it worth your while!"
+    ],
+    rewards: [
+      { id: ID_CHEST_ITEMS?.CHEST_BRONZE || 20001, count: 1, name: "Bronze Chest", image: "/images/items/chest.png" },
+      { id: 'honey', count: 300, name: "Honey", image: "/images/items/honey.png" }
+    ],
+    reqs: [
+      { 
+        id: 'tracked_fish_q6', 
+        count: 5, 
+        name: "Any Fish", 
+        image: ALL_ITEMS[ID_FISH_ITEMS?.NORMAL_FISH || 10001]?.image || "/images/items/fish.png",
+        fn: () => {
+          const start = parseInt(localStorage.getItem('q6_start_catches') || '0', 10);
+          const current = parseInt(localStorage.getItem('sandbox_fishing_catches') || '0', 10);
+          return current - start;
+        }
+      }
+    ],
+    unlockCondition: (step, completed) => {
+      const unlocked = completed.includes("q5_first_catch");
+      if (unlocked && localStorage.getItem('q6_start_catches') === null) localStorage.setItem('q6_start_catches', localStorage.getItem('sandbox_fishing_catches') || '0');
+      return unlocked;
+    }
+  },
+  {
+    id: "q16_kraken",
+    type: "fishing",
+    sender: "Mayor Prezibee",
+    subject: "Monster of the Deep",
+    body: [
+      "Something has been sinking our trade ships in the Deep Ocean.",
+      "Take the Trawler out and catch the Kraken. Be warned, it will put up the fight of a lifetime."
+    ],
+    rewards: [
+      { id: 9961, count: 5, name: "Red Gem", image: "/images/items/seeds.png" }
+    ],
+    reqs: [
+      { id: 10005, count: 1, name: "Kraken", image: "/images/items/fish.png" }
+    ],
+    unlockCondition: (step, completed) => completed.includes("q15_trawler")
+  },
+  {
+    id: "q9b_ladybug_basics",
+    type: "farming",
+    sender: "Farmer Bob",
+    subject: "Ladybug Basics",
+    body: [
+      "Looks like we have some pests starting to snoop around the crops!",
+      "You should craft a Bug Net and head over to the Forest. Search the bushes there to catch some Ladybugs.",
+      "Bring me 5 Ladybugs and 1 Bug Net so I know you're prepared!"
+    ],
+    rewards: [
+      { id: 'honey', count: 150, name: "Honey", image: "/images/items/honey.png" }
+    ],
+    reqs: [
+      { id: 9988, count: 1, name: "Bug Net", image: ALL_ITEMS[9988]?.image || "/images/forest/net.png" },
+      { id: ID_POTION_ITEMS?.LADYBUG || 132101, count: 5, name: "Ladybugs", image: ALL_ITEMS[ID_POTION_ITEMS?.LADYBUG]?.image || "/images/items/ladybug.png" }
+    ],
+    unlockCondition: (step, completed) => completed.includes("q9_cornucopia")
+  },
+  {
+    id: "q10_scarecrow_basics",
+    type: "farming",
+    sender: "Farmer Bob",
+    subject: "Scarecrow Basics",
+    body: [
+      "Those darn crows are at it again!",
+      "Can you craft 1 basic scarecrow to place in your farm to help protect crops?"
+    ],
+    rewards: [
+      { id: ID_SEEDS?.CARROT || 131848, count: 5, name: "Carrot Seeds", image: "/images/items/seeds.png" },
+      { id: 'honey', count: 200, name: "Honey", image: "/images/items/honey.png" }
+    ],
+    reqs: [
+      { id: ID_POTION_ITEMS?.SCARECROW || 132102, count: 1, name: "Scarecrow", image: ALL_ITEMS[ID_POTION_ITEMS?.SCARECROW]?.image || '/images/scarecrow/Scarecrow1.png' }
+    ],
+    unlockCondition: (step, completed) => completed.includes("q9b_ladybug_basics")
+  },
+  {
+    id: "q11_grow_strong_crops",
+    type: "farming",
+    sender: "Queen Sage",
+    subject: "Elixir Testing",
+    body: [
+      "Greetings Farmer.",
+      "I require some testing of my latest elixir, can you apply 3 growth elixirs to the crops and see what happens?"
+    ],
+    rewards: [
+      { id: 9970, count: 5, name: "Hemp Rope", image: "/images/crafting/hemp_rope.png" },
+    ],
+    reqs: [
+      { id: ID_POTION_ITEMS?.POTION_GROWTH_ELIXIR || 132104, count: 3, name: "Growth Elixirs", image: ALL_ITEMS[ID_POTION_ITEMS?.POTION_GROWTH_ELIXIR]?.image || "/images/items/potion1.png" }
+    ],
+    unlockCondition: (step, completed) => completed.includes("q10_scarecrow_basics")
+  },
+  {
+    id: "q12_golden_plots",
+    type: "farming",
+    sender: "Great Uncle Sir Bee",
+    subject: "Gold Tier Crops",
+    body: [
+      "I see you have been doing well with farming so far, however its time to get serious",
+      "I require you to harvest 3 golden tier crops of any kind for further farming analysis."
+    ],
+    rewards: [
+      { id: ID_BAIT_ITEMS?.BAIT_I || 30001, count: 5, name: "Bait I", image: "/images/items/seeds.png" },
+      { id: 'honey', count: 350, name: "Honey", image: "/images/items/honey.png" }
+    ],
+    reqs: [
+      { name: "Gold Tier Crops", fn: (sandboxLoot, sandboxProduce) => {
+          for (const key in sandboxProduce) {
+              if (Array.isArray(sandboxProduce[key])) {
+                  if (sandboxProduce[key].some(crop => crop.type === 3)) return true;
+              } else if (sandboxProduce[key] && typeof sandboxProduce[key] === 'object' && sandboxProduce[key].type === 3) {
+                  return true;
+              }
+          }
+          return false;
+       }
+      }
+    ],
+    unlockCondition: (step, completed) => completed.includes("q11_grow_strong_crops")
+  },
+  {
+    id: "q13_more_scarecrows",
+    type: "farming",
+    sender: "Farmer Bob",
+    subject: "Ladybug Scarecrow",
+    body: [
+      "Did you know some items can be crafted as a mixed item to combine their perks?",
+      "By combining a Scarecrow and your caught Ladybugs, you can craft a Ladybug Scarecrow!",
+      "This mixed item protects against crows AND wards off other pests while attracting friendly bugs. Craft 1 and show me!"
+    ],
+    rewards: [
+      { id: 9971, count: 10, name: "Cotton", image: "/images/crafting/cotton.png" }
+    ],
+    reqs: [
+      { id: 9979, count: 1, name: "Ladybug Scarecrow", image: ALL_ITEMS[9979]?.image || '/images/scarecrow/ladybug_scarecrow.png' }
+    ],
+    unlockCondition: (step, completed) => completed.includes("q12_golden_plots")
+  },
+  {
+    id: "q14_advanced_automation",
+    type: "farming",
+    sender: "Farmer John",
+    subject: "Automation",
+    body: [
+      "Wow you are doing great on your farm!",
+      "I need you to put these sprinklers around to see how well they protect the land against deydration from heat, can you place 3 around for me?",
+    ],
+    rewards: [
+      { id: 'honey', count: 400, name: "Honey", image: "/images/items/honey.png" }
+    ],
+    reqs: [
+      { id: 9998, count: 3, name: "Water Sprinklers", image: ALL_ITEMS[9998]?.image || '/images/items/watersprinkler.png' }
+    ],
+    unlockCondition: (step, completed) => completed.includes("q13_more_scarecrows")
+  },
+  {
+    id: "q15_windmill",
+    type: "farming",
+    sender: "Farmer Bill",
+    subject: "Windmill Request",
+    body: [
+      "Wow, this farm is looking great!",
+      "I have a request for something that may be difficult, could you setup a windwill on your farm? I would love to see if this can affect the efficiency",
+    ],
+    rewards: [
+      { id: 9969, count: 5, name: "Canvas", image: "/images/crafting/canvas.png" },
+      { id: ID_CHEST_ITEMS?.CHEST_SILVER || 20002, count: 1, name: "Silver Chest", image: "/images/items/chest.png" }
+    ],
+    reqs: [
+      {  name: "WindMill", fn: (sandboxLoot, sandboxProduce) => {
+          if (sandboxProduce[9998] && typeof sandboxProduce[9998] === 'object') {
+              return sandboxProduce[9998].length > 0;
+          }
+          if (sandboxLoot[9998]) return sandboxLoot[9998] > 0;
+          return false;
+      }
+  
+      }
+    ],
+    unlockCondition: (step, completed) => completed.includes("q14_advanced_automation")
+  },
+  {
+    id: "q16_build_barn",
+    type: "main",
+    sender: "Farmer Bob",
+    subject: "Time for Livestock!",
+    body: [
+      "Howdy neighbor! Your farm is looking mighty fine.",
+      "I think it's time you expand into raising animals.",
+      "Gather some materials so we can build you a proper Barn. Bring me 100 Wood Logs, 100 Stones, and 20 Iron Ore!"
+    ],
+    rewards: [
+      { id: 'honey', count: 1000, name: "Honey", image: "/images/items/honey.png" }
+    ],
+    reqs: [
+      { id: 9993, count: 100, name: "Wood Logs", image: "/images/forest/wood.png" },
+      { id: 9994, count: 100, name: "Stones", image: "/images/forest/rock.png" },
+      { id: 9996, count: 20, name: "Iron Ore", image: "/images/forest/rock.png" }
+    ],
+    unlockCondition: (step, completed) => completed.includes("q15_windmill")
+  }
+];
+
+// --- TAMAGOTCHI DIALOG ---
+const TamagotchiDialog = ({ onClose, onFeed, onWater, catFeedTimeLeft, bowlWaterFilled, bowlFishId, starvingTime, isCatUnlocked, firstFedTime, catHappiness, currentHunger }) => {
+  const [activePet, setActivePet] = useState('felix');
+
+  const isHungry = starvingTime > 0 || (currentHunger < 50);
+  const isThirsty = starvingTime > 0 || !bowlWaterFilled;
+  const isHappy = catHappiness >= 50;
+
+  const happiness = Math.round(catHappiness || 0);
+  const health = starvingTime > 0 ? 30 : 100;
+  const hunger = Math.round(currentHunger || 0);
+  const thirst = bowlWaterFilled ? 100 : 15;
+
+  const StatBar = ({ label, value, color }) => (
+    <div style={{ width: '100%', marginBottom: '10px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '2px', color: '#ccc' }}>
+        <span>{label}</span>
+        <span>{value}%</span>
+      </div>
+      <div style={{ width: '100%', height: '12px', backgroundColor: 'rgba(0,0,0,0.5)', borderRadius: '6px', border: '1px solid #5a402a', overflow: 'hidden' }}>
+        <div style={{ width: `${value}%`, height: '100%', backgroundColor: color, transition: 'width 0.5s ease-in-out' }} />
+      </div>
+    </div>
+  );
+
+  return (
+    <BaseDialog onClose={onClose} title="PETS" header="/images/dialog/modal-header-inventory.png" headerOffset={10} className="custom-modal-background">
+      <div style={{ display: 'flex', width: '600px', height: '350px', fontFamily: 'monospace', color: '#fff', maxWidth: '90vw' }}>
+        
+        {/* Left Sidebar - Pet List */}
+        <div style={{ width: '180px', borderRight: '2px solid #5a402a', padding: '15px', backgroundColor: 'rgba(0,0,0,0.3)', display: 'flex', flexDirection: 'column', gap: '10px', overflowY: 'auto' }}>
+          <h3 style={{ margin: '0 0 10px 0', color: '#ffea00', fontSize: '16px', borderBottom: '1px solid #5a402a', paddingBottom: '5px' }}>Your Pets</h3>
+          
+          <div 
+            onClick={() => setActivePet('felix')}
+            style={{ padding: '10px', backgroundColor: activePet === 'felix' ? 'rgba(0,255,65,0.2)' : 'rgba(0,0,0,0.5)', border: `1px solid ${activePet === 'felix' ? '#00ff41' : '#5a402a'}`, borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px' }}
+          >
+            <span style={{ fontSize: '24px' }}>{isCatUnlocked ? '😺' : '❓'}</span>
+            <span style={{ fontWeight: 'bold', color: activePet === 'felix' ? '#00ff41' : '#ccc' }}>{isCatUnlocked ? 'Felix' : '???'}</span>
+          </div>
+
+          <div style={{ padding: '10px', backgroundColor: 'rgba(0,0,0,0.3)', border: '1px dashed #5a402a', borderRadius: '8px', cursor: 'not-allowed', display: 'flex', alignItems: 'center', gap: '10px', opacity: 0.5 }}>
+            <span style={{ fontSize: '24px' }}>🐶</span>
+            <span style={{ color: '#aaa', fontSize: '12px' }}>Locked</span>
+          </div>
+        </div>
+
+        {/* Right Content - Pet Details */}
+        <div style={{ flex: 1, padding: '20px', display: 'flex', flexDirection: 'column', position: 'relative' }}>
+          {activePet === 'felix' ? (
+            <>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
+                <div>
+                  <h2 style={{ margin: 0, color: '#00ff41', fontSize: '28px' }}>{isCatUnlocked ? 'Felix The Cat' : 'Unknown Pet'}</h2>
+                  <p style={{ margin: '5px 0 0 0', color: '#aaa', fontSize: '12px' }}>
+                    {isCatUnlocked ? 'A wandering stray looking for snacks.' : (firstFedTime > 0 ? 'Something is smelling the food...' : 'Leave some food and water, maybe something will show up?')}
+                  </p>
+                </div>
+                <div style={{ width: '80px', height: '80px', backgroundColor: '#9bbc0f', border: '4px solid #8bac0f', borderRadius: '8px', boxShadow: 'inset 2px 2px 10px rgba(0,0,0,0.3)', display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'relative' }}>
+                  <style>{`
+                    @keyframes tamaBounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+                    .tama-sprite { animation: tamaBounce 1s infinite steps(2); width: 48px; height: 48px; object-fit: contain; image-rendering: pixelated; }
+                  `}</style>
+                  {isCatUnlocked ? (
+                    <img 
+                      src={starvingTime > 0 ? "/images/pets/catangry.png" : "/images/pets/catface.png"} 
+                      alt="Cat Status" 
+                      className="tama-sprite"
+                      onError={(e) => { e.target.src = starvingTime > 0 ? "/images/pets/catangry.png" : "/images/pets/catface.png"; }}
+                    />
+                  ) : (
+                    <span style={{ fontSize: '40px', color: '#306030', fontWeight: 'bold' }}>?</span>
+                  )}
+                </div>
+              </div>
+
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '5px', opacity: isCatUnlocked ? 1 : 0.3 }}>
+                <StatBar label="Happiness" value={isCatUnlocked ? happiness : 0} color="#ffea00" />
+                <StatBar label="Health" value={isCatUnlocked ? health : 0} color="#ff4444" />
+                <StatBar label="Hunger" value={isCatUnlocked ? hunger : 0} color="#ff8800" />
+                <StatBar label="Thirst" value={isCatUnlocked ? thirst : 0} color="#00bfff" />
+              </div>
+
+              {catFeedTimeLeft && isCatUnlocked && (
+                <div style={{ color: '#00ff41', fontSize: '12px', textAlign: 'center', marginTop: '10px' }}>
+                  Next interaction available in: {catFeedTimeLeft}
+                </div>
+              )}
+              {firstFedTime > 0 && !isCatUnlocked && (
+                <div style={{ color: '#ffea00', fontSize: '12px', textAlign: 'center', marginTop: '10px' }}>
+                  Time until arrival: {(() => {
+                     const rem = (firstFedTime + 60 * 60 * 1000) - Date.now();
+                     if (rem <= 0) return "Arriving...";
+                     const m = Math.floor(rem / 60000);
+                     const s = Math.floor((rem % 60000) / 1000);
+                     return `${m}m ${s}s`;
+                  })()}
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', marginTop: '20px' }}>
+                <BaseButton small label={bowlWaterFilled ? "Water Full" : "Give Water 💧"} disabled={bowlWaterFilled} onClick={onWater} />
+                <BaseButton small label={bowlFishId ? "Food Full" : "Give Fish 🐟"} disabled={!!bowlFishId} onClick={onFeed} />
+              </div>
+            </>
+          ) : (
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', color: '#aaa' }}>
+              Select a pet to view details.
+            </div>
+          )}
+        </div>
+      </div>
+    </BaseDialog>
+  );
+};
 
 // Shared Protection Logic Map
 const protectedPlotsBySpot = {
@@ -46,18 +675,20 @@ const MOCK_LEADERBOARD = [
 ];
 
 // Dialog to prepare a plot for planting
-const PlotPrepDialog = ({ onClose, onPlaceDirt, onAddFish, availableFish }) => {
+const PlotPrepDialog = ({ onClose, onPlaceDirt, onAddFish, availableFish, farmingLevel }) => {
   const [showFish, setShowFish] = useState(false);
 
   return (
     <BaseDialog onClose={onClose} title="HOLE" header="/images/dialog/modal-header-inventory.png" headerOffset={10} className="custom-modal-background">
       <div style={{ padding: '20px', color: '#fff', fontFamily: 'monospace', display: 'flex', flexDirection: 'column', gap: '20px', alignItems: 'center' }}>
         <h2 style={{ color: '#00ff41', margin: '0' }}>Inspect Hole</h2>
-        <p style={{ margin: 0, color: '#ccc', textAlign: 'center' }}>Do you want to add a fish to fertilize the hole, or place dirt directly?</p>
+        <p style={{ margin: 0, color: '#ccc', textAlign: 'center' }}>
+          {farmingLevel >= 5 ? "Do you want to add a fish to fertilize the hole, or place dirt directly?" : "Place dirt in the hole to prepare it for planting."}
+        </p>
         
         {!showFish ? (
           <div style={{ display: 'flex', gap: '20px', marginTop: '10px' }}>
-            <BaseButton label="Add Fish" onClick={() => setShowFish(true)} />
+            {farmingLevel >= 5 && <BaseButton label="Add Fish" onClick={() => setShowFish(true)} />}
             <BaseButton label="Place Dirt" onClick={onPlaceDirt} />
           </div>
         ) : (
@@ -90,8 +721,55 @@ const PlotPrepDialog = ({ onClose, onPlaceDirt, onAddFish, availableFish }) => {
   );
 };
 
+const FishBowlDialog = ({ onClose, onAddFish, availableFish }) => {
+  return (
+    <BaseDialog onClose={onClose} title="PET BOWL" header="/images/dialog/modal-header-inventory.png" headerOffset={10} className="custom-modal-background">
+      <div style={{ padding: '20px', color: '#fff', fontFamily: 'monospace', display: 'flex', flexDirection: 'column', gap: '20px', alignItems: 'center' }}>
+        <h2 style={{ color: '#ffea00', margin: '0' }}>Select a Fish</h2>
+        <p style={{ margin: 0, color: '#ccc', textAlign: 'center' }}>Leave a fish for the stray cat.</p>
+        
+        {availableFish.length > 0 ? (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', justifyContent: 'center', maxHeight: '200px', overflowY: 'auto', width: '100%' }}>
+            {availableFish.map(fish => (
+              <div 
+                key={fish.id} 
+                onClick={() => onAddFish(fish.id)}
+                style={{ border: '2px solid #5a402a', borderRadius: '8px', padding: '10px', cursor: 'pointer', backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px', minWidth: '80px' }}
+                onMouseEnter={(e) => e.currentTarget.style.borderColor = '#00ff41'}
+                onMouseLeave={(e) => e.currentTarget.style.borderColor = '#5a402a'}
+              >
+                <img src={fish.image} alt={fish.label} style={{ width: '40px', height: '40px', objectFit: 'contain' }} />
+                <span style={{ fontSize: '12px', color: '#fff', textAlign: 'center' }}>{fish.label}</span>
+                <span style={{ fontSize: '10px', color: '#aaa' }}>x{fish.count}</span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p style={{ color: '#ff4444' }}>You have no fish in your inventory!</p>
+        )}
+        <BaseButton small label="Cancel" onClick={onClose} />
+      </div>
+    </BaseDialog>
+  );
+};
+
+const SkipGrowthDialog = ({ onClose, onConfirm, tutorialStep }) => {
+  return (
+    <BaseDialog onClose={onClose} title="SPEED UP" header="/images/dialog/modal-header-inventory.png" headerOffset={10} className="custom-modal-background">
+      <div style={{ padding: '20px', color: '#fff', fontFamily: 'monospace', display: 'flex', flexDirection: 'column', gap: '20px', alignItems: 'center' }}>
+        <h2 style={{ color: '#ffea00', margin: '0', textAlign: 'center' }}>Speed Up Growth?</h2>
+        <p style={{ margin: 0, color: '#ccc', textAlign: 'center' }}>Pay your Great Uncle 100 Honey to instantly grow this crop?</p>
+        <div style={{ display: 'flex', gap: '20px', marginTop: '10px' }}>
+          <BaseButton label={tutorialStep === 9 ? "Skip for Free!" : "Pay 100 Honey"} onClick={onConfirm} />
+          <BaseButton label="Cancel" onClick={onClose} />
+        </div>
+      </div>
+    </BaseDialog>
+  );
+};
+
 // Inline the dialog to avoid any import/module resolution errors!
-const WeightContestDialog = ({ onClose, simulatedDay, targetProduceId, targetFishId, onProduceChange, onFishChange, targetProduceData, targetFishData, refetchItems }) => {
+export const WeightContestDialog = ({ onClose, simulatedDay, targetProduceId, targetFishId, onProduceChange, onFishChange, targetProduceData, targetFishData, refetchItems }) => {
   const { show } = useNotification();
   
   const [chestResult, setChestResult] = useState(null);
@@ -189,7 +867,9 @@ const WeightContestDialog = ({ onClose, simulatedDay, targetProduceId, targetFis
     
     setChestResult({
       rewardId: mockRewardId,
-      chestType: chestId
+      chestType: chestId,
+      image: ALL_ITEMS[mockRewardId]?.image,
+      label: ALL_ITEMS[mockRewardId]?.label || "Produce"
     });
     setShowChestDialog(true);
 
@@ -318,7 +998,7 @@ const WeightContestDialog = ({ onClose, simulatedDay, targetProduceId, targetFis
                              <img src={targetCropData?.image} alt={targetCropName} style={{ width: '80%', height: '80%', objectFit: 'contain' }} />
                           )}
                         </div>
-                        <span style={{ color: '#00ff41', fontWeight: 'bold', fontSize: '16px', fontFamily: 'monospace' }}>{crop.name} - <span style={{ color: '#fff' }}>{crop.weight}kg</span></span>
+                        <span style={{ color: '#00ff41', fontWeight: 'bold', fontSize: '16px', fontFamily: 'monospace', textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000' }}>{crop.name} - <span style={{ color: '#fff' }}>{crop.weight}kg</span></span>
                       </div>
                       <BaseButton small label="Submit" onClick={() => handleSelect(crop)} />
                     </div>
@@ -339,54 +1019,8 @@ const WeightContestDialog = ({ onClose, simulatedDay, targetProduceId, targetFis
   );
 };
 
-// Global weather helper
-const getWeatherForDay = (day) => {
-  if (day === 15) return '⚡'; // 1 day of lightning
-  if (day % 4 === 0) return '🌧️'; // Standard rainy days
-  if (day % 3 === 0 || day % 5 === 0) return '☁️'; // Mix of cloudy
-  return '☀️'; // Sunny by default
-};
-
-// Highly optimized rain rendering component
-const RainOverlay = React.memo(({ isLightning }) => {
-  const drops = useMemo(() => Array.from({ length: 150 }).map((_, i) => ({
-    left: `${Math.random() * 120 - 10}%`, 
-    animationDuration: `${0.3 + Math.random() * 0.4}s`, 
-    animationDelay: `${Math.random() * 2}s`,
-    opacity: 0.3 + Math.random() * 0.5
-  })), []);
-
-  return (
-    <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', pointerEvents: 'none', zIndex: 9990, overflow: 'hidden' }}>
-      <style>{`
-        .rain-drop {
-          position: absolute;
-          bottom: 100%;
-          width: 2px;
-          height: 100px;
-          background: linear-gradient(to bottom, rgba(200,230,255,0), rgba(200,230,255,0.6));
-          animation: rain-fall linear infinite;
-        }
-        @keyframes rain-fall {
-          0% { transform: translateY(0) translateX(0); }
-          100% { transform: translateY(120vh) translateX(-10vh); }
-        }
-        .lightning-flash {
-          position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-          background: white; pointer-events: none; z-index: 9989;
-          animation: flash 8s infinite; opacity: 0;
-        }
-        @keyframes flash { 0%, 95%, 98%, 100% { opacity: 0; } 96%, 99% { opacity: 0.6; } }
-        .rain-darken { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0, 20, 50, 0.25); pointer-events: none; z-index: 9988; }
-      `}</style>
-      <div className="rain-darken" />
-      {isLightning && <div className="lightning-flash" />}
-      {drops.map((style, i) => <div key={i} className="rain-drop" style={style} />)}
-    </div>
-  );
-});
-
-const CalendarDialog = ({ onClose, simulatedDay, simulatedDate }) => {
+export const CalendarDialog = ({ onClose, simulatedDay, simulatedDate, refetch, onClaimed }) => {
+  const { show } = useNotification();
   const estDate = new Date(new Date().toLocaleString("en-US", { timeZone: "America/New_York" }));
   const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
   const monthName = monthNames[estDate.getMonth()];
@@ -399,12 +1033,78 @@ const CalendarDialog = ({ onClose, simulatedDay, simulatedDate }) => {
   const blanks = Array.from({ length: startOffset }, (_, i) => null);
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
 
+  // Daily Login Logic
+  const [streak, setStreak] = useState(() => parseInt(localStorage.getItem('sandbox_login_streak') || '0', 10));
+  const [lastClaimDate, setLastClaimDate] = useState(() => localStorage.getItem('sandbox_last_claim_date') || '');
+  
+  const today = new Date().toDateString();
+  const canClaim = lastClaimDate !== today;
+
+  const DAILY_REWARDS = [
+    { day: 1, id: 9993, name: "Wood", count: 10, image: "/images/forest/wood.png" },
+    { day: 2, id: 9994, name: "Stone", count: 10, image: "/images/forest/rock.png" },
+    { day: 3, id: 'honey', name: "Honey", count: 100, image: "/images/items/honey.png" }, 
+    { day: 4, id: 9995, name: "Sticks", count: 10, image: "/images/forest/wood.png" },
+    { day: 5, id: 9996, name: "Iron Ore", count: 5, image: "/images/forest/ironrock.png" }, 
+    { day: 6, id: 9997, name: "Gold Ore", count: 2, image: "/images/forest/goldrock.png" }, 
+    { day: 7, id: 'chest', name: "Bronze Chest", count: 1, image: "/images/items/chest.png" } 
+  ];
+
+  const handleClaim = () => {
+    if (!canClaim) return;
+    const reward = DAILY_REWARDS[streak];
+    
+    if (reward.id === 'honey') {
+       const currentHoney = parseInt(localStorage.getItem('sandbox_honey') || '0', 10);
+       const newHoney = currentHoney + reward.count;
+       localStorage.setItem('sandbox_honey', newHoney.toString());
+       window.dispatchEvent(new CustomEvent('sandboxHoneyChanged', { detail: newHoney.toString() }));
+    } else {
+       const sandboxLoot = JSON.parse(localStorage.getItem('sandbox_loot') || '{}');
+       const itemId = reward.id === 'chest' ? (ID_CHEST_ITEMS?.CHEST_BRONZE || 20001) : reward.id;
+       sandboxLoot[itemId] = (sandboxLoot[itemId] || 0) + reward.count;
+       localStorage.setItem('sandbox_loot', JSON.stringify(sandboxLoot));
+    }
+
+    const nextStreak = (streak + 1) % 7;
+    setStreak(nextStreak);
+    setLastClaimDate(today);
+    localStorage.setItem('sandbox_login_streak', nextStreak.toString());
+    localStorage.setItem('sandbox_last_claim_date', today);
+    
+    show(`Claimed ${reward.count}x ${reward.name}!`, "success");
+    if (refetch) refetch();
+    if (onClaimed) onClaimed();
+  };
+
   return (
     <BaseDialog onClose={onClose} title="CALENDAR" header="/images/dialog/modal-header-inventory.png" headerOffset={10} className="custom-modal-background">
-      <div style={{ padding: '20px', color: '#fff', fontFamily: 'monospace', display: 'flex', flexDirection: 'column', gap: '20px', width: '500px', maxWidth: '90vw' }}>
+      <div style={{ padding: '20px', color: '#fff', fontFamily: 'monospace', display: 'flex', flexDirection: 'column', gap: '15px', width: '550px', maxWidth: '90vw', maxHeight: '80vh', overflowY: 'auto' }}>
+        
+        {/* Daily Login Section */}
+        <div style={{ backgroundColor: 'rgba(0,0,0,0.5)', border: '2px solid #5a402a', borderRadius: '8px', padding: '15px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
+          <h3 style={{ margin: 0, color: '#ffea00' }}>Daily Login Rewards</h3>
+          <style>{`.reward-icon { transform: none !important; }`}</style>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', width: '100%' }}>
+            {DAILY_REWARDS.map((reward, idx) => {
+               let isClaimed = (!canClaim && (streak === 0 || idx < streak)) || (canClaim && idx < streak);
+               let isToday = canClaim && idx === streak;
+               return (
+                  <div key={idx} style={{ gridColumn: idx === 6 ? 'span 2' : 'span 1', backgroundColor: isToday ? 'rgba(0,255,65,0.2)' : (isClaimed ? 'rgba(0,0,0,0.8)' : 'rgba(31, 22, 16, 0.8)'), border: `2px solid ${isToday ? '#00ff41' : (isClaimed ? '#444' : '#5a402a')}`, borderRadius: '8px', padding: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center', opacity: isClaimed ? 0.6 : 1, position: 'relative' }}>
+                     <div style={{ color: isToday ? '#00ff41' : '#ccc', fontWeight: 'bold', marginBottom: '5px' }}>Day {reward.day}</div>
+                        <div style={{ height: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><img src={reward.image} alt={reward.name} className="reward-icon" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} onError={(e) => { e.target.onerror = null; e.target.src = '/images/forest/rock.png'; }} /></div>
+                     <div style={{ color: '#ffea00', fontSize: '10px', marginTop: '5px', textAlign: 'center' }}>{reward.count}x<br/>{reward.name}</div>
+                     {isClaimed && <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', fontSize: '30px', color: '#00ff41', textShadow: '0 0 10px #000' }}>✓</div>}
+                  </div>
+               );
+            })}
+          </div>
+          <BaseButton small label={canClaim ? "Claim Reward" : "Come back tomorrow!"} disabled={!canClaim} onClick={handleClaim} />
+        </div>
+
         <div style={{ textAlign: 'center' }}>
-          <h2 style={{ color: '#00ff41', margin: '0 0 10px 0' }}>{monthName} Calendar</h2>
-          <p style={{ margin: 0, color: '#ccc' }}>Track upcoming events and festivals!</p>
+          <h2 style={{ color: '#00ff41', margin: '0 0 5px 0' }}>{monthName} Forecast</h2>
+          <p style={{ margin: 0, color: '#ccc', fontSize: '12px' }}>Track dates, weather, and weekly events!</p>
         </div>
         
         <div style={{
@@ -457,48 +1157,155 @@ const CalendarDialog = ({ onClose, simulatedDay, simulatedDate }) => {
   );
 };
 
-const CraftingDialog = ({ onClose, refetchSeeds }) => {
+// Helper to calculate level from XP
+const getLevelFromXp = (xp) => Math.floor(Math.sqrt((xp || 0) / 150)) + 1;
+
+export const CraftingDialog = ({ onClose, refetchSeeds, tutorialStep, onAdvanceTutorial, craftingGoal }) => {
   const { all: allItems, refetch } = useItems();
   const { show } = useNotification();
+  const [activeTab, setActiveTab] = useState(craftingGoal ? (craftingGoal.tab || 'items') : 'tools'); // 'tools' or 'items'
+  const [craftAmounts, setCraftAmounts] = useState(craftingGoal ? { [craftingGoal.recipeId]: craftingGoal.amount || 1 } : {});
   
-  const woodCount = allItems.find(i => i.id === 9993)?.count || 0;
-  const stoneCount = allItems.find(i => i.id === 9994)?.count || 0;
-  const sticksCount = allItems.find(i => i.id === 9995)?.count || 0;
-  const stonePipeCount = allItems.find(i => i.id === 9990)?.count || 0;
-  const ironCount = allItems.find(i => i.id === 9996)?.count || 0;
-  const pumpkinCount = allItems.find(i => i.id === ID_PRODUCE_ITEMS.PUMPKIN)?.count || 0;
-  const cornCount = allItems.find(i => i.id === ID_PRODUCE_ITEMS.CORN)?.count || 0;
+  const safeItems = allItems || [];
+  const woodCount = safeItems.find(i => i.id === 9993)?.count || 0;
+  const specialWoodCount = safeItems.find(i => i.id === 9942)?.count || 0;
+  const stoneCount = safeItems.find(i => i.id === 9994)?.count || 0;
+  const sticksCount = safeItems.find(i => i.id === 9995)?.count || 0;
+  const stonePipeCount = safeItems.find(i => i.id === 9990)?.count || 0;
+  const ironCount = safeItems.find(i => i.id === 9996)?.count || 0;
+  const pumpkinCount = safeItems.find(i => i.id === ID_PRODUCE_ITEMS.PUMPKIN)?.count || 0;
+  const cornCount = safeItems.find(i => i.id === ID_PRODUCE_ITEMS.CORN)?.count || 0;
+  const plankCount = safeItems.find(i => i.id === 9989)?.count || 0;
+  const axeCount = safeItems.find(i => i.id === 9991)?.count || 0;
+  const pickaxeCount = safeItems.find(i => i.id === 9992)?.count || 0;
+  const ironPickaxeCount = safeItems.find(i => i.id === 9981)?.count || 0;
+  const ladybugScarecrowCount = safeItems.find(i => i.id === 9979)?.count || 0;
+  const tier2ScarecrowCount = safeItems.find(i => i.id === 9978)?.count || 0;
+  const tier3ScarecrowCount = safeItems.find(i => i.id === 9977)?.count || 0;
+  const tier4ScarecrowCount = safeItems.find(i => i.id === 9976)?.count || 0;
+  const teslaTowerCount = safeItems.find(i => i.id === 9975)?.count || 0;
+
+  const ladybugCount = safeItems.find(i => i.id === ID_POTION_ITEMS.LADYBUG)?.count || 0;
+  const scarecrowBaseCount = safeItems.find(i => i.id === ID_POTION_ITEMS.SCARECROW)?.count || 0;
+  const leavesCount = safeItems.find(i => i.id === 9956)?.count || 0;
   
-  const handleCraftSticks = () => {
-    if (woodCount < 2) return;
+  const hempCount = safeItems.find(i => i.id === 9972)?.count || 0;
+  const cottonCount = safeItems.find(i => i.id === 9971)?.count || 0;
+  const ropeCount = safeItems.find(i => i.id === 9970)?.count || 0;
+  const canvasCount = safeItems.find(i => i.id === 9969)?.count || 0;
+  const copperCount = safeItems.find(i => i.id === 9974)?.count || 0;
+  const coalCount = safeItems.find(i => i.id === 9973)?.count || 0;
+  const nailsCount = safeItems.find(i => i.id === 9968)?.count || 0;
+  const steelCount = safeItems.find(i => i.id === 9967)?.count || 0;
+  const engineCount = safeItems.find(i => i.id === 9962)?.count || 0;
+
+  const farmDataStr = localStorage.getItem('sandbox_animal_farm') || '{}';
+  const farmData = JSON.parse(farmDataStr);
+  const hasCoop = farmData?.coop?.status && farmData.coop.status !== 'unbuilt';
+  const hasSheepcage = farmData?.sheepcage?.status && farmData.sheepcage.status !== 'unbuilt';
+  const hasCowbarn = farmData?.cowbarn?.status && farmData.cowbarn.status !== 'unbuilt';
+
+  const [craftingXp, setCraftingXp] = useState(() => parseInt(localStorage.getItem('sandbox_crafting_xp') || '0', 10));
+  const craftingLevel = getLevelFromXp(craftingXp);
+  const craftingProgress = ((craftingXp - Math.pow(craftingLevel - 1, 2) * 150) / (Math.pow(craftingLevel, 2) * 150 - Math.pow(craftingLevel - 1, 2) * 150)) * 100;
+
+  useEffect(() => {
+    const handleLsUpdate = (e) => {
+      if (e.detail.key === 'sandbox_crafting_xp') setCraftingXp(parseInt(e.detail.value, 10));
+    };
+    window.addEventListener('ls-update', handleLsUpdate);
+    return () => window.removeEventListener('ls-update', handleLsUpdate);
+  }, []);
+
+  const addCraftingXp = (amount) => {
+    const oldLevel = getLevelFromXp(craftingXp);
+    const newXp = craftingXp + amount;
+    const newLevel = getLevelFromXp(newXp);
+    setCraftingXp(newXp);
+    localStorage.setItem('sandbox_crafting_xp', newXp.toString());
+    if (newLevel > oldLevel) {
+      window.dispatchEvent(new CustomEvent('levelUp', { detail: { skill: 'Crafting', level: newLevel } }));
+    }
+  };
+
+  const handleCraftGeneric = (resultId, reqs, amount, xpReward) => {
     const sandboxLoot = JSON.parse(localStorage.getItem('sandbox_loot') || '{}');
-    sandboxLoot[9993] = Math.max(0, (sandboxLoot[9993] || 0) - 2);
-    sandboxLoot[9995] = (sandboxLoot[9995] || 0) + 1;
+    const sandboxProduce = JSON.parse(localStorage.getItem('sandbox_produce') || '{}');
+    
+    for (const [id, count] of reqs) {
+      let available = 0;
+      if (Array.isArray(sandboxProduce[id])) available = sandboxProduce[id].length;
+      else available = (Number(sandboxProduce[id]) || 0) + (Number(sandboxLoot[id]) || 0);
+      if (available < count * amount) return;
+    }
+    
+    for (const [id, count] of reqs) {
+      let remaining = count * amount;
+      if (sandboxProduce[id] !== undefined) {
+        if (Array.isArray(sandboxProduce[id])) {
+          while(remaining > 0 && sandboxProduce[id].length > 0) { sandboxProduce[id].pop(); remaining--; }
+        } else {
+          const deduct = Math.min(Number(sandboxProduce[id]) || 0, remaining);
+          sandboxProduce[id] = (Number(sandboxProduce[id]) || 0) - deduct;
+          remaining -= deduct;
+        }
+      }
+      if (remaining > 0) sandboxLoot[id] = Math.max(0, (sandboxLoot[id] || 0) - remaining);
+    }
+    
+    sandboxLoot[resultId] = (sandboxLoot[resultId] || 0) + amount;
+    localStorage.setItem('sandbox_loot', JSON.stringify(sandboxLoot));
+    localStorage.setItem('sandbox_produce', JSON.stringify(sandboxProduce));
+    if (refetch) refetch();
+    if (refetchSeeds) refetchSeeds();
+    addCraftingXp(xpReward * amount);
+    show(`Crafted successfully!`, "success");
+  };
+
+  const handleCraftSticks = (amount = 1) => {
+    if (woodCount < 2 * amount) return;
+    const sandboxLoot = JSON.parse(localStorage.getItem('sandbox_loot') || '{}');
+    sandboxLoot[9993] = Math.max(0, (sandboxLoot[9993] || 0) - 2 * amount);
+    sandboxLoot[9995] = (sandboxLoot[9995] || 0) + 1 * amount;
     localStorage.setItem('sandbox_loot', JSON.stringify(sandboxLoot));
     if (refetch) refetch();
     if (refetchSeeds) refetchSeeds();
-    show("Crafted 1 Stick!", "success");
+    addCraftingXp(5 * amount);
+    show(`Crafted ${amount} Stick${amount > 1 ? 's' : ''}!`, "success");
   };
 
-  const handleCraftStonePipe = () => {
-    if (stoneCount < 2) return;
+  const handleCraftPlank = (amount = 1) => {
+    if (woodCount < 10 * amount) return;
     const sandboxLoot = JSON.parse(localStorage.getItem('sandbox_loot') || '{}');
-    sandboxLoot[9994] = Math.max(0, (sandboxLoot[9994] || 0) - 2);
-    sandboxLoot[9990] = (sandboxLoot[9990] || 0) + 2;
+    sandboxLoot[9993] = Math.max(0, (sandboxLoot[9993] || 0) - 10 * amount);
+    sandboxLoot[9989] = (sandboxLoot[9989] || 0) + 1 * amount;
     localStorage.setItem('sandbox_loot', JSON.stringify(sandboxLoot));
     if (refetch) refetch();
     if (refetchSeeds) refetchSeeds();
-    show("Crafted 2 Stone Pipes!", "success");
+    addCraftingXp(15 * amount);
+    show(`Crafted ${amount} Wooden Plank${amount > 1 ? 's' : ''}!`, "success");
   };
 
-  const handleCraftScarecrow = () => {
-    if (sticksCount < 3 || pumpkinCount < 1) return;
+  const handleCraftStonePipe = (amount = 1) => {
+    if (stoneCount < 2 * amount) return;
+    const sandboxLoot = JSON.parse(localStorage.getItem('sandbox_loot') || '{}');
+    sandboxLoot[9994] = Math.max(0, (sandboxLoot[9994] || 0) - 2 * amount);
+    sandboxLoot[9990] = (sandboxLoot[9990] || 0) + 2 * amount;
+    localStorage.setItem('sandbox_loot', JSON.stringify(sandboxLoot));
+    if (refetch) refetch();
+    if (refetchSeeds) refetchSeeds();
+    addCraftingXp(10 * amount);
+    show(`Crafted ${2 * amount} Stone Pipes!`, "success");
+  };
+
+  const handleCraftScarecrow = (amount = 1) => {
+    if (sticksCount < 3 * amount || pumpkinCount < 1 * amount) return;
     const sandboxLoot = JSON.parse(localStorage.getItem('sandbox_loot') || '{}');
     const sandboxProduce = JSON.parse(localStorage.getItem('sandbox_produce') || '{}');
 
-    sandboxLoot[9995] = Math.max(0, (sandboxLoot[9995] || 0) - 3);
+    sandboxLoot[9995] = Math.max(0, (sandboxLoot[9995] || 0) - 3 * amount);
     
-    let remainingPumpkinToDeduct = 1;
+    let remainingPumpkinToDeduct = 1 * amount;
     if (sandboxProduce[ID_PRODUCE_ITEMS.PUMPKIN] > 0) {
       const deduct = Math.min(sandboxProduce[ID_PRODUCE_ITEMS.PUMPKIN], remainingPumpkinToDeduct);
       sandboxProduce[ID_PRODUCE_ITEMS.PUMPKIN] -= deduct;
@@ -509,22 +1316,23 @@ const CraftingDialog = ({ onClose, refetchSeeds }) => {
       sandboxLoot[ID_PRODUCE_ITEMS.PUMPKIN] = Math.max(0, (sandboxLoot[ID_PRODUCE_ITEMS.PUMPKIN] || 0) - remainingPumpkinToDeduct);
     }
     
-    sandboxLoot[ID_POTION_ITEMS.SCARECROW] = (sandboxLoot[ID_POTION_ITEMS.SCARECROW] || 0) + 1;
+    sandboxLoot[ID_POTION_ITEMS.SCARECROW] = (sandboxLoot[ID_POTION_ITEMS.SCARECROW] || 0) + 1 * amount;
     localStorage.setItem('sandbox_loot', JSON.stringify(sandboxLoot));
     
     if (refetch) refetch();
     if (refetchSeeds) refetchSeeds();
-    show("Crafted 1 Scarecrow!", "success");
+    addCraftingXp(25 * amount);
+    show(`Crafted ${amount} Scarecrow${amount > 1 ? 's' : ''}!`, "success");
   };
 
-  const handleCraftUmbrella = () => {
-    if (sticksCount < 2 || cornCount < 5) return;
+  const handleCraftUmbrella = (amount = 1) => {
+    if (sticksCount < 2 * amount || cornCount < 5 * amount) return;
     const sandboxLoot = JSON.parse(localStorage.getItem('sandbox_loot') || '{}');
     const sandboxProduce = JSON.parse(localStorage.getItem('sandbox_produce') || '{}');
 
-    sandboxLoot[9995] = Math.max(0, (sandboxLoot[9995] || 0) - 2);
+    sandboxLoot[9995] = Math.max(0, (sandboxLoot[9995] || 0) - 2 * amount);
     
-    let remainingCornToDeduct = 5;
+    let remainingCornToDeduct = 5 * amount;
     if (sandboxProduce[ID_PRODUCE_ITEMS.CORN] > 0) {
       const deduct = Math.min(sandboxProduce[ID_PRODUCE_ITEMS.CORN], remainingCornToDeduct);
       sandboxProduce[ID_PRODUCE_ITEMS.CORN] -= deduct;
@@ -535,219 +1343,701 @@ const CraftingDialog = ({ onClose, refetchSeeds }) => {
       sandboxLoot[ID_PRODUCE_ITEMS.CORN] = Math.max(0, (sandboxLoot[ID_PRODUCE_ITEMS.CORN] || 0) - remainingCornToDeduct);
     }
     
-    sandboxLoot[9999] = (sandboxLoot[9999] || 0) + 1;
+    sandboxLoot[9999] = (sandboxLoot[9999] || 0) + 1 * amount;
     localStorage.setItem('sandbox_loot', JSON.stringify(sandboxLoot));
     
     if (refetch) refetch();
     if (refetchSeeds) refetchSeeds();
-    show("Crafted 1 Umbrella!", "success");
+    addCraftingXp(20 * amount);
+    show(`Crafted ${amount} Umbrella${amount > 1 ? 's' : ''}!`, "success");
   };
 
-  const handleCraftSprinkler = () => {
-    if (stonePipeCount < 2 || ironCount < 1) return;
+  const handleCraftSprinkler = (amount = 1) => {
+    if (stonePipeCount < 2 * amount || ironCount < 1 * amount) return;
     const sandboxLoot = JSON.parse(localStorage.getItem('sandbox_loot') || '{}');
 
-    sandboxLoot[9990] = Math.max(0, (sandboxLoot[9990] || 0) - 2);
-    sandboxLoot[9996] = Math.max(0, (sandboxLoot[9996] || 0) - 1);
+    sandboxLoot[9990] = Math.max(0, (sandboxLoot[9990] || 0) - 2 * amount);
+    sandboxLoot[9996] = Math.max(0, (sandboxLoot[9996] || 0) - 1 * amount);
     
-    sandboxLoot[9998] = (sandboxLoot[9998] || 0) + 1;
+    sandboxLoot[9998] = (sandboxLoot[9998] || 0) + 1 * amount;
     localStorage.setItem('sandbox_loot', JSON.stringify(sandboxLoot));
     
     if (refetch) refetch();
     if (refetchSeeds) refetchSeeds();
-    show("Crafted 1 Water Sprinkler!", "success");
+    addCraftingXp(40 * amount);
+    show(`Crafted ${amount} Water Sprinkler${amount > 1 ? 's' : ''}!`, "success");
+  };
+
+  const handleCraftAxe = (amount = 1) => {
+    if (sticksCount < 3 * amount || stoneCount < 3 * amount) return;
+    const sandboxLoot = JSON.parse(localStorage.getItem('sandbox_loot') || '{}');
+    sandboxLoot[9995] = Math.max(0, (sandboxLoot[9995] || 0) - 3 * amount);
+    sandboxLoot[9994] = Math.max(0, (sandboxLoot[9994] || 0) - 3 * amount);
+    sandboxLoot[9991] = (sandboxLoot[9991] || 0) + 1 * amount;
+    localStorage.setItem('sandbox_loot', JSON.stringify(sandboxLoot));
+    if (refetch) refetch();
+    if (refetchSeeds) refetchSeeds();
+    addCraftingXp(15 * amount);
+    show(`Crafted ${amount} Axe${amount > 1 ? 's' : ''}!`, "success");
+    if (tutorialStep === 26 && pickaxeCount > 0 && onAdvanceTutorial) onAdvanceTutorial();
+  };
+
+  const handleCraftPickaxe = (amount = 1) => {
+    if (sticksCount < 3 * amount || stoneCount < 3 * amount) return;
+    const sandboxLoot = JSON.parse(localStorage.getItem('sandbox_loot') || '{}');
+    sandboxLoot[9995] = Math.max(0, (sandboxLoot[9995] || 0) - 3 * amount);
+    sandboxLoot[9994] = Math.max(0, (sandboxLoot[9994] || 0) - 3 * amount);
+    sandboxLoot[9992] = (sandboxLoot[9992] || 0) + 1 * amount;
+    localStorage.setItem('sandbox_loot', JSON.stringify(sandboxLoot));
+    if (refetch) refetch();
+    if (refetchSeeds) refetchSeeds();
+    addCraftingXp(15 * amount);
+    show(`Crafted ${amount} Pickaxe${amount > 1 ? 's' : ''}!`, "success");
+    if (tutorialStep === 26 && axeCount > 0 && onAdvanceTutorial) onAdvanceTutorial();
+  };
+
+  const handleCraftIronPickaxe = (amount = 1) => {
+    if (sticksCount < 3 * amount || ironCount < 3 * amount) return;
+    const sandboxLoot = JSON.parse(localStorage.getItem('sandbox_loot') || '{}');
+    sandboxLoot[9995] = Math.max(0, (sandboxLoot[9995] || 0) - 3 * amount);
+    sandboxLoot[9996] = Math.max(0, (sandboxLoot[9996] || 0) - 3 * amount);
+    sandboxLoot[9981] = (sandboxLoot[9981] || 0) + 1 * amount;
+    localStorage.setItem('sandbox_loot', JSON.stringify(sandboxLoot));
+    if (refetch) refetch();
+    if (refetchSeeds) refetchSeeds();
+    addCraftingXp(50 * amount);
+    show(`Crafted ${amount} Iron Pickaxe${amount > 1 ? 's' : ''}!`, "success");
+  };
+
+  const handleCraftLadybugScarecrow = (amount = 1) => {
+    if (scarecrowBaseCount < 1 * amount || ladybugCount < 10 * amount || specialWoodCount < 1 * amount) return;
+    const sandboxLoot = JSON.parse(localStorage.getItem('sandbox_loot') || '{}');
+    sandboxLoot[ID_POTION_ITEMS.SCARECROW] = Math.max(0, (sandboxLoot[ID_POTION_ITEMS.SCARECROW] || 0) - 1 * amount);
+    sandboxLoot[ID_POTION_ITEMS.LADYBUG] = Math.max(0, (sandboxLoot[ID_POTION_ITEMS.LADYBUG] || 0) - 10 * amount);
+    sandboxLoot[9942] = Math.max(0, (sandboxLoot[9942] || 0) - 1 * amount);
+    sandboxLoot[9979] = (sandboxLoot[9979] || 0) + 1 * amount;
+    localStorage.setItem('sandbox_loot', JSON.stringify(sandboxLoot));
+    if (refetch) refetch();
+    addCraftingXp(35 * amount);
+    show(`Crafted ${amount} Ladybug Scarecrow${amount > 1 ? 's' : ''}!`, "success");
+  };
+
+  const handleCraftTier2 = (amount = 1) => {
+    if (scarecrowBaseCount < 5 * amount || specialWoodCount < 1 * amount) return;
+    const sandboxLoot = JSON.parse(localStorage.getItem('sandbox_loot') || '{}');
+    sandboxLoot[ID_POTION_ITEMS.SCARECROW] = Math.max(0, (sandboxLoot[ID_POTION_ITEMS.SCARECROW] || 0) - 5 * amount);
+    sandboxLoot[9942] = Math.max(0, (sandboxLoot[9942] || 0) - 1 * amount);
+    sandboxLoot[9978] = (sandboxLoot[9978] || 0) + 1 * amount;
+    localStorage.setItem('sandbox_loot', JSON.stringify(sandboxLoot));
+    if (refetch) refetch();
+    addCraftingXp(50 * amount);
+    show(`Crafted ${amount} Tier 2 Scarecrow${amount > 1 ? 's' : ''}!`, "success");
+  };
+
+  const handleCraftTier3 = (amount = 1) => {
+    if (tier2ScarecrowCount < 4 * amount || woodCount < 10 * amount || specialWoodCount < 2 * amount) return;
+    const sandboxLoot = JSON.parse(localStorage.getItem('sandbox_loot') || '{}');
+    sandboxLoot[9978] = Math.max(0, (sandboxLoot[9978] || 0) - 4 * amount);
+    sandboxLoot[9993] = Math.max(0, (sandboxLoot[9993] || 0) - 10 * amount);
+    sandboxLoot[9942] = Math.max(0, (sandboxLoot[9942] || 0) - 2 * amount);
+    sandboxLoot[9977] = (sandboxLoot[9977] || 0) + 1 * amount;
+    localStorage.setItem('sandbox_loot', JSON.stringify(sandboxLoot));
+    if (refetch) refetch();
+    addCraftingXp(100 * amount);
+    show(`Crafted ${amount} Tier 3 Scarecrow${amount > 1 ? 's' : ''}!`, "success");
+  };
+
+  const handleCraftTier4 = (amount = 1) => {
+    if (tier3ScarecrowCount < 3 * amount || (safeItems.find(i => i.id === 9997)?.count || 0) < 5 * amount || specialWoodCount < 5 * amount) return; // 9997 = Gold
+    const sandboxLoot = JSON.parse(localStorage.getItem('sandbox_loot') || '{}');
+    sandboxLoot[9977] = Math.max(0, (sandboxLoot[9977] || 0) - 3 * amount);
+    sandboxLoot[9997] = Math.max(0, (sandboxLoot[9997] || 0) - 5 * amount);
+    sandboxLoot[9942] = Math.max(0, (sandboxLoot[9942] || 0) - 5 * amount);
+    sandboxLoot[9976] = (sandboxLoot[9976] || 0) + 1 * amount;
+    localStorage.setItem('sandbox_loot', JSON.stringify(sandboxLoot));
+    if (refetch) refetch();
+    addCraftingXp(250 * amount);
+    show(`Crafted ${amount} Max Tier Scarecrow${amount > 1 ? 's' : ''}!`, "success");
+  };
+
+  const handleCraftTesla = (amount = 1) => {
+    if (ironCount < 10 * amount || stonePipeCount < 5 * amount) return;
+    const sandboxLoot = JSON.parse(localStorage.getItem('sandbox_loot') || '{}');
+    sandboxLoot[9996] = Math.max(0, (sandboxLoot[9996] || 0) - 10 * amount); // Iron
+    sandboxLoot[9990] = Math.max(0, (sandboxLoot[9990] || 0) - 5 * amount);  // Pipes
+    sandboxLoot[9975] = (sandboxLoot[9975] || 0) + 1 * amount;
+    localStorage.setItem('sandbox_loot', JSON.stringify(sandboxLoot));
+    if (refetch) refetch();
+    addCraftingXp(150 * amount);
+    show(`Crafted ${amount} Tesla Tower${amount > 1 ? 's' : ''}!`, "success");
+  };
+
+  const highlightSticks = tutorialStep === 26 && (axeCount === 0 || pickaxeCount === 0) && sticksCount < 3;
+  const highlightAxe = tutorialStep === 26 && axeCount === 0 && sticksCount >= 3;
+  const highlightPickaxe = tutorialStep === 26 && pickaxeCount === 0 && sticksCount >= 3;
+
+  const recipes = {
+    tools: [
+      {
+        id: 'axe',
+        name: 'Axe',
+        description: 'Used to chop down trees in the Forest for Wood and Leaves.',
+        minLevel: 1,
+        image: ALL_ITEMS[9991]?.image || '/images/forest/axe.png',
+        costFunc: (amt) => `${3 * amt} Sticks, ${3 * amt} Stone`,
+        canCraft: (amt) => sticksCount >= 3 * amt && stoneCount >= 3 * amt,
+        onCraft: (amt) => handleCraftAxe(amt),
+        highlight: highlightAxe
+      },
+      {
+        id: 'pickaxe',
+        name: 'Pickaxe',
+        description: 'Used to mine rocks in the Cave for Stone, Coal, and Ores.',
+        minLevel: 1,
+        image: ALL_ITEMS[9992]?.image || '/images/forest/picaxe.png',
+        costFunc: (amt) => `${3 * amt} Sticks, ${3 * amt} Stone`,
+        canCraft: (amt) => sticksCount >= 3 * amt && stoneCount >= 3 * amt,
+        onCraft: (amt) => handleCraftPickaxe(amt),
+        highlight: highlightPickaxe
+      },
+      {
+        id: 'iron_pickaxe',
+        name: 'Iron Pickaxe',
+        description: 'A much stronger pickaxe required to mine Gold Rocks.',
+        minLevel: 5,
+        image: ALL_ITEMS[9981]?.image || '/images/forest/picaxe.png',
+        imageFilter: 'drop-shadow(0px 0px 5px #00ff41) brightness(1.2)',
+        costFunc: (amt) => `${3 * amt} Sticks, ${3 * amt} Iron`,
+        canCraft: (amt) => sticksCount >= 3 * amt && ironCount >= 3 * amt,
+        onCraft: (amt) => handleCraftIronPickaxe(amt),
+        highlight: craftingGoal?.recipeId === 'iron_pickaxe'
+      },
+      {
+        id: 'bug_net',
+        name: 'Bug Net',
+        description: 'Used to safely catch bugs hidden in Forest bushes.',
+        minLevel: 2,
+        image: '/images/forest/net.png',
+        costFunc: (amt) => `${3 * amt} Sticks, ${4 * amt} Rope`,
+        canCraft: (amt) => sticksCount >= 3 * amt && ropeCount >= 4 * amt,
+        onCraft: (amt) => handleCraftGeneric(9988, [[9995, 3], [9970, 4]], amt, 25),
+        highlight: craftingGoal?.recipeId === 'bug_net'
+      }
+    ],
+    items: [
+      {
+        id: 'bucket',
+        name: 'Bucket',
+        description: 'Allows you to draw items and water from the Well.',
+        minLevel: 2,
+        image: ALL_ITEMS[9953]?.image || '/images/forest/wood.png',
+        costFunc: (amt) => `${5 * amt} Wood, ${1 * amt} Sticks`,
+        canCraft: (amt) => woodCount >= 5 * amt && sticksCount >= 1 * amt,
+        onCraft: (amt) => {
+          if (woodCount < 5 * amt || sticksCount < 1 * amt) return;
+          const sandboxLoot = JSON.parse(localStorage.getItem('sandbox_loot') || '{}');
+          sandboxLoot[9993] = Math.max(0, (sandboxLoot[9993] || 0) - 5 * amt);
+          sandboxLoot[9995] = Math.max(0, (sandboxLoot[9995] || 0) - 1 * amt);
+          sandboxLoot[9953] = (sandboxLoot[9953] || 0) + 1 * amt;
+          localStorage.setItem('sandbox_loot', JSON.stringify(sandboxLoot));
+          if (refetch) refetch();
+          addCraftingXp(15 * amt);
+          show(`Crafted ${amt} Bucket${amt > 1 ? 's' : ''}!`, "success");
+        },
+        highlight: craftingGoal?.recipeId === 'bucket'
+      },
+      {
+        id: 'plank',
+        name: 'Wooden Plank',
+        description: 'A refined wooden board used in advanced crafting.',
+        minLevel: 3,
+        image: ALL_ITEMS[9989]?.image || '/images/forest/wood.png',
+        costFunc: (amt) => `${10 * amt} Wood`,
+        canCraft: (amt) => woodCount >= 10 * amt,
+        onCraft: (amt) => handleCraftPlank(amt),
+        highlight: craftingGoal?.recipeId === 'plank'
+      },
+      {
+        id: 'sticks',
+        name: 'Sticks',
+        description: 'Basic component for tool handles and structures.',
+        minLevel: 1,
+        image: ALL_ITEMS[9995]?.image || '/images/forest/wood.png',
+        costFunc: (amt) => `${2 * amt} Wood`,
+        canCraft: (amt) => woodCount >= 2 * amt,
+        onCraft: (amt) => handleCraftSticks(amt),
+        highlight: highlightSticks || craftingGoal?.recipeId === 'sticks'
+      },
+    {
+        id: 'stone_pipe',
+        name: 'Stone Pipe (x2)',
+        description: 'Used to channel water for automated systems.',
+        minLevel: 2,
+        image: ALL_ITEMS[9990]?.image || '/images/forest/stone.png',
+        costFunc: (amt) => `${2 * amt} Stone`,
+        canCraft: (amt) => stoneCount >= 2 * amt,
+        onCraft: (amt) => handleCraftStonePipe(amt),
+        highlight: craftingGoal?.recipeId === 'stone_pipe'
+      },
+      {
+        id: 'scarecrow',
+        name: 'Scarecrow',
+        description: 'Protects the specific plot it is placed on from crows.',
+        minLevel: 1,
+        image: ALL_ITEMS[ID_POTION_ITEMS?.SCARECROW]?.image || '/images/scarecrow/Scarecrow1.png',
+        costFunc: (amt) => `${3 * amt} Sticks, ${1 * amt} Pumpkin`,
+        canCraft: (amt) => sticksCount >= 3 * amt && pumpkinCount >= 1 * amt,
+        onCraft: (amt) => handleCraftScarecrow(amt),
+        highlight: craftingGoal?.recipeId === 'scarecrow'
+      },
+      {
+        id: 'umbrella',
+        name: 'Umbrella',
+        description: 'Protects crops from overwatering during storms.',
+        minLevel: 3,
+        image: ALL_ITEMS[9999]?.image || '/images/items/umbrella.png',
+        costFunc: (amt) => `${2 * amt} Sticks, ${5 * amt} Corn`,
+        canCraft: (amt) => sticksCount >= 2 * amt && cornCount >= 5 * amt,
+        onCraft: (amt) => handleCraftUmbrella(amt),
+        highlight: craftingGoal?.recipeId === 'umbrella'
+      },
+      {
+        id: 'rope',
+        name: 'Rope',
+        description: 'Sturdy woven leaves used to tie things together.',
+        minLevel: 2,
+        image: '/images/crafting/hemp_rope.png',
+        costFunc: (amt) => `${10 * amt} Leaves`,
+        canCraft: (amt) => leavesCount >= 10 * amt,
+        onCraft: (amt) => handleCraftGeneric(9970, [[9956, 10]], amt, 15),
+        highlight: craftingGoal?.recipeId === 'rope'
+      },
+      {
+        id: 'canvas',
+        name: 'Canvas',
+        description: 'Heavy fabric woven from cotton, essential for building sailboats.',
+        minLevel: 5,
+        image: '/images/crafting/canvas.png',
+        costFunc: (amt) => `${10 * amt} Cotton`,
+        canCraft: (amt) => cottonCount >= 10 * amt,
+        onCraft: (amt) => handleCraftGeneric(9969, [[9971, 10]], amt, 25),
+      },
+      {
+        id: 'copper_nails',
+        name: 'Copper Nails',
+        description: 'Strong nails used in shipwrighting.',
+        minLevel: 4,
+        image: '/images/crafting/copper_nails.png',
+        costFunc: (amt) => `${2 * amt} Copper Ore`,
+        canCraft: (amt) => copperCount >= 2 * amt,
+        onCraft: (amt) => handleCraftGeneric(9968, [[9974, 2]], amt, 20),
+      },
+      {
+        id: 'steel_plate',
+        name: 'Steel Plate',
+        description: 'Heavy armor plating for industrial machines.',
+        minLevel: 10,
+        image: '/images/crafting/steel_plate.png',
+        costFunc: (amt) => `${2 * amt} Iron, ${1 * amt} Coal`,
+        canCraft: (amt) => ironCount >= 2 * amt && coalCount >= 1 * amt,
+        onCraft: (amt) => handleCraftGeneric(9967, [[9996, 2], [9973, 1]], amt, 40),
+      },
+      {
+        id: 'crab_pot',
+        name: 'Crab Pot',
+        description: 'Catches crabs passively over time in the water.',
+        minLevel: 10,
+        image: '/images/items/crab_pot.png',
+        costFunc: (amt) => `${10 * amt} Wood, ${2 * amt} Iron, ${3 * amt} Rope`,
+        canCraft: (amt) => woodCount >= 10 * amt && ironCount >= 2 * amt && ropeCount >= 3 * amt,
+        onCraft: (amt) => handleCraftGeneric(9966, [[9993, 10], [9996, 2], [9970, 3]], amt, 50),
+      },
+      {
+        id: 'rowboat',
+        name: 'Rowboat',
+        description: 'A small boat to fish in the local lake.',
+        minLevel: 5,
+        image: '/images/items/rowboat.png',
+        costFunc: (amt) => `${30 * amt} Wood, ${20 * amt} Sticks, ${10 * amt} Iron`,
+        canCraft: (amt) => woodCount >= 30 * amt && sticksCount >= 20 * amt && ironCount >= 10 * amt && ropeCount >= 5 * amt,
+        onCraft: (amt) => handleCraftGeneric(9965, [[9993, 30], [9995, 20], [9996, 10], [9970, 5]], amt, 200),
+      },
+      {
+        id: 'sailboat',
+        name: 'Sailboat',
+        description: 'A larger vessel to brave the open ocean.',
+        minLevel: 15,
+        image: '/images/items/sailboat.png',
+        costFunc: (amt) => `${100 * amt} Wood, ${50 * amt} Iron, ${20 * amt} Canvas`,
+        canCraft: (amt) => woodCount >= 100 * amt && ironCount >= 50 * amt && canvasCount >= 20 * amt && nailsCount >= 20 * amt,
+        onCraft: (amt) => handleCraftGeneric(9964, [[9993, 100], [9996, 50], [9969, 20], [9968, 20]], amt, 500),
+      },
+      {
+        id: 'trawler',
+        name: 'Trawler',
+        description: 'A massive industrial ship for deep sea fishing.',
+        minLevel: 30,
+        image: '/images/items/trawler.png',
+        costFunc: (amt) => `${100 * amt} Wood, ${50 * amt} Steel, ${1 * amt} Engine`,
+        canCraft: (amt) => woodCount >= 100 * amt && steelCount >= 50 * amt && engineCount >= 1 * amt,
+        onCraft: (amt) => handleCraftGeneric(9963, [[9993, 100], [9967, 50], [9962, 1]], amt, 1500),
+      },
+      {
+        id: 'sprinkler',
+        name: 'Sprinkler',
+        description: 'Automatically waters crops so you don\'t have to.',
+        minLevel: 4,
+        image: ALL_ITEMS[9998]?.image || '/images/items/watersprinkler.png',
+        costFunc: (amt) => `${2 * amt} Pipes, ${1 * amt} Iron`,
+        canCraft: (amt) => stonePipeCount >= 2 * amt && ironCount >= 1 * amt,
+        onCraft: (amt) => handleCraftSprinkler(amt),
+        highlight: craftingGoal?.recipeId === 'sprinkler'
+      },
+      {
+        id: 'ladybug_scarecrow',
+        name: 'Ladybug Scarecrow',
+        description: 'Protects crops from pests and attracts friendly bugs.',
+        minLevel: 5,
+        image: ALL_ITEMS[9979]?.image || '/images/scarecrow/ladybug_scarecrow.png',
+        costFunc: (amt) => `${1 * amt} Scarecrow, ${10 * amt} Ladybugs, ${1 * amt} Sp. Wood`,
+        canCraft: (amt) => scarecrowBaseCount >= 1 * amt && ladybugCount >= 10 * amt && specialWoodCount >= 1 * amt,
+        onCraft: (amt) => handleCraftLadybugScarecrow(amt),
+        highlight: craftingGoal?.recipeId === 'ladybug_scarecrow'
+      },
+      {
+        id: 'tier2_scarecrow',
+        name: 'Tier 2 Scarecrow',
+        description: 'Protects a wider radius of crops (up to 2 plots away).',
+        minLevel: 6,
+        image: ALL_ITEMS[9978]?.image || '/images/scarecrow/tier2.png',
+        costFunc: (amt) => `${5 * amt} Scarecrows, ${1 * amt} Sp. Wood`,
+        canCraft: (amt) => scarecrowBaseCount >= 5 * amt && specialWoodCount >= 1 * amt,
+        onCraft: (amt) => handleCraftTier2(amt),
+        highlight: craftingGoal?.recipeId === 'tier2_scarecrow'
+      },
+      {
+        id: 'tier3_scarecrow',
+        name: 'Tier 3 Scarecrow',
+        description: 'Protects a massive radius of crops (up to 5 plots away).',
+        minLevel: 8,
+        image: ALL_ITEMS[9977]?.image || '/images/scarecrow/tier3.png',
+        costFunc: (amt) => `${4 * amt} Tier-2 Scarecrows, ${10 * amt} Wood, ${2 * amt} Sp. Wood`,
+        canCraft: (amt) => tier2ScarecrowCount >= 4 * amt && woodCount >= 10 * amt && specialWoodCount >= 2 * amt,
+        onCraft: (amt) => handleCraftTier3(amt),
+        highlight: craftingGoal?.recipeId === 'tier3_scarecrow'
+      },
+      {
+        id: 'tier4_scarecrow',
+        name: 'Max Tier Scarecrow',
+        description: 'The ultimate scarecrow. Protects the entire farm!',
+        minLevel: 10,
+        image: ALL_ITEMS[9976]?.image || '/images/scarecrow/tier4.png',
+        costFunc: (amt) => `${3 * amt} Tier-3 Scarecrows, ${5 * amt} Gold Ore, ${5 * amt} Sp. Wood`,
+        canCraft: (amt) => tier3ScarecrowCount >= 3 * amt && (allItems.find(i => i.id === 9997)?.count || 0) >= 5 * amt && specialWoodCount >= 5 * amt,
+        onCraft: (amt) => handleCraftTier4(amt),
+        highlight: craftingGoal?.recipeId === 'tier4_scarecrow'
+      },
+      {
+        id: 'tesla_tower',
+        name: 'Tesla Tower',
+        description: 'Grounds lightning strikes to protect your farm layout.',
+        minLevel: 12,
+        image: ALL_ITEMS[9975]?.image || '/images/items/tesla.png',
+        costFunc: (amt) => `${10 * amt} Iron, ${5 * amt} Stone Pipes`,
+        canCraft: (amt) => ironCount >= 10 * amt && stonePipeCount >= 5 * amt,
+        onCraft: (amt) => handleCraftTesla(amt),
+        highlight: craftingGoal?.recipeId === 'tesla_tower'
+      },
+      {
+        id: 'yarn',
+        name: 'Yarn',
+        description: 'A throwable toy that drastically increases the cat\'s happiness.',
+        minLevel: 2,
+        image: ALL_ITEMS[9955]?.image || '/images/pets/yarn.png',
+        costFunc: (amt) => `${2 * amt} Cotton, ${1 * amt} Rope`,
+        canCraft: (amt) => cottonCount >= 2 * amt && ropeCount >= 1 * amt,
+        onCraft: (amt) => handleCraftGeneric(9955, [[9971, 2], [9970, 1]], amt, 25),
+        highlight: craftingGoal?.recipeId === 'yarn'
+      },
+      {
+        id: 'egg_basket',
+        name: 'Egg Basket',
+        description: 'Used to safely collect and store eggs from your chickens.',
+        minLevel: 5,
+        image: ALL_ITEMS[9940]?.image || '/images/barn/basket.png',
+        costFunc: (amt) => `${5 * amt} Sticks, ${5 * amt} Rope`,
+        canCraft: (amt) => sticksCount >= 5 * amt && ropeCount >= 5 * amt,
+        onCraft: (amt) => handleCraftGeneric(9940, [[9995, 5], [9970, 5]], amt, 25),
+        highlight: craftingGoal?.recipeId === 'egg_basket'
+      }
+    ],
+    buildings: [
+      {
+        id: 'coop',
+        name: 'Chicken Coop',
+        description: 'Houses up to 10 chickens that lay eggs daily.',
+        minLevel: 1,
+        image: '/images/barn/coop.png',
+        costFunc: (amt) => `50 Wood, 30 Stone\n10 Iron, 500 Honey`,
+        canCraft: (amt) => !hasCoop && woodCount >= 50 && stoneCount >= 30 && ironCount >= 10 && parseInt(localStorage.getItem('sandbox_honey')||'0', 10) >= 500,
+        onCraft: (amt) => {
+           if (hasCoop) return;
+           const honey = parseInt(localStorage.getItem('sandbox_honey')||'0', 10);
+           if (woodCount < 50 || stoneCount < 30 || ironCount < 10 || honey < 500) return;
+           
+           localStorage.setItem('sandbox_honey', (honey - 500).toString());
+           window.dispatchEvent(new CustomEvent('sandboxHoneyChanged', { detail: (honey - 500).toString() }));
+
+           const sandboxLoot = JSON.parse(localStorage.getItem('sandbox_loot') || '{}');
+           sandboxLoot[9993] = Math.max(0, (sandboxLoot[9993] || 0) - 50);
+           sandboxLoot[9994] = Math.max(0, (sandboxLoot[9994] || 0) - 30);
+           sandboxLoot[9996] = Math.max(0, (sandboxLoot[9996] || 0) - 10);
+           localStorage.setItem('sandbox_loot', JSON.stringify(sandboxLoot));
+           if (refetch) refetch();
+
+           const fd = JSON.parse(localStorage.getItem('sandbox_animal_farm') || '{}');
+           if (!fd.coop) fd.coop = { status: 'unbuilt', buildStartTime: 0, chickens: [] };
+           fd.coop.status = 'building';
+           fd.coop.buildStartTime = Date.now();
+           localStorage.setItem('sandbox_animal_farm', JSON.stringify(fd));
+           
+           addCraftingXp(500);
+           show("Started building Chicken Coop! Check Animal Farm.", "success");
+        },
+        highlight: craftingGoal?.recipeId === 'coop',
+        used: hasCoop,
+        hideAmount: true
+      },
+      {
+        id: 'sheepcage',
+        name: 'Sheep Cage',
+        description: 'Houses up to 5 sheep that produce wool daily.',
+        minLevel: 1,
+        image: '/images/barn/sheepcage.png',
+        costFunc: (amt) => `50 Wood, 30 Stone\n10 Iron, 500 Honey`,
+        canCraft: (amt) => !hasSheepcage && woodCount >= 50 && stoneCount >= 30 && ironCount >= 10 && parseInt(localStorage.getItem('sandbox_honey')||'0', 10) >= 500,
+        onCraft: (amt) => {
+           if (hasSheepcage) return;
+           const honey = parseInt(localStorage.getItem('sandbox_honey')||'0', 10);
+           if (woodCount < 50 || stoneCount < 30 || ironCount < 10 || honey < 500) return;
+           
+           localStorage.setItem('sandbox_honey', (honey - 500).toString());
+           window.dispatchEvent(new CustomEvent('sandboxHoneyChanged', { detail: (honey - 500).toString() }));
+
+           const sandboxLoot = JSON.parse(localStorage.getItem('sandbox_loot') || '{}');
+           sandboxLoot[9993] = Math.max(0, (sandboxLoot[9993] || 0) - 50);
+           sandboxLoot[9994] = Math.max(0, (sandboxLoot[9994] || 0) - 30);
+           sandboxLoot[9996] = Math.max(0, (sandboxLoot[9996] || 0) - 10);
+           localStorage.setItem('sandbox_loot', JSON.stringify(sandboxLoot));
+           if (refetch) refetch();
+
+           const fd = JSON.parse(localStorage.getItem('sandbox_animal_farm') || '{}');
+           if (!fd.sheepcage) fd.sheepcage = { status: 'unbuilt', buildStartTime: 0, sheep: [] };
+           fd.sheepcage.status = 'building';
+           fd.sheepcage.buildStartTime = Date.now();
+           localStorage.setItem('sandbox_animal_farm', JSON.stringify(fd));
+           
+           addCraftingXp(500);
+           show("Started building Sheep Cage! Check Animal Farm.", "success");
+        },
+        highlight: craftingGoal?.recipeId === 'sheepcage',
+        used: hasSheepcage,
+        hideAmount: true
+      },
+      {
+        id: 'cowbarn',
+        name: 'Cow Barn',
+        description: 'Houses up to 3 cows that produce milk daily.',
+        minLevel: 1,
+        image: '/images/barn/cowbarn.png',
+        costFunc: (amt) => `50 Wood, 30 Stone\n10 Iron, 500 Honey`,
+        canCraft: (amt) => !hasCowbarn && woodCount >= 50 && stoneCount >= 30 && ironCount >= 10 && parseInt(localStorage.getItem('sandbox_honey')||'0', 10) >= 500,
+        onCraft: (amt) => {
+           if (hasCowbarn) return;
+           const honey = parseInt(localStorage.getItem('sandbox_honey')||'0', 10);
+           if (woodCount < 50 || stoneCount < 30 || ironCount < 10 || honey < 500) return;
+           
+           localStorage.setItem('sandbox_honey', (honey - 500).toString());
+           window.dispatchEvent(new CustomEvent('sandboxHoneyChanged', { detail: (honey - 500).toString() }));
+
+           const sandboxLoot = JSON.parse(localStorage.getItem('sandbox_loot') || '{}');
+           sandboxLoot[9993] = Math.max(0, (sandboxLoot[9993] || 0) - 50);
+           sandboxLoot[9994] = Math.max(0, (sandboxLoot[9994] || 0) - 30);
+           sandboxLoot[9996] = Math.max(0, (sandboxLoot[9996] || 0) - 10);
+           localStorage.setItem('sandbox_loot', JSON.stringify(sandboxLoot));
+           if (refetch) refetch();
+
+           const fd = JSON.parse(localStorage.getItem('sandbox_animal_farm') || '{}');
+           if (!fd.cowbarn) fd.cowbarn = { status: 'unbuilt', buildStartTime: 0, cows: [] };
+           fd.cowbarn.status = 'building';
+           fd.cowbarn.buildStartTime = Date.now();
+           localStorage.setItem('sandbox_animal_farm', JSON.stringify(fd));
+           
+           addCraftingXp(500);
+           show("Started building Cow Barn! Check Animal Farm.", "success");
+        },
+        highlight: craftingGoal?.recipeId === 'cowbarn',
+        used: hasCowbarn,
+        hideAmount: true
+      }
+    ]
   };
 
   return (
     <BaseDialog onClose={onClose} title="CRAFTING" header="/images/dialog/modal-header-inventory.png" headerOffset={10} className="custom-modal-background">
-      <div style={{ padding: '20px', color: '#fff', fontFamily: 'monospace', display: 'flex', flexDirection: 'column', gap: '20px', width: '400px', maxWidth: '90vw' }}>
+      <div style={{ padding: '20px', color: '#fff', fontFamily: 'monospace', display: 'flex', flexDirection: 'column', gap: '20px', width: '600px', maxWidth: '90vw' }}>
         <h2 style={{ color: '#00ff41', margin: '0 0 10px 0', textAlign: 'center' }}>Crafting Workbench</h2>
-        
-        <div style={{ backgroundColor: 'rgba(0,0,0,0.5)', border: '2px solid #5a402a', borderRadius: '8px', padding: '15px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px dashed #5a402a', paddingBottom: '10px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #5a402a', paddingBottom: '10px' }}>
+          <h2 style={{ color: '#00ff41', margin: '0' }}>Crafting Workbench</h2>
+          <div style={{ backgroundColor: 'rgba(0,0,0,0.5)', padding: '5px 10px', borderRadius: '8px', border: '1px solid #ffea00', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <div>
-              <h3 style={{ margin: 0, color: '#ffea00' }}>Sticks</h3>
-              <p style={{ margin: '5px 0 0 0', fontSize: '12px', color: '#aaa' }}>Cost: 2 Wood Log (You have {woodCount})</p>
+              <span style={{ color: '#ccc', fontSize: '12px' }}>Crafting Level: </span>
+              <span style={{ color: '#ffea00', fontWeight: 'bold', fontSize: '16px' }}>{craftingLevel}</span>
             </div>
-            <BaseButton small label="Craft" onClick={handleCraftSticks} disabled={woodCount < 2} />
-          </div>
-
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px dashed #5a402a', paddingBottom: '10px', paddingTop: '5px' }}>
-            <div>
-              <h3 style={{ margin: 0, color: '#ffea00' }}>Stone Pipe (x2)</h3>
-              <p style={{ margin: '5px 0 0 0', fontSize: '12px', color: '#aaa' }}>Cost: 2 Stone (You have {stoneCount})</p>
+            <div style={{ width: '100%', height: '6px', backgroundColor: 'rgba(0,0,0,0.5)', borderRadius: '3px', marginTop: '4px', overflow: 'hidden' }}>
+              <div style={{ width: `${craftingProgress}%`, height: '100%', backgroundColor: '#ffea00', transition: 'width 0.3s' }} />
             </div>
-            <BaseButton small label="Craft" onClick={handleCraftStonePipe} disabled={stoneCount < 2} />
-          </div>
-
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px dashed #5a402a', paddingBottom: '10px', paddingTop: '5px' }}>
-            <div>
-              <h3 style={{ margin: 0, color: '#ffea00' }}>Scarecrow</h3>
-              <p style={{ margin: '5px 0 0 0', fontSize: '12px', color: '#aaa' }}>Cost: 3 Sticks, 1 Pumpkin</p>
-              <p style={{ margin: '2px 0 0 0', fontSize: '12px', color: '#ccc' }}>You have: {sticksCount} Sticks, {pumpkinCount} Pumpkins</p>
-            </div>
-            <BaseButton small label="Craft" onClick={handleCraftScarecrow} disabled={sticksCount < 3 || pumpkinCount < 1} />
-          </div>
-
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px dashed #5a402a', paddingBottom: '10px', paddingTop: '5px' }}>
-            <div>
-              <h3 style={{ margin: 0, color: '#ffea00' }}>Umbrella</h3>
-              <p style={{ margin: '5px 0 0 0', fontSize: '12px', color: '#aaa' }}>Cost: 2 Sticks, 5 Corn</p>
-              <p style={{ margin: '2px 0 0 0', fontSize: '12px', color: '#ccc' }}>You have: {sticksCount} Sticks, {cornCount} Corn</p>
-            </div>
-            <BaseButton small label="Craft" onClick={handleCraftUmbrella} disabled={sticksCount < 2 || cornCount < 5} />
-          </div>
-
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '5px' }}>
-            <div>
-              <h3 style={{ margin: 0, color: '#ffea00' }}>Water Sprinkler</h3>
-              <p style={{ margin: '5px 0 0 0', fontSize: '12px', color: '#aaa' }}>Cost: 2 Stone Pipes, 1 Iron</p>
-              <p style={{ margin: '2px 0 0 0', fontSize: '12px', color: '#ccc' }}>You have: {stonePipeCount} Pipes, {ironCount} Iron</p>
-            </div>
-            <BaseButton small label="Craft" onClick={handleCraftSprinkler} disabled={stonePipeCount < 2 || ironCount < 1} />
           </div>
         </div>
-      </div>
-    </BaseDialog>
-  );
-};
-
-const SmithingDialog = ({ onClose }) => {
-  const { all: allItems } = useItems();
-  const { show } = useNotification();
-
-  const woodCount = allItems.find(i => i.id === 9993)?.count || 0;
-  const ironOreCount = allItems.find(i => i.id === 9996)?.count || 0;
-  const goldOreCount = allItems.find(i => i.id === 9997)?.count || 0;
-
-  const [selectedOre, setSelectedOre] = useState(null); // 'iron' or 'gold'
-  const [woodAmount, setWoodAmount] = useState(0);
-
-  return (
-    <BaseDialog onClose={onClose} title="SMITHING" header="/images/dialog/modal-header-inventory.png" headerOffset={10} className="custom-modal-background">
-      <div style={{ padding: '20px', color: '#fff', fontFamily: 'monospace', display: 'flex', flexDirection: 'column', gap: '20px', width: '450px', maxWidth: '90vw', alignItems: 'center' }}>
-        <h2 style={{ color: '#ffea00', margin: '0 0 5px 0', textAlign: 'center' }}>Furnace</h2>
         
-        {/* Minecraft Furnace UI Box */}
+        {craftingGoal && craftingGoal.message && (
+          <div style={{ backgroundColor: 'rgba(255, 234, 0, 0.2)', border: '1px solid #ffea00', padding: '10px', borderRadius: '8px', color: '#ffea00', textAlign: 'center', marginBottom: '10px', fontSize: '14px' }}>
+            {craftingGoal.message}
+          </div>
+        )}
+
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '10px' }}>
+          <button 
+            onClick={() => setActiveTab('tools')} 
+            style={{ 
+              padding: '10px 20px', 
+              backgroundColor: activeTab === 'tools' ? 'rgba(0, 255, 65, 0.2)' : 'rgba(0, 0, 0, 0.5)', 
+              color: activeTab === 'tools' ? '#00ff41' : '#ccc', 
+              border: `2px solid ${activeTab === 'tools' ? '#00ff41' : '#5a402a'}`, 
+              borderRadius: '8px', 
+              cursor: 'pointer', 
+              fontFamily: 'monospace', 
+              fontWeight: 'bold',
+              fontSize: '16px'
+            }}
+          >
+            Tools
+          </button>
+          <button 
+            onClick={() => setActiveTab('items')} 
+            style={{ 
+              padding: '10px 20px', 
+              backgroundColor: activeTab === 'items' ? 'rgba(0, 191, 255, 0.2)' : 'rgba(0, 0, 0, 0.5)', 
+              color: activeTab === 'items' ? '#00bfff' : '#ccc', 
+              border: `2px solid ${activeTab === 'items' ? '#00bfff' : '#5a402a'}`, 
+              borderRadius: '8px', 
+              cursor: 'pointer', 
+              fontFamily: 'monospace', 
+              fontWeight: 'bold',
+              fontSize: '16px'
+            }}
+          >
+            Items
+          </button>
+          <button 
+            onClick={() => setActiveTab('buildings')} 
+            style={{ 
+              padding: '10px 20px', 
+              backgroundColor: activeTab === 'buildings' ? 'rgba(255, 165, 0, 0.2)' : 'rgba(0, 0, 0, 0.5)', 
+              color: activeTab === 'buildings' ? '#ffa500' : '#ccc', 
+              border: `2px solid ${activeTab === 'buildings' ? '#ffa500' : '#5a402a'}`, 
+              borderRadius: '8px', 
+              cursor: 'pointer', 
+              fontFamily: 'monospace', 
+              fontWeight: 'bold',
+              fontSize: '16px'
+            }}
+          >
+            Buildings
+          </button>
+        </div>
+
         <div style={{ 
-          backgroundColor: '#8b8b8b', 
-          border: '4px solid #3c3c3c', 
-          borderRadius: '4px', 
-          padding: '20px', 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'center',
-          gap: '30px',
-          width: '100%',
-          boxShadow: 'inset -4px -4px 0px rgba(0,0,0,0.3), inset 4px 4px 0px rgba(255,255,255,0.3)',
-          boxSizing: 'border-box'
+          display: 'grid', 
+          gridTemplateColumns: 'repeat(4, 1fr)', 
+          gap: '15px', 
+          overflowY: 'auto', 
+          maxHeight: '400px',
+          padding: '5px',
+          paddingRight: '10px'
         }}>
-          
-          {/* Inputs Column */}
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '15px' }}>
-            {/* Ore Slot */}
-            <div 
-              style={{ 
-                width: '64px', height: '64px', backgroundColor: '#5c5c5c', 
-                border: '4px solid #3c3c3c', boxShadow: 'inset 4px 4px 0px rgba(0,0,0,0.5)',
-                display: 'flex', justifyContent: 'center', alignItems: 'center',
-                borderRightColor: '#fff', borderBottomColor: '#fff'
-              }}
-            >
-              {selectedOre === 'iron' && <div style={{ color: '#ccc', fontWeight: 'bold', fontSize: '12px', textAlign: 'center' }}>IRON<br/>ORE</div>}
-              {selectedOre === 'gold' && <div style={{ color: '#ffd700', fontWeight: 'bold', fontSize: '12px', textAlign: 'center' }}>GOLD<br/>ORE</div>}
-              {!selectedOre && <span style={{ color: '#aaa', fontSize: '10px' }}>Ore</span>}
-            </div>
-
-            {/* Flame Icon */}
-            <div style={{ color: woodAmount > 0 ? '#ff8800' : '#444', fontSize: '28px', textShadow: woodAmount > 0 ? '0 0 10px #ff4400' : 'none' }}>🔥</div>
-
-            {/* Fuel Slot */}
-            <div style={{ 
-              width: '64px', height: '64px', backgroundColor: '#5c5c5c', 
-              border: '4px solid #3c3c3c', boxShadow: 'inset 4px 4px 0px rgba(0,0,0,0.5)',
-              display: 'flex', justifyContent: 'center', alignItems: 'center',
-              borderRightColor: '#fff', borderBottomColor: '#fff'
-            }}>
-              {woodAmount > 0 ? (
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                  <img src="/images/forest/wood.png" alt="Wood" style={{ width: '30px', height: '30px', objectFit: 'contain' }} />
-                  <span style={{ fontSize: '12px', fontWeight: 'bold', textShadow: '1px 1px 0 #000' }}>{woodAmount}</span>
+          {recipes[activeTab].map(recipe => {
+            const amt = craftAmounts[recipe.id] || 1;
+            const isLocked = craftingLevel < recipe.minLevel;
+            
+            if (isLocked) return null;
+            
+            return (
+              <div key={recipe.id} style={{
+                backgroundColor: recipe.highlight ? 'rgba(0,255,65,0.2)' : 'rgba(0,0,0,0.5)',
+                border: `2px solid ${recipe.highlight ? '#00ff41' : '#5a402a'}`,
+                borderRadius: '8px',
+                padding: '15px 10px',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                textAlign: 'center',
+                gap: '10px',
+                position: 'relative',
+                opacity: recipe.used ? 0.7 : 1
+              }}>
+                <div title={recipe.description} onClick={() => show(recipe.description, "info")} style={{ position: 'absolute', top: '5px', right: '5px', width: '20px', height: '20px', backgroundColor: 'rgba(0,191,255,0.2)', border: '1px solid #00bfff', borderRadius: '50%', display: 'flex', justifyContent: 'center', alignItems: 'center', color: '#00bfff', fontSize: '12px', fontWeight: 'bold', cursor: 'help' }}>i</div>
+                {recipe.used && (
+                   <div style={{ position: 'absolute', top: '40%', left: '50%', transform: 'translate(-50%, -50%) rotate(-15deg)', backgroundColor: 'rgba(255, 68, 68, 0.9)', color: 'white', padding: '5px 15px', borderRadius: '4px', fontWeight: 'bold', fontSize: '24px', letterSpacing: '2px', border: '2px solid white', zIndex: 10, pointerEvents: 'none' }}>USED</div>
+                )}
+                {recipe.highlight && (
+                   <div style={{ position: 'absolute', top: '-30px', left: '50%', transform: 'translateX(-50%)', animation: 'bounce 1s infinite' }}>
+                     <span style={{ fontSize: '30px', color: '#00ff41', filter: 'drop-shadow(0px 2px 2px black)' }}>⬇️</span>
+                   </div>
+                )}
+                <div style={{ height: '50px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                  <img src={recipe.image} alt={recipe.name} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', filter: recipe.imageFilter || 'drop-shadow(0 2px 4px rgba(0,0,0,0.8))' }} />
                 </div>
-              ) : (
-                <span style={{ color: '#aaa', fontSize: '10px' }}>Fuel</span>
-              )}
-            </div>
-          </div>
-
-          {/* Progress Arrow */}
-          <div style={{ position: 'relative', width: '50px', height: '35px', backgroundColor: '#5c5c5c', clipPath: 'polygon(0 20%, 60% 20%, 60% 0, 100% 50%, 60% 100%, 60% 80%, 0 80%)' }}>
-            <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: woodAmount > 0 && selectedOre ? '100%' : '0%', backgroundColor: '#fff', transition: 'width 2s linear' }}></div>
-          </div>
-
-          {/* Output Slot */}
-          <div style={{ 
-            width: '84px', height: '84px', backgroundColor: '#5c5c5c', 
-            border: '4px solid #3c3c3c', boxShadow: 'inset 4px 4px 0px rgba(0,0,0,0.5)',
-            display: 'flex', justifyContent: 'center', alignItems: 'center',
-            borderRightColor: '#fff', borderBottomColor: '#fff'
-          }}>
-            {/* Result item will go here */}
-          </div>
-
+                <div style={{ fontSize: '14px', color: '#ffea00', fontWeight: 'bold', minHeight: '34px', display: 'flex', alignItems: 'center' }}>{recipe.name}</div>
+                
+                <div style={{ fontSize: '11px', color: '#aaa', minHeight: '30px', display: 'flex', alignItems: 'center' }}>
+                  {recipe.costFunc(amt)}
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginTop: 'auto', opacity: recipe.used ? 0.5 : 1, pointerEvents: recipe.used ? 'none' : 'auto' }}>
+                  {!recipe.hideAmount && (
+                    <input 
+                      type="number" 
+                      min="1" 
+                      max="99" 
+                      value={amt} 
+                      onChange={(e) => setCraftAmounts({...craftAmounts, [recipe.id]: Math.max(1, parseInt(e.target.value) || 1)})}
+                      style={{ width: '40px', backgroundColor: 'rgba(0,0,0,0.5)', color: '#fff', border: '1px solid #5a402a', borderRadius: '4px', textAlign: 'center', fontFamily: 'monospace' }}
+                    />
+                  )}
+                  <BaseButton small label={recipe.used ? "Built" : "Craft"} onClick={() => recipe.onCraft(amt)} disabled={!recipe.canCraft(amt) || recipe.used} />
+                </div>
+              </div>
+            );
+          })}
         </div>
 
-        {/* Controls Container */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', width: '100%', backgroundColor: 'rgba(0,0,0,0.5)', padding: '15px', borderRadius: '8px', border: '1px solid #5a402a', boxSizing: 'border-box' }}>
-          
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ color: '#ccc', fontSize: '14px' }}>Select Ore:</span>
-            <div style={{ display: 'flex', gap: '10px' }}>
-              <button 
-                onClick={() => setSelectedOre(selectedOre === 'iron' ? null : 'iron')}
-                style={{ padding: '6px 12px', backgroundColor: selectedOre === 'iron' ? '#00ff41' : '#222', color: selectedOre === 'iron' ? '#000' : '#fff', border: '1px solid #00ff41', borderRadius: '4px', cursor: 'pointer', fontFamily: 'monospace' }}
-              >
-                Iron ({ironOreCount})
-              </button>
-              <button 
-                onClick={() => setSelectedOre(selectedOre === 'gold' ? null : 'gold')}
-                style={{ padding: '6px 12px', backgroundColor: selectedOre === 'gold' ? '#ffea00' : '#222', color: selectedOre === 'gold' ? '#000' : '#fff', border: '1px solid #ffea00', borderRadius: '4px', cursor: 'pointer', fontFamily: 'monospace' }}
-              >
-                Gold ({goldOreCount})
-              </button>
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ color: '#ccc', fontSize: '14px' }}>Wood Fuel:</span>
-              <span style={{ color: '#ffea00' }}>{woodAmount} / {woodCount}</span>
-            </div>
-            <input 
-              type="range" 
-              min="0" 
-              max={woodCount} 
-              value={woodAmount} 
-              onChange={(e) => setWoodAmount(parseInt(e.target.value))}
-              style={{ width: '100%', cursor: 'pointer' }}
-            />
-          </div>
-
-          <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
-            <BaseButton 
-              label={woodAmount > 0 && selectedOre ? "SMELT (Coming Soon)" : "Select Ore & Fuel"} 
-              disabled={!selectedOre || woodAmount <= 0} 
-              onClick={() => show("Smelting feature is under construction!", "info")} 
-            />
-          </div>
+        <div style={{ display: 'flex', justifyContent: 'space-around', backgroundColor: 'rgba(0,0,0,0.5)', padding: '10px', borderRadius: '8px', border: '1px solid #5a402a', fontSize: '12px', color: '#ccc', flexWrap: 'wrap', gap: '10px' }}>
+          <span>Wood: {woodCount}</span>
+          <span>Sp. Wood: {specialWoodCount}</span>
+          <span>Stone: {stoneCount}</span>
+          <span>Sticks: {sticksCount}</span>
+          <span>Leaves: {leavesCount}</span>
+          <span>Rope: {ropeCount}</span>
+          <span>Iron: {ironCount}</span>
+          <span>Pipes: {stonePipeCount}</span>
+          <span>Planks: {plankCount}</span>
         </div>
-
       </div>
     </BaseDialog>
   );
 };
 
-const ScarecrowSpot = ({ spotId, pos, offsetX, offsetY, isPlacing, isPlaced, expiryTime, onPlace, onExpire, onRemove }) => {
+const ProtectorSpot = ({ spotId, pos, offsetX, offsetY, placingType, placedItem, onPlace, onRemove }) => {
   const [frame, setFrame] = useState(1);
   const [timeLeft, setTimeLeft] = useState(0);
   const [showDebug, setShowDebug] = useState(() => localStorage.getItem('show_debug_labels') !== 'false');
@@ -759,39 +2049,43 @@ const ScarecrowSpot = ({ spotId, pos, offsetX, offsetY, isPlacing, isPlaced, exp
   }, []);
   
   useEffect(() => {
-    if (!isPlaced) return;
+    if (placedItem?.type !== 'scarecrow') return;
+    // Animate base scarecrows
+    if (placedItem?.type !== 'tier1' && placedItem?.type !== 'tier2' && placedItem?.type !== 'tier3' && placedItem?.type !== 'tier4' && placedItem?.type !== 'ladybug_scarecrow') return;
+    
     const timer = setInterval(() => {
       setFrame(f => (f % 5) + 1);
     }, 200); // 5 frames, 200ms each
     return () => clearInterval(timer);
-  }, [isPlaced]);
+  }, [placedItem?.type]);
 
   useEffect(() => {
-    if (!isPlaced || !expiryTime) return;
+    if (!placedItem || !placedItem.expiryTime) return;
     
+
     const tick = () => {
       const now = Math.floor(Date.now() / 1000);
-      // Automatically clear old non-timer scarecrows for backward compatibility
-      const exp = typeof expiryTime === 'number' ? expiryTime : now - 1; 
+      const exp = typeof placedItem.expiryTime === 'number' ? placedItem.expiryTime : now - 1; 
       const remaining = exp - now;
       
       if (remaining <= 0) {
         setTimeLeft(0);
-        if (onExpire) onExpire(spotId);
+        if (placedItem.onExpire) placedItem.onExpire(spotId, placedItem.type);
       } else {
         setTimeLeft(remaining);
       }
     };
     
-    tick(); // Initial call
+    tick();
     const timer = setInterval(tick, 1000);
     return () => clearInterval(timer);
-  }, [isPlaced, expiryTime, onExpire, spotId]);
+  }, [placedItem, spotId]);
 
-  if (!isPlacing && !isPlaced) return null;
+  const isPlacing = !!placingType;
+  const isPlaced = !!placedItem;
 
-  // Fix CSS calc() bug by properly adding 'px' to raw numbers 
-  // and adjust the offset to sit nicely between the dirt piles
+  if (!isPlacing && !isPlaced && !showDebug) return null;
+
   const leftVal = pos.left !== undefined ? (typeof pos.left === 'number' ? `${pos.left + offsetX}px` : `calc(${pos.left} + ${offsetX}px)`) : '0px';
   const topVal = pos.top !== undefined ? (typeof pos.top === 'number' ? `${pos.top + offsetY}px` : `calc(${pos.top} + ${offsetY}px)`) : '0px';
 
@@ -805,15 +2099,74 @@ const ScarecrowSpot = ({ spotId, pos, offsetX, offsetY, isPlacing, isPlaced, exp
     return `${s}s`;
   };
 
+  let borderColor = 'white';
+  let bgColor = 'rgba(255,255,255,0.4)';
+  let textColor = '#00ff41';
+  let imageSrc = null;
+  let imageStyle = { width: '120%', height: '120%', objectFit: 'contain', pointerEvents: 'none', filter: 'drop-shadow(0px 0px 5px rgba(0,0,0,0.8))' };
+  let topOffset = '-40px';
+
+  if (isPlaced) {
+    if (placedItem.type.includes('tier') || placedItem.type === 'ladybug_scarecrow') {
+      textColor = '#00ff41';
+      imageSrc = `/images/scarecrow/Scarecrow${frame}.png`;
+      imageStyle.width = '200%';
+      imageStyle.height = '200%';
+      topOffset = '-25px';
+      
+      if (placedItem.type === 'tier1') {
+        imageSrc = `/images/scarecrow/Scarecrow${frame}.png`;
+      } else if (placedItem.type === 'tier2') {
+        imageSrc = `/images/scarecrow/tier2.png`;
+      } else if (placedItem.type === 'tier3') {
+        imageSrc = `/images/scarecrow/tier3.png`;
+      } else if (placedItem.type === 'tier4') {
+        imageSrc = `/images/scarecrow/tier4.png`;
+      } else if (placedItem.type === 'ladybug_scarecrow') {
+        imageSrc = `/images/scarecrow/ladybug_scarecrow.png`;
+      }
+    } else if (placedItem.type === 'tesla') {
+      textColor = '#00ffff';
+      imageSrc = '/images/items/tesla.png';
+      imageStyle.width = '150%';
+      imageStyle.height = '150%';
+      topOffset = '-25px';
+    } else if (placedItem.type === 'ladybug') {
+      textColor = '#ff4444';
+      imageSrc = '/images/items/ladybug.png';
+      imageStyle.width = '100%';
+      imageStyle.height = '100%';
+      topOffset = '-25px';
+    } else if (placedItem.type === 'sprinkler') {
+      textColor = '#00bfff';
+      imageSrc = '/images/items/watersprinkler.png';
+    } else if (placedItem.type === 'umbrella') {
+      textColor = '#ff00ff';
+      imageSrc = '/images/items/umbrella.png';
+    }
+  } else if (isPlacing) {
+    if (placingType.includes('tier') || placingType === 'ladybug_scarecrow') {
+      borderColor = 'white'; bgColor = 'rgba(255,255,255,0.4)';
+    } else if (placingType === 'tesla') {
+      borderColor = '#00ffff'; bgColor = 'rgba(0,255,255,0.3)';
+    } else if (placingType === 'ladybug') {
+      borderColor = '#ff4444'; bgColor = 'rgba(255,68,68,0.3)';
+    } else if (placingType === 'sprinkler') {
+      borderColor = '#00bfff'; bgColor = 'rgba(0,191,255,0.3)';
+    } else if (placingType === 'umbrella') {
+      borderColor = '#ff00ff'; bgColor = 'rgba(255,0,255,0.3)';
+    }
+  }
+
   return (
     <div
       onPointerDown={(e) => {
         e.stopPropagation();
         e.preventDefault();
         if (isPlacing && !isPlaced) {
-          onPlace();
+          onPlace(spotId, placingType);
         } else if (isPlaced && onRemove) {
-          onRemove();
+          onRemove(spotId, placedItem.type);
         }
       }}
       style={{
@@ -824,8 +2177,8 @@ const ScarecrowSpot = ({ spotId, pos, offsetX, offsetY, isPlacing, isPlaced, exp
         height: '50px',
         zIndex: 9999, 
         cursor: 'pointer',
-        border: isPlacing && !isPlaced ? '3px dashed white' : 'none',
-        backgroundColor: isPlacing && !isPlaced ? 'rgba(255,255,255,0.4)' : 'transparent',
+        border: isPlacing && !isPlaced ? `3px dashed ${borderColor}` : 'none',
+        backgroundColor: isPlacing && !isPlaced ? bgColor : 'transparent',
         borderRadius: '10px',
         display: 'flex',
         flexDirection: 'column',
@@ -834,15 +2187,14 @@ const ScarecrowSpot = ({ spotId, pos, offsetX, offsetY, isPlacing, isPlaced, exp
         pointerEvents: isPlacing || isPlaced ? 'auto' : 'none',
       }}
     >
-      {/* --- DEBUG: SPOT INDEX LABEL --- */}
       {showDebug && (isPlacing || isPlaced) && (
         <div style={{
           position: 'absolute',
           top: '-25px',
           left: '0px',
           backgroundColor: 'rgba(0,0,0,0.8)',
-          color: '#00ffff',
-          border: '1px solid #00ffff',
+          color: borderColor,
+          border: `1px solid ${borderColor}`,
           padding: '2px 6px',
           fontSize: '14px',
           fontWeight: 'bold',
@@ -856,8 +2208,8 @@ const ScarecrowSpot = ({ spotId, pos, offsetX, offsetY, isPlacing, isPlaced, exp
         <>
           <div style={{
             position: 'absolute',
-            top: '-25px',
-            color: '#00ff41',
+            top: topOffset,
+            color: textColor,
             fontWeight: 'bold',
             fontSize: '14px',
             textShadow: '1px 1px 2px black, -1px -1px 2px black, 1px -1px 2px black, -1px 1px 2px black',
@@ -866,234 +2218,588 @@ const ScarecrowSpot = ({ spotId, pos, offsetX, offsetY, isPlacing, isPlaced, exp
           }}>
             {formatTime(timeLeft)}
           </div>
-          <img 
-            src={`/images/scarecrow/Scarecrow${frame}.png`} 
-            alt="Scarecrow" 
-            onError={(e) => { e.target.src = `/images/scarecrow/Scarecrow${frame}.jpg`; }}
-            style={{ width: '200%', height: '200%', objectFit: 'contain', pointerEvents: 'none', filter: 'drop-shadow(0px 0px 5px rgba(0,0,0,0.8))' }}
-          />
+          {imageSrc && (
+            <img 
+              src={imageSrc} 
+              alt={placedItem.type} 
+              onError={(e) => { 
+                if (placedItem.type === 'scarecrow') e.target.src = `/images/scarecrow/Scarecrow${frame}.jpg`; 
+                if (placedItem.type === 'tier1') e.target.src = `/images/scarecrow/Scarecrow${frame}.jpg`; 
+                else e.target.style.display = 'none'; 
+              }}
+              style={imageStyle}
+            />
+          )}
         </>
       )}
     </div>
   );
 };
 
-const LadybugSpot = ({ spotId, pos, offsetX, offsetY, isPlacing, isPlaced, expiryTime, onPlace, onExpire, onRemove }) => {
-  const [timeLeft, setTimeLeft] = useState(0);
-  const [showDebug, setShowDebug] = useState(() => localStorage.getItem('show_debug_labels') !== 'false');
+export const RegionalQuestBoard = ({ onClose, title, questType, tutorialStep, refetch, completedQuests, setCompletedQuests }) => {
+  const { show } = useNotification();
+  const [animState, setAnimState] = useState(0); 
+  const [activeQuest, setActiveQuest] = useState(null);
 
-  useEffect(() => {
-    const handler = (e) => setShowDebug(e.detail);
-    window.addEventListener('toggleDebugLabels', handler);
-    return () => window.removeEventListener('toggleDebugLabels', handler);
-  }, []);
+  const allQuests = getQuestData();
+  const availableQuests = allQuests.filter(q => q.type === questType && q.unlockCondition(tutorialStep, completedQuests));
+  const activeQuestsList = availableQuests.filter(q => !completedQuests.includes(q.id));
 
-  useEffect(() => {
-    if (!isPlaced || !expiryTime) return;
-    const tick = () => {
-      const now = Math.floor(Date.now() / 1000);
-      const exp = typeof expiryTime === 'number' ? expiryTime : now - 1; 
-      const remaining = exp - now;
-      if (remaining <= 0) {
-        setTimeLeft(0);
-        if (onExpire) onExpire(spotId);
-      } else {
-        setTimeLeft(remaining);
+  const checkRequirements = (reqs) => {
+    if (!reqs || reqs.length === 0) return true;
+    const sandboxLoot = JSON.parse(localStorage.getItem('sandbox_loot') || '{}');
+    const sandboxProduce = JSON.parse(localStorage.getItem('sandbox_produce') || '{}');
+    
+    for (const req of reqs) {
+      if (req.fn) {
+         const val = req.fn(sandboxLoot, sandboxProduce);
+         if (typeof val === 'number') {
+           if (val < req.count) return false;
+         } else {
+           if (!val) return false;
+         }
+         continue;
       }
-    };
-    tick();
-    const timer = setInterval(tick, 1000);
-    return () => clearInterval(timer);
-  }, [isPlaced, expiryTime, onExpire, spotId]);
-
-  if (!isPlacing && !isPlaced) return null;
-
-  const leftVal = pos.left !== undefined ? (typeof pos.left === 'number' ? `${pos.left + offsetX}px` : `calc(${pos.left} + ${offsetX}px)`) : '0px';
-  const topVal = pos.top !== undefined ? (typeof pos.top === 'number' ? `${pos.top + offsetY}px` : `calc(${pos.top} + ${offsetY}px)`) : '0px';
-
-  const formatTime = (secs) => {
-    const h = Math.floor(secs / 3600);
-    const m = Math.floor((secs % 3600) / 60);
-    const s = secs % 60;
-    const pad = (n) => n.toString().padStart(2, '0');
-    if (h > 0) return `${h}:${pad(m)}:${pad(s)}`;
-    if (m > 0) return `${m}:${pad(s)}`;
-    return `${s}s`;
+      let count = 0;
+      const ids = Array.isArray(req.id) ? req.id : [req.id];
+      for (const id of ids) {
+        if (Array.isArray(sandboxProduce[id])) count += sandboxProduce[id].length;
+        else count += (Number(sandboxProduce[id]) || 0) + (Number(sandboxLoot[id]) || 0);
+      }
+      if (count < req.count) return false;
+    }
+    return true;
   };
 
-  return (
-    <div
-      onPointerDown={(e) => {
-        e.stopPropagation();
-        e.preventDefault();
-        if (isPlacing && !isPlaced) {
-          onPlace();
-        } else if (isPlaced && onRemove) {
-          onRemove();
+  const getRequirementCounts = (reqs) => {
+    if (!reqs || reqs.length === 0) return [];
+    const sandboxLoot = JSON.parse(localStorage.getItem('sandbox_loot') || '{}');
+    const sandboxProduce = JSON.parse(localStorage.getItem('sandbox_produce') || '{}');
+    
+    return reqs.map(req => {
+      if (req.fn) {
+         const val = req.fn(sandboxLoot, sandboxProduce);
+         if (typeof val === 'number') {
+           return { ...req, current: val };
+         }
+         return { ...req, current: val ? 1 : 0, count: req.count || 1 };
+      }
+      let count = 0;
+      const ids = Array.isArray(req.id) ? req.id : [req.id];
+      for (const id of ids) {
+        if (Array.isArray(sandboxProduce[id])) count += sandboxProduce[id].length;
+        else count += (Number(sandboxProduce[id]) || 0) + (Number(sandboxLoot[id]) || 0);
+      }
+      return { ...req, current: count };
+    });
+  };
+
+  const handleCompleteQuest = () => {
+    const quest = activeQuest;
+    if (!quest) return;
+
+    const sandboxLoot = JSON.parse(localStorage.getItem('sandbox_loot') || '{}');
+    const sandboxProduce = JSON.parse(localStorage.getItem('sandbox_produce') || '{}');
+    
+    for (const req of quest.reqs) {
+      if (req.fn) continue;
+      let remaining = req.count;
+      const ids = Array.isArray(req.id) ? req.id : [req.id];
+      
+      for (const id of ids) {
+        if (remaining <= 0) break;
+        if (sandboxProduce[id] !== undefined) {
+          if (Array.isArray(sandboxProduce[id])) {
+            while (remaining > 0 && sandboxProduce[id].length > 0) {
+              sandboxProduce[id].pop();
+              remaining--;
+            }
+          } else {
+            const deduct = Math.min(Number(sandboxProduce[id]) || 0, remaining);
+            sandboxProduce[id] = (Number(sandboxProduce[id]) || 0) - deduct;
+            remaining -= deduct;
+          }
         }
-      }}
-      style={{
-        position: 'absolute',
-        left: leftVal,
-        top: topVal,
-        width: '50px',
-        height: '50px',
-        zIndex: 9998, 
-        cursor: 'pointer',
-        border: isPlacing && !isPlaced ? '3px dashed #ff4444' : 'none',
-        backgroundColor: isPlacing && !isPlaced ? 'rgba(255,68,68,0.3)' : 'transparent',
-        borderRadius: '10px',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        alignItems: 'center',
-        pointerEvents: isPlacing || isPlaced ? 'auto' : 'none',
-      }}
-    >
-      {/* --- DEBUG: SPOT INDEX LABEL --- */}
-      {showDebug && (isPlacing || isPlaced) && (
-        <div style={{ position: 'absolute', top: '-25px', left: '0px', backgroundColor: 'rgba(0,0,0,0.8)', color: '#ff4444', border: '1px solid #ff4444', padding: '2px 6px', fontSize: '14px', fontWeight: 'bold', zIndex: 10001, pointerEvents: 'none' }}>
-          LSpot: {spotId}
+        if (remaining > 0 && sandboxLoot[id]) {
+          const deduct = Math.min(Number(sandboxLoot[id]), remaining);
+          sandboxLoot[id] -= deduct;
+          remaining -= deduct;
+        }
+      }
+    }
+
+    for (const reward of quest.rewards) {
+      if (reward.id === 'honey') {
+        const currentHoney = parseInt(localStorage.getItem('sandbox_honey') || '0', 10);
+        const newHoney = currentHoney + reward.count;
+        localStorage.setItem('sandbox_honey', newHoney.toString());
+        window.dispatchEvent(new CustomEvent('sandboxHoneyChanged', { detail: newHoney.toString() }));
+      } else {
+        sandboxLoot[reward.id] = (sandboxLoot[reward.id] || 0) + reward.count;
+      }
+    }
+    
+    localStorage.setItem('sandbox_loot', JSON.stringify(sandboxLoot));
+    localStorage.setItem('sandbox_produce', JSON.stringify(sandboxProduce));
+
+    const nextCompleted = [...completedQuests, quest.id];
+    setCompletedQuests(nextCompleted);
+    localStorage.setItem('sandbox_completed_quests', JSON.stringify(nextCompleted));
+
+    let xpSkill = "";
+    let xpKey = "";
+    if (quest.type === 'farming' || quest.type === 'main') {
+        xpSkill = 'Farming';
+        xpKey = 'sandbox_farming_xp';
+    } else if (quest.type === 'fishing') {
+        xpSkill = 'Fishing';
+        xpKey = 'sandbox_fishing_xp';
+    }
+    
+    if (xpSkill) {
+        const currentXp = parseInt(localStorage.getItem(xpKey) || '0', 10);
+        const oldLevel = Math.floor(Math.sqrt((currentXp || 0) / 150)) + 1;
+        const newXp = currentXp + 500;
+        localStorage.setItem(xpKey, newXp.toString());
+        window.dispatchEvent(new CustomEvent('ls-update', { detail: { key: xpKey, value: newXp.toString() } }));
+        const newLevel = Math.floor(Math.sqrt((newXp || 0) / 150)) + 1;
+        if (newLevel > oldLevel) {
+            window.dispatchEvent(new CustomEvent('levelUp', { detail: { skill: xpSkill, level: newLevel } }));
+        }
+        setTimeout(() => { window.dispatchEvent(new CustomEvent('showNotification', { detail: { msg: `+500 ${xpSkill} XP!`, type: "info" } })); }, 1000);
+    }
+
+    if (refetch) refetch();
+    setAnimState(2); 
+  };
+
+  if (animState > 0 && activeQuest) {
+    const isReadyToTurnIn = checkRequirements(activeQuest.reqs);
+    const reqCounts = getRequirementCounts(activeQuest.reqs);
+
+    return (
+      <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', zIndex: 100000, backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+        {animState === 2 && (
+          <div style={{ backgroundColor: '#2c221a', border: '4px solid #a67c52', borderRadius: '16px', padding: '30px', textAlign: 'center', color: '#fff', fontFamily: 'monospace', boxShadow: '0 10px 25px rgba(0,0,0,0.8)', minWidth: '350px', animation: 'popIn 0.3s ease-out' }}>
+            <style>{`@keyframes popIn { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }`}</style>
+            <h2 style={{ color: '#ffea00', margin: '0 0 20px 0', fontSize: '24px' }}>Rewards Claimed!</h2>
+            <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: '30px', marginBottom: '30px' }}>
+              {activeQuest.rewards.map((rew, idx) => (
+                <div key={idx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
+                  <div style={{ width: '60px', height: '60px', backgroundColor: 'rgba(0,0,0,0.5)', border: '2px solid #5a402a', borderRadius: '8px', display: 'flex', justifyContent: 'center', alignItems: 'center', overflow: 'hidden' }}>
+                    {rew.image && rew.image.includes('seeds') ? (
+                       <div className="item-icon item-icon-seeds" style={{ transform: 'scale(1)', backgroundPositionY: ALL_ITEMS[rew.id]?.pos ? `-${ALL_ITEMS[rew.id].pos * ONE_SEED_HEIGHT * 0.308}px` : 0 }}></div>
+                    ) : (
+                       <img src={rew.image} alt={rew.name} style={{ width: '80%', height: '80%', objectFit: 'contain' }} />
+                    )}
+                  </div>
+                  <span style={{ fontWeight: 'bold', color: '#00ff41', textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000' }}>{rew.count} {rew.name}</span>
+                </div>
+              ))}
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '15px' }}>
+              <BaseButton label="Done" onClick={() => setAnimState(0)} />
+            </div>
+          </div>
+        )}
+        {animState === 1 && (
+          <div style={{ backgroundColor: '#fff8dc', padding: '40px', borderRadius: '4px', maxWidth: '500px', width: '90%', maxHeight: '80vh', display: 'flex', flexDirection: 'column', color: '#333', fontFamily: 'serif', boxShadow: '0 10px 30px rgba(0,0,0,0.8)' }}>
+            <h2 style={{ margin: '0 0 20px 0', borderBottom: '2px dashed #8c6b4a', paddingBottom: '10px', fontFamily: 'monospace', color: '#5a402a' }}>{activeQuest.subject}</h2>
+            <div style={{ overflowY: 'auto', flex: 1, lineHeight: '1.8', fontSize: '18px', paddingRight: '10px', marginBottom: '20px' }}>
+              {activeQuest.body.map((para, i) => (
+                <p key={i} style={{ color: '#fff', textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000' }}>{para}</p>
+              ))}
+            </div>
+
+            {activeQuest.reqs.length > 0 && (
+              <div style={{ backgroundColor: 'rgba(90, 64, 42, 0.1)', border: '1px solid #8c6b4a', padding: '15px', borderRadius: '8px', marginBottom: '20px' }}>
+                <h4 style={{ margin: '0 0 10px 0', fontFamily: 'monospace' }}>Required:</h4>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '15px' }}>
+                  {reqCounts.map((req, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontFamily: 'monospace', fontSize: '14px' }}>
+                      {req.image && <img src={req.image} style={{ width: '24px', height: '24px', objectFit: 'contain' }} alt={req.name} />}
+                      <span style={{ color: req.current >= req.count ? '#006400' : '#8b0000', fontWeight: 'bold' }}>
+                        {req.name}: {req.current}/{req.count}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '15px' }}>
+              <BaseButton label={isReadyToTurnIn ? "Complete" : "Incomplete"} disabled={!isReadyToTurnIn} onClick={handleCompleteQuest} />
+              <BaseButton label="Back" onClick={() => setAnimState(0)} />
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <BaseDialog onClose={onClose} title={title} header="/images/dialog/modal-header-inventory.png" headerOffset={10} className="custom-modal-background">
+      <div style={{ padding: '20px', color: '#fff', fontFamily: 'monospace', minWidth: '400px', maxHeight: '60vh', overflowY: 'auto' }}>
+        <h2 style={{ color: '#ffea00', margin: '0 0 20px 0', textAlign: 'center' }}>{title}</h2>
+        {activeQuestsList.length > 0 ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {activeQuestsList.map(quest => (
+              <div 
+                key={quest.id}
+                onClick={() => { setActiveQuest(quest); setAnimState(1); }} 
+                style={{ 
+                  backgroundColor: 'rgba(90, 64, 42, 0.4)', 
+                  border: '2px solid #a67c52', 
+                  padding: '15px', 
+                  borderRadius: '4px', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '15px', 
+                  cursor: 'pointer', 
+                  transition: 'all 0.2s',
+                  boxShadow: '2px 2px 5px rgba(0,0,0,0.5)'
+                }} 
+                onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.02)'; e.currentTarget.style.backgroundColor = 'rgba(90, 64, 42, 0.6)'; }} 
+                onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.backgroundColor = 'rgba(90, 64, 42, 0.4)'; }}
+              >
+                <div style={{ fontSize: '30px' }}>📝</div>
+                <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+                  <span style={{ fontWeight: 'bold', fontSize: '16px', color: '#ffea00', textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000' }}>{quest.subject}</span>
+                  <span style={{ fontSize: '12px', color: '#ccc', textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000' }}>{quest.sender}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div style={{ textAlign: 'center', color: '#aaa', fontStyle: 'italic', padding: '20px' }}>
+            No missions available right now.
+          </div>
+        )}
+      </div>
+    </BaseDialog>
+  );
+};
+
+export const MailboxDialog = ({ onClose, tutorialStep, refetch, onTutorialAdvance, completedQuests, setCompletedQuests, readQuests, setReadQuests }) => {
+  const [animState, setAnimState] = useState(0); // 0: list, 1: opening, 2: reading, 3: claiming
+  const [activeQuest, setActiveQuest] = useState(null);
+
+  const allQuests = getQuestData();
+  const availableQuests = allQuests.filter(q => (!q.type || q.type === 'main') && q.unlockCondition(tutorialStep, completedQuests));
+  const activeQuestsList = availableQuests.filter(q => !completedQuests.includes(q.id));
+
+  const checkRequirements = (reqs) => {
+    if (!reqs || reqs.length === 0) return true;
+    const sandboxLoot = JSON.parse(localStorage.getItem('sandbox_loot') || '{}');
+    const sandboxProduce = JSON.parse(localStorage.getItem('sandbox_produce') || '{}');
+    
+    for (const req of reqs) {
+      if (req.fn) {
+         const val = req.fn(sandboxLoot, sandboxProduce);
+         if (typeof val === 'number') {
+           if (val < req.count) return false;
+         } else {
+           if (!val) return false;
+         }
+         continue;
+      }
+      let count = 0;
+      const ids = Array.isArray(req.id) ? req.id : [req.id];
+      for (const id of ids) {
+        if (Array.isArray(sandboxProduce[id])) count += sandboxProduce[id].length;
+        else count += (Number(sandboxProduce[id]) || 0) + (Number(sandboxLoot[id]) || 0);
+      }
+      if (count < req.count) return false;
+    }
+    return true;
+  };
+
+  const getRequirementCounts = (reqs) => {
+    if (!reqs || reqs.length === 0) return [];
+    const sandboxLoot = JSON.parse(localStorage.getItem('sandbox_loot') || '{}');
+    const sandboxProduce = JSON.parse(localStorage.getItem('sandbox_produce') || '{}');
+    
+    return reqs.map(req => {
+      if (req.fn) {
+         const val = req.fn(sandboxLoot, sandboxProduce);
+         if (typeof val === 'number') {
+           return { ...req, current: val };
+         }
+         return { ...req, current: val ? 1 : 0, count: req.count || 1 };
+      }
+      let count = 0;
+      const ids = Array.isArray(req.id) ? req.id : [req.id];
+      for (const id of ids) {
+        if (Array.isArray(sandboxProduce[id])) count += sandboxProduce[id].length;
+        else count += (Number(sandboxProduce[id]) || 0) + (Number(sandboxLoot[id]) || 0);
+      }
+      return { ...req, current: count };
+    });
+  };
+
+  const handleCompleteQuest = () => {
+    const quest = activeQuest;
+    if (!quest) return;
+
+    // Deduct requirements
+    const sandboxLoot = JSON.parse(localStorage.getItem('sandbox_loot') || '{}');
+    const sandboxProduce = JSON.parse(localStorage.getItem('sandbox_produce') || '{}');
+    
+    for (const req of quest.reqs) {
+      if (req.fn) continue;
+      let remaining = req.count;
+      const ids = Array.isArray(req.id) ? req.id : [req.id];
+      
+      for (const id of ids) {
+        if (remaining <= 0) break;
+        if (sandboxProduce[id] !== undefined) {
+          if (Array.isArray(sandboxProduce[id])) {
+            while (remaining > 0 && sandboxProduce[id].length > 0) {
+              sandboxProduce[id].pop();
+              remaining--;
+            }
+          } else {
+            const deduct = Math.min(Number(sandboxProduce[id]) || 0, remaining);
+            sandboxProduce[id] = (Number(sandboxProduce[id]) || 0) - deduct;
+            remaining -= deduct;
+          }
+        }
+        if (remaining > 0 && sandboxLoot[id]) {
+          const deduct = Math.min(Number(sandboxLoot[id]), remaining);
+          sandboxLoot[id] -= deduct;
+          remaining -= deduct;
+        }
+      }
+    }
+
+    // Give rewards
+    for (const reward of quest.rewards) {
+      if (reward.id === 'honey') {
+        const currentHoney = parseInt(localStorage.getItem('sandbox_honey') || '0', 10);
+        const newHoney = currentHoney + reward.count;
+        localStorage.setItem('sandbox_honey', newHoney.toString());
+        window.dispatchEvent(new CustomEvent('sandboxHoneyChanged', { detail: newHoney.toString() }));
+      } else {
+        sandboxLoot[reward.id] = (sandboxLoot[reward.id] || 0) + reward.count;
+      }
+    }
+    
+    localStorage.setItem('sandbox_loot', JSON.stringify(sandboxLoot));
+    localStorage.setItem('sandbox_produce', JSON.stringify(sandboxProduce));
+
+    const nextCompleted = [...completedQuests, quest.id];
+    setCompletedQuests(nextCompleted);
+    localStorage.setItem('sandbox_completed_quests', JSON.stringify(nextCompleted));
+
+    if (quest.id === "q2_rebuild_tavern") {
+      localStorage.setItem('quest_q2_rebuild_tavern_completed', 'true');
+      window.dispatchEvent(new CustomEvent('tavernUnlocked'));
+    }
+
+    let xpSkill = "";
+    let xpKey = "";
+    if (quest.type === 'farming' || quest.type === 'main') {
+        xpSkill = 'Farming';
+        xpKey = 'sandbox_farming_xp';
+    } else if (quest.type === 'fishing') {
+        xpSkill = 'Fishing';
+        xpKey = 'sandbox_fishing_xp';
+    }
+    
+    if (xpSkill) {
+        const currentXp = parseInt(localStorage.getItem(xpKey) || '0', 10);
+        const oldLevel = Math.floor(Math.sqrt((currentXp || 0) / 150)) + 1;
+        const newXp = currentXp + 500;
+        localStorage.setItem(xpKey, newXp.toString());
+        window.dispatchEvent(new CustomEvent('ls-update', { detail: { key: xpKey, value: newXp.toString() } }));
+        const newLevel = Math.floor(Math.sqrt((newXp || 0) / 150)) + 1;
+        if (newLevel > oldLevel) {
+            window.dispatchEvent(new CustomEvent('levelUp', { detail: { skill: xpSkill, level: newLevel } }));
+        }
+        setTimeout(() => { window.dispatchEvent(new CustomEvent('showNotification', { detail: { msg: `+500 ${xpSkill} XP!`, type: "info" } })); }, 1000);
+    }
+
+    if (refetch) refetch();
+    setAnimState(3); // Show rewards
+  };
+
+  const handleOpenLetter = (quest) => {
+    setActiveQuest(quest);
+    if (!readQuests.includes(quest.id)) {
+      const nextRead = [...readQuests, quest.id];
+      setReadQuests(nextRead);
+      localStorage.setItem('sandbox_read_quests', JSON.stringify(nextRead));
+    }
+    setAnimState(1);
+    setTimeout(() => setAnimState(2), 2000);
+  };
+
+  if (animState > 0 && activeQuest) {
+    const isReadyToTurnIn = checkRequirements(activeQuest.reqs);
+    const reqCounts = getRequirementCounts(activeQuest.reqs);
+
+    return (
+      <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', zIndex: 100000, backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+        {animState === 3 && (
+          <div style={{ backgroundColor: '#2c221a', border: '4px solid #a67c52', borderRadius: '16px', padding: '30px', textAlign: 'center', color: '#fff', fontFamily: 'monospace', boxShadow: '0 10px 25px rgba(0,0,0,0.8)', minWidth: '350px', animation: 'popIn 0.3s ease-out' }}>
+            <style>{`@keyframes popIn { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }`}</style>
+            <h2 style={{ color: '#ffea00', margin: '0 0 20px 0', fontSize: '24px' }}>Rewards Claimed!</h2>
+            <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: '30px', marginBottom: '30px' }}>
+              {activeQuest.rewards.map((rew, idx) => (
+                <div key={idx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
+                  <div style={{ width: '60px', height: '60px', backgroundColor: 'rgba(0,0,0,0.5)', border: '2px solid #5a402a', borderRadius: '8px', display: 'flex', justifyContent: 'center', alignItems: 'center', overflow: 'hidden' }}>
+                    {rew.image && rew.image.includes('seeds') ? (
+                       <div className="item-icon item-icon-seeds" style={{ transform: 'scale(1)', backgroundPositionY: ALL_ITEMS[rew.id]?.pos ? `-${ALL_ITEMS[rew.id].pos * ONE_SEED_HEIGHT * 0.308}px` : 0 }}></div>
+                    ) : (
+                       <img src={rew.image} alt={rew.name} style={{ width: '80%', height: '80%', objectFit: 'contain' }} />
+                    )}
+                  </div>
+                  <span style={{ fontWeight: 'bold', color: '#00ff41', textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000' }}>{rew.count} {rew.name}</span>
+                </div>
+              ))}
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '15px' }}>
+              <BaseButton label="Done" onClick={() => { setAnimState(0); if (activeQuest.id === 'q1_pabee_intro' && onTutorialAdvance) onTutorialAdvance(); }} />
+            </div>
+          </div>
+        )}
+        {animState === 1 && (
+          <div style={{ fontSize: '150px', animation: 'envelopeOpen 2s forwards' }}>
+            <style>{`
+              @keyframes envelopeOpen {
+                0% { transform: scale(0.1) translateY(500px); opacity: 0; }
+                40% { transform: scale(1.2) translateY(0); opacity: 1; }
+                60% { transform: scale(1.2) translateY(0) rotate(5deg); opacity: 1; }
+                80% { transform: scale(1.5) translateY(-20px) rotate(-5deg); opacity: 1; }
+                100% { transform: scale(2.5) translateY(-50px); opacity: 0; filter: blur(10px); }
+              }
+            `}</style>
+            ✉️
+          </div>
+        )}
+        {animState === 2 && (
+          <div style={{ backgroundColor: '#f4e4bc', padding: '40px', borderRadius: '8px', maxWidth: '600px', width: '90%', maxHeight: '80vh', display: 'flex', flexDirection: 'column', color: '#2c1e16', fontFamily: 'serif', boxShadow: '0 20px 50px rgba(0,0,0,0.8), inset 0 0 50px rgba(200,150,100,0.3)', animation: 'letterFadeIn 0.8s ease-out forwards', backgroundImage: 'repeating-linear-gradient(transparent, transparent 31px, rgba(0,0,0,0.05) 31px, rgba(0,0,0,0.05) 32px)', backgroundPositionY: '8px' }}>
+            <style>{`@keyframes letterFadeIn { 0% { transform: scale(0.8) translateY(100px); opacity: 0; } 100% { transform: scale(1) translateY(0); opacity: 1; } }`}</style>
+            <h2 style={{ margin: '0 0 20px 0', borderBottom: '2px solid #8c6b4a', paddingBottom: '10px', fontFamily: 'monospace', color: '#5a402a' }}>From: {activeQuest.sender}</h2>
+            <div style={{ overflowY: 'auto', flex: 1, lineHeight: '2', fontSize: '20px', paddingRight: '15px', marginBottom: '20px' }}>
+              {activeQuest.body.map((para, i) => (
+                <p key={i} style={{ color: '#fff', textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000' }}>{para}</p>
+              ))}
+            </div>
+
+            {activeQuest.reqs.length > 0 && (
+              <div style={{ backgroundColor: 'rgba(90, 64, 42, 0.1)', border: '1px solid #8c6b4a', padding: '15px', borderRadius: '8px', marginBottom: '20px' }}>
+                <h4 style={{ margin: '0 0 10px 0', fontFamily: 'monospace' }}>Required Items:</h4>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '15px' }}>
+                  {reqCounts.map((req, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontFamily: 'monospace', fontSize: '14px' }}>
+                      <img src={req.image} style={{ width: '24px', height: '24px', objectFit: 'contain' }} alt={req.name} />
+                      <span style={{ color: req.current >= req.count ? '#006400' : '#8b0000', fontWeight: 'bold' }}>
+                        {req.name}: {req.current}/{req.count}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '15px' }}>
+              {activeQuest.reqs.length > 0 ? (
+                <BaseButton label={isReadyToTurnIn ? "Turn In & Claim" : "Not Enough Items"} disabled={!isReadyToTurnIn} onClick={handleCompleteQuest} />
+              ) : (
+                <BaseButton label="Claim Gifts" onClick={handleCompleteQuest} />
+              )}
+              <BaseButton label="Fold Letter" onClick={() => setAnimState(0)} />
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <BaseDialog onClose={onClose} title="MAILBOX" header="/images/dialog/modal-header-inventory.png" headerOffset={10} className="custom-modal-background">
+      <div style={{ padding: '20px', color: '#fff', fontFamily: 'monospace', minWidth: '400px', maxHeight: '60vh', overflowY: 'auto' }}>
+        <h2 style={{ color: '#00ff41', margin: '0 0 20px 0', textAlign: 'center' }}>Inbox</h2>
+        {activeQuestsList.length > 0 ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {activeQuestsList.map(quest => {
+              const isRead = readQuests.includes(quest.id);
+              return (
+                <div 
+                  key={quest.id}
+                  onClick={() => handleOpenLetter(quest)} 
+                  style={{ 
+                    backgroundColor: isRead ? 'rgba(0,0,0,0.5)' : 'rgba(0,255,65,0.1)', 
+                    border: `2px solid ${isRead ? '#5a402a' : '#00ff41'}`, 
+                    padding: '15px', 
+                    borderRadius: '8px', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '15px', 
+                    cursor: 'pointer', 
+                    transition: 'all 0.2s' 
+                  }} 
+                  onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.02)'; }} 
+                  onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}
+                >
+                  <div style={{ position: 'relative' }}>
+                    <span style={{ fontSize: '36px' }}>{isRead ? '✉️' : '💌'}</span>
+                    {!isRead && <div style={{ position: 'absolute', top: '-5px', right: '-5px', width: '18px', height: '18px', backgroundColor: '#ff4444', borderRadius: '50%', border: '2px solid white', display: 'flex', justifyContent: 'center', alignItems: 'center', color: 'white', fontWeight: 'bold', fontSize: '12px', fontFamily: 'monospace' }}>!</div>}
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+                    <span style={{ fontWeight: 'bold', fontSize: '18px', color: isRead ? '#ffea00' : '#00ff41', textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000' }}>{quest.subject} {!isRead ? "!" : ""}</span>
+                    <span style={{ fontSize: '14px', color: '#aaa', textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000' }}>From: {quest.sender}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div style={{ textAlign: 'center', color: '#aaa', fontStyle: 'italic', padding: '20px' }}>
+            No new mail.
+          </div>
+        )}
+      </div>
+    </BaseDialog>
+  );
+};
+
+const EasterBasketDialog = ({ onClose }) => {
+  const sandboxLoot = JSON.parse(localStorage.getItem('sandbox_loot') || '{}');
+  const eggs = [
+    { id: 9986, name: 'Green Egg', color: '#00ff41' },
+    { id: 9985, name: 'Purple Egg', color: '#ff00ff' },
+    { id: 9984, name: 'Blue Egg', color: '#00bfff' },
+    { id: 9983, name: 'Yellow Egg', color: '#ffea00' },
+    { id: 9982, name: 'Red Egg', color: '#ff4444' }
+  ];
+
+  return (
+    <BaseDialog onClose={onClose} title="EASTER BASKET" header="/images/dialog/modal-header-inventory.png" headerOffset={10} className="custom-modal-background">
+      <div style={{ padding: '20px', color: '#fff', fontFamily: 'monospace', textAlign: 'center', minWidth: '350px' }}>
+        <h2 style={{ color: '#ffea00', margin: '0 0 20px 0' }}>Your Easter Egg Collection</h2>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '15px', justifyContent: 'center', marginBottom: '20px' }}>
+          {eggs.map(egg => {
+            const hasEgg = sandboxLoot[egg.id] > 0;
+            return (
+              <div key={egg.id} style={{ width: '80px', height: '100px', backgroundColor: 'rgba(0,0,0,0.5)', border: `2px solid ${hasEgg ? egg.color : '#333'}`, borderRadius: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', opacity: hasEgg ? 1 : 0.3 }}>
+                <div style={{ fontSize: '40px', filter: hasEgg ? `drop-shadow(0 0 10px ${egg.color})` : 'grayscale(100%)' }}>
+                  {hasEgg ? '🥚' : '❓'}
+                </div>
+                <span style={{ fontSize: '10px', marginTop: '5px', color: hasEgg ? egg.color : '#777' }}>{egg.name}</span>
+              </div>
+            );
+          })}
         </div>
-      )}
-      {isPlaced && (
-        <>
-          <div style={{ position: 'absolute', top: '-25px', color: '#ff4444', fontWeight: 'bold', fontSize: '14px', textShadow: '1px 1px 2px black, -1px -1px 2px black, 1px -1px 2px black, -1px 1px 2px black', whiteSpace: 'nowrap', zIndex: 10000 }}>
-            {formatTime(timeLeft)}
-          </div>
-        </>
-      )}
-    </div>
-  );
-};
-
-const SprinklerSpot = ({ spotId, pos, offsetX, offsetY, isPlacing, isPlaced, expiryTime, onPlace, onExpire, onRemove }) => {
-  const [timeLeft, setTimeLeft] = useState(0);
-
-  useEffect(() => {
-    if (!isPlaced || !expiryTime) return;
-    const tick = () => {
-      const now = Math.floor(Date.now() / 1000);
-      const exp = typeof expiryTime === 'number' ? expiryTime : now - 1; 
-      const remaining = exp - now;
-      if (remaining <= 0) {
-        setTimeLeft(0);
-        if (onExpire) onExpire(spotId);
-      } else {
-        setTimeLeft(remaining);
-      }
-    };
-    tick();
-    const timer = setInterval(tick, 1000);
-    return () => clearInterval(timer);
-  }, [isPlaced, expiryTime, onExpire, spotId]);
-
-  if (!isPlacing && !isPlaced) return null;
-
-  const leftVal = pos.left !== undefined ? (typeof pos.left === 'number' ? `${pos.left + offsetX}px` : `calc(${pos.left} + ${offsetX}px)`) : '0px';
-  const topVal = pos.top !== undefined ? (typeof pos.top === 'number' ? `${pos.top + offsetY}px` : `calc(${pos.top} + ${offsetY}px)`) : '0px';
-
-  const formatTime = (secs) => {
-    const h = Math.floor(secs / 3600);
-    const m = Math.floor((secs % 3600) / 60);
-    const s = secs % 60;
-    const pad = (n) => n.toString().padStart(2, '0');
-    if (h > 0) return `${h}:${pad(m)}:${pad(s)}`;
-    if (m > 0) return `${m}:${pad(s)}`;
-    return `${s}s`;
-  };
-
-  return (
-    <div
-      onPointerDown={(e) => {
-        e.stopPropagation();
-        e.preventDefault();
-        if (isPlacing && !isPlaced) onPlace();
-        else if (isPlaced && onRemove) onRemove();
-      }}
-      style={{
-        position: 'absolute', left: leftVal, top: topVal, width: '50px', height: '50px',
-        zIndex: 9997, cursor: 'pointer',
-        border: isPlacing && !isPlaced ? '3px dashed #00bfff' : 'none',
-        backgroundColor: isPlacing && !isPlaced ? 'rgba(0,191,255,0.3)' : 'transparent',
-        borderRadius: '10px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center',
-        pointerEvents: isPlacing || isPlaced ? 'auto' : 'none',
-      }}
-    >
-      {isPlaced && (
-        <>
-          <div style={{ position: 'absolute', top: '-40px', color: '#00bfff', fontWeight: 'bold', fontSize: '14px', textShadow: '1px 1px 2px black, -1px -1px 2px black, 1px -1px 2px black, -1px 1px 2px black', whiteSpace: 'nowrap', zIndex: 10000 }}>
-            {formatTime(timeLeft)}
-          </div>
-          <img src="/images/items/watersprinkler.png" alt="Sprinkler" style={{ width: '120%', height: '120%', objectFit: 'contain', pointerEvents: 'none', filter: 'drop-shadow(0px 0px 5px rgba(0,0,0,0.8))' }} />
-        </>
-      )}
-    </div>
-  );
-};
-
-const UmbrellaSpot = ({ spotId, pos, offsetX, offsetY, isPlacing, isPlaced, expiryTime, onPlace, onExpire, onRemove }) => {
-  const [timeLeft, setTimeLeft] = useState(0);
-
-  useEffect(() => {
-    if (!isPlaced || !expiryTime) return;
-    const tick = () => {
-      const now = Math.floor(Date.now() / 1000);
-      const exp = typeof expiryTime === 'number' ? expiryTime : now - 1; 
-      const remaining = exp - now;
-      if (remaining <= 0) {
-        setTimeLeft(0);
-        if (onExpire) onExpire(spotId);
-      } else {
-        setTimeLeft(remaining);
-      }
-    };
-    tick();
-    const timer = setInterval(tick, 1000);
-    return () => clearInterval(timer);
-  }, [isPlaced, expiryTime, onExpire, spotId]);
-
-  if (!isPlacing && !isPlaced) return null;
-
-  const leftVal = pos.left !== undefined ? (typeof pos.left === 'number' ? `${pos.left + offsetX}px` : `calc(${pos.left} + ${offsetX}px)`) : '0px';
-  const topVal = pos.top !== undefined ? (typeof pos.top === 'number' ? `${pos.top + offsetY}px` : `calc(${pos.top} + ${offsetY}px)`) : '0px';
-
-  const formatTime = (secs) => {
-    const h = Math.floor(secs / 3600);
-    const m = Math.floor((secs % 3600) / 60);
-    const s = secs % 60;
-    const pad = (n) => n.toString().padStart(2, '0');
-    if (h > 0) return `${h}:${pad(m)}:${pad(s)}`;
-    if (m > 0) return `${m}:${pad(s)}`;
-    return `${s}s`;
-  };
-
-  return (
-    <div
-      onPointerDown={(e) => {
-        e.stopPropagation();
-        e.preventDefault();
-        if (isPlacing && !isPlaced) onPlace();
-        else if (isPlaced && onRemove) onRemove();
-      }}
-      style={{
-        position: 'absolute', left: leftVal, top: topVal, width: '50px', height: '50px',
-        zIndex: 9996, cursor: 'pointer',
-        border: isPlacing && !isPlaced ? '3px dashed #ff00ff' : 'none',
-        backgroundColor: isPlacing && !isPlaced ? 'rgba(255,0,255,0.3)' : 'transparent',
-        borderRadius: '10px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center',
-        pointerEvents: isPlacing || isPlaced ? 'auto' : 'none',
-      }}
-    >
-      {isPlaced && (
-        <>
-          <div style={{ position: 'absolute', top: '-40px', color: '#ff00ff', fontWeight: 'bold', fontSize: '14px', textShadow: '1px 1px 2px black, -1px -1px 2px black, 1px -1px 2px black, -1px 1px 2px black', whiteSpace: 'nowrap', zIndex: 10000 }}>
-            {formatTime(timeLeft)}
-          </div>
-          <img src="/images/items/umbrella.png" alt="Umbrella" style={{ width: '120%', height: '120%', objectFit: 'contain', pointerEvents: 'none', filter: 'drop-shadow(0px 0px 5px rgba(0,0,0,0.8))' }} />
-        </>
-      )}
-    </div>
+        {eggs.every(e => sandboxLoot[e.id] > 0) ? (
+          <p style={{ color: '#00ff41', fontWeight: 'bold' }}>🎉 You found all the Easter Eggs! Happy Easter! 🎉</p>
+        ) : (
+          <p style={{ color: '#ccc', fontSize: '14px' }}>Keep searching the farm, forest, and pond for more eggs!</p>
+        )}
+        <div style={{ marginTop: '20px' }}><BaseButton label="Close" onClick={onClose} /></div>
+      </div>
+    </BaseDialog>
   );
 };
 
@@ -1102,6 +2808,25 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
   const hotspots = FARM_HOTSPOTS;
   const settings = useAppSelector(selectSettings) || defaultSettings;
   const { seeds: currentSeeds, refetch: refetchSeeds, all: allItems, refetch } = useItems();
+
+  const [tutorialStep, setTutorialStep] = useState(() => parseInt(localStorage.getItem('sandbox_tutorial_step') || '0', 10));
+
+  const [farmingXp, setFarmingXp] = useState(() => parseInt(localStorage.getItem('sandbox_farming_xp') || '0', 10));
+  const farmingLevel = getLevelFromXp(farmingXp);
+  const farmingProgress = ((farmingXp - Math.pow(farmingLevel - 1, 2) * 150) / (Math.pow(farmingLevel, 2) * 150 - Math.pow(farmingLevel - 1, 2) * 150)) * 100;
+
+  useEffect(() => {
+      const handleLsUpdate = (e) => {
+          if (e.detail.key === 'sandbox_farming_xp') setFarmingXp(parseInt(e.detail.value, 10));
+      };
+      window.addEventListener('ls-update', handleLsUpdate);
+      return () => window.removeEventListener('ls-update', handleLsUpdate);
+  }, []);
+
+  const safeItems = allItems || [];
+  const axeCount = safeItems.find(i => i.id === 9991)?.count || 0;
+  const pickaxeCount = safeItems.find(i => i.id === 9992)?.count || 0;
+  const sticksCount = safeItems.find(i => i.id === 9995)?.count || 0;
   const {
     plantBatch,
     harvestMany,
@@ -1136,85 +2861,199 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
   const ladybugsRef = useRef(JSON.parse(localStorage.getItem('sandbox_ladybugs') || '{}'));
   const sprinklersRef = useRef(JSON.parse(localStorage.getItem('sandbox_sprinklers') || '{}'));
   const umbrellasRef = useRef(JSON.parse(localStorage.getItem('sandbox_umbrellas') || '{}'));
+  const teslaTowersRef = useRef(JSON.parse(localStorage.getItem('sandbox_tesla') || '{}'));
   const ratsRef = useRef({});
   
   const [isUsingPotion, setIsUsingPotion] = useState(false);
   const [selectedPotion, setSelectedPotion] = useState(null);
   const [isPlacingScarecrow, setIsPlacingScarecrow] = useState(false);
+  const [placingScarecrowType, setPlacingScarecrowType] = useState('tier1'); // 'tier1', 'tier2', 'tier3', 'tier4', 'ladybug_scarecrow'
+  
+  const [isPlacingTesla, setIsPlacingTesla] = useState(false);
+  const [teslaTowers, setTeslaTowers] = useState(teslaTowersRef.current);
+
   const [isPlacingLadybug, setIsPlacingLadybug] = useState(false);
   const [isPlacingSprinkler, setIsPlacingSprinkler] = useState(false);
   const [isPlacingUmbrella, setIsPlacingUmbrella] = useState(false);
+  const [showFarmingBoard, setShowFarmingBoard] = useState(false);
+  
+  // Quest State
+  const [completedQuests, setCompletedQuests] = useState(() => {
+    const saved = JSON.parse(localStorage.getItem('sandbox_completed_quests') || '[]');
+    // Backwards compat
+    if (localStorage.getItem('sandbox_pabee_mail_claimed') === 'true' && !saved.includes('q1_pabee_intro')) {
+      saved.push('q1_pabee_intro');
+      localStorage.setItem('sandbox_completed_quests', JSON.stringify(saved));
+    }
+    return saved;
+  });
+  
+  const hasBarnMissionUnlocked = useMemo(() => {
+    return completedQuests.includes('q16_build_barn');
+  }, [completedQuests]);
+
+  const availableFarmingQuests = getQuestData().filter(q => q.type === 'farming' && q.unlockCondition(tutorialStep, completedQuests) && !completedQuests.includes(q.id));
+  const activeFarmingIds = availableFarmingQuests.map(q => q.id);
+  const seenFarmingIds = (localStorage.getItem('seen_farming_missions_ids') || '').split(',').filter(Boolean);
+  const hasNewFarmingMissions = activeFarmingIds.some(id => !seenFarmingIds.includes(id));
+
   const [scarecrows, setScarecrows] = useState(scarecrowsRef.current);
   const [ladybugs, setLadybugs] = useState(ladybugsRef.current);
   const [sprinklers, setSprinklers] = useState(sprinklersRef.current);
   const [umbrellas, setUmbrellas] = useState(umbrellasRef.current);
+  const [showEasterBasket, setShowEasterBasket] = useState(false);
+
+  const [bowlWaterFilled, setBowlWaterFilled] = useState(() => localStorage.getItem('sandbox_bowl_water') === 'true');
+  const [bowlFishId, setBowlFishId] = useState(() => localStorage.getItem('sandbox_bowl_fish') || null);
+  const [showBowlFishDialog, setShowBowlFishDialog] = useState(false);
   
+  const [showTamagotchiDialog, setShowTamagotchiDialog] = useState(false);
+  const [isCatShaking, setIsCatShaking] = useState(false);
+  const [catFeedTimeLeft, setCatFeedTimeLeft] = useState('');
+  const [catPos, setCatPos] = useState({ left: 960, top: 500 });
+  const [catState, setCatState] = useState('sit');
+  const [catDirection, setCatDirection] = useState(1);
+  const catSleepUntil = useRef(0);
+  const catBusyUntil = useRef(0);
+  const [skipGrowTarget, setSkipGrowTarget] = useState(null);
+  const [tookHoney, setTookHoney] = useState(false);
+  
+  const [firstFedTime, setFirstFedTime] = useState(() => parseInt(localStorage.getItem('sandbox_cat_first_fed_time') || '0', 10));
+  const [isCatUnlocked, setIsCatUnlocked] = useState(false);
+  const [catHappiness, setCatHappiness] = useState(() => parseFloat(localStorage.getItem('sandbox_cat_happiness') || '50'));
+  const [currentHunger, setCurrentHunger] = useState(0);
+  const [yarnState, setYarnState] = useState(null);
+
+  const forestTimestamp = parseInt(localStorage.getItem('forest_last_visited') || '0', 10);
+  const starvingTime = parseInt(localStorage.getItem('sandbox_cat_starving_time') || '0', 10);
+  const catWillAppear = isCatUnlocked && forestTimestamp > 0 && ((bowlWaterFilled && bowlFishId !== null) || starvingTime > 0);
+
+  const [isGlobalDialogOpen, setIsGlobalDialogOpen] = useState(false);
+  
+  useEffect(() => {
+    const handleGlobalDialog = (e) => setIsGlobalDialogOpen(e.detail);
+    window.addEventListener('globalDialogOpen', handleGlobalDialog);
+    return () => window.removeEventListener('globalDialogOpen', handleGlobalDialog);
+  }, []);
+
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('petDialogOpen', { detail: showTamagotchiDialog || showBowlFishDialog }));
+  }, [showTamagotchiDialog, showBowlFishDialog]);
+
+  const hideIcons = isGlobalDialogOpen || showTamagotchiDialog || showBowlFishDialog || isSelectCropDialog;
+
+  useEffect(() => {
+    const checkUnlock = () => {
+      if (firstFedTime > 0 && Date.now() - firstFedTime >= 60 * 60 * 1000) {
+        setIsCatUnlocked(true);
+      } else {
+        setIsCatUnlocked(false);
+        // Fix for early starving bug: clean it up if it was erroneously set
+        if (localStorage.getItem('sandbox_cat_starving_time')) {
+          localStorage.removeItem('sandbox_cat_starving_time');
+        }
+      }
+    };
+    checkUnlock();
+    const interval = setInterval(checkUnlock, 1000);
+    return () => clearInterval(interval);
+  }, [firstFedTime]);
+
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('seedDialogOpen', { detail: isSelectCropDialog }));
+  }, [isSelectCropDialog]);
+
+  const [sirBeePos, setSirBeePos] = useState('-200px');
+  const [isToolsOpen, setIsToolsOpen] = useState(false);
+
+  useEffect(() => {
+    if (tutorialStep >= 5 && tutorialStep < 9) {
+      setIsToolsOpen(true);
+    }
+  }, [tutorialStep]);
+
+  useEffect(() => {
+    if (tutorialStep === 1) {
+      const t1 = setTimeout(() => setSirBeePos('750px'), 100);
+      const t2 = setTimeout(() => {
+         setTutorialStep(2);
+         localStorage.setItem('sandbox_tutorial_step', '2');
+      }, 2100);
+      return () => { clearTimeout(t1); clearTimeout(t2); };
+    } else if (tutorialStep >= 2) {
+      setSirBeePos('750px');
+    }
+  }, [tutorialStep]);
+  
+  useEffect(() => {
+    if (tutorialStep === 24) {
+      setTutorialStep(25);
+      localStorage.setItem('sandbox_tutorial_step', '25');
+    }
+  }, [tutorialStep]);
+
   const autoSpawnRef = useRef(localStorage.getItem('auto_spawn_enabled') !== 'false');
-  const [showWeightContest, setShowWeightContest] = useState(false);
-  const [showCalendar, setShowCalendar] = useState(false);
-  const [showCraftingDialog, setShowCraftingDialog] = useState(false);
-  const [showSmithingDialog, setShowSmithingDialog] = useState(false);
-  const [simulatedDay, setSimulatedDay] = useState(() => {
-    const estDate = new Date(new Date().toLocaleString("en-US", { timeZone: "America/New_York" }));
-    return estDate.getDay();
-  });
-  const [simulatedDate, setSimulatedDate] = useState(() => {
-    const estDate = new Date(new Date().toLocaleString("en-US", { timeZone: "America/New_York" }));
-    return estDate.getDate();
-  });
+  const [simulatedDay, setSimulatedDay] = useState(() => getSimulatedDateInfo().day);
+  const [simulatedDate, setSimulatedDate] = useState(() => getSimulatedDateInfo().date);
   const simulatedDateRef = useRef(simulatedDate);
   useEffect(() => {
     simulatedDateRef.current = simulatedDate;
   }, [simulatedDate]);
   
-  const [targetProduceId, setTargetProduceId] = useState(() => {
-    const saved = localStorage.getItem('weight_contest_produce');
-    const legacy = localStorage.getItem('weight_contest_crop');
-    if (saved) return parseInt(saved, 10);
-    if (legacy && Object.values(ID_PRODUCE_ITEMS || {}).includes(parseInt(legacy, 10))) return parseInt(legacy, 10);
-    return ID_PRODUCE_ITEMS.ONION;
+  // Load Worker Bee Level
+  const [workerBeeLevel, setWorkerBeeLevel] = useState(() => {
+    const saved = parseInt(localStorage.getItem('sandbox_worker_bee_level'), 10);
+    return isNaN(saved) ? 1 : saved;
   });
 
-  const [targetFishId, setTargetFishId] = useState(() => {
-    const saved = localStorage.getItem('weight_contest_fish');
-    const legacy = localStorage.getItem('weight_contest_crop');
-    if (saved) return parseInt(saved, 10);
-    if (legacy && Object.values(ID_FISH_ITEMS || {}).includes(parseInt(legacy, 10))) return parseInt(legacy, 10);
-    const defaultFish = Object.values(ID_FISH_ITEMS || {})[0] || 10001; 
-    return defaultFish;
-  });
+  // Sync Worker Bee Level Changes
+  useEffect(() => {
+    const handleBeeLevelChange = (e) => setWorkerBeeLevel(e.detail);
+    window.addEventListener('workerBeeLevelChanged', handleBeeLevelChange);
+    return () => window.removeEventListener('workerBeeLevelChanged', handleBeeLevelChange);
+  }, []);
 
-  const getTargetData = (id) => {
-    let targetData = allItems.find((item) => item.id === id);
-    if (!targetData) {
-      let fallbackLabel = "Unknown";
-      let fallbackImage = "";
-      let fallbackPos = 0;
-      if (ALL_ITEMS[id]) {
-        fallbackLabel = ALL_ITEMS[id].label;
-        fallbackImage = ALL_ITEMS[id].image;
-        fallbackPos = ALL_ITEMS[id].pos || 0;
-      } else {
-        const fishEntry = Object.entries(ID_FISH_ITEMS || {}).find(([k, v]) => v === id);
-        if (fishEntry) fallbackLabel = fishEntry[0].replace(/_/g, ' ').toLowerCase();
-        else {
-          const prodEntry = Object.entries(ID_PRODUCE_ITEMS || {}).find(([k, v]) => v === id);
-          if (prodEntry) fallbackLabel = prodEntry[0].replace(/_/g, ' ').toLowerCase();
-        }
-      }
-      targetData = { id, label: fallbackLabel, count: 0, image: fallbackImage || "/images/items/seeds.png", pos: fallbackPos };
+  const handleSkipGrowth = () => {
+    const currentHoney = parseInt(localStorage.getItem('sandbox_honey') || '0', 10);
+    if (currentHoney < 100 && tutorialStep !== 9) {
+      show("You don't have enough Honey!", "error");
+      return;
     }
-    return targetData;
+    
+    if (tutorialStep === 9) {
+      show("I'll let you skip for free this time!", "success");
+    } else {
+      const newHoney = currentHoney - 100;
+      localStorage.setItem('sandbox_honey', newHoney.toString());
+      window.dispatchEvent(new CustomEvent('sandboxHoneyChanged', { detail: newHoney.toString() }));
+    }
+    
+    const skipped = JSON.parse(localStorage.getItem('sandbox_skipped_crops') || '{}');
+    skipped[skipGrowTarget] = true;
+    localStorage.setItem('sandbox_skipped_crops', JSON.stringify(skipped));
+    
+    const newWaterState = { ...waterStateRef.current };
+    if (!newWaterState[skipGrowTarget]) {
+      newWaterState[skipGrowTarget] = { needsInitial: false, needsMid: false, pausedMs: 0 };
+    } else {
+      newWaterState[skipGrowTarget].needsInitial = false;
+      newWaterState[skipGrowTarget].needsMid = false;
+    }
+    newWaterState[skipGrowTarget].contractPlantedAt = 1; // instantly ready
+    newWaterState[skipGrowTarget].pausedMs = 0;
+    
+    waterStateRef.current = newWaterState;
+    localStorage.setItem('sandbox_water_state', JSON.stringify(newWaterState));
+    
+    setPreviewUpdateKey(prev => prev + 1); // trigger re-render
+    
+    show("Growth skipped! Crop is ready to harvest.", "success");
+    setSkipGrowTarget(null);
   };
 
-  const targetProduceData = getTargetData(targetProduceId);
-  const targetFishData = getTargetData(targetFishId);
-  
-  const currentWeather = getWeatherForDay(simulatedDate);
-  const isRaining = currentWeather === '⚡' || currentWeather === '🌧️';
-  const isLightning = currentWeather === '⚡';
-  
   const isForest = new URLSearchParams(window.location.search).get('scene') === 'forest';
+  const isMine = new URLSearchParams(window.location.search).get('scene') === 'mine';
+  const isAnimal = new URLSearchParams(window.location.search).get('scene') === 'animal';
 
   // Plot Preparation State (0: Red X, 1: Hole, 2: Hole+Fish, 3: Dirt Pile)
   const [plotPrep, setPlotPrep] = useState(() => JSON.parse(localStorage.getItem('sandbox_plot_prep') || '{}'));
@@ -1225,19 +3064,203 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
   const [isWatering, setIsWatering] = useState(false);
   const [isDigging, setIsDigging] = useState(false);
   const [isHoeing, setIsHoeing] = useState(false);
+  const [isDirting, setIsDirting] = useState(false);
+  const [isSeeding, setIsSeeding] = useState(false);
   const [waterEffects, setWaterEffects] = useState([]);
 
+  useEffect(() => {
+    const handleShake = () => {
+      setIsCatShaking(true);
+      setTimeout(() => setIsCatShaking(false), 1500); // 3 shakes in 1.5 seconds
+    };
+    window.addEventListener('crazyCatShake', handleShake);
+    return () => window.removeEventListener('crazyCatShake', handleShake);
+  }, []);
+
+  useEffect(() => {
+    const handleCatAttack = (e) => {
+      const { plotIndex } = e.detail;
+      const target = FARM_POSITIONS[plotIndex];
+      if (!target) return;
+      
+      const targetX = parseInt(target.left) || 500;
+      const targetY = parseInt(target.top) || 300;
+      
+      setCatPos(prev => {
+        const actualDeltaX = targetX - prev.left;
+        setCatDirection(actualDeltaX > 0 ? -1 : 1);
+        return { left: targetX, top: targetY - 40 };
+      });
+      setCatState('walk');
+      catSleepUntil.current = 0;
+      catBusyUntil.current = Date.now() + 4500;
+      
+      setTimeout(() => {
+        delete ratsRef.current[plotIndex];
+        setCropArray(prev => {
+          const newArr = new CropItemArrayClass(30);
+          newArr.copyFrom(prev);
+          const item = newArr.getItem(plotIndex);
+          if (item) item.ratCountdown = undefined;
+          return newArr;
+        });
+        const currentFedTime = parseInt(localStorage.getItem('sandbox_cat_fed_time') || '0', 10);
+        if (currentFedTime > 0) {
+           localStorage.setItem('sandbox_cat_fed_time', (currentFedTime - 4 * 60 * 60 * 1000).toString());
+        }
+        setBowlWaterFilled(false);
+        localStorage.removeItem('sandbox_bowl_water');
+        window.dispatchEvent(new CustomEvent('showNotification', { detail: { msg: "Cat hunted a rat! (Hunger & Thirst increased)", type: "warning" } }));
+        setCatState('sit');
+      }, 3800);
+    };
+    window.addEventListener('animateCatAttack', handleCatAttack);
+    return () => window.removeEventListener('animateCatAttack', handleCatAttack);
+  }, [setCropArray]);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+        const fedTime = parseInt(localStorage.getItem('sandbox_cat_fed_time') || '0', 10);
+        const starvingTime = parseInt(localStorage.getItem('sandbox_cat_starving_time') || '0', 10);
+        
+        let hungerVal = 0;
+        if (fedTime > 0) {
+            const twelveHours = 12 * 60 * 60 * 1000;
+            const endTime = fedTime + twelveHours;
+            const remaining = endTime - Date.now();
+            
+            hungerVal = Math.max(0, 100 - ((Date.now() - fedTime) / twelveHours) * 100);
+            setCurrentHunger(hungerVal);
+            
+            if (remaining > 0) {
+                const hours = Math.floor(remaining / (1000 * 60 * 60));
+                const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((remaining % (1000 * 60)) / 1000);
+                setCatFeedTimeLeft(`${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
+            } else {
+                setCatFeedTimeLeft('');
+            }
+        } else if (starvingTime > 0) {
+            setCurrentHunger(0);
+            const twentyFourHours = 24 * 60 * 60 * 1000;
+            const remaining = (starvingTime + twentyFourHours) - Date.now();
+            if (remaining > 0) {
+                const hours = Math.floor(remaining / (1000 * 60 * 60));
+                const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((remaining % (1000 * 60)) / 1000);
+                setCatFeedTimeLeft(`ANGRY: ${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
+            } else {
+                setCatFeedTimeLeft('');
+            }
+        } else {
+            setCurrentHunger(0);
+            setCatFeedTimeLeft('');
+        }
+        
+        // Happiness Decay
+        let happy = parseFloat(localStorage.getItem('sandbox_cat_happiness') || '50');
+        let lastUpdateStr = localStorage.getItem('sandbox_cat_happy_update');
+        if (!lastUpdateStr) {
+           lastUpdateStr = Date.now().toString();
+           localStorage.setItem('sandbox_cat_happy_update', lastUpdateStr);
+        }
+        const lastUpdate = parseInt(lastUpdateStr, 10);
+        const now = Date.now();
+        const elapsedHours = (now - lastUpdate) / (1000 * 60 * 60);
+
+        if (elapsedHours > 0) {
+           if (hungerVal < 50) {
+              happy = Math.max(0, happy - (10 * elapsedHours)); // 10% per hour
+              localStorage.setItem('sandbox_cat_happiness', happy.toString());
+           }
+           localStorage.setItem('sandbox_cat_happy_update', now.toString());
+           setCatHappiness(happy);
+        }
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [bowlWaterFilled, bowlFishId]);
+
+  useEffect(() => {
+    if (!catWillAppear || tutorialStep < 11 || yarnState?.active) return;
+
+    const catLoop = setInterval(() => {
+      if (Date.now() < catBusyUntil.current) return;
+      if (Date.now() < catSleepUntil.current) return;
+
+      setCatPos(prev => {
+        const isAngry = starvingTime > 0;
+        if (isAngry) {
+          setCatState('sit');
+          return prev;
+        }
+
+        const randomAction = Math.random();
+        if (randomAction < 0.4) {
+          setCatState('walk');
+          const deltaX = Math.random() * 800 - 400;
+          const deltaY = Math.random() * 400 - 200;
+          const newLeft = prev.left + deltaX;
+          const newTop = prev.top + deltaY;
+          const clampedLeft = Math.max(400, Math.min(1500, newLeft));
+          const clampedTop = Math.max(300, Math.min(800, newTop));
+          const actualDeltaX = clampedLeft - prev.left;
+          
+          setCatDirection(actualDeltaX > 0 ? -1 : 1);
+          return { left: clampedLeft, top: clampedTop };
+        } else if (randomAction < 0.7) {
+          setCatState('sit');
+          return prev;
+        } else {
+          setCatState('sleep');
+          catSleepUntil.current = Date.now() + (10 * 60 * 1000) + (Math.random() * 10 * 60 * 1000);
+          return prev;
+        }
+      });
+    }, 4000);
+
+    return () => clearInterval(catLoop);
+  }, [catWillAppear, tutorialStep, starvingTime, yarnState?.active]);
+
+  useEffect(() => {
+    if (bowlWaterFilled && bowlFishId !== null) {
+      if (!localStorage.getItem('sandbox_cat_fed_time')) {
+        localStorage.setItem('sandbox_cat_fed_time', Date.now().toString());
+        localStorage.removeItem('sandbox_cat_starving_time');
+      }
+      if (!localStorage.getItem('sandbox_cat_first_fed_time')) {
+         const now = Date.now();
+         localStorage.setItem('sandbox_cat_first_fed_time', now.toString());
+         setFirstFedTime(now);
+      }
+    } else {
+      localStorage.removeItem('sandbox_cat_fed_time');
+      if (isCatUnlocked && !localStorage.getItem('sandbox_cat_starving_time')) {
+        localStorage.setItem('sandbox_cat_starving_time', Date.now().toString());
+      }
+    }
+  }, [bowlWaterFilled, bowlFishId, isCatUnlocked]);
+  
   // Forest Lock Timer
   const [forestLockTime, setForestLockTime] = useState(0);
+  const [mineLockTime, setMineLockTime] = useState(0);
+
   useEffect(() => {
     const checkLock = () => {
       const lv = localStorage.getItem('forest_last_visited');
       if (lv) {
         const el = Date.now() - parseInt(lv, 10);
-        const th = 2 * 60 * 60 * 1000; // 2 hours
+        const th = 45 * 60 * 1000; // 45 mins
         if (el < th) setForestLockTime(th - el);
         else setForestLockTime(0);
       } else setForestLockTime(0);
+      
+      const mlv = localStorage.getItem('mine_last_visited');
+      if (mlv) {
+        const el = Date.now() - parseInt(mlv, 10);
+        const th = 45 * 60 * 1000; // 45 mins
+        if (el < th) setMineLockTime(th - el);
+        else setMineLockTime(0);
+      } else setMineLockTime(0);
     };
     
     checkLock();
@@ -1248,6 +3271,54 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
         localStorage.removeItem('forest_last_visited');
         setForestLockTime(0);
       }
+      if (cmd === 'mine') {
+        localStorage.removeItem('mine_last_visited');
+        setMineLockTime(0);
+      }
+      if (cmd === 'skip') {
+          setTutorialStep(9);
+          localStorage.setItem('sandbox_tutorial_step', '9');
+        setIsDigging(false);
+        setIsDirting(false);
+        setIsSeeding(false);
+      }
+      if (cmd === 'animal farm') {
+        const comp = JSON.parse(localStorage.getItem('sandbox_completed_quests') || '[]');
+        if (!comp.includes('q16_build_barn')) {
+          comp.push('q16_build_barn');
+          localStorage.setItem('sandbox_completed_quests', JSON.stringify(comp));
+          setCompletedQuests(comp);
+        }
+        window.dispatchEvent(new CustomEvent('showNotification', { detail: { msg: "Animal Farm unlocked!", type: "success" } }));
+      }
+      if (cmd === 'skip time') {
+        const skipAmount = 24 * 60 * 60 * 1000;
+        const fVisit = localStorage.getItem('forest_last_visited');
+        if (fVisit) localStorage.setItem('forest_last_visited', (parseInt(fVisit, 10) - skipAmount).toString());
+        const mVisit = localStorage.getItem('mine_last_visited');
+        if (mVisit) localStorage.setItem('mine_last_visited', (parseInt(mVisit, 10) - skipAmount).toString());
+        window.dispatchEvent(new CustomEvent('skipTime'));
+        window.dispatchEvent(new CustomEvent('showNotification', { detail: { msg: "Time skipped by 24 hours!", type: "success" } }));
+      }
+      if (cmd && cmd.startsWith('yarn')) {
+        const parts = cmd.split(' ');
+        const amt = parts[1] ? parseInt(parts[1], 10) : 1;
+        const sandboxLoot = JSON.parse(localStorage.getItem('sandbox_loot') || '{}');
+        sandboxLoot[9955] = Math.max(0, (sandboxLoot[9955] || 0) + amt);
+        localStorage.setItem('sandbox_loot', JSON.stringify(sandboxLoot));
+        window.dispatchEvent(new CustomEvent('showNotification', { detail: { msg: `Added ${amt}x Yarn!`, type: "success" } }));
+      }
+      if (cmd && ['farming', 'fishing', 'foraging', 'mining', 'crafting'].some(s => cmd.startsWith(s))) {
+        const parts = cmd.split(' ');
+        const skillName = parts[0].toLowerCase();
+        const level = parseInt(parts[1], 10);
+        if (!isNaN(level)) {
+          const xpNeeded = Math.pow(level - 1, 2) * 150;
+          localStorage.setItem(`sandbox_${skillName}_xp`, xpNeeded.toString());
+          window.dispatchEvent(new CustomEvent('ls-update', { detail: { key: `sandbox_${skillName}_xp`, value: xpNeeded.toString() } }));
+          window.dispatchEvent(new CustomEvent('showNotification', { detail: { msg: `${skillName.charAt(0).toUpperCase() + skillName.slice(1)} level set to ${level}!`, type: "success" } }));
+        }
+      }
     };
 
     return () => {
@@ -1255,6 +3326,42 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
       delete window.cml;
     };
   }, []);
+
+  // The Well Dropping Logic
+  const handleWellDrop = () => {
+    const loot = JSON.parse(localStorage.getItem('sandbox_loot') || '{}');
+    if (!loot[9953] || loot[9953] <= 0) {
+      show("You need to craft a Bucket first to use the Well!", "error");
+      return;
+    }
+    const today = new Date().toDateString();
+    const wellDate = localStorage.getItem('sandbox_well_date');
+    let uses = parseInt(localStorage.getItem('sandbox_well_uses') || '0', 10);
+    
+    if (wellDate !== today) {
+      uses = 0;
+      localStorage.setItem('sandbox_well_date', today);
+    }
+    
+    if (uses >= 5) {
+      show("The well is drying up. Try again tomorrow!", "warning");
+      return;
+    }
+    
+    uses += 1;
+    localStorage.setItem('sandbox_well_uses', uses.toString());
+    
+    if (Math.random() < 0.01) { // 1% chance
+      loot[9954] = (loot[9954] || 0) + 1;
+      localStorage.setItem('sandbox_loot', JSON.stringify(loot));
+      const expiry = Date.now() + 24 * 60 * 60 * 1000;
+      localStorage.setItem('sandbox_ring_expiry', expiry.toString());
+      show("SPLASH! You pulled up a Magic Ring! Harvests are doubled for 24 hours!", "success");
+      if (refetch) refetch();
+    } else {
+      show(`SPLASH! You pulled up some muddy water... (${5 - uses} attempts left today)`, "info");
+    }
+  };
 
   const updatePlotPrep = useCallback((index, prepData) => {
     setPlotPrep(prev => {
@@ -1322,6 +3429,7 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
         );
 
         const growthTimeCache = new Map();
+        const skippedCrops = JSON.parse(localStorage.getItem('sandbox_skipped_crops') || '{}');
         
         // WEATHER BUFFS/NERFS
         const weatherEmoji = getWeatherForDay(simulatedDate);
@@ -1354,28 +3462,50 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
               const growthTimeObj = growthTimeCache.get(seedIdBig.toString());
               const growthTime = growthTimeObj ? growthTimeObj.gt : 60;
               
-              // Calculate plantedAt based on original growth time and current endTime
-              // The endTime might be modified by Growth Elixir, so we need to account for that
-              const originalEndTime = Math.floor((item.plantedAt || 0) / 1000) + growthTime;
-              const timeDifference = originalEndTime - endTime;
-              
-              // Adjust plantedAt and record Growth Elixir application if any
-              const originalPlantedAt = (endTime - growthTime) * 1000;
-              item.contractPlantedAt = isNaN(originalPlantedAt) ? Date.now() : originalPlantedAt;
-              let wState = waterStateRef.current[crop.plotNumber];
-              let pausedMs = (wState && !isNaN(wState.pausedMs)) ? wState.pausedMs : 0;
-              item.plantedAt = item.contractPlantedAt + pausedMs;
-              item.growthElixirApplied = timeDifference > 0;
-              
-              item.growthTime = growthTime;
-              const adjustedEndTime = Math.floor(item.plantedAt / 1000) + growthTime;
-              const isReady = adjustedEndTime <= nowSec;
-              item.growStatus = isReady ? 2 : 1;
+              if (skippedCrops[crop.plotNumber]) {
+                item.plantedAt = 1;
+                item.contractPlantedAt = 1;
+                item.growStatus = 2;
+                item.growthTime = growthTime;
+              } else {
+                // Calculate plantedAt based on original growth time and current endTime
+                // The endTime might be modified by Growth Elixir, so we need to account for that
+                const originalEndTime = Math.floor((item.plantedAt || 0) / 1000) + growthTime;
+                const timeDifference = originalEndTime - endTime;
+                
+                // Adjust plantedAt and record Growth Elixir application if any
+                const originalPlantedAt = (endTime - growthTime) * 1000;
+                item.contractPlantedAt = isNaN(originalPlantedAt) ? Date.now() : originalPlantedAt;
+                let wState = waterStateRef.current[crop.plotNumber];
+                let pausedMs = (wState && !isNaN(wState.pausedMs)) ? wState.pausedMs : 0;
+                item.plantedAt = item.contractPlantedAt + pausedMs;
+                item.growthElixirApplied = timeDifference > 0;
+                
+                item.growthTime = growthTime;
+                const adjustedEndTime = Math.floor(item.plantedAt / 1000) + growthTime;
+                const isReady = adjustedEndTime <= nowSec;
+                item.growStatus = isReady ? 2 : 1;
+              }
               
               // Store potion effect multipliers and growth elixir status for display
               item.produceMultiplierX1000 = crop.produceMultiplierX1000 || 1000;
               item.tokenMultiplierX1000 = crop.tokenMultiplierX1000 || 1000;
               item.growthElixirApplied = !!crop.growthElixirApplied;
+              
+              // Fetch Fish Fertilizer scaling
+              const savedPlotPrep = JSON.parse(localStorage.getItem('sandbox_plot_prep') || '{}');
+              const pData = savedPlotPrep[crop.plotNumber];
+              if (pData && pData.fishId) {
+                  const fishItem = ALL_ITEMS[pData.fishId];
+                  let boost = 1.05; // 5% base
+                  if (fishItem && fishItem.type) {
+                      if (fishItem.type.includes('UNCOMMON')) boost = 1.08;
+                      if (fishItem.type.includes('RARE')) boost = 1.10;
+                      if (fishItem.type.includes('EPIC')) boost = 1.15;
+                      if (fishItem.type.includes('LEGENDARY')) boost = 1.25;
+                  }
+                  item.fishScaleBonus = boost; // Scale to be applied in FarmInterface visual
+              }
 
               // Re-inject bugs/crows so they don't blink or reset animations on reload
               item.bugCountdown = bugsRef.current[crop.plotNumber];
@@ -1418,6 +3548,15 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
       if (item && item.seedId && item.seedId !== 0n && bugsRef.current[i] === undefined) {
         let isProtected = false;
         for (const [spotId, protectedPlots] of Object.entries(protectedPlotsBySpot)) {
+          const sc = scarecrowsRef.current[spotId];
+          if (sc) {
+             const exp = typeof sc === 'number' ? sc : sc.expiry;
+             const type = typeof sc === 'number' ? 'tier1' : sc.type;
+             if (exp > nowSec && type === 'ladybug_scarecrow' && protectedPlots.includes(i)) {
+                 isProtected = true;
+                 break;
+             }
+          }
           if (ladybugsRef.current[spotId] > nowSec && protectedPlots.includes(i)) {
             isProtected = true;
             break;
@@ -1444,9 +3583,23 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
       if (item && item.seedId && item.seedId !== 0n && crowsRef.current[i] === undefined) {
         let isProtected = false;
         for (const [spotId, protectedPlots] of Object.entries(protectedPlotsBySpot)) {
-          if (scarecrowsRef.current[spotId] > nowSec && protectedPlots.includes(i)) {
-            isProtected = true;
-            break;
+          const sc = scarecrowsRef.current[spotId];
+          if (sc) {
+            const exp = typeof sc === 'number' ? sc : sc.expiry;
+            const type = typeof sc === 'number' ? 'tier1' : sc.type;
+            
+            if (exp > nowSec) {
+              let protectsThisPlot = false;
+              if (type === 'tier4') protectsThisPlot = true;
+              else if (type === 'tier3') protectsThisPlot = Math.abs(i - protectedPlots[0]) <= 5;
+              else if (type === 'tier2') protectsThisPlot = Math.abs(i - protectedPlots[0]) <= 2;
+              else protectsThisPlot = protectedPlots.includes(i);
+              
+              if (protectsThisPlot) {
+                isProtected = true;
+                break;
+              }
+            }
           }
         }
         if (!isProtected) validPlots.push(i);
@@ -1459,6 +3612,38 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
       show(`Crow spawned on plot ${target}!`, "warning");
     } else {
       show("No unprotected crops available for a crow!", "info");
+    }
+  };
+
+  const handleForceSpawnRat = () => {
+    const validPlots = [];
+    for (let i = 0; i < 30; i++) {
+      const item = cropArray.getItem(i);
+      if (item && item.seedId && item.seedId !== 0n && ratsRef.current[i] === undefined) {
+        validPlots.push(i);
+      }
+    }
+    if (validPlots.length > 0) {
+      const target = validPlots[Math.floor(Math.random() * validPlots.length)];
+      const isWaterFilled = localStorage.getItem('sandbox_bowl_water') === 'true';
+      const isFishFilled = localStorage.getItem('sandbox_bowl_fish') !== null;
+      const fedTime = parseInt(localStorage.getItem('sandbox_cat_fed_time') || '0', 10);
+      const happy = parseFloat(localStorage.getItem('sandbox_cat_happiness') || '50');
+
+      const catUnlocked = (() => {
+        const fft = parseInt(localStorage.getItem('sandbox_cat_first_fed_time') || '0', 10);
+        return fft > 0 && Date.now() - fft >= 60 * 60 * 1000;
+      })();
+      
+      if (catUnlocked && fedTime > 0 && isWaterFilled && isFishFilled && happy > 0) {
+         ratsRef.current[target] = 30;
+         window.dispatchEvent(new CustomEvent('animateCatAttack', { detail: { plotIndex: target } }));
+      } else {
+         ratsRef.current[target] = 30;
+         show(`Rat spawned on plot ${target}!`, "warning");
+      }
+    } else {
+      show("No available crops for a rat!", "info");
     }
   };
 
@@ -1479,6 +3664,14 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
       if (e.detail.id !== null) handleRemoveUmbrella(e.detail.id);
       else { setUmbrellas({}); umbrellasRef.current = {}; localStorage.setItem('sandbox_umbrellas', JSON.stringify({})); }
     };
+    const onAdminDeleteTesla = (e) => {
+      if (e.detail.id !== null) {
+        setTeslaTowers(prev => { const next = { ...prev }; delete next[e.detail.id]; teslaTowersRef.current = next; localStorage.setItem('sandbox_tesla', JSON.stringify(next)); return next; });
+      } else {
+        setTeslaTowers({}); teslaTowersRef.current = {}; localStorage.setItem('sandbox_tesla', JSON.stringify({}));
+      }
+    };
+
     const onAdminClearCrops = () => {
       const emptyCrops = new Array(30).fill(null).map(() => ({ id: 0, endTime: 0, prodMultiplier: 1000, tokenMultiplier: 1000, growthElixir: 0 }));
       localStorage.setItem('sandbox_crops', JSON.stringify(emptyCrops));
@@ -1492,6 +3685,7 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
       
       waterStateRef.current = {};
       localStorage.setItem('sandbox_water_state', JSON.stringify({}));
+      localStorage.removeItem('sandbox_skipped_crops');
 
       setPreviewUpdateKey(prev => prev + 1);
     };
@@ -1513,60 +3707,93 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
         return newArr;
       });
     };
+    const onToggleAutoSpawn = (e) => autoSpawnRef.current = e.detail;
+    const onResetPlotPrep = (e) => updatePlotPrep(e.detail.plotIndex, { status: 0 });
+    const onSkipTutorial = () => {
+      setTutorialStep(7);
+      localStorage.setItem('sandbox_tutorial_step', '7');
+      setIsDigging(false);
+      setIsDirting(false);
+      setIsSeeding(false);
+    };
+
+    const onSkipTime = () => {
+      const skipAmount = 24 * 60 * 60 * 1000;
+      const currentWaterState = { ...waterStateRef.current };
+      let changed = false;
+      for (const idx in currentWaterState) {
+        if (currentWaterState[idx].contractPlantedAt) {
+          currentWaterState[idx].contractPlantedAt -= skipAmount;
+          changed = true;
+        }
+      }
+      if (changed) {
+        waterStateRef.current = currentWaterState;
+        localStorage.setItem('sandbox_water_state', JSON.stringify(currentWaterState));
+        setPreviewUpdateKey(prev => prev + 1);
+      }
+    };
+
+    const handleOpenCrafting = (e) => {
+      setIsPlacingScarecrow(false);
+      setIsPlacingLadybug(false);
+      setIsPlacingSprinkler(false);
+      setIsPlacingUmbrella(false);
+      setIsPlacingTesla(false);
+      setIsPlanting(false);
+      setIsFarmMenu(false);
+    };
+
     const onChangeSimulatedDate = (e) => {
       setSimulatedDay(e.detail.day);
       setSimulatedDate(e.detail.date);
     };
-    const onToggleAutoSpawn = (e) => autoSpawnRef.current = e.detail;
-    const onResetPlotPrep = (e) => updatePlotPrep(e.detail.plotIndex, { status: 0 });
 
     window.addEventListener('forceSpawnBug', handleForceSpawnBug);
     window.addEventListener('forceSpawnCrow', handleForceSpawnCrow);
+    window.addEventListener('forceSpawnRat', handleForceSpawnRat);
     window.addEventListener('adminDeleteSpot', onAdminDeleteSpot);
     window.addEventListener('adminDeleteLadybug', onAdminDeleteLadybug);
     window.addEventListener('adminDeleteSprinkler', onAdminDeleteSprinkler);
     window.addEventListener('adminDeleteUmbrella', onAdminDeleteUmbrella);
+    window.addEventListener('adminDeleteTesla', onAdminDeleteTesla);
     window.addEventListener('adminClearCrops', onAdminClearCrops);
     window.addEventListener('adminClearPests', onAdminClearPests);
     window.addEventListener('changeSimulatedDate', onChangeSimulatedDate);
     window.addEventListener('toggleAutoSpawn', onToggleAutoSpawn);
     window.addEventListener('resetPlotPrep', onResetPlotPrep);
-
-    const onChangeContest = (e) => {
-      const { targetId, isFish } = e.detail;
-      if (isFish) {
-        setTargetFishId(targetId);
-        localStorage.setItem('weight_contest_fish', targetId.toString());
-      } else {
-        setTargetProduceId(targetId);
-        localStorage.setItem('weight_contest_produce', targetId.toString());
-      }
-    };
-
-    window.addEventListener('changeWeightContest', onChangeContest);
+    window.addEventListener('skipTutorial', onSkipTutorial);
+    window.addEventListener('skipTime', onSkipTime);
+    window.addEventListener('openCraftingFor', handleOpenCrafting);
 
     return () => {
       window.removeEventListener('forceSpawnBug', handleForceSpawnBug);
       window.removeEventListener('forceSpawnCrow', handleForceSpawnCrow);
+      window.removeEventListener('forceSpawnRat', handleForceSpawnRat);
       window.removeEventListener('adminDeleteSpot', onAdminDeleteSpot);
       window.removeEventListener('adminDeleteLadybug', onAdminDeleteLadybug);
       window.removeEventListener('adminDeleteSprinkler', onAdminDeleteSprinkler);
       window.removeEventListener('adminDeleteUmbrella', onAdminDeleteUmbrella);
+      window.removeEventListener('adminDeleteTesla', onAdminDeleteTesla);
       window.removeEventListener('adminClearCrops', onAdminClearCrops);
       window.removeEventListener('adminClearPests', onAdminClearPests);
       window.removeEventListener('changeSimulatedDate', onChangeSimulatedDate);
       window.removeEventListener('toggleAutoSpawn', onToggleAutoSpawn);
-      window.removeEventListener('changeWeightContest', onChangeContest);
       window.removeEventListener('resetPlotPrep', onResetPlotPrep);
+      window.removeEventListener('skipTutorial', onSkipTutorial);
+      window.removeEventListener('skipTime', onSkipTime);
+      window.removeEventListener('openCraftingFor', handleOpenCrafting);
     };
   }, [handleRemoveScarecrow, handleRemoveLadybug, handleRemoveSprinkler, handleRemoveUmbrella, loadCropsFromContract, cropArray, updatePlotPrep]);
 
   useEffect(() => {
     if (localStorage.getItem("pendingScarecrowPlacement") === "true") {
       localStorage.removeItem("pendingScarecrowPlacement");
+      setPlacingScarecrowType('tier1');
       setIsPlacingScarecrow(true);
       setIsUsingPotion(false);
       setIsPlanting(false);
+      setIsPlacingTesla(false);
       setIsFarmMenu(false); // Keep farm active so animations don't restart
       setTimeout(() => show("Select a white border to place your scarecrow!", "info"), 500);
     }
@@ -1616,18 +3843,44 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
   useEffect(() => {
     const handleStartPotionUsage = (event) => {
       const { id, name } = event.detail;
-      if (id === ID_POTION_ITEMS.SCARECROW) {
+      
+      const isScarecrowVariant = [ID_POTION_ITEMS.SCARECROW, 9979, 9978, 9977, 9976].includes(id);
+      if (isScarecrowVariant) {
+        if (id === ID_POTION_ITEMS.SCARECROW) setPlacingScarecrowType('tier1');
+        else if (id === 9979) setPlacingScarecrowType('ladybug_scarecrow');
+        else if (id === 9978) setPlacingScarecrowType('tier2');
+        else if (id === 9977) setPlacingScarecrowType('tier3');
+        else if (id === 9976) setPlacingScarecrowType('tier4');
+
         setIsPlacingScarecrow(true);
         setIsUsingPotion(false);
         setIsPlanting(false);
+        setIsPlacingLadybug(false);
+        setIsPlacingSprinkler(false);
+        setIsPlacingUmbrella(false);
+        setIsPlacingTesla(false);
         setIsFarmMenu(false); // Keep farm active so animations don't restart
         return;
       }
+      
+      if (id === 9975) { // Tesla Tower
+        setIsPlacingTesla(true);
+        setIsPlacingScarecrow(false);
+        setIsPlacingLadybug(false);
+        setIsPlacingSprinkler(false);
+        setIsPlacingUmbrella(false);
+        setIsUsingPotion(false);
+        setIsPlanting(false);
+        setIsFarmMenu(false);
+        return;
+      }
+      
       if (id === ID_POTION_ITEMS.LADYBUG) {
         setIsPlacingLadybug(true);
         setIsPlacingScarecrow(false);
         setIsPlacingSprinkler(false);
         setIsPlacingUmbrella(false);
+        setIsPlacingTesla(false);
         setIsUsingPotion(false);
         setIsPlanting(false);
         setIsFarmMenu(false); // Keep farm active
@@ -1638,6 +3891,7 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
         setIsPlacingScarecrow(false);
         setIsPlacingLadybug(false);
         setIsPlacingUmbrella(false);
+        setIsPlacingTesla(false);
         setIsUsingPotion(false);
         setIsPlanting(false);
         setIsFarmMenu(false);
@@ -1648,12 +3902,36 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
         setIsPlacingScarecrow(false);
         setIsPlacingLadybug(false);
         setIsPlacingSprinkler(false);
+        setIsPlacingTesla(false);
         setIsUsingPotion(false);
         setIsPlanting(false);
         setIsFarmMenu(false);
         return;
       }
       
+      if (id === 9987) {
+        setShowEasterBasket(true);
+        setIsUsingPotion(false);
+        setIsPlanting(false);
+        setIsFarmMenu(false);
+        return;
+      }
+      
+      if (id === 9955) {
+        setYarnState({ active: true, phase: 'idle', x: 960, y: 800, vx: 0, vy: 0, angle: 0, direction: 1 });
+        setIsUsingPotion(false);
+        setIsPlanting(false);
+        setIsFarmMenu(false);
+        
+        const sandboxLoot = JSON.parse(localStorage.getItem('sandbox_loot') || '{}');
+        sandboxLoot[9955] = Math.max(0, (sandboxLoot[9955] || 0) - 1);
+        localStorage.setItem('sandbox_loot', JSON.stringify(sandboxLoot));
+        if (refetch) refetch();
+        
+        show("Click and hold the yarn to aim!", "info");
+        return;
+      }
+
       setSelectedPotion({ id, name });
       setIsUsingPotion(true);
       setIsPlanting(false);
@@ -1668,7 +3946,7 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
   }, []);
 
   const getAvailableSeeds = useCallback(() => {
-    return currentSeeds
+    return (currentSeeds || [])
       .map((seed) => ({
         ...seed,
         count: Math.max(0, seed.count - (usedSeedsInPreview[seed.id] || 0)),
@@ -1716,6 +3994,106 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
     audio.currentTime = 0;
     audio.play().catch(() => {});
   }, [settings?.soundVolume]);
+  
+  // Yarn mechanics loops
+  useEffect(() => {
+    if (!yarnState || !yarnState.active) return;
+    let frameId;
+    let lastTime = performance.now();
+    const loop = (time) => {
+      const dt = Math.max(1, Math.min(32, time - lastTime)); // Cap dt to avoid huge jumps
+      lastTime = time;
+      setYarnState(prev => {
+        if (!prev || !prev.active) return prev;
+        
+        if (prev.phase === 'aiming') {
+           let newAngle = (prev.angle || 0) + ((prev.direction || 1) * 0.18 * dt);
+           let newDir = prev.direction || 1;
+           if (newAngle > 75) { newAngle = 75; newDir = -1; }
+           if (newAngle < -75) { newAngle = -75; newDir = 1; }
+           return { ...prev, angle: newAngle, direction: newDir };
+        }
+        
+        if (prev.phase === 'rolling') {
+            let { x, y, vx, vy } = prev;
+            if (Math.abs(vx) > 0.1 || Math.abs(vy) > 0.1) {
+               x += vx;
+               y += vy;
+               vx *= 0.98;
+               vy *= 0.98;
+               
+               if (x < 150) { x = 150; vx *= -0.8; }
+               if (x > 1700) { x = 1700; vx *= -0.8; }
+               if (y < 150) { y = 150; vy *= -0.8; }
+               if (y > 900) { y = 900; vy *= -0.8; }
+               return { ...prev, x, y, vx, vy };
+            }
+        }
+        return prev;
+      });
+      frameId = requestAnimationFrame(loop);
+    };
+    frameId = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(frameId);
+  }, [yarnState?.active]);
+
+  useEffect(() => {
+    if (!yarnState || !yarnState.active) return;
+    const chaseInterval = setInterval(() => {
+       setYarnState(currentYarn => {
+          if (!currentYarn || currentYarn.phase !== 'rolling') return currentYarn;
+          setCatPos(prev => {
+             const dx = currentYarn.x - prev.left;
+             const dy = currentYarn.y - prev.top;
+             const dist = Math.hypot(dx, dy);
+
+             if (dist < 60) {
+                 let happy = parseFloat(localStorage.getItem('sandbox_cat_happiness') || '50');
+                 happy = Math.min(100, happy + 30);
+                 localStorage.setItem('sandbox_cat_happiness', happy.toString());
+                 setCatHappiness(happy);
+                 show("Felix caught the yarn! Happiness +30%", "success");
+                 
+                 setTimeout(() => setYarnState(null), 10);
+                 setCatState('sit');
+                 return prev;
+             }
+
+             const speed = 25; 
+             const moveX = (dx / dist) * speed;
+             const moveY = (dy / dist) * speed;
+             setCatState('walk');
+             setCatDirection(moveX > 0 ? -1 : 1);
+             return { left: prev.left + moveX, top: prev.top + moveY };
+          });
+          return currentYarn;
+       });
+    }, 50); 
+    return () => clearInterval(chaseInterval);
+  }, [yarnState?.active]);
+
+  useEffect(() => {
+    if (!yarnState || yarnState.phase !== 'aiming') return;
+    const handleUp = () => {
+       setYarnState(prev => {
+         if (!prev || prev.phase !== 'aiming') return prev;
+         const rad = prev.angle * (Math.PI / 180);
+         const power = 40; 
+         const vx = Math.sin(rad) * power;
+         const vy = -Math.cos(rad) * power;
+         return { ...prev, phase: 'rolling', vx, vy };
+       });
+    };
+    window.addEventListener('pointerup', handleUp);
+    return () => window.removeEventListener('pointerup', handleUp);
+  }, [yarnState?.phase]);
+
+  // Keep Farm updated with tutorial steps that progress outside of Farm
+  useEffect(() => {
+    const stepHandler = () => setTutorialStep(parseInt(localStorage.getItem('sandbox_tutorial_step') || '0', 10));
+    window.addEventListener('tutorialStepChanged', stepHandler);
+    return () => window.removeEventListener('tutorialStepChanged', stepHandler);
+  }, []);
 
   useEffect(() => {
     const loadUserData = async () => {
@@ -1815,6 +4193,37 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
   // Growth timer effect
   useEffect(() => {
     const interval = setInterval(() => {
+      // CAT TIMERS LOGIC
+      const isWaterFilled = localStorage.getItem('sandbox_bowl_water') === 'true';
+      const isFishFilled = localStorage.getItem('sandbox_bowl_fish') !== null;
+      const fedTime = parseInt(localStorage.getItem('sandbox_cat_fed_time') || '0', 10);
+      const starvingTime = parseInt(localStorage.getItem('sandbox_cat_starving_time') || '0', 10);
+      
+      if (fedTime > 0 && isWaterFilled && isFishFilled) {
+        if (Date.now() - fedTime >= 12 * 60 * 60 * 1000) { // 12 Hours
+          localStorage.removeItem('sandbox_bowl_water');
+          localStorage.removeItem('sandbox_bowl_fish');
+          localStorage.removeItem('sandbox_cat_fed_time');
+          localStorage.setItem('sandbox_cat_starving_time', Date.now().toString());
+          setBowlWaterFilled(false);
+          setBowlFishId(null);
+        }
+      } else if (starvingTime > 0) {
+        if (Date.now() - starvingTime >= 24 * 60 * 60 * 1000) { // 24 Hours
+          localStorage.removeItem('sandbox_cat_starving_time');
+        } else {
+          const lastShake = parseInt(localStorage.getItem('sandbox_cat_last_shake') || starvingTime.toString(), 10);
+          const fTimestamp = parseInt(localStorage.getItem('forest_last_visited') || '0', 10);
+          const tStep = parseInt(localStorage.getItem('sandbox_tutorial_step') || '0', 10);
+          if (fTimestamp > 0 && tStep >= 4) {
+            if (Date.now() - lastShake >= 60 * 60 * 1000) { // 1 Hour
+              window.dispatchEvent(new CustomEvent('crazyCatShake'));
+              localStorage.setItem('sandbox_cat_last_shake', Date.now().toString());
+            }
+          }
+        }
+      }
+
       // Only update growth when not in farm menu to prevent flickering during harvest selection
       if (!isFarmMenu) {
         // Lightning mechanic
@@ -1823,16 +4232,32 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
         if (currentWeather === '⚡') {
           // ~5% chance every 1.5 hours (5400 seconds)
           if (Math.random() < 0.00001) {
-            const sKeys = Object.keys(scarecrowsRef.current);
-            const lKeys = Object.keys(ladybugsRef.current);
-            const total = sKeys.length + lKeys.length;
+            const nowSeconds = Math.floor(Date.now() / 1000);
+            
+            let isTeslaProtected = false;
+            for (const tExp of Object.values(teslaTowersRef.current)) {
+               if (tExp > nowSeconds) {
+                  isTeslaProtected = true;
+                  break;
+               }
+            }
+            
+            if (isTeslaProtected) {
+              window.dispatchEvent(new CustomEvent('showNotification', { detail: { msg: "⚡ Lightning struck, but your Tesla Tower safely grounded it!", type: "info" } }));
+              return;
+            }
+
+            const activeScarecrows = Object.entries(scarecrowsRef.current).filter(([k,v]) => (typeof v === 'number' ? v : v.expiry) > nowSeconds);
+            const activeLadybugs = Object.entries(ladybugsRef.current).filter(([k,v]) => v > nowSeconds);
+            
+            const total = activeScarecrows.length + activeLadybugs.length;
             if (total > 0) {
               const idx = Math.floor(Math.random() * total);
-              if (idx < sKeys.length) {
-                handleRemoveScarecrow(sKeys[idx]);
+              if (idx < activeScarecrows.length) {
+                handleRemoveScarecrow(activeScarecrows[idx][0]);
                 show(`⚡ Lightning struck and destroyed a scarecrow!`, "error");
               } else {
-                handleRemoveLadybug(lKeys[idx - sKeys.length]);
+                handleRemoveLadybug(activeLadybugs[idx - activeScarecrows.length][0]);
                 show(`⚡ Lightning struck and destroyed a ladybug!`, "error");
               }
             }
@@ -1847,11 +4272,9 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
         let pestsChanged = false;
         
         for (const idx in currentBugs) {
-          currentBugs[idx] -= 1;
-          pestsChanged = true;
-          if (currentBugs[idx] <= 0) {
-            cropsToDestroy.push(Number(idx));
-            delete currentBugs[idx];
+          if (currentBugs[idx] > 1) { // Cap bugs at 1 so they just pause and never destroy
+            currentBugs[idx] -= 1;
+            pestsChanged = true;
           }
         }
         for (const idx in currentCrows) {
@@ -1883,6 +4306,7 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
 
         setCropArray((prevCropArray) => {
           let hasChanges = cropsToDestroy.length > 0 || pestsChanged;
+          let ratJustSpawned = false;
           const newCropArray = new CropItemArrayClass(30);
           newCropArray.copyFrom(prevCropArray);
           
@@ -1942,6 +4366,7 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
 
               let basePlantedAt = wState.contractPlantedAt;
               let isPaused = false;
+              const hasPest = bugsRef.current[i] !== undefined || crowsRef.current[i] !== undefined || ratsRef.current[i] !== undefined;
 
               if (wState.needsInitial) {
                 isPaused = true;
@@ -1954,7 +4379,15 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
                   isPaused = true;
                   wState.pausedMs = now - halfTime - basePlantedAt;
                   hasChanges = true;
+                } else if (hasPest) {
+                  isPaused = true;
+                  wState.pausedMs += 1000; // Pause timer accumulation
+                  hasChanges = true;
                 }
+              } else if (hasPest) {
+                 isPaused = true;
+                 wState.pausedMs += 1000; // Pause timer accumulation
+                 hasChanges = true;
               }
 
               if (item.needsWater !== isPaused) {
@@ -1975,6 +4408,27 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
               let hasSprinkler = false;
               let hasUmbrella = false;
               for (const [spotId, protectedPlots] of Object.entries(protectedPlotsBySpot)) {
+                // Check Advanced Scarecrow Protection Logic
+                const sc = scarecrowsRef.current[spotId];
+                if (sc) {
+                  const exp = typeof sc === 'number' ? sc : sc.expiry;
+                  const type = typeof sc === 'number' ? 'tier1' : sc.type;
+                  
+                  if (exp > nowSec) {
+                    let protectsThisPlot = false;
+                    if (type === 'tier4') protectsThisPlot = true;
+                    else if (type === 'tier3') protectsThisPlot = Math.abs(i - protectedPlots[0]) <= 5; // Protects ~11 plots around it
+                    else if (type === 'tier2') protectsThisPlot = Math.abs(i - protectedPlots[0]) <= 2; // Protects ~5 plots around it
+                    else protectsThisPlot = protectedPlots.includes(i); // Tier 1 and Ladybug Scarecrow
+
+                    if (protectsThisPlot) {
+                      isProtectedFromCrows = true;
+                      if (type === 'ladybug_scarecrow') isProtectedFromBugs = true;
+                    }
+                  }
+                }
+                
+                // Check other protections
                 if (protectedPlots.includes(i)) {
                   if (scarecrowsRef.current[spotId] > nowSec) isProtectedFromCrows = true;
                   if (ladybugsRef.current[spotId] > nowSec) isProtectedFromBugs = true;
@@ -2020,10 +4474,25 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
                   hasChanges = true;
                 }
               }
-              if (autoSpawnRef.current && Object.keys(ratsRef.current).length === 0 && Math.random() < 0.001) {
-                 ratsRef.current[i] = 15;
-                 item.ratCountdown = 15;
+              if (autoSpawnRef.current && Object.keys(ratsRef.current).length === 0 && !ratJustSpawned && Math.random() < 0.000385) { // 50% chance every 30 minutes
+                 ratJustSpawned = true;
+                 const isWaterFilled = localStorage.getItem('sandbox_bowl_water') === 'true';
+                 const isFishFilled = localStorage.getItem('sandbox_bowl_fish') !== null;
+                 const fedTime = parseInt(localStorage.getItem('sandbox_cat_fed_time') || '0', 10);
+                 const happy = parseFloat(localStorage.getItem('sandbox_cat_happiness') || '50');
+                 
+                 const catUnlocked = (() => {
+                    const fft = parseInt(localStorage.getItem('sandbox_cat_first_fed_time') || '0', 10);
+                    return fft > 0 && Date.now() - fft >= 60 * 60 * 1000;
+                 })();
+                 
+                 ratsRef.current[i] = 30;
+                 item.ratCountdown = 30;
                  hasChanges = true;
+                 
+                 if (catUnlocked && fedTime > 0 && isWaterFilled && isFishFilled && happy > 0) {
+                    window.dispatchEvent(new CustomEvent('animateCatAttack', { detail: { plotIndex: i } }));
+                 }
               }
               
               if (item.bugCountdown !== bugsRef.current[i] || item.crowCountdown !== crowsRef.current[i] || item.ratCountdown !== ratsRef.current[i]) {
@@ -2186,7 +4655,7 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
       ID_RARE_TYPE_COMMON: 1,
     };
 
-    const sortedSeeds = currentSeeds
+    const sortedSeeds = (currentSeeds || [])
       .filter((seed) => seed.count > 0)
       .sort((a, b) => {
         const aQuality = qualityOrder[a.category] || 0;
@@ -2205,6 +4674,7 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
 
     // Plant seeds starting with the best quality
     const encodedIdsToPlant = [];
+    const plantedSeedIds = [];
     for (const seed of sortedSeeds) {
       if (emptyPlotNumbers.length === 0) break;
       let countToPlant = Math.min(seed.count, emptyPlotNumbers.length);
@@ -2214,6 +4684,7 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
           const localId = seed.id & 0xFF;
           const subtype = getSubtype(seed.id);
           encodedIdsToPlant.push((plotIdx << 24) | (category << 16) | (subtype << 8) | localId);
+          plantedSeedIds.push(seed.id);
           newWaterState[plotIdx] = { needsInitial: true, needsMid: true, pausedMs: 0, contractPlantedAt: Date.now() };
       }
     }
@@ -2230,6 +4701,12 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
     show(`Planting ${encodedIdsToPlant.length} seeds...`, "info");
     const result = await plantBatch(encodedIdsToPlant);
     if (result) {
+        const sandboxLoot = JSON.parse(localStorage.getItem('sandbox_loot') || '{}');
+        for (const sid of plantedSeedIds) {
+            if (sandboxLoot[sid] > 0) sandboxLoot[sid] -= 1;
+        }
+        localStorage.setItem('sandbox_loot', JSON.stringify(sandboxLoot));
+        
         show(`✅ Successfully planted ${encodedIdsToPlant.length} seeds!`, "success");
         await loadCropsFromContract();
         if (typeof refetchSeeds === "function") refetchSeeds();
@@ -2249,10 +4726,44 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
   const startPotionUsage = (potionId, potionName) => {
     if (potionId === ID_POTION_ITEMS.SCARECROW) {
       setIsPlacingScarecrow(true);
+      setIsPlacingTesla(false);
       setIsUsingPotion(false);
       setIsPlanting(false);
       setIsFarmMenu(false); // Keep farm active so animations don't restart
-      show("Select a white border to place your scarecrow!", "info");
+      show("Select a spot to place your scarecrow!", "info");
+      return;
+    }
+    
+    const isScarecrowVariant = [9979, 9978, 9977, 9976].includes(potionId);
+    if (isScarecrowVariant) {
+      if (potionId === 9979) setPlacingScarecrowType('ladybug_scarecrow');
+      else if (potionId === 9978) setPlacingScarecrowType('tier2');
+      else if (potionId === 9977) setPlacingScarecrowType('tier3');
+      else if (potionId === 9976) setPlacingScarecrowType('tier4');
+
+      setIsPlacingScarecrow(true);
+      setIsUsingPotion(false);
+      setIsPlanting(false);
+      setIsPlacingLadybug(false);
+      setIsPlacingSprinkler(false);
+      setIsPlacingUmbrella(false);
+      setIsPlacingTesla(false);
+      setIsFarmMenu(false);
+      show("Select a spot to place your advanced scarecrow!", "info");
+      return;
+    }
+    
+    if (potionId === 9975) {
+      setIsPlacingTesla(true);
+      setIsPlacingScarecrow(false);
+      setIsPlacingLadybug(false);
+      setIsPlacingSprinkler(false);
+      setIsPlacingUmbrella(false);
+      setIsPlacingTesla(false);
+      setIsUsingPotion(false);
+      setIsPlanting(false);
+      setIsFarmMenu(false);
+      show("Select a spot to place your Tesla Tower!", "info");
       return;
     }
     if (potionId === ID_POTION_ITEMS.LADYBUG) {
@@ -2260,6 +4771,7 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
       setIsPlacingScarecrow(false);
       setIsPlacingSprinkler(false);
       setIsPlacingUmbrella(false);
+      setIsPlacingTesla(false);
       setIsUsingPotion(false);
       setIsPlanting(false);
       setIsFarmMenu(false);
@@ -2271,6 +4783,7 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
       setIsPlacingScarecrow(false);
       setIsPlacingLadybug(false);
       setIsPlacingUmbrella(false);
+      setIsPlacingTesla(false);
       setIsUsingPotion(false);
       setIsPlanting(false);
       setIsFarmMenu(false);
@@ -2282,10 +4795,18 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
       setIsPlacingScarecrow(false);
       setIsPlacingLadybug(false);
       setIsPlacingSprinkler(false);
+      setIsPlacingTesla(false);
       setIsUsingPotion(false);
       setIsPlanting(false);
       setIsFarmMenu(false);
       show("Select a purple border to place your umbrella!", "info");
+      return;
+    }
+    if (potionId === 9987) {
+      setShowEasterBasket(true);
+      setIsUsingPotion(false);
+      setIsPlanting(false);
+      setIsFarmMenu(false);
       return;
     }
     setSelectedPotion({ id: potionId, name: potionName });
@@ -2294,19 +4815,53 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
     setIsFarmMenu(true);
   };
 
-  const handlePlaceScarecrow = (spotId) => {
-    const expiryTime = Math.floor(Date.now() / 1000) + 3 * 60 * 60; // 3 hours
-    const newScarecrows = { ...scarecrows, [spotId]: expiryTime };
+  const handlePlaceScarecrow = (spotId, type) => {
+    let duration = 3; // default tier 1 and ladybug
+    if (type === 'tier2') duration = 12;
+    if (type === 'tier3') duration = 48; // 2 days
+    if (type === 'tier4') duration = 120; // 5 days
+    if (type === 'ladybug_scarecrow') duration = 4;
+
+    const expiryTime = Math.floor(Date.now() / 1000) + duration * 60 * 60;
+    const newScarecrows = { ...scarecrows, [spotId]: { expiry: expiryTime, type: type } };
     setScarecrows(newScarecrows);
     scarecrowsRef.current = newScarecrows;
     localStorage.setItem('sandbox_scarecrows', JSON.stringify(newScarecrows));
     show("Scarecrow placed to protect your crops!", "success");
+    
+    let friendlyName = type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+    if (type === 'tier1') friendlyName = 'Scarecrow';
+    
+    show(`${friendlyName} placed to protect your crops!`, "success");
     setIsPlacingScarecrow(false);
     setIsFarmMenu(false);
     setIsPlanting(true);
     
+    let itemId = ID_POTION_ITEMS.SCARECROW;
+    if (type === 'tier2') itemId = 9978;
+    if (type === 'tier3') itemId = 9977;
+    if (type === 'tier4') itemId = 9976;
+    if (type === 'ladybug_scarecrow') itemId = 9979;
+
     const sandboxLoot = JSON.parse(localStorage.getItem('sandbox_loot') || '{}');
-    sandboxLoot[ID_POTION_ITEMS.SCARECROW] = Math.max(0, (sandboxLoot[ID_POTION_ITEMS.SCARECROW] || 0) - 1);
+    sandboxLoot[itemId] = Math.max(0, (sandboxLoot[itemId] || 0) - 1);
+    localStorage.setItem('sandbox_loot', JSON.stringify(sandboxLoot));
+    if (typeof refetchSeeds === "function") refetchSeeds();
+  };
+
+  const handlePlaceTesla = (spotId) => {
+    const expiryTime = Math.floor(Date.now() / 1000) + 120 * 60 * 60; // 5 days
+    const newTowers = { ...teslaTowers, [spotId]: expiryTime };
+    setTeslaTowers(newTowers);
+    teslaTowersRef.current = newTowers;
+    localStorage.setItem('sandbox_tesla', JSON.stringify(newTowers));
+    show("Tesla Tower placed to ground lightning!", "success");
+    setIsPlacingTesla(false);
+    setIsFarmMenu(false);
+    setIsPlanting(true);
+    
+    const sandboxLoot = JSON.parse(localStorage.getItem('sandbox_loot') || '{}');
+    sandboxLoot[9975] = Math.max(0, (sandboxLoot[9975] || 0) - 1);
     localStorage.setItem('sandbox_loot', JSON.stringify(sandboxLoot));
     if (typeof refetchSeeds === "function") refetchSeeds();
   };
@@ -2367,7 +4922,11 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
   const handleHarvestAll = async () => {
     try {
       const readySlots = [];
+      let harvestedCarrot = false;
+      const carrotSeed = (currentSeeds || []).find(s => s.label && s.label.toLowerCase().includes('carrot'));
       const currentTimeSeconds = Math.floor(Date.now() / 1000);
+
+      let totalXpToAward = 0;
 
       for (let i = 0; i < cropArray.getLength(); i++) {
         const item = cropArray.getItem(i);
@@ -2376,6 +4935,8 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
           const isReady = (item.growStatus === 2) || (currentTimeSeconds >= endTime);
           if (isReady) {
             readySlots.push(i);
+            totalXpToAward += 10; // 10 Farming XP per crop
+            if (carrotSeed && item.seedId.toString() === carrotSeed.id.toString()) harvestedCarrot = true;
           }
         }
       }
@@ -2421,12 +4982,30 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
       // Force a re-render by updating the preview update key
       setPreviewUpdateKey(prev => prev + 1);
 
+      // Award XP
+      if (totalXpToAward > 0) {
+        const currentFarmingXp = parseInt(localStorage.getItem('sandbox_farming_xp') || '0', 10);
+        const oldLevel = getLevelFromXp(currentFarmingXp);
+        const newFarmingXp = currentFarmingXp + totalXpToAward;
+        localStorage.setItem('sandbox_farming_xp', newFarmingXp.toString());
+        window.dispatchEvent(new CustomEvent('showNotification', { detail: { msg: `+${totalXpToAward} Farming XP!`, type: "info" } }));
+        setFarmingXp(newFarmingXp);
+        const newLevel = getLevelFromXp(newFarmingXp);
+        if (newLevel > oldLevel) {
+          window.dispatchEvent(new CustomEvent('levelUp', { detail: { skill: 'Farming', level: newLevel } }));
+        }
+      }
+
       show(`✅ Successfully harvested ${readySlots.length} crops!`, "success");
       // Clear any selection state after harvest all
       setSelectedIndexes([]);
       setIsFarmMenu(false);
       setIsPlanting(true);
       
+      const skipped = JSON.parse(localStorage.getItem('sandbox_skipped_crops') || '{}');
+      readySlots.forEach(idx => delete skipped[idx]);
+      localStorage.setItem('sandbox_skipped_crops', JSON.stringify(skipped));
+
       // Reset water state for harvested crops
       const newWaterState = { ...waterStateRef.current };
       readySlots.forEach(idx => { delete newWaterState[idx]; });
@@ -2509,6 +5088,13 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
       });
       const result = await plantBatch(seedIds);
       if (result) {
+        const sandboxLoot = JSON.parse(localStorage.getItem('sandbox_loot') || '{}');
+        for (const crop of cropsToPlant) {
+            const numericSeedId = Number(crop.seedId);
+            if (sandboxLoot[numericSeedId] > 0) sandboxLoot[numericSeedId] -= 1;
+        }
+        localStorage.setItem('sandbox_loot', JSON.stringify(sandboxLoot));
+        
         const newWaterState = { ...waterStateRef.current };
         for (let i = 0; i < cropsToPlant.length; i++) {
           newWaterState[cropsToPlant[i].plotNumber] = { needsInitial: true, needsMid: true, pausedMs: 0, contractPlantedAt: Date.now() };
@@ -2602,6 +5188,9 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
     try {
       // Check which crops are actually ready to harvest
       const readyCrops = [];
+      let harvestedCarrot = false;
+      let totalXpToAward = 0;
+      const carrotSeed = currentSeeds.find(s => s.label && s.label.toLowerCase().includes('carrot'));
       const currentTimeSec = Math.floor(Date.now() / 1000);
 
       for (const idx of selectedIndexes) {
@@ -2613,6 +5202,8 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
 
           if (item && item.seedId && item.growStatus === 2 && isActuallyReady) {
             readyCrops.push(idx);
+            totalXpToAward += 10;
+            if (carrotSeed && item.seedId.toString() === carrotSeed.id.toString()) harvestedCarrot = true;
           }
         }
       }
@@ -2643,6 +5234,35 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
       setPreviewUpdateKey(prev => prev + 1);
 
       if (successCount > 0) {
+        // Award XP
+        if (totalXpToAward > 0) {
+          const currentFarmingXp = parseInt(localStorage.getItem('sandbox_farming_xp') || '0', 10);
+          const newFarmingXp = currentFarmingXp + totalXpToAward;
+          localStorage.setItem('sandbox_farming_xp', newFarmingXp.toString());
+          window.dispatchEvent(new CustomEvent('showNotification', { detail: { msg: `+${totalXpToAward} Farming XP!`, type: "info" } }));
+        }
+
+        const ringExpiry = parseInt(localStorage.getItem('sandbox_ring_expiry') || '0', 10);
+        if (ringExpiry > Date.now()) {
+            const sandboxLoot = JSON.parse(localStorage.getItem('sandbox_loot') || '{}');
+            const bonusItems = [ID_PRODUCE_ITEMS?.ONION || 131587, ID_PRODUCE_ITEMS?.POTATO || 131586, ID_PRODUCE_ITEMS?.CARROT || 131588, ID_PRODUCE_ITEMS?.TOMATO || 131589, ID_PRODUCE_ITEMS?.CORN || 131590];
+            for (let i = 0; i < successCount; i++) {
+                const r = bonusItems[Math.floor(Math.random() * bonusItems.length)];
+                sandboxLoot[r] = (sandboxLoot[r] || 0) + 1;
+            }
+            localStorage.setItem('sandbox_loot', JSON.stringify(sandboxLoot));
+            show("✨ Magic Ring doubled your harvest yield!", "success");
+        }
+
+        if (harvestedCarrot && !localStorage.getItem('easter_purple_egg')) {
+            localStorage.setItem('easter_purple_egg', 'true');
+            const sandboxLoot = JSON.parse(localStorage.getItem('sandbox_loot') || '{}');
+            sandboxLoot[9985] = (sandboxLoot[9985] || 0) + 1;
+            sandboxLoot[9987] = 1;
+            localStorage.setItem('sandbox_loot', JSON.stringify(sandboxLoot));
+            show("🐣 You unearthed the Purple Easter Egg!", "success");
+        }
+
         show(`✅ Successfully harvested ${successCount} crops!`, "success");
         // Clear selection state after successful harvest
         setSelectedIndexes([]);
@@ -2687,6 +5307,18 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
       playHarvestConfirmSound();
       show(`Harvesting crop...`, "info");
 
+      const itemToHarvest = cropArray.getItem(index);
+      const carrotSeed = (currentSeeds || []).find(s => s.label && s.label.toLowerCase().includes('carrot'));
+      let wasCarrot = false;
+      if (carrotSeed && itemToHarvest && itemToHarvest.seedId && itemToHarvest.seedId.toString() === carrotSeed.id.toString()) {
+          wasCarrot = true;
+      }
+
+      if (tutorialStep === 9) {
+        setTutorialStep(10);
+        localStorage.setItem('sandbox_tutorial_step', '10');
+      }
+
       const result = await harvestMany([index]);
 
       // Small delay to ensure blockchain state is updated
@@ -2698,11 +5330,45 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
       setPreviewUpdateKey(prev => prev + 1);
 
       if (result) {
+        // Award XP
+        const currentFarmingXp = parseInt(localStorage.getItem('sandbox_farming_xp') || '0', 10);
+        const oldLevel = getLevelFromXp(currentFarmingXp);
+        const newFarmingXp = currentFarmingXp + 10;
+        localStorage.setItem('sandbox_farming_xp', newFarmingXp.toString());
+        window.dispatchEvent(new CustomEvent('showNotification', { detail: { msg: `+10 Farming XP!`, type: "info" } }));
+        setFarmingXp(newFarmingXp);
+        const newLevel = getLevelFromXp(newFarmingXp);
+        if (newLevel > oldLevel) {
+          window.dispatchEvent(new CustomEvent('levelUp', { detail: { skill: 'Farming', level: newLevel } }));
+        }
+
+        const ringExpiry = parseInt(localStorage.getItem('sandbox_ring_expiry') || '0', 10);
+        if (ringExpiry > Date.now()) {
+            const sandboxLoot = JSON.parse(localStorage.getItem('sandbox_loot') || '{}');
+            const bonusItems = [ID_PRODUCE_ITEMS?.ONION || 131587, ID_PRODUCE_ITEMS?.POTATO || 131586, ID_PRODUCE_ITEMS?.CARROT || 131588, ID_PRODUCE_ITEMS?.TOMATO || 131589, ID_PRODUCE_ITEMS?.CORN || 131590];
+            const r = bonusItems[Math.floor(Math.random() * bonusItems.length)];
+            sandboxLoot[r] = (sandboxLoot[r] || 0) + 1;
+            localStorage.setItem('sandbox_loot', JSON.stringify(sandboxLoot));
+            show("✨ Magic Ring doubled your harvest yield!", "success");
+        }
+
+        if (wasCarrot && !localStorage.getItem('easter_purple_egg')) {
+            localStorage.setItem('easter_purple_egg', 'true');
+            const sandboxLoot = JSON.parse(localStorage.getItem('sandbox_loot') || '{}');
+            sandboxLoot[9985] = (sandboxLoot[9985] || 0) + 1;
+            sandboxLoot[9987] = 1;
+            localStorage.setItem('sandbox_loot', JSON.stringify(sandboxLoot));
+            show("🐣 You unearthed the Purple Easter Egg!", "success");
+        }
         show(`✅ Successfully harvested crop!`, "success");
         updatePlotPrep(index, { status: 0 });
         setSelectedIndexes([]);
         setIsFarmMenu(false);
         setIsPlanting(true);
+        
+        const skipped = JSON.parse(localStorage.getItem('sandbox_skipped_crops') || '{}');
+        delete skipped[index];
+        localStorage.setItem('sandbox_skipped_crops', JSON.stringify(skipped));
         
         // Reset water state
         const newWaterState = { ...waterStateRef.current };
@@ -2727,6 +5393,34 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
     }
   };
 
+  // Worker Bee Auto-Harvest Logic
+  useEffect(() => {
+    if (workerBeeLevel <= 1 || farmingLoading) return;
+    
+    const beeTimer = setInterval(() => {
+      const readySlots = [];
+      const currentTimeSec = Math.floor(Date.now() / 1000);
+      for (let i = 0; i < cropArray.getLength(); i++) {
+        const item = cropArray.getItem(i);
+        if (item && item.seedId) {
+          const endTimeSec = Math.floor((item.plantedAt || 0) / 1000) + (item.growthTime || 0);
+          if (item.growStatus === 2 || currentTimeSec >= endTimeSec) readySlots.push(i);
+        }
+      }
+
+      if (readySlots.length > 0) {
+        const chance = (workerBeeLevel - 1) * 0.15; // Lvl 2: 15%, Lvl 3: 30%, Lvl 4: 45%
+        if (Math.random() < chance) {
+          const targetPlot = readySlots[Math.floor(Math.random() * readySlots.length)];
+          show(`🐝 Worker Bee auto-harvested plot ${targetPlot + 1}!`, "success");
+          handleInstantHarvest(targetPlot);
+        }
+      }
+    }, 5000); // Check every 5 seconds
+
+    return () => clearInterval(beeTimer);
+  }, [workerBeeLevel, cropArray, farmingLoading]);
+
   const handleCancel = () => {
     setSelectedIndexes([]);
     setIsFarmMenu(false);
@@ -2737,9 +5431,12 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
     setIsPlacingLadybug(false);
     setIsPlacingSprinkler(false);
     setIsPlacingUmbrella(false);
+    setIsPlacingTesla(false);
     setIsWatering(false);
     setIsDigging(false);
     setIsHoeing(false);
+    setIsDirting(false);
+    setIsSeeding(false);
     // Reset used seeds tracking when canceling
     setUsedSeedsInPreview({});
     
@@ -2833,7 +5530,7 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
       return;
     }
 
-    if (isPlacingScarecrow || isPlacingLadybug || isPlacingSprinkler || isPlacingUmbrella) {
+    if (isPlacingScarecrow || isPlacingLadybug || isPlacingSprinkler || isPlacingUmbrella || isPlacingTesla) {
       return; // Clicks handled by scarecrow spots overlay
     }
 
@@ -2864,6 +5561,10 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
         show("Crop removed. Seed and fish returned!", "success");
         updatePlotPrep(index, { status: 1 });
         
+        const skipped = JSON.parse(localStorage.getItem('sandbox_skipped_crops') || '{}');
+        delete skipped[index];
+        localStorage.setItem('sandbox_skipped_crops', JSON.stringify(skipped));
+
         if (destroyCrop) {
           destroyCrop(index).then(() => {
             loadCropsFromContract();
@@ -2889,6 +5590,10 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
       } else if (pStatus === 0) {
         playPlantConfirmSound();
         updatePlotPrep(index, { status: 1 });
+          if (tutorialStep === 5) {
+            setTutorialStep(6);
+            localStorage.setItem('sandbox_tutorial_step', '6');
+        }
       } else {
         show("It's already a hole!", "info");
       }
@@ -2896,7 +5601,7 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
     }
 
     if (isHoeing) {
-      show("Click directly on a Scarecrow, Ladybug, Sprinkler, or Umbrella to remove it!", "info");
+      show("Click directly on a placed item to remove it!", "info");
       return;
     }
 
@@ -2914,6 +5619,12 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
           setWaterEffects(prev => [...prev, { id: Date.now() + Math.random(), index, time: Date.now() }]);
         }
         playWaterSound();
+
+        if (tutorialStep === 8) {
+          setTutorialStep(9);
+          localStorage.setItem('sandbox_tutorial_step', '9');
+          setIsWatering(false);
+        }
       } else {
         show("This plot doesn't need water right now.", "info");
       }
@@ -2956,61 +5667,88 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
         handleInstantHarvest(index);
         return;
       } else {
-        const remaining = Math.max(0, endTime - nowSec);
-        const m = Math.floor(remaining / 60);
-        const s = remaining % 60;
-        const timeStr = m > 0 ? `${m}m ${s}s` : `${s}s`;
-        show(`Crop is still growing! Ready in ${timeStr}`, "info");
+        setSkipGrowTarget(index);
         return;
       }
     }
 
     // EMPTY PLOT PREP LOGIC
     const pStatus = plotPrep[index]?.status || 0;
+
+    if (isDirting) {
+      if (pStatus === 1 || pStatus === 2) {
+        updatePlotPrep(index, { ...plotPrep[index], status: 3 });
+        playPlantConfirmSound();
+        if (tutorialStep === 6) {
+          setTutorialStep(7);
+          localStorage.setItem('sandbox_tutorial_step', '7');
+          setIsDirting(false);
+        }
+      } else {
+        show("You can only place dirt in a hole!", "info");
+      }
+      return;
+    }
+
+    if (isSeeding) {
+      if (pStatus === 3) {
+        // Ready to plant! Require Shift for quick-plant; otherwise open the seed dialog
+        if (selectedSeed && isShift) {
+          const availableSeeds = getAvailableSeeds();
+          const selectedAvailable = availableSeeds.find((s) => s.id === selectedSeed);
+          if (!selectedAvailable || selectedAvailable.count <= 0) {
+            setSelectedSeed(null);
+            setCurrentFieldIndex(index);
+            setIsSelectCropDialog(true);
+            return;
+          }
+          handleClickSeedFromDialog(selectedSeed, index);
+          return;
+        }
+        if (selectedSeed === 9998) {
+          setIsPlacingSprinkler(true);
+          setIsPlacingScarecrow(false);
+          setIsPlacingLadybug(false);
+          setIsPlacingTesla(false);
+          setIsPlacingUmbrella(false);
+          setIsUsingPotion(false);
+          setIsPlanting(false);
+          setIsFarmMenu(false);
+          return;
+        }
+        if (selectedSeed === 9999) {
+          setIsPlacingUmbrella(true);
+          setIsPlacingScarecrow(false);
+          setIsPlacingLadybug(false);
+          setIsPlacingTesla(false);
+          setIsPlacingSprinkler(false);
+          setIsUsingPotion(false);
+          setIsPlanting(false);
+          setIsFarmMenu(false);
+          return;
+        }
+    
+        // Open selection dialog when Shift not held or no seed selected
+        setCurrentFieldIndex(index);
+        setIsSelectCropDialog(true);
+      } else {
+        show("You can only plant seeds in prepared dirt!", "info");
+      }
+      return;
+    }
+
     if (pStatus === 0) {
       show("Equip your shovel to dig a hole!", "info");
       return;
     } else if (pStatus === 1 || pStatus === 2) {
+      if (tutorialStep > 0 && tutorialStep < 8) {
+        show("Select the Bag of Dirt tool first!", "info");
+        return;
+      }
       setPrepDialogTarget(index);
       return;
     } else if (pStatus === 3) {
-      // Ready to plant! Require Shift for quick-plant; otherwise open the seed dialog
-      if (selectedSeed && isShift) {
-        const availableSeeds = getAvailableSeeds();
-        const selectedAvailable = availableSeeds.find((s) => s.id === selectedSeed);
-        if (!selectedAvailable || selectedAvailable.count <= 0) {
-          setSelectedSeed(null);
-          setCurrentFieldIndex(index);
-          setIsSelectCropDialog(true);
-          return;
-        }
-        handleClickSeedFromDialog(selectedSeed, index);
-        return;
-      }
-      if (selectedSeed === 9998) {
-        setIsPlacingSprinkler(true);
-        setIsPlacingScarecrow(false);
-        setIsPlacingLadybug(false);
-        setIsPlacingUmbrella(false);
-        setIsUsingPotion(false);
-        setIsPlanting(false);
-        setIsFarmMenu(false);
-        return;
-      }
-      if (selectedSeed === 9999) {
-        setIsPlacingUmbrella(true);
-        setIsPlacingScarecrow(false);
-        setIsPlacingLadybug(false);
-        setIsPlacingSprinkler(false);
-        setIsUsingPotion(false);
-        setIsPlanting(false);
-        setIsFarmMenu(false);
-        return;
-      }
-  
-      // Open selection dialog when Shift not held or no seed selected
-      setCurrentFieldIndex(index);
-      setIsSelectCropDialog(true);
+      show("Select the Seed Bag tool to plant a seed!", "info");
       return;
     }
   };
@@ -3046,10 +5784,24 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
       setIsPlacingScarecrow(false);
       setIsPlacingLadybug(false);
       setIsPlacingUmbrella(false);
+      setIsPlacingTesla(false);
       setIsUsingPotion(false);
       setIsPlanting(false);
       setIsFarmMenu(false);
       show("Select a spot to place your sprinkler!", "info");
+      return;
+    }
+    if (id === 9975) {
+      setIsPlacingTesla(true);
+      setIsPlacingScarecrow(false);
+      setIsPlacingLadybug(false);
+      setIsPlacingUmbrella(false);
+      setIsPlacingSprinkler(false);
+      setIsPlacingTesla(false);
+      setIsUsingPotion(false);
+      setIsPlanting(false);
+      setIsFarmMenu(false);
+      show("Select a spot to place your Tesla Tower!", "info");
       return;
     }
     if (id === 9999) {
@@ -3057,6 +5809,7 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
       setIsPlacingScarecrow(false);
       setIsPlacingLadybug(false);
       setIsPlacingSprinkler(false);
+      setIsPlacingTesla(false);
       setIsUsingPotion(false);
       setIsPlanting(false);
       setIsFarmMenu(false);
@@ -3073,12 +5826,21 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
     playPlantConfirmSound();
     const result = await plantBatch([encodedId]);
     if (result) {
+        const sandboxLoot = JSON.parse(localStorage.getItem('sandbox_loot') || '{}');
+        if (sandboxLoot[id] > 0) sandboxLoot[id] -= 1;
+        localStorage.setItem('sandbox_loot', JSON.stringify(sandboxLoot));
+        
         const newWaterState = { ...waterStateRef.current };
         newWaterState[idx] = { needsInitial: true, needsMid: true, pausedMs: 0, contractPlantedAt: Date.now() };
         waterStateRef.current = newWaterState;
         localStorage.setItem('sandbox_water_state', JSON.stringify(newWaterState));
 
         show("✅ Seed planted!", "success");
+        if (tutorialStep === 7) {
+          setTutorialStep(8);
+          localStorage.setItem('sandbox_tutorial_step', '8');
+          setIsSeeding(false);
+        }
         await loadCropsFromContract();
         if (typeof refetchSeeds === "function") refetchSeeds();
         setPreviewUpdateKey(prev => prev + 1);
@@ -3122,16 +5884,94 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
     <>
       <Forest />
     </>
+  ) : isMine ? (
+    <>
+      <Mine />
+    </>
+  ) : isAnimal ? (
+    <>
+      <AnimalFarm />
+    </>
   ) : (
-    <div>
-      {isRaining && <RainOverlay isLightning={isLightning} />}
+    <div className={isCatShaking ? "shake-screen" : ""}>
+      <style>{`
+        @keyframes crazyCatShake {
+          0%, 100% { transform: translate(0, 0) rotate(0deg); }
+          10%, 30%, 50%, 70%, 90% { transform: translate(-10px, -5px) rotate(-1deg); }
+          20%, 40%, 60%, 80% { transform: translate(10px, 5px) rotate(1deg); }
+        }
+        .shake-screen {
+          animation: crazyCatShake 0.5s ease-in-out 3;
+        }
+      `}</style>
+      
+      {isCatShaking && (
+        <div style={{
+          position: 'fixed',
+          top: 0, left: 0, width: '100vw', height: '100vh',
+          zIndex: 999999,
+          display: 'flex', justifyContent: 'center', alignItems: 'center',
+          pointerEvents: 'none',
+          backgroundColor: 'rgba(255, 0, 0, 0.3)'
+        }}>
+          <img src="/images/pets/catangry.png" alt="Angry Cat" style={{
+            width: '90vw', height: '90vh', objectFit: 'contain',
+            animation: 'zoomIn 0.3s ease-out', filter: 'drop-shadow(0 0 20px red)'
+          }} />
+          <style>{`
+            @keyframes zoomIn {
+              from { transform: scale(0.5); opacity: 0; }
+              to { transform: scale(1); opacity: 1; }
+            }
+          `}</style>
+        </div>
+      )}
+
+      {tutorialStep >= 11 && <WeatherOverlay />}
+      
+      {/* Farming Level HUD Overlay */}
+      <div style={{ position: 'absolute', top: '20px', left: isToolsOpen ? '120px' : '120px', zIndex: 9998, backgroundColor: 'rgba(31, 22, 16, 0.9)', padding: '10px 20px', borderRadius: '12px', border: '3px solid #5a402a', display: 'flex', flexDirection: 'column', alignItems: 'center', boxShadow: '0 4px 6px rgba(0,0,0,0.5)', pointerEvents: 'none', transition: 'all 0.3s ease', width: '150px' }}>
+        <span style={{ color: '#ccc', fontFamily: 'monospace', fontSize: '14px' }}>FARMING LEVEL</span>
+        <span style={{ color: '#00ff41', fontFamily: 'monospace', fontSize: '28px', fontWeight: 'bold' }}>{farmingLevel}</span>
+        <div style={{ width: '100%', height: '8px', backgroundColor: 'rgba(0,0,0,0.5)', borderRadius: '4px', marginTop: '5px', overflow: 'hidden' }}>
+          <div style={{ width: `${farmingProgress}%`, height: '100%', backgroundColor: '#00ff41', transition: 'width 0.3s' }} />
+        </div>
+      </div>
+
+      {/* Farming Board Overlay */}
+      {tutorialStep >= 32 && !hideIcons && (
+        <div
+          onPointerDown={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            setShowFarmingBoard(true);
+            const allSeen = Array.from(new Set([...seenFarmingIds, ...activeFarmingIds]));
+            localStorage.setItem('seen_farming_missions_ids', allSeen.join(','));
+            window.dispatchEvent(new CustomEvent('questsRead'));
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'scale(1.1)';
+            e.currentTarget.style.filter = 'drop-shadow(0px 0px 8px rgba(255, 234, 0, 0.8))';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'scale(1)';
+            e.currentTarget.style.filter = 'drop-shadow(0px 4px 6px rgba(0,0,0,0.5))';
+          }}
+          style={{ position: 'fixed', left: '620px', top: '20px', zIndex: 100000, cursor: 'pointer', transition: 'all 0.2s ease', filter: 'drop-shadow(0px 4px 6px rgba(0,0,0,0.5))', display: 'flex', flexDirection: 'column', alignItems: 'center', overflow: 'visible' }}
+        >
+          {hasNewFarmingMissions && <div style={{position:'absolute', top:'-5px', right:'-5px', width:'20px', height:'20px', backgroundColor:'#ff4444', borderRadius:'50%', border:'2px solid white', zIndex:11, display:'flex', justifyContent:'center', alignItems:'center', color:'white', fontWeight:'bold', fontSize:'12px', fontFamily:'monospace', animation:'pulse-dot 1s infinite'}}>!</div>}
+          <div style={{ fontSize: '40px', backgroundColor: 'rgba(90, 64, 42, 0.9)', padding: '5px 10px', borderRadius: '8px', border: '2px solid #ffea00' }}>📋</div>
+          <div style={{ backgroundColor: 'rgba(0,0,0,0.7)', color: '#ffea00', padding: '2px 5px', borderRadius: '4px', fontSize: '10px', marginTop: '5px', fontFamily: 'monospace', textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000' }}>MISSIONS</div>
+        </div>
+      )}
+
       <PanZoomViewport
         backgroundSrc="/images/backgrounds/farm.webp"
-        hotspots={hotspots}
+        hotspots={tutorialStep >= 32 ? hotspots : []}
         width={width}
         height={height}
         dialogs={dialogs}
-        hideMenu={isFarmMenu}
+        hideMenu={isFarmMenu || tutorialStep < 10}
         bees={bees}
       >
         <FarmInterface
@@ -3146,117 +5986,187 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
           selectedIndexes={selectedIndexes}
           crops={cropArray}
         />
-        {/* Cat Pet Overlay next to Plant Label/Bee */}
-        <img 
-          src="/images/pet/cat.png" 
-          alt="Cat Pet" 
-          style={{ 
-            position: 'absolute', 
-            left: '860px', // Adjust X to align perfectly next to the bee
-            top: '430px',  // Adjust Y to sit nicely on the terrain
-            width: '60px', 
-            height: 'auto', 
-            zIndex: 10,
-            pointerEvents: 'none',
-            filter: 'drop-shadow(0px 2px 4px rgba(0,0,0,0.4))'
-          }} 
-        />
-        {/* Protector Spots Overlay (Scarecrows & Ladybugs) */}
+
+        {/* Cat Appearance */}
+
+        {catWillAppear && tutorialStep >= 11 && (
+          <img 
+            src={
+              starvingTime > 0 
+                ? "/images/pets/catangry.png" 
+                : catState === 'walk' 
+                  ? "/images/pets/cat walk.png" 
+                  : catState === 'sleep' 
+                    ? "/images/pets/catsleep.png" 
+                    : "/images/pets/catsit.png"
+            } 
+            alt="Cat Pet" 
+            style={{ 
+              position: 'absolute', 
+              left: `${catPos.left}px`,
+              top: `${catPos.top}px`,
+              width: '80px', 
+              height: 'auto', 
+              zIndex: 15,
+              cursor: 'pointer',
+              transform: `scaleX(${catDirection})`,
+              transition: yarnState?.active ? 'left 0.1s linear, top 0.1s linear, transform 0.2s' : 'left 3.8s linear, top 3.8s linear, transform 0.2s',
+              filter: starvingTime > 0 ? 'drop-shadow(0 0 10px red)' : 'drop-shadow(0px 2px 4px rgba(0,0,0,0.4))'
+            }} 
+            onPointerDown={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              if (catState === 'sleep') {
+                 let happy = parseFloat(localStorage.getItem('sandbox_cat_happiness') || '50');
+                 happy = Math.max(0, happy - 10);
+                 localStorage.setItem('sandbox_cat_happiness', happy.toString());
+                 setCatHappiness(happy);
+                 show("You woke up Felix! Happiness -10%", "error");
+                 setCatState('sit');
+                 catSleepUntil.current = 0;
+              } else {
+                 show(starvingTime > 0 ? "HISS! The cat is very hungry!" : "Meow! The cat is happy and fed.", starvingTime > 0 ? "error" : "success");
+              }
+            }}
+          />
+        )}
+
+        {/* Sir Bee Tutorial Overlay */}
+        {tutorialStep >= 1 && tutorialStep < 4 && (
+          <img 
+            src="/images/bees/sir.png" 
+            alt="Sir Bee" 
+            style={{ 
+              position: 'absolute', left: sirBeePos, top: '250px', width: '100px', zIndex: 20,
+              transition: tutorialStep === 1 ? 'left 2s ease-out' : 'none',
+              filter: tutorialStep === 2 ? 'drop-shadow(0 0 10px yellow)' : 'none',
+              cursor: tutorialStep === 2 ? 'pointer' : 'default',
+              animation: tutorialStep >= 2 ? 'mapFloat 2s ease-in-out infinite' : 'none',
+              pointerEvents: tutorialStep >= 2 ? 'auto' : 'none'
+            }} 
+            onPointerDown={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              if (tutorialStep === 2) {
+                setTutorialStep(3);
+                localStorage.setItem('sandbox_tutorial_step', '3');
+              }
+            }}
+          />
+        )}
+
+        {/* Protector Spots Overlay */}
         {FARM_POSITIONS && SHARED_SPOTS_CONFIG.map((spot) => {
           const nowSec = Math.floor(Date.now() / 1000);
-          const hasLadybug = ladybugs[spot.index] && ladybugs[spot.index] > nowSec;
-          const hasScarecrow = scarecrows[spot.index] && scarecrows[spot.index] > nowSec;
-          const hasSprinkler = sprinklers[spot.index] && sprinklers[spot.index] > nowSec;
-          const hasUmbrella = umbrellas[spot.index] && umbrellas[spot.index] > nowSec;
           
-          const isOccupied = hasLadybug || hasScarecrow || hasSprinkler || hasUmbrella;
+          let placedItem = null;
+          let sc = scarecrows[spot.index];
+          if (sc && (typeof sc === 'number' ? sc : sc.expiry) > nowSec) {
+            placedItem = { type: typeof sc === 'number' ? 'tier1' : sc.type, expiryTime: typeof sc === 'number' ? sc : sc.expiry, onExpire: handleRemoveScarecrow };
+          } else if (ladybugs[spot.index] && ladybugs[spot.index] > nowSec) {
+            placedItem = { type: 'ladybug', expiryTime: ladybugs[spot.index], onExpire: handleRemoveLadybug };
+          } else if (teslaTowers[spot.index] && teslaTowers[spot.index] > nowSec) {
+            placedItem = { 
+              type: 'tesla', 
+              expiryTime: teslaTowers[spot.index], 
+              onExpire: (expiredSpotId) => { 
+                setTeslaTowers(prev => { const n = {...prev}; delete n[expiredSpotId]; teslaTowersRef.current = n; localStorage.setItem('sandbox_tesla', JSON.stringify(n)); return n; }); 
+              } 
+            };
+          } else if (sprinklers[spot.index] && sprinklers[spot.index] > nowSec) {
+            placedItem = { type: 'sprinkler', expiryTime: sprinklers[spot.index], onExpire: handleRemoveSprinkler };
+          } else if (umbrellas[spot.index] && umbrellas[spot.index] > nowSec) {
+            placedItem = { type: 'umbrella', expiryTime: umbrellas[spot.index], onExpire: handleRemoveUmbrella };
+          }
+
+          let placingType = null;
+          if (isPlacingScarecrow) placingType = placingScarecrowType;
+          else if (isPlacingTesla) placingType = 'tesla';
+          else if (isPlacingLadybug) placingType = 'ladybug';
+          else if (isPlacingSprinkler) placingType = 'sprinkler';
+          else if (isPlacingUmbrella) placingType = 'umbrella';
 
           return (
-            <React.Fragment key={`protector-spot-${spot.index}`}>
-              <ScarecrowSpot 
-                spotId={spot.index}
-                pos={FARM_POSITIONS[spot.index]}
-                offsetX={spot.offsetX}
-                offsetY={spot.offsetY}
-                isPlacing={isPlacingScarecrow && !isOccupied}
-                isPlaced={!!scarecrows[spot.index]}
-                expiryTime={scarecrows[spot.index]}
-                onPlace={() => handlePlaceScarecrow(spot.index)}
-                onExpire={handleRemoveScarecrow}
-                onRemove={() => {
-                  if (isHoeing) {
-                    handleRemoveScarecrow(spot.index);
-                    show("Scarecrow removed!", "success");
-                  } else {
-                    show("Equip the Hoe to remove placed items!", "warning");
+            <ProtectorSpot
+              key={`protector-spot-${spot.index}`}
+              spotId={spot.index}
+              pos={FARM_POSITIONS[spot.index]}
+              offsetX={spot.offsetX}
+              offsetY={spot.offsetY}
+              placingType={placedItem ? null : placingType}
+              placedItem={placedItem}
+              onPlace={(spotId, type) => {
+                if (type.includes('tier') || type === 'ladybug_scarecrow') handlePlaceScarecrow(spotId, type);
+                if (type === 'tesla') handlePlaceTesla(spotId);
+                if (type === 'ladybug') handlePlaceLadybug(spotId);
+                if (type === 'sprinkler') handlePlaceSprinkler(spotId);
+                if (type === 'umbrella') handlePlaceUmbrella(spotId);
+              }}
+              onRemove={async (spotId, type) => {
+                if (isHoeing) {
+                  if (type.includes('tier') || type === 'ladybug_scarecrow') handleRemoveScarecrow(spotId);
+                  if (type === 'ladybug') handleRemoveLadybug(spotId);
+                  if (type === 'tesla') {
+                      setTeslaTowers(prev => { const n = {...prev}; delete n[spotId]; teslaTowersRef.current = n; localStorage.setItem('sandbox_tesla', JSON.stringify(n)); return n; });
+                      const sandboxLoot = JSON.parse(localStorage.getItem('sandbox_loot') || '{}'); sandboxLoot[9975] = (sandboxLoot[9975]||0)+1; localStorage.setItem('sandbox_loot', JSON.stringify(sandboxLoot));
                   }
-                }}
-              />
-              <LadybugSpot 
-                spotId={spot.index}
-                pos={FARM_POSITIONS[spot.index]}
-                offsetX={spot.offsetX} // Uses identical coordinates now!
-                offsetY={spot.offsetY}
-                isPlacing={isPlacingLadybug && !isOccupied}
-                isPlaced={!!ladybugs[spot.index]}
-                expiryTime={ladybugs[spot.index]}
-                onPlace={() => handlePlaceLadybug(spot.index)}
-                onExpire={handleRemoveLadybug}
-                onRemove={() => {
-                  if (isHoeing) {
-                    handleRemoveLadybug(spot.index);
-                    show("Ladybug removed!", "success");
-                  } else {
-                    show("Equip the Hoe to remove placed items!", "warning");
-                  }
-                }}
-              />
-              <SprinklerSpot 
-                spotId={spot.index}
-                pos={FARM_POSITIONS[spot.index]}
-                offsetX={spot.offsetX}
-                offsetY={spot.offsetY}
-                isPlacing={isPlacingSprinkler && !isOccupied}
-                isPlaced={!!sprinklers[spot.index]}
-                expiryTime={sprinklers[spot.index]}
-                onPlace={() => handlePlaceSprinkler(spot.index)}
-                onExpire={handleRemoveSprinkler}
-                onRemove={() => {
-                  if (isHoeing) {
-                    handleRemoveSprinkler(spot.index);
-                    show("Water Sprinkler removed!", "success");
-                  } else {
-                    show("Equip the Hoe to remove placed items!", "warning");
-                  }
-                }}
-              />
-              <UmbrellaSpot 
-                spotId={spot.index}
-                pos={FARM_POSITIONS[spot.index]}
-                offsetX={spot.offsetX}
-                offsetY={spot.offsetY}
-                isPlacing={isPlacingUmbrella && !isOccupied}
-                isPlaced={!!umbrellas[spot.index]}
-                expiryTime={umbrellas[spot.index]}
-                onPlace={() => handlePlaceUmbrella(spot.index)}
-                onExpire={async () => {
-                  handleRemoveUmbrella(spot.index);
-                  await loadCropsFromContract();
-                }}
-                onRemove={async () => {
-                  if (isHoeing) {
-                    handleRemoveUmbrella(spot.index);
-                    show("Umbrella removed!", "success");
+                  if (type === 'sprinkler') handleRemoveSprinkler(spotId);
+                  if (type === 'umbrella') {
+                    handleRemoveUmbrella(spotId);
                     await loadCropsFromContract();
-                  } else {
-                    show("Equip the Hoe to remove placed items!", "warning");
                   }
-                }}
-              />
-            </React.Fragment>
+                  show(`${type.charAt(0).toUpperCase() + type.slice(1)} removed!`, "success");
+                } else {
+                  show("Equip the Hoe to remove placed items!", "warning");
+                }
+              }}
+            />
           );
         })}
 
+        {yarnState && yarnState.active && (
+          <div
+            style={{
+              position: 'absolute',
+              left: yarnState.x - 25,
+              top: yarnState.y - 25,
+              width: '50px',
+              height: '50px',
+              zIndex: 1000,
+              cursor: yarnState.phase === 'idle' ? 'grab' : (yarnState.phase === 'aiming' ? 'grabbing' : 'default'),
+              filter: 'drop-shadow(0px 4px 6px rgba(0,0,0,0.5))'
+            }}
+            onPointerDown={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              if (yarnState.phase === 'idle' || yarnState.phase === 'rolling') {
+                 setYarnState(prev => ({ ...prev, phase: 'aiming', vx: 0, vy: 0, angle: prev.angle || 0 }));
+              }
+            }}
+          >
+             <img src="/images/pets/yarn.png" alt="Yarn" style={{ width: '100%', height: '100%', objectFit: 'contain' }} onError={(e) => e.target.src='/images/items/seeds.png'} />
+             
+             {yarnState.phase === 'aiming' && (
+               <div style={{
+                 position: 'absolute',
+                 top: '25px',
+                 left: '25px',
+                 width: '0px',
+                 height: '0px',
+                 transform: `rotate(${yarnState.angle}deg)`,
+                 zIndex: -1
+               }}>
+                 <div style={{ position: 'absolute', bottom: '30px', left: '-10px', width: '20px', height: '150px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                   <div style={{ width: 0, height: 0, borderLeft: '15px solid transparent', borderRight: '15px solid transparent', borderBottom: '25px solid #ffea00', filter: 'drop-shadow(0 2px 2px black)' }} />
+                   <div style={{ width: '10px', height: '125px', backgroundColor: '#ffea00', filter: 'drop-shadow(0 2px 2px black)', borderRadius: '4px' }} />
+                 </div>
+               </div>
+             )}
+          </div>
+        )}
+
+        {tutorialStep >= 11 && (
+          <>
         {/* Forest Label Overlay - Now inside PanZoomViewport */}
         <div 
           onMouseEnter={(e) => {
@@ -3275,10 +6185,9 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
             e.stopPropagation();
             e.preventDefault();
             if (forestLockTime > 0) {
-              const h = Math.floor(forestLockTime / 3600000);
               const m = Math.floor((forestLockTime % 3600000) / 60000);
               const s = Math.floor((forestLockTime % 60000) / 1000);
-              show(`The forest is resting! Come back in ${h}h ${m}m ${s}s.`, "error");
+              show(`The forest is resting! Come back in ${m}m ${s}s.`, "error");
               return;
             }
             window.location.href = '/farm?scene=forest';
@@ -3288,94 +6197,403 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
           <img src="/images/forest/forestlabel.png" alt="Forest" style={{ height: '80px', objectFit: 'contain' }} />
           {forestLockTime > 0 && (
             <div style={{ position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)', backgroundColor: 'rgba(0,0,0,0.8)', color: '#ff4444', padding: '4px 8px', borderRadius: '4px', fontSize: '14px', fontWeight: 'bold', whiteSpace: 'nowrap', marginTop: '5px', border: '1px solid #ff4444', fontFamily: 'monospace' }}>
-              {Math.floor(forestLockTime / 3600000)}h {Math.floor((forestLockTime % 3600000) / 60000)}m
+              {Math.floor(forestLockTime / 60000)}m {Math.floor((forestLockTime % 60000) / 1000)}s
             </div>
           )}
         </div>
 
-        {/* Hoe Icon Overlay - Static inside PanZoomViewport */}
+        {/* The Well Label Overlay */}
+        <div 
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'scale(1.1)';
+            e.currentTarget.style.filter = 'drop-shadow(0px 0px 8px rgba(0, 191, 255, 0.8))';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'scale(1)';
+            e.currentTarget.style.filter = 'drop-shadow(0px 4px 6px rgba(0,0,0,0.5))';
+          }}
+          onPointerDown={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            handleWellDrop();
+          }}
+          style={{ position: 'absolute', top: '518px', left: '638px', zIndex: 9998, cursor: 'pointer', transition: 'all 0.2s ease', filter: 'drop-shadow(0px 4px 6px rgba(0,0,0,0.5))' }}
+        >
+          <div style={{ backgroundColor: 'rgba(31, 22, 16, 0.9)', padding: '15px 30px', borderRadius: '12px', border: '3px solid #5a402a', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column' }}>
+            <span style={{ color: '#00bfff', fontFamily: 'monospace', fontSize: '24px', fontWeight: 'bold', textShadow: '2px 2px 0 #000' }}>
+              🪣 THE WELL
+            </span>
+          </div>
+        </div>
+
+        {/* The Mine Label Overlay */}
+        <div 
+          onMouseEnter={(e) => {
+            if (mineLockTime <= 0) {
+              e.currentTarget.style.transform = 'scale(1.1)';
+              e.currentTarget.style.filter = 'drop-shadow(0px 0px 8px rgba(255, 255, 255, 0.8))';
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (mineLockTime <= 0) {
+              e.currentTarget.style.transform = 'scale(1)';
+              e.currentTarget.style.filter = 'drop-shadow(0px 4px 6px rgba(0,0,0,0.5))';
+            }
+          }}
+          onPointerDown={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            if (mineLockTime > 0) {
+              const m = Math.floor(mineLockTime / 60000);
+              const s = Math.floor((mineLockTime % 60000) / 1000);
+              show(`The mine is resting! Come back in ${m}m ${s}s.`, "error");
+              return;
+            }
+            window.location.href = '/farm?scene=mine';
+          }}
+          style={{ position: 'absolute', top: '518px', left: '938px', zIndex: 9998, cursor: mineLockTime > 0 ? 'not-allowed' : 'pointer', transition: 'all 0.2s ease', filter: 'drop-shadow(0px 4px 6px rgba(0,0,0,0.5))', opacity: mineLockTime > 0 ? 0.6 : 1 }}
+        >
+          <div style={{ backgroundColor: 'rgba(31, 22, 16, 0.9)', padding: '15px 30px', borderRadius: '12px', border: '3px solid #5a402a', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column' }}>
+            <span style={{ color: '#fff', fontFamily: 'monospace', fontSize: '24px', fontWeight: 'bold', textShadow: '2px 2px 0 #000' }}>
+              ⛏ THE MINE
+            </span>
+            {mineLockTime > 0 && (
+              <span style={{ color: '#ff4444', fontFamily: 'monospace', fontSize: '16px', fontWeight: 'bold', marginTop: '5px' }}>
+                {Math.floor(mineLockTime / 60000)}m {Math.floor((mineLockTime % 60000) / 1000)}s
+              </span>
+            )}
+          </div>
+        </div>
+          </>
+        )}
+
+        {/* Animal Farm Label Overlay */}
+        {hasBarnMissionUnlocked && (
+          <div 
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'scale(1.1)';
+              e.currentTarget.style.filter = 'drop-shadow(0px 0px 8px rgba(255, 255, 255, 0.8))';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'scale(1)';
+              e.currentTarget.style.filter = 'drop-shadow(0px 4px 6px rgba(0,0,0,0.5))';
+            }}
+            onPointerDown={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              window.location.href = '/farm?scene=animal';
+            }}
+            style={{ position: 'absolute', top: '518px', left: '200px', zIndex: 9998, cursor: 'pointer', transition: 'all 0.2s ease', filter: 'drop-shadow(0px 4px 6px rgba(0,0,0,0.5))' }}
+          >
+            <div style={{ backgroundColor: 'rgba(31, 22, 16, 0.9)', padding: '15px 30px', borderRadius: '12px', border: '3px solid #5a402a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <span style={{ color: '#fff', fontFamily: 'monospace', fontSize: '24px', fontWeight: 'bold', textShadow: '2px 2px 0 #000' }}>
+                🐄 ANIMAL FARM
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Farmer Bag Icon Overlay - Static inside PanZoomViewport */}
+        {tutorialStep >= 4 && tutorialStep !== 10 && (
         <div 
           onPointerDown={(e) => {
             e.stopPropagation();
             e.preventDefault();
+            setIsToolsOpen(!isToolsOpen);
+            if (tutorialStep === 4) {
+              setTutorialStep(5);
+              localStorage.setItem('sandbox_tutorial_step', '5');
+            }
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'scale(1.1)';
+            e.currentTarget.style.filter = 'drop-shadow(0px 0px 8px rgba(255, 255, 255, 0.8))';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'scale(1)';
+            e.currentTarget.style.filter = 'drop-shadow(0px 4px 6px rgba(0,0,0,0.5))';
+          }}
+      style={{ position: 'absolute', top: '20px', left: '20px', zIndex: 9999, cursor: 'pointer', transition: 'all 0.2s ease', filter: 'drop-shadow(0px 4px 6px rgba(0,0,0,0.5))' }}
+        >
+        <img 
+          src="/images/farming/shed.png" 
+          alt="Shed Tools" 
+          style={{ height: '80px', objectFit: 'contain' }} 
+          onError={(e) => { e.target.onerror = null; e.target.src='/images/farm/shed.png'; }} 
+        />
+          {tutorialStep === 4 && (
+            <div style={{ position: 'absolute', top: '80px', left: '50%', transform: 'translateX(-50%)', animation: 'bounce 1s infinite' }}>
+              <span style={{ fontSize: '40px', color: '#00ff41', filter: 'drop-shadow(0px 2px 2px black)' }}>⬆️</span>
+            </div>
+          )}
+        </div>
+        )}
+
+        {/* Hoe Icon Overlay - Static inside PanZoomViewport */}
+        {tutorialStep >= 4 && tutorialStep !== 10 && (
+        <div 
+          onPointerDown={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            if (tutorialStep < 9) {
+              show("You don't need the Hoe right now.", "info");
+              return;
+            }
             setIsHoeing(!isHoeing);
             setIsWatering(false);
             setIsDigging(false);
+            setIsDirting(false);
+            setIsSeeding(false);
             setIsPlanting(false);
             setIsUsingPotion(false);
             setIsPlacingScarecrow(false);
             setIsPlacingLadybug(false);
             setIsPlacingSprinkler(false);
             setIsPlacingUmbrella(false);
+            setIsPlacingTesla(false);
           }}
           onMouseEnter={(e) => {
+            if (tutorialStep < 9) return;
             e.currentTarget.style.transform = 'scale(1.1)';
             e.currentTarget.style.filter = isHoeing ? 'drop-shadow(0px 0px 12px yellow)' : 'drop-shadow(0px 0px 8px rgba(255, 255, 255, 0.8))';
           }}
           onMouseLeave={(e) => {
+            if (tutorialStep < 9) return;
             e.currentTarget.style.transform = 'scale(1)';
             e.currentTarget.style.filter = isHoeing ? 'drop-shadow(0px 0px 8px yellow)' : 'drop-shadow(0px 4px 6px rgba(0,0,0,0.5))';
           }}
-          style={{ position: 'absolute', top: '50px', left: '30px', zIndex: 9998, cursor: 'pointer', transition: 'all 0.2s ease', filter: isHoeing ? 'drop-shadow(0px 0px 8px yellow)' : 'drop-shadow(0px 4px 6px rgba(0,0,0,0.5))' }}
+          style={{ 
+            position: 'absolute', 
+        top: isToolsOpen ? '110px' : '20px', 
+          left: '20px', 
+            zIndex: 9998, 
+            cursor: tutorialStep < 9 ? 'not-allowed' : 'pointer', 
+            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)', 
+            filter: isHoeing ? 'drop-shadow(0px 0px 8px yellow)' : 'drop-shadow(0px 4px 6px rgba(0,0,0,0.5))',
+            opacity: isToolsOpen ? (tutorialStep < 9 ? 0.5 : 1) : 0,
+            pointerEvents: isToolsOpen ? 'auto' : 'none'
+          }}
         >
           <img src="/images/items/hoe.png" alt="Hoe" style={{ height: '80px', objectFit: 'contain' }} />
         </div>
+        )}
 
         {/* Watering Can Icon Overlay - Static inside PanZoomViewport */}
+        {tutorialStep >= 4 && tutorialStep !== 10 && (
         <div 
           onPointerDown={(e) => {
             e.stopPropagation();
             e.preventDefault();
+            if (tutorialStep < 8) {
+              show("You don't need the Watering Can right now.", "info");
+              return;
+            }
             setIsWatering(!isWatering);
             setIsHoeing(false);
+            setIsDigging(false);
+            setIsDirting(false);
+            setIsSeeding(false);
+            setIsPlanting(false);
+            setIsUsingPotion(false);
+            setIsPlacingScarecrow(false);
+            setIsPlacingLadybug(false);
+            setIsPlacingSprinkler(false);
+            setIsPlacingUmbrella(false);
+            setIsPlacingTesla(false);
+          }}
+          onMouseEnter={(e) => {
+            if (tutorialStep < 8) return;
+            e.currentTarget.style.transform = 'scale(1.1)';
+            e.currentTarget.style.filter = isWatering ? 'drop-shadow(0px 0px 12px yellow)' : 'drop-shadow(0px 0px 8px rgba(255, 255, 255, 0.8))';
+          }}
+          onMouseLeave={(e) => {
+            if (tutorialStep < 8) return;
+            e.currentTarget.style.transform = 'scale(1)';
+            e.currentTarget.style.filter = isWatering ? 'drop-shadow(0px 0px 8px yellow)' : (tutorialStep === 8 ? 'drop-shadow(0px 0px 12px #00ff41)' : 'drop-shadow(0px 4px 6px rgba(0,0,0,0.5))');
+          }}
+          style={{ 
+            position: 'absolute', 
+        top: isToolsOpen ? '200px' : '20px', 
+          left: '20px', 
+            zIndex: 9998, 
+            cursor: tutorialStep < 8 ? 'not-allowed' : 'pointer', 
+            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)', 
+            filter: isWatering ? 'drop-shadow(0px 0px 8px yellow)' : (tutorialStep === 8 ? 'drop-shadow(0px 0px 12px #00ff41)' : 'drop-shadow(0px 4px 6px rgba(0,0,0,0.5))'),
+            opacity: isToolsOpen ? (tutorialStep < 8 ? 0.5 : 1) : 0,
+            pointerEvents: isToolsOpen ? 'auto' : 'none'
+          }}
+        >
+          <img src="/images/forest/watercan.png" alt="Watering Can" style={{ height: '80px', objectFit: 'contain' }} />
+          {tutorialStep === 8 && (
+            <div style={{ position: 'absolute', top: '80px', left: '50%', transform: 'translateX(-50%)', animation: 'bounce 1s infinite' }}>
+              <span style={{ fontSize: '40px', color: '#00ff41', filter: 'drop-shadow(0px 2px 2px black)' }}>⬆️</span>
+            </div>
+          )}
+        </div>
+        )}
+
+        {/* Shovel Icon Overlay - Static inside PanZoomViewport */}
+        {tutorialStep >= 4 && tutorialStep !== 10 && (
+        <div 
+          onPointerDown={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            if (tutorialStep < 5) {
+              show("You don't need the Shovel right now.", "info");
+              return;
+            }
+            setIsDigging(!isDigging);
+            setIsHoeing(false);
+            setIsWatering(false);
+            setIsDirting(false);
+            setIsSeeding(false);
+            setIsPlanting(false);
+            setIsUsingPotion(false);
+            setIsPlacingScarecrow(false);
+            setIsPlacingLadybug(false);
+            setIsPlacingSprinkler(false);
+            setIsPlacingUmbrella(false);
+            setIsPlacingTesla(false);
+          }}
+          onMouseEnter={(e) => {
+            if (tutorialStep < 5) return;
+            e.currentTarget.style.transform = 'scale(1.1)';
+            e.currentTarget.style.filter = isDigging ? 'drop-shadow(0px 0px 12px yellow)' : 'drop-shadow(0px 0px 8px rgba(255, 255, 255, 0.8))';
+          }}
+          onMouseLeave={(e) => {
+            if (tutorialStep < 5) return;
+            e.currentTarget.style.transform = 'scale(1)';
+            e.currentTarget.style.filter = isDigging ? 'drop-shadow(0px 0px 8px yellow)' : (tutorialStep === 5 ? 'drop-shadow(0px 0px 12px #00ff41)' : 'drop-shadow(0px 4px 6px rgba(0,0,0,0.5))');
+          }}
+          style={{ 
+            position: 'absolute', 
+        top: isToolsOpen ? '290px' : '20px', 
+          left: '20px', 
+            zIndex: 9998, 
+            cursor: tutorialStep < 5 ? 'not-allowed' : 'pointer', 
+            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)', 
+            filter: isDigging ? 'drop-shadow(0px 0px 8px yellow)' : (tutorialStep === 5 ? 'drop-shadow(0px 0px 12px #00ff41)' : 'drop-shadow(0px 4px 6px rgba(0,0,0,0.5))'),
+            opacity: isToolsOpen ? (tutorialStep < 5 ? 0.5 : 1) : 0,
+            pointerEvents: isToolsOpen ? 'auto' : 'none'
+          }}
+        >
+          <img src="/images/farm/shovel.png" alt="Shovel" style={{ height: '80px', objectFit: 'contain' }} />
+          {tutorialStep === 5 && (
+            <div style={{ position: 'absolute', top: '80px', left: '50%', transform: 'translateX(-50%)', animation: 'bounce 1s infinite' }}>
+              <span style={{ fontSize: '40px', color: '#00ff41', filter: 'drop-shadow(0px 2px 2px black)' }}>⬆️</span>
+            </div>
+          )}
+        </div>
+        )}
+
+        {/* Dirt Bag Icon Overlay - Static inside PanZoomViewport */}
+        {tutorialStep >= 4 && tutorialStep !== 10 && (
+        <div 
+          onPointerDown={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            if (tutorialStep < 6) {
+              show("You don't need the Bag of Dirt right now.", "info");
+              return;
+            }
+            setIsDirting(!isDirting);
+            setIsHoeing(false);
+            setIsWatering(false);
+            setIsDigging(false);
+            setIsSeeding(false);
+            setIsPlanting(false);
+            setIsUsingPotion(false);
+            setIsPlacingScarecrow(false);
+            setIsPlacingLadybug(false);
+            setIsPlacingSprinkler(false);
+            setIsPlacingUmbrella(false);
+            setIsPlacingTesla(false);
+          }}
+          onMouseEnter={(e) => {
+            if (tutorialStep < 6) return;
+            e.currentTarget.style.transform = 'scale(1.1)';
+            e.currentTarget.style.filter = isDirting ? 'drop-shadow(0px 0px 12px yellow)' : 'drop-shadow(0px 0px 8px rgba(255, 255, 255, 0.8))';
+          }}
+          onMouseLeave={(e) => {
+            if (tutorialStep < 6) return;
+            e.currentTarget.style.transform = 'scale(1)';
+            e.currentTarget.style.filter = isDirting ? 'drop-shadow(0px 0px 8px yellow)' : (tutorialStep === 6 ? 'drop-shadow(0px 0px 12px #00ff41)' : 'drop-shadow(0px 4px 6px rgba(0,0,0,0.5))');
+          }}
+          style={{ 
+            position: 'absolute', 
+        top: isToolsOpen ? '380px' : '20px', 
+          left: '20px', 
+            zIndex: 9998, 
+            cursor: tutorialStep < 6 ? 'not-allowed' : 'pointer', 
+            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)', 
+            filter: isDirting ? 'drop-shadow(0px 0px 8px yellow)' : (tutorialStep === 6 ? 'drop-shadow(0px 0px 12px #00ff41)' : 'drop-shadow(0px 4px 6px rgba(0,0,0,0.5))'),
+            opacity: isToolsOpen ? (tutorialStep < 6 ? 0.5 : 1) : 0,
+            pointerEvents: isToolsOpen ? 'auto' : 'none'
+          }}
+        >
+          <img src="/images/farming/bagofdirt.png" alt="Dirt Bag" style={{ height: '80px', objectFit: 'contain' }} onError={(e) => { e.target.onerror = null; e.target.src='/images/items/dirt.png'; }} />
+          {tutorialStep === 6 && (
+            <div style={{ position: 'absolute', top: '80px', left: '50%', transform: 'translateX(-50%)', animation: 'bounce 1s infinite' }}>
+              <span style={{ fontSize: '40px', color: '#00ff41', filter: 'drop-shadow(0px 2px 2px black)' }}>⬆️</span>
+            </div>
+          )}
+        </div>
+        )}
+
+        {/* Seed Bag Icon Overlay - Static inside PanZoomViewport */}
+        {tutorialStep >= 4 && tutorialStep !== 10 && (
+        <div 
+          onPointerDown={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            if (tutorialStep < 7) {
+              show("You don't need the Seed Bag right now.", "info");
+              return;
+            }
+            setIsSeeding(!isSeeding);
+            setIsDirting(false);
+            setIsHoeing(false);
+            setIsWatering(false);
             setIsDigging(false);
             setIsPlanting(false);
             setIsUsingPotion(false);
             setIsPlacingScarecrow(false);
             setIsPlacingLadybug(false);
+            setIsPlacingTesla(false);
             setIsPlacingSprinkler(false);
             setIsPlacingUmbrella(false);
+            setIsPlacingTesla(false);
           }}
           onMouseEnter={(e) => {
+            if (tutorialStep < 7) return;
             e.currentTarget.style.transform = 'scale(1.1)';
-            e.currentTarget.style.filter = isWatering ? 'drop-shadow(0px 0px 12px yellow)' : 'drop-shadow(0px 0px 8px rgba(255, 255, 255, 0.8))';
+            e.currentTarget.style.filter = isSeeding ? 'drop-shadow(0px 0px 12px yellow)' : 'drop-shadow(0px 0px 8px rgba(255, 255, 255, 0.8))';
           }}
           onMouseLeave={(e) => {
+            if (tutorialStep < 7) return;
             e.currentTarget.style.transform = 'scale(1)';
-            e.currentTarget.style.filter = isWatering ? 'drop-shadow(0px 0px 8px yellow)' : 'drop-shadow(0px 4px 6px rgba(0,0,0,0.5))';
+            e.currentTarget.style.filter = isSeeding ? 'drop-shadow(0px 0px 8px yellow)' : (tutorialStep === 7 ? 'drop-shadow(0px 0px 12px #00ff41)' : 'drop-shadow(0px 4px 6px rgba(0,0,0,0.5))');
           }}
-          style={{ position: 'absolute', top: '50px', left: '120px', zIndex: 9998, cursor: 'pointer', transition: 'all 0.2s ease', filter: isWatering ? 'drop-shadow(0px 0px 8px yellow)' : 'drop-shadow(0px 4px 6px rgba(0,0,0,0.5))' }}
+          style={{ 
+            position: 'absolute', 
+        top: isToolsOpen ? '470px' : '20px', 
+          left: '20px', 
+            zIndex: 9998, 
+            cursor: tutorialStep < 7 ? 'not-allowed' : 'pointer', 
+            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)', 
+            filter: isSeeding ? 'drop-shadow(0px 0px 8px yellow)' : (tutorialStep === 7 ? 'drop-shadow(0px 0px 12px #00ff41)' : 'drop-shadow(0px 4px 6px rgba(0,0,0,0.5))'),
+            opacity: isToolsOpen ? (tutorialStep < 7 ? 0.5 : 1) : 0,
+            pointerEvents: isToolsOpen ? 'auto' : 'none'
+          }}
         >
-          <img src="/images/forest/watercan.png" alt="Watering Can" style={{ height: '80px', objectFit: 'contain' }} />
+          <img src="/images/farming/bagofseed.png" alt="Seed Bag" style={{ height: '80px', objectFit: 'contain' }} onError={(e) => { e.target.onerror = null; e.target.src='/images/items/seeds.png'; }} />
+          {tutorialStep === 7 && (
+            <div style={{ position: 'absolute', top: '80px', left: '50%', transform: 'translateX(-50%)', animation: 'bounce 1s infinite' }}>
+              <span style={{ fontSize: '40px', color: '#00ff41', filter: 'drop-shadow(0px 2px 2px black)' }}>⬆️</span>
+            </div>
+          )}
         </div>
-
-        {/* Shovel Icon Overlay - Static inside PanZoomViewport */}
-        <div 
-          onPointerDown={(e) => {
-            e.stopPropagation();
-            e.preventDefault();
-            setIsDigging(!isDigging);
-            setIsHoeing(false);
-            setIsWatering(false);
-            setIsPlanting(false);
-            setIsUsingPotion(false);
-            setIsPlacingScarecrow(false);
-            setIsPlacingLadybug(false);
-            setIsPlacingSprinkler(false);
-            setIsPlacingUmbrella(false);
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.transform = 'scale(1.1)';
-            e.currentTarget.style.filter = isDigging ? 'drop-shadow(0px 0px 12px yellow)' : 'drop-shadow(0px 0px 8px rgba(255, 255, 255, 0.8))';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.transform = 'scale(1)';
-            e.currentTarget.style.filter = isDigging ? 'drop-shadow(0px 0px 8px yellow)' : 'drop-shadow(0px 4px 6px rgba(0,0,0,0.5))';
-          }}
-          style={{ position: 'absolute', top: '50px', left: '210px', zIndex: 9998, cursor: 'pointer', transition: 'all 0.2s ease', filter: isDigging ? 'drop-shadow(0px 0px 8px yellow)' : 'drop-shadow(0px 4px 6px rgba(0,0,0,0.5))' }}
-        >
-          <img src="/images/farm/shovel.png" alt="Shovel" style={{ height: '80px', objectFit: 'contain' }} />
-        </div>
+        )}
       </PanZoomViewport>
       {isFarmMenu && (
         <FarmMenu
@@ -3424,141 +6642,72 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
             if (refetchSeeds) refetchSeeds();
           }}
           availableFish={allItems.filter(item => Object.values(ID_FISH_ITEMS || {}).includes(item.id) && item.count > 0)}
+          farmingLevel={farmingLevel}
         />
       )}
 
-      {/* Weight Contest Icon Overlay */}
-      <div 
-        onClick={() => setShowWeightContest(true)}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.transform = 'translateX(-50%) scale(1.1)';
-          e.currentTarget.style.filter = 'drop-shadow(0px 0px 8px rgba(255, 234, 0, 0.8))';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.transform = 'translateX(-50%) scale(1)';
-          e.currentTarget.style.filter = 'drop-shadow(0px 4px 6px rgba(0,0,0,0.5))';
-        }}
-        style={{ position: 'fixed', top: '20px', left: '50%', transform: 'translateX(-50%)', zIndex: 9998, cursor: 'pointer', transition: 'all 0.2s ease', filter: 'drop-shadow(0px 4px 6px rgba(0,0,0,0.5))' }}
-      >
-        <img src="/images/weight/weightcontest.png" alt="Weight Contest" style={{ height: '210px', objectFit: 'contain' }} />
-        {targetProduceData && (
-          <div style={{
-            position: 'absolute', top: '75px', left: '35%', transform: 'translateX(-50%)',
-            width: '32px', height: '32px', background: 'rgba(0,0,0,0.6)', 
-            border: '2px solid #5a402a', borderRadius: '50%', 
-            display: 'flex', justifyContent: 'center', alignItems: 'center', overflow: 'hidden'
-          }}>
-            {targetProduceData.image && targetProduceData.image.includes('crop') ? (
-               <div style={{ 
-                   width: `${ONE_SEED_WIDTH}px`, height: `${ONE_SEED_HEIGHT}px`, 
-                   backgroundImage: `url(${targetProduceData.image})`, 
-                   backgroundPosition: `-${5 * ONE_SEED_WIDTH}px -${(targetProduceData.pos || 0) * ONE_SEED_HEIGHT}px`,
-                   transform: 'scale(0.5)', backgroundRepeat: 'no-repeat'
-               }} />
-            ) : targetProduceData.image && targetProduceData.image.includes('seeds') ? (
-               <div className="item-icon item-icon-seeds" style={{ transform: 'scale(0.6)', backgroundPositionY: targetProduceData.pos ? `-${targetProduceData.pos * ONE_SEED_HEIGHT * 0.308}px` : 0 }}></div>
-            ) : (
-               <img src={targetProduceData.image} alt={targetProduceData.label} style={{ width: '80%', height: '80%', objectFit: 'contain' }} />
-            )}
-          </div>
-        )}
-        {targetFishData && (
-          <div style={{
-            position: 'absolute', top: '75px', left: '65%', transform: 'translateX(-50%)',
-            width: '32px', height: '32px', background: 'rgba(0,0,0,0.6)', 
-            border: '2px solid #5a402a', borderRadius: '50%', 
-            display: 'flex', justifyContent: 'center', alignItems: 'center', overflow: 'hidden'
-          }}>
-            <img src={targetFishData.image} alt={targetFishData.label} style={{ width: '80%', height: '80%', objectFit: 'contain' }} />
-          </div>
-        )}
-      </div>
-
-      {/* Weight Contest Dialog */}
-      {showWeightContest && (
-        <WeightContestDialog 
-          onClose={() => setShowWeightContest(false)} 
-          simulatedDay={simulatedDay}
-          targetProduceId={targetProduceId}
-          targetFishId={targetFishId}
-          onProduceChange={setTargetProduceId}
-          onFishChange={setTargetFishId}
-          targetProduceData={targetProduceData}
-          targetFishData={targetFishData}
-          refetchItems={refetch}
+      {showBowlFishDialog && (
+        <FishBowlDialog
+          onClose={() => { setShowBowlFishDialog(false); setShowTamagotchiDialog(true); }}
+          onAddFish={(fishId) => {
+            const sandboxLoot = JSON.parse(localStorage.getItem('sandbox_loot') || '{}');
+            sandboxLoot[fishId] = Math.max(0, (sandboxLoot[fishId] || 0) - 1);
+            localStorage.setItem('sandbox_loot', JSON.stringify(sandboxLoot));
+            
+            setBowlFishId(fishId);
+            localStorage.setItem('sandbox_bowl_fish', fishId.toString());
+            setShowBowlFishDialog(false);
+            setShowTamagotchiDialog(true);
+            show("Fish placed in the bowl!", "success");
+            if (refetchSeeds) refetchSeeds();
+          }}
+          availableFish={allItems.filter(item => Object.values(ID_FISH_ITEMS || {}).includes(item.id) && item.count > 0)}
         />
       )}
 
-      {/* Calendar Icon Overlay */}
-      <div 
-        onClick={() => setShowCalendar(true)}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.transform = 'scale(1.1)';
-          e.currentTarget.style.filter = 'drop-shadow(0px 0px 8px rgba(255, 255, 255, 0.8))';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.transform = 'scale(1)';
-          e.currentTarget.style.filter = 'drop-shadow(0px 4px 6px rgba(0,0,0,0.5))';
-        }}
-        style={{ position: 'fixed', top: '20px', right: '20px', zIndex: 9998, cursor: 'pointer', transition: 'all 0.2s ease', filter: 'drop-shadow(0px 4px 6px rgba(0,0,0,0.5))' }}
-      >
-        <img src="/images/calendar/calendar.png" alt="Calendar" style={{ height: '200px', objectFit: 'contain' }} />
-      </div>
-
-      {/* Calendar Dialog */}
-      {showCalendar && (
-        <CalendarDialog onClose={() => setShowCalendar(false)} simulatedDay={simulatedDay} simulatedDate={simulatedDate} />
+      {skipGrowTarget !== null && (
+        <SkipGrowthDialog
+          onClose={() => setSkipGrowTarget(null)}
+          onConfirm={handleSkipGrowth}
+          tutorialStep={tutorialStep}
+        />
       )}
 
-      {/* Crafting Icon Overlay */}
-      <div 
-        onClick={() => setShowCraftingDialog(true)}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.transform = 'scale(1.1)';
-          e.currentTarget.style.filter = 'drop-shadow(0px 0px 8px rgba(255, 255, 255, 0.8))';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.transform = 'scale(1)';
-          e.currentTarget.style.filter = 'drop-shadow(0px 4px 6px rgba(0,0,0,0.5))';
-        }}
-        style={{ position: 'fixed', top: '240px', right: '20px', zIndex: 9998, cursor: 'pointer', transition: 'all 0.2s ease', filter: 'drop-shadow(0px 4px 6px rgba(0,0,0,0.5))' }}
-      >
-        <img src="/images/Crafting/Crafting.png" alt="Crafting" style={{ height: '200px', objectFit: 'contain' }} onError={(e) => { e.target.src = '/images/crafting/crafting.png'; }} />
-      </div>
-
-      {/* Crafting Dialog */}
-      {showCraftingDialog && (
-        <CraftingDialog onClose={() => setShowCraftingDialog(false)} refetchSeeds={refetchSeeds} />
-      )}
-
-      {/* Smithing Icon Overlay */}
-      <div 
-        onClick={() => setShowSmithingDialog(true)}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.transform = 'scale(1.1)';
-          e.currentTarget.style.filter = 'drop-shadow(0px 0px 8px rgba(255, 255, 255, 0.8))';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.transform = 'scale(1)';
-          e.currentTarget.style.filter = 'drop-shadow(0px 4px 6px rgba(0,0,0,0.5))';
-        }}
-        style={{ position: 'fixed', top: '460px', right: '20px', zIndex: 9998, cursor: 'pointer', transition: 'all 0.2s ease', filter: 'drop-shadow(0px 4px 6px rgba(0,0,0,0.5))' }}
-      >
-        <img src="/images/smithing/smithing.png" alt="Smithing" style={{ height: '200px', objectFit: 'contain' }} onError={(e) => { e.target.src = '/images/Smithing/Smithing.png'; }} />
-      </div>
-
-      {/* Smithing Dialog */}
-      {showSmithingDialog && (
-        <SmithingDialog onClose={() => setShowSmithingDialog(false)} />
+      {/* Interactive Bowls */}
+      {tutorialStep >= 11 && !hideIcons && (
+        <div style={{ position: 'fixed', bottom: '20px', left: '50%', transform: 'translateX(-50%)', display: 'flex', alignItems: 'flex-end', gap: '15px', zIndex: 9999 }}>
+          
+          {/* Tamagotchi Pet Device */}
+          <div 
+            onPointerDown={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              setShowTamagotchiDialog(true);
+            }}
+            style={{
+              width: '80px', height: 'auto', cursor: 'pointer', position: 'relative',
+              filter: 'drop-shadow(0px 4px 6px rgba(0,0,0,0.5))',
+              animation: 'mapFloat 2.5s ease-in-out infinite alternate',
+              transition: 'transform 0.1s ease',
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+            onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+            title="Felix the Cat"
+          >
+            <img src={`/images/pets/paw.png?v=${Date.now()}`} alt="Tamagotchi" style={{ width: '100%', height: 'auto', objectFit: 'contain' }} onError={(e) => e.target.src='/images/pets/bowl.png'} />
+            {(!bowlFishId || !bowlWaterFilled || starvingTime > 0) && <div style={{ position: 'absolute', top: '-5px', right: '-5px', fontSize: '24px', animation: 'mailboxAlert 1s infinite' }}>❗️</div>}
+          </div>
+        </div>
       )}
 
       {/* Cancel Placement Button */}
-      {(isPlacingScarecrow || isPlacingLadybug || isPlacingSprinkler || isPlacingUmbrella) && (
+      {(isPlacingScarecrow || isPlacingLadybug || isPlacingSprinkler || isPlacingUmbrella || isPlacingTesla) && (
         <div style={{ position: 'fixed', top: '20px', left: '50%', transform: 'translateX(-50%)', zIndex: 10000 }}>
           <button 
             onClick={() => {
               setIsPlacingScarecrow(false);
               setIsPlacingLadybug(false);
+              setIsPlacingTesla(false);
               setIsPlacingSprinkler(false);
               setIsPlacingUmbrella(false);
               setIsPlanting(true);
@@ -3569,6 +6718,339 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
           </button>
         </div>
       )}
+  
+  {/* Farming Board Dialog */}
+  {showFarmingBoard && (
+    <RegionalQuestBoard 
+      onClose={() => setShowFarmingBoard(false)} 
+      title="FARMING MISSIONS"
+      questType="farming"
+      tutorialStep={tutorialStep}
+      completedQuests={completedQuests}
+      setCompletedQuests={setCompletedQuests}
+      refetch={refetch} 
+    />
+  )}
+
+  {tutorialStep === 3 && (
+    <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 100000, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+      <div style={{ position: 'relative', width: '80%', maxWidth: '800px', backgroundColor: 'rgba(0,0,0,0.9)', border: '4px solid #ffea00', borderRadius: '16px', display: 'flex', alignItems: 'center', padding: '30px', gap: '20px', boxShadow: '0 10px 25px rgba(0,0,0,0.8)' }}>
+         <img src="/images/bees/sir.png" alt="Sir" style={{ height: '120px', objectFit: 'contain' }} />
+         <div style={{ color: 'white', fontFamily: 'monospace', fontSize: '14px', flex: 1 }}>
+           <h3 style={{ color: '#ffea00', margin: '0 0 10px 0', fontSize: '24px' }}>Great Uncle Sir Bee</h3>
+           <p style={{ margin: 0, lineHeight: '1.5' }}>Hey its me your very wealthy Great uncle, it was a shame your grandfather left you alone with this sad excuse for a farm but he is dealing with the sickness</p>
+           <br/>
+           <p style={{ margin: 0, lineHeight: '1.5' }}>I hate to get my clothes dirty and even more hate to have anyone see me hear and start getting any ideas so how about I do you a favor as family and give a rundown on how to work the farmer. I had the curse of being raised on a farm so let me teach out the basics </p>
+         </div>
+         <button 
+           onClick={() => {
+             setTutorialStep(4);
+             localStorage.setItem('sandbox_tutorial_step', '4');
+           }}
+           style={{ position: 'absolute', top: '15px', right: '15px', padding: '5px 12px', backgroundColor: '#ff4444', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '18px', fontFamily: 'monospace', color: 'white' }}
+         >
+           X
+         </button>
+      </div>
+    </div>
+  )}
+
+  {tutorialStep === 4 && (
+    <div style={{ position: 'fixed', right: '40px', top: '50%', transform: 'translateY(-50%)', zIndex: 100000, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+      <div style={{ position: 'relative', width: '320px', backgroundColor: 'rgba(0,0,0,0.9)', border: '4px solid #ffea00', borderRadius: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '25px', gap: '15px', boxShadow: '0 10px 25px rgba(0,0,0,0.8)' }}>
+         <img src="/images/bees/sir.png" alt="Sir" style={{ height: '100px', objectFit: 'contain' }} />
+         <div style={{ color: 'white', fontFamily: 'monospace', fontSize: '14px', textAlign: 'center' }}>
+           <h3 style={{ color: '#ffea00', margin: '0 0 10px 0', fontSize: '20px' }}>Great Uncle Sir Bee</h3>
+               <p style={{ margin: 0, lineHeight: '1.5' }}>First things first, click on your Farmer Bag! This bag holds all your essential tools: your Shovel, Bag of Dirt, Seed Bag, Watering Can, and Hoe.</p>
+         </div>
+      </div>
+    </div>
+  )}
+
+  {tutorialStep === 5 && (
+    <div style={{ position: 'fixed', right: '40px', top: '50%', transform: 'translateY(-50%)', zIndex: 100000, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+      <div style={{ position: 'relative', width: '320px', backgroundColor: 'rgba(0,0,0,0.9)', border: '4px solid #ffea00', borderRadius: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '25px', gap: '15px', boxShadow: '0 10px 25px rgba(0,0,0,0.8)' }}>
+         <img src="/images/bees/sir.png" alt="Sir" style={{ height: '100px', objectFit: 'contain' }} />
+         <div style={{ color: 'white', fontFamily: 'monospace', fontSize: '14px', textAlign: 'center' }}>
+           <h3 style={{ color: '#ffea00', margin: '0 0 10px 0', fontSize: '20px' }}>Great Uncle Sir Bee</h3>
+               <p style={{ margin: 0, lineHeight: '1.5' }}>Now, grab your Shovel and click on an empty spot (the Red X) to dig a hole.</p>
+         </div>
+      </div>
+    </div>
+  )}
+
+  {tutorialStep === 6 && (
+    <div style={{ position: 'fixed', right: '40px', top: '50%', transform: 'translateY(-50%)', zIndex: 100000, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+      <div style={{ position: 'relative', width: '320px', backgroundColor: 'rgba(0,0,0,0.9)', border: '4px solid #ffea00', borderRadius: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '25px', gap: '15px', boxShadow: '0 10px 25px rgba(0,0,0,0.8)' }}>
+         <img src="/images/bees/sir.png" alt="Sir" style={{ height: '100px', objectFit: 'contain' }} />
+         <div style={{ color: 'white', fontFamily: 'monospace', fontSize: '14px', textAlign: 'center' }}>
+           <h3 style={{ color: '#ffea00', margin: '0 0 10px 0', fontSize: '20px' }}>Great Uncle Sir Bee</h3>
+               <p style={{ margin: 0, lineHeight: '1.5' }}>Good job! Now click the Shovel again to put it away.</p>
+               <br/>
+               <p style={{ margin: 0, lineHeight: '1.5' }}>Next, select the Bag of Dirt and click the hole you just dug to fill it.</p>
+             </div>
+          </div>
+        </div>
+      )}
+
+      {tutorialStep === 7 && (
+        <div style={{ position: 'fixed', right: '40px', top: '50%', transform: 'translateY(-50%)', zIndex: 100000, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+          <div style={{ position: 'relative', width: '320px', backgroundColor: 'rgba(0,0,0,0.9)', border: '4px solid #ffea00', borderRadius: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '25px', gap: '15px', boxShadow: '0 10px 25px rgba(0,0,0,0.8)' }}>
+             <img src="/images/bees/sir.png" alt="Sir" style={{ height: '100px', objectFit: 'contain' }} />
+             <div style={{ color: 'white', fontFamily: 'monospace', fontSize: '14px', textAlign: 'center' }}>
+               <h3 style={{ color: '#ffea00', margin: '0 0 10px 0', fontSize: '20px' }}>Great Uncle Sir Bee</h3>
+           <p style={{ margin: 0, lineHeight: '1.5' }}>Perfect! Now select your Seed Bag and click the dirt plot to choose a seed to plant.</p>
+         </div>
+      </div>
+    </div>
+  )}
+  
+  {tutorialStep === 8 && (
+    <div style={{ position: 'fixed', right: '40px', top: '50%', transform: 'translateY(-50%)', zIndex: 100000, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+      <div style={{ position: 'relative', width: '320px', backgroundColor: 'rgba(0,0,0,0.9)', border: '4px solid #ffea00', borderRadius: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '25px', gap: '15px', boxShadow: '0 10px 25px rgba(0,0,0,0.8)' }}>
+         <img src="/images/bees/sir.png" alt="Sir" style={{ height: '100px', objectFit: 'contain' }} />
+         <div style={{ color: 'white', fontFamily: 'monospace', fontSize: '14px', textAlign: 'center' }}>
+           <h3 style={{ color: '#ffea00', margin: '0 0 10px 0', fontSize: '20px' }}>Great Uncle Sir Bee</h3>
+           <p style={{ margin: 0, lineHeight: '1.5' }}>Excellent! Plants need water to grow. Grab your Watering Can and water the seed you just planted.</p>
+         </div>
+      </div>
+    </div>
+  )}
+
+  {tutorialStep === 9 && (
+    <div style={{ position: 'fixed', right: '40px', top: '50%', transform: 'translateY(-50%)', zIndex: 100000, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+      <div style={{ position: 'relative', width: '320px', backgroundColor: 'rgba(0,0,0,0.9)', border: '4px solid #ffea00', borderRadius: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '25px', gap: '15px', boxShadow: '0 10px 25px rgba(0,0,0,0.8)' }}>
+         <img src="/images/bees/sir.png" alt="Sir" style={{ height: '100px', objectFit: 'contain' }} />
+         <div style={{ color: 'white', fontFamily: 'monospace', fontSize: '14px', textAlign: 'center' }}>
+           <h3 style={{ color: '#ffea00', margin: '0 0 10px 0', fontSize: '20px' }}>Great Uncle Sir Bee</h3>
+           <p style={{ margin: 0, lineHeight: '1.5' }}>Now we just have to wait for the plant to grow!</p>
+           <br/>
+           <p style={{ margin: 0, lineHeight: '1.5' }}>Or... you can pay your favorite great uncle 100 Honey to speed up the process.</p>
+           <br/>
+           <p style={{ margin: 0, lineHeight: '1.5', color: '#00ff41' }}>Click on your growing plant to instantly grow it, then click it again to harvest!</p>
+         </div>
+      </div>
+    </div>
+  )}
+
+  {tutorialStep < 10 && (
+    <style>{`
+      a[href*="/house"], a[href*="/valley"], a[href*="/market"], a[href*="/tavern"] { pointer-events: none !important; opacity: 0.5 !important; }
+    `}</style>
+  )}
+
+  {tutorialStep === 10 && (
+    <div style={{ position: 'fixed', right: '40px', top: '50%', transform: 'translateY(-50%)', zIndex: 100000, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+      <style>{`
+        a[href*="/farm"], a[href*="/house"], a[href*="/valley"], a[href*="/market"], a[href*="/tavern"] { pointer-events: none !important; opacity: 0.5 !important; }
+        a[href*="/market"], img[src*="market"], img[src*="Market"] {
+          animation: marketHighlight 1.5s infinite !important;
+          border-radius: 12px;
+          position: relative;
+          z-index: 100001;
+          pointer-events: auto !important;
+          opacity: 1 !important;
+        }
+        @keyframes marketHighlight {
+          0%, 100% { box-shadow: 0 0 20px 5px #00ff41; transform: scale(1.1); background-color: rgba(0,255,65,0.3); }
+          50% { box-shadow: 0 0 10px 2px #00ff41; transform: scale(1); background-color: transparent; }
+        }
+      `}</style>
+      <div style={{ position: 'relative', width: '320px', backgroundColor: 'rgba(0,0,0,0.9)', border: '4px solid #ffea00', borderRadius: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '25px', gap: '15px', boxShadow: '0 10px 25px rgba(0,0,0,0.8)' }}>
+         <img src="/images/bees/sir.png" alt="Sir" style={{ height: '100px', objectFit: 'contain' }} />
+         <div style={{ color: 'white', fontFamily: 'monospace', fontSize: '14px', textAlign: 'center' }}>
+           <h3 style={{ color: '#ffea00', margin: '0 0 10px 0', fontSize: '20px' }}>Great Uncle Sir Bee</h3>
+           <p style={{ margin: 0, lineHeight: '1.5' }}>Amazing harvest! You are a natural.</p>
+           <br/>
+           <p style={{ margin: 0, lineHeight: '1.5' }}>Now you know how to grow produce, let's go and get you some more seeds for you to grow! Click the Marketplace icon on the left to visit the town market.</p>
+         </div>
+      </div>
+    </div>
+  )}
+
+  {tutorialStep === 25 && (
+    <div style={{ position: 'fixed', left: 'calc(50% - 220px)', top: '250px', transform: 'translateX(-50%)', zIndex: 100000, display: 'flex', justifyContent: 'center', alignItems: 'center', pointerEvents: 'none' }}>
+      <style>{`
+        a[href*="/house"], a[href*="/valley"], a[href*="/market"], a[href*="/tavern"] { pointer-events: none !important; opacity: 0.5 !important; }
+        @keyframes craftingGlow {
+          0%, 100% { box-shadow: 0 0 20px 5px #00ff41; transform: scale(1.1); background-color: rgba(0,255,65,0.3); }
+          50% { box-shadow: 0 0 10px 2px #00ff41; transform: scale(1); background-color: transparent; }
+        }
+      `}</style>
+      <div style={{ position: 'relative', width: '320px', backgroundColor: 'rgba(0,0,0,0.9)', border: '4px solid #ffea00', borderRadius: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '25px', gap: '15px', boxShadow: '0 10px 25px rgba(0,0,0,0.8)', pointerEvents: 'auto' }}>
+         <img src="/images/bees/sir.png" alt="Sir" style={{ height: '100px', objectFit: 'contain' }} />
+         <div style={{ color: 'white', fontFamily: 'monospace', fontSize: '14px', textAlign: 'center' }}>
+           <h3 style={{ color: '#ffea00', margin: '0 0 10px 0', fontSize: '20px' }}>Great Uncle Sir Bee</h3>
+           <p style={{ margin: 0, lineHeight: '1.5' }}>Your grandfather should have left you some materials in the mail you got earlier.</p>
+           <br/>
+           <p style={{ margin: 0, lineHeight: '1.5', color: '#00ff41' }}>Click the <strong>Crafting icon</strong> at the top of your screen to make some items!</p>
+         </div>
+      </div>
+    </div>
+  )}
+
+  {tutorialStep === 26 && (
+    <div style={{ position: 'fixed', right: '40px', top: '50%', transform: 'translateY(-50%)', zIndex: 100000, display: 'flex', justifyContent: 'center', alignItems: 'center', pointerEvents: 'none' }}>
+      <style>{`
+        a[href*="/house"], a[href*="/valley"], a[href*="/market"], a[href*="/tavern"] { pointer-events: none !important; opacity: 0.5 !important; }
+      `}</style>
+      <div style={{ position: 'relative', width: '320px', backgroundColor: 'rgba(0,0,0,0.9)', border: '4px solid #ffea00', borderRadius: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '25px', gap: '15px', boxShadow: '0 10px 25px rgba(0,0,0,0.8)', pointerEvents: 'auto' }}>
+         <img src="/images/bees/sir.png" alt="Sir" style={{ height: '100px', objectFit: 'contain' }} />
+         <div style={{ color: 'white', fontFamily: 'monospace', fontSize: '14px', textAlign: 'center' }}>
+           <h3 style={{ color: '#ffea00', margin: '0 0 10px 0', fontSize: '20px' }}>Great Uncle Sir Bee</h3>
+           {axeCount === 0 && pickaxeCount === 0 ? (
+             sticksCount < 3 ? (
+               <p style={{ margin: 0, lineHeight: '1.5' }}>First, you'll need some Sticks. Craft them from the Wood Logs Pabee gave you!</p>
+             ) : (
+               <p style={{ margin: 0, lineHeight: '1.5' }}>Now that you have Sticks, craft an Axe or a Pickaxe using 3 Sticks and 3 Stones.</p>
+             )
+           ) : axeCount > 0 && pickaxeCount === 0 ? (
+             <p style={{ margin: 0, lineHeight: '1.5' }}>Great! You made an Axe. Now craft more Sticks if you need to, and make a Pickaxe using 3 Sticks and 3 Stones!</p>
+           ) : pickaxeCount > 0 && axeCount === 0 ? (
+             <p style={{ margin: '0 0 10px 0', lineHeight: '1.5' }}>Great! You made a Pickaxe. Now craft more Sticks if you need to, and make an Axe using 3 Sticks and 3 Stones!</p>
+           ) : (
+             <p style={{ margin: 0, lineHeight: '1.5' }}>Awesome! You have both tools. Let's head out!</p>
+           )}
+         </div>
+      </div>
+    </div>
+  )}
+
+  {tutorialStep === 31 && (
+    <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 100000, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+      <div style={{ position: 'relative', width: '80%', maxWidth: '800px', backgroundColor: 'rgba(0,0,0,0.9)', border: '4px solid #ffea00', borderRadius: '16px', display: 'flex', alignItems: 'center', padding: '30px', gap: '20px', boxShadow: '0 10px 25px rgba(0,0,0,0.8)' }}>
+         <img src="/images/bees/sir.png" alt="Sir" style={{ height: '120px', objectFit: 'contain' }} />
+         <div style={{ color: 'white', fontFamily: 'monospace', fontSize: '14px', flex: 1 }}>
+           <h3 style={{ color: '#ffea00', margin: '0 0 10px 0', fontSize: '24px' }}>Great Uncle Sir Bee</h3>
+           <p style={{ margin: 0, lineHeight: '1.5' }}>Well it was fun catching up but I have some important things to do.</p>
+           <br/>
+           <p style={{ margin: 0, lineHeight: '1.5' }}>Now that you have tools, head over to the forest! It's great for finding materials. Don't forget to keep planting seeds on your farm.</p>
+           <br/>
+           <p style={{ margin: 0, lineHeight: '1.5' }}>Also have you seen Felix? I always hated how your grandfather let that cat roam free. Make sure to fill up his bowl and give him a nice fish please.</p>
+           <br/>
+           <p style={{ margin: 0, lineHeight: '1.5' }}>See ya!</p>
+         </div>
+         <button 
+           onClick={() => {
+             setTutorialStep(32);
+             localStorage.setItem('sandbox_tutorial_step', '32');
+           }}
+           style={{ position: 'absolute', top: '15px', right: '15px', padding: '5px 12px', backgroundColor: '#ff4444', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '18px', fontFamily: 'monospace', color: 'white' }}
+         >
+           X
+         </button>
+      </div>
+    </div>
+  )}
+
+  {tutorialStep === 27 && (
+    <div style={{ position: 'fixed', left: 'calc(50% + 220px)', top: '250px', transform: 'translateX(-50%)', zIndex: 100000, display: 'flex', justifyContent: 'center', alignItems: 'center', pointerEvents: 'none' }}>
+      <style>{`
+        a[href*="/house"], a[href*="/valley"], a[href*="/market"], a[href*="/tavern"] { pointer-events: none !important; opacity: 0.5 !important; }
+        @keyframes craftingGlow {
+          0%, 100% { box-shadow: 0 0 20px 5px #00ff41; transform: scale(1.1); background-color: rgba(0,255,65,0.3); }
+          50% { box-shadow: 0 0 10px 2px #00ff41; transform: scale(1); background-color: transparent; }
+        }
+      `}</style>
+      <div style={{ position: 'relative', width: '320px', backgroundColor: 'rgba(0,0,0,0.9)', border: '4px solid #ffea00', borderRadius: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '25px', gap: '15px', boxShadow: '0 10px 25px rgba(0,0,0,0.8)', pointerEvents: 'auto' }}>
+         <img src="/images/bees/sir.png" alt="Sir" style={{ height: '100px', objectFit: 'contain' }} />
+         <div style={{ color: 'white', fontFamily: 'monospace', fontSize: '14px', textAlign: 'center' }}>
+           <h3 style={{ color: '#ffea00', margin: '0 0 10px 0', fontSize: '20px' }}>Great Uncle Sir Bee</h3>
+           <p style={{ margin: 0, lineHeight: '1.5' }}>Excellent!</p>
+           <br/>
+           <p style={{ margin: 0, lineHeight: '1.5', color: '#00ff41' }}>Now click the <strong>Calendar icon</strong> at the top of your screen so I can show you how to track time!</p>
+         </div>
+      </div>
+    </div>
+  )}
+
+  {tutorialStep === 28 && (
+    <div style={{ position: 'fixed', right: '40px', top: '50%', transform: 'translateY(-50%)', zIndex: 100000, display: 'flex', justifyContent: 'center', alignItems: 'center', pointerEvents: 'none' }}>
+      <style>{`a[href*="/house"], a[href*="/valley"], a[href*="/market"], a[href*="/tavern"] { pointer-events: none !important; opacity: 0.5 !important; }`}</style>
+      <div style={{ position: 'relative', width: '320px', backgroundColor: 'rgba(0,0,0,0.9)', border: '4px solid #ffea00', borderRadius: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '25px', gap: '15px', boxShadow: '0 10px 25px rgba(0,0,0,0.8)', pointerEvents: 'auto' }}>
+         <img src="/images/bees/sir.png" alt="Sir" style={{ height: '100px', objectFit: 'contain' }} />
+         <div style={{ color: 'white', fontFamily: 'monospace', fontSize: '14px', textAlign: 'center' }}>
+           <h3 style={{ color: '#ffea00', margin: '0 0 10px 0', fontSize: '20px' }}>Great Uncle Sir Bee</h3>
+           <p style={{ margin: 0, lineHeight: '1.5' }}>The Calendar helps you keep track of the weather and events!</p>
+           <br/>
+           <p style={{ margin: 0, lineHeight: '1.5' }}>Notice the Weight Contest that happens every Sunday? Let's check it out.</p>
+         </div>
+         <button onClick={() => { setTutorialStep(29); localStorage.setItem('sandbox_tutorial_step', '29'); window.dispatchEvent(new CustomEvent('tutorialStepChanged')); }} style={{ padding: '8px 16px', backgroundColor: '#00ff41', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '16px', fontFamily: 'monospace', color: '#000', marginTop: '10px' }}>Next</button>
+      </div>
+    </div>
+  )}
+
+  {tutorialStep === 29 && (
+    <div style={{ position: 'fixed', left: '50%', top: '250px', transform: 'translateX(-50%)', zIndex: 100000, display: 'flex', justifyContent: 'center', alignItems: 'center', pointerEvents: 'none' }}>
+      <style>{`
+        a[href*="/house"], a[href*="/valley"], a[href*="/market"], a[href*="/tavern"] { pointer-events: none !important; opacity: 0.5 !important; }
+        @keyframes craftingGlow {
+          0%, 100% { box-shadow: 0 0 20px 5px #00ff41; transform: scale(1.1); background-color: rgba(0,255,65,0.3); }
+          50% { box-shadow: 0 0 10px 2px #00ff41; transform: scale(1); background-color: transparent; }
+        }
+      `}</style>
+      <div style={{ position: 'relative', width: '320px', backgroundColor: 'rgba(0,0,0,0.9)', border: '4px solid #ffea00', borderRadius: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '25px', gap: '15px', boxShadow: '0 10px 25px rgba(0,0,0,0.8)', pointerEvents: 'auto' }}>
+         <img src="/images/bees/sir.png" alt="Sir" style={{ height: '100px', objectFit: 'contain' }} />
+         <div style={{ color: 'white', fontFamily: 'monospace', fontSize: '14px', textAlign: 'center' }}>
+           <h3 style={{ color: '#ffea00', margin: '0 0 10px 0', fontSize: '20px' }}>Great Uncle Sir Bee</h3>
+           <p style={{ margin: 0, lineHeight: '1.5', color: '#00ff41' }}>Click the <strong>Trophy icon</strong> in the top center of your screen to open the Weight Contest!</p>
+         </div>
+      </div>
+    </div>
+  )}
+
+  {tutorialStep === 30 && (
+    <div style={{ position: 'fixed', right: '40px', top: '50%', transform: 'translateY(-50%)', zIndex: 100000, display: 'flex', justifyContent: 'center', alignItems: 'center', pointerEvents: 'none' }}>
+      <style>{`a[href*="/house"], a[href*="/valley"], a[href*="/market"], a[href*="/tavern"] { pointer-events: none !important; opacity: 0.5 !important; }`}</style>
+      <div style={{ position: 'relative', width: '320px', backgroundColor: 'rgba(0,0,0,0.9)', border: '4px solid #ffea00', borderRadius: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '25px', gap: '15px', boxShadow: '0 10px 25px rgba(0,0,0,0.8)', pointerEvents: 'auto' }}>
+         <img src="/images/bees/sir.png" alt="Sir" style={{ height: '100px', objectFit: 'contain' }} />
+         <div style={{ color: 'white', fontFamily: 'monospace', fontSize: '14px', textAlign: 'center' }}>
+           <h3 style={{ color: '#ffea00', margin: '0 0 10px 0', fontSize: '20px' }}>Great Uncle Sir Bee</h3>
+           <p style={{ margin: 0, lineHeight: '1.5' }}>Here you can submit your heaviest produce or fish!</p>
+           <br/>
+           <p style={{ margin: 0, lineHeight: '1.5' }}>Check back every Sunday to see the winners and claim your rewards if you place high enough.</p>
+         </div>
+         <button onClick={() => { setTutorialStep(31); localStorage.setItem('sandbox_tutorial_step', '31'); window.dispatchEvent(new CustomEvent('tutorialStepChanged')); }} style={{ padding: '8px 16px', backgroundColor: '#00ff41', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '16px', fontFamily: 'monospace', color: '#000', marginTop: '10px' }}>Finish Tour</button>
+      </div>
+    </div>
+  )}
+
+  {/* Easter Basket Dialog */}
+      {tutorialStep >= 9 && showEasterBasket && <EasterBasketDialog onClose={() => setShowEasterBasket(false)} />}
+
+  {/* Tamagotchi Dialog UI */}
+  {showTamagotchiDialog && (
+    <TamagotchiDialog
+      onClose={() => setShowTamagotchiDialog(false)}
+      catFeedTimeLeft={catFeedTimeLeft}
+      starvingTime={starvingTime}
+      bowlWaterFilled={bowlWaterFilled}
+      bowlFishId={bowlFishId}
+      isCatUnlocked={isCatUnlocked}
+      firstFedTime={firstFedTime}
+      catHappiness={catHappiness}
+      currentHunger={currentHunger}
+      onWater={() => {
+        if (!bowlWaterFilled) {
+          setBowlWaterFilled(true);
+          localStorage.setItem('sandbox_bowl_water', 'true');
+          playWaterSound();
+          show("You filled Felix's water!", "success");
+        } else {
+          show("Felix isn't thirsty right now.", "info");
+        }
+      }}
+      onFeed={() => {
+        if (!bowlFishId) {
+          setShowBowlFishDialog(true);
+          setShowTamagotchiDialog(false); // Close tama, open fish picker
+        } else {
+          show("Felix already has fish!", "info");
+        }
+      }}
+    />
+  )}
+
       <AdminPanel />
     </div>
   );

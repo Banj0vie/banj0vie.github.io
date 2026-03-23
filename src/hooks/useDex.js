@@ -218,7 +218,7 @@ export const useDex = () => {
         return false;
       }
     }
-  }, [publicKey, dispatch, program, getDexPoolPda, getSolVaultPda, fetchBalances, connection, solBalance]);
+  }, [publicKey, dispatch, program, getDexPoolPda, getSolVaultPda, fetchBalances, connection, solBalance, sendTransaction, settings.dexSlippage]);
 
   // Sell tokens for SOL
   const sellTokens = useCallback(async (tokenAmount) => {
@@ -338,7 +338,7 @@ export const useDex = () => {
         return false;
       }
     }
-  }, [publicKey, dispatch, program, getDexPoolPda, getSolVaultPda, fetchBalances, gameTokenBalance]);
+  }, [publicKey, dispatch, program, getDexPoolPda, getSolVaultPda, fetchBalances, gameTokenBalance, connection, sendTransaction, settings.dexSlippage]);
 
   // Fetch current pool state
   const fetchDexPool = useCallback(async () => {

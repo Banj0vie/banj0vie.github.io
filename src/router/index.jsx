@@ -1,9 +1,18 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useNotification } from "../contexts/NotificationContext";
 import { useItems } from "../hooks/useItems";
 import { ALL_ITEMS } from "../constants/item_data";
-import { ID_PRODUCE_ITEMS, ID_FISH_ITEMS, ID_POTION_ITEMS, ID_CHEST_ITEMS, ID_SEEDS } from "../constants/app_ids";
-import { setSimulatedDateInfo } from "../components/WeatherOverlay";
+import { ID_PRODUCE_ITEMS, ID_FISH_ITEMS, ID_POTION_ITEMS, ID_CHEST_ITEMS, ID_SEEDS, ID_BAIT_ITEMS } from "../constants/app_ids";
+import { db, auth } from "../firebase";
+import { signOut, updateProfile } from "firebase/auth";
+import { doc, setDoc, deleteDoc } from "firebase/firestore";
+import { getSimulatedDateInfo, getWeatherForDay } from "../components/WeatherOverlay";
+import { ONE_SEED_HEIGHT, ONE_SEED_WIDTH } from "../constants/item_seed";
+
+const WeightContestDialog = React.lazy(() => import("./farm").then(m => ({ default: m.WeightContestDialog })));
+const CalendarDialog = React.lazy(() => import("./farm").then(m => ({ default: m.CalendarDialog })));
+const CraftingDialog = React.lazy(() => import("./farm").then(m => ({ default: m.CraftingDialog })));
+const MailboxDialog = React.lazy(() => import("./farm").then(m => ({ default: m.MailboxDialog })));
 
 const AdminPanel = () => {
   const [isAdminPanelOpen, setIsAdminPanelOpen] = useState(false);
@@ -12,27 +21,235 @@ const AdminPanel = () => {
   const [consoleInput, setConsoleInput] = useState('');
   const [showTOC, setShowTOC] = useState(false);
   const { show } = useNotification();
-  const { refetch, all: allItems } = useItems();
+  const { refetch, all: allItems, seeds: currentSeeds } = useItems();
+  const [isDockRepaired, setIsDockRepaired] = useState(() => localStorage.getItem('sandbox_dock_repaired') === 'true');
+  const [isTavernUnlocked, setIsTavernUnlocked] = useState(() => localStorage.getItem('quest_q2_rebuild_tavern_completed') === 'true');
+  const [seenDockPrompt, setSeenDockPrompt] = useState(() => localStorage.getItem('seen_dock_repair_prompt') === 'true');
+
+  // Global UI states
+  const [showWeightContest, setShowWeightContest] = useState(false);
+  const [craftingGoal, setCraftingGoal] = useState(null);
+  const [showCalendar, setShowCalendar] = useState(false);
+  const [showCraftingDialog, setShowCraftingDialog] = useState(false);
+  
+  const [simulatedDay, setSimulatedDay] = useState(() => getSimulatedDateInfo().day);
+  const [simulatedDate, setSimulatedDate] = useState(() => getSimulatedDateInfo().date);
+  const [hasUnclaimedDaily, setHasUnclaimedDaily] = useState(() => localStorage.getItem('sandbox_last_claim_date') !== new Date().toDateString());
+  const urlParams = new URLSearchParams(window.location.search);
+  const isForagingOrMining = urlParams.get('scene') === 'forest' || urlParams.get('scene') === 'mine';
+  const [tutorialStep, setTutorialStep] = useState(() => parseInt(localStorage.getItem('sandbox_tutorial_step') || '0', 10));
+  const [completedQuests, setCompletedQuests] = useState(() => JSON.parse(localStorage.getItem('sandbox_completed_quests') || '[]'));
+  const [levelUpData, setLevelUpData] = useState(null);
+  
+  const [showMailboxDialog, setShowMailboxDialog] = useState(false);
+  const [mailboxImageError, setMailboxImageError] = useState(false);
+  const [readQuests, setReadQuests] = useState(() => JSON.parse(localStorage.getItem('sandbox_read_quests') || '[]'));
+  const [hasUnreadMail, setHasUnreadMail] = useState(false);
+  const [seenWeightContest, setSeenWeightContest] = useState(() => localStorage.getItem('seen_weight_contest_today') === new Date().toDateString());
+  const [seenCrafting, setSeenCrafting] = useState(() => localStorage.getItem('seen_crafting_step_' + tutorialStep) === 'true');
+  const [seenCalendar, setSeenCalendar] = useState(() => localStorage.getItem('seen_calendar_today') === new Date().toDateString());
+  const [hasNewFishingMissions, setHasNewFishingMissions] = useState(false);
+  const [hasNewFarmingMissions, setHasNewFarmingMissions] = useState(false);
+
+  const [isPetOpen, setIsPetOpen] = useState(false);
+  const [isSeedOpen, setIsSeedOpen] = useState(false);
+
+  useEffect(() => {
+    const handlePetOpen = (e) => setIsPetOpen(e.detail);
+    const handleSeedOpen = (e) => setIsSeedOpen(e.detail);
+    window.addEventListener('petDialogOpen', handlePetOpen);
+    window.addEventListener('seedDialogOpen', handleSeedOpen);
+    return () => {
+      window.removeEventListener('petDialogOpen', handlePetOpen);
+      window.removeEventListener('seedDialogOpen', handleSeedOpen);
+    };
+  }, []);
+
+  const isPanelOpen = showCraftingDialog || showCalendar || showWeightContest || isPetOpen || isSeedOpen;
+
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('globalDialogOpen', { detail: showCraftingDialog || showCalendar || showWeightContest }));
+  }, [showCraftingDialog, showCalendar, showWeightContest]);
+
+  const [targetProduceId, setTargetProduceId] = useState(() => {
+    const saved = localStorage.getItem('weight_contest_produce');
+    const legacy = localStorage.getItem('weight_contest_crop');
+    if (saved) return parseInt(saved, 10);
+    if (legacy && Object.values(ID_PRODUCE_ITEMS || {}).includes(parseInt(legacy, 10))) return parseInt(legacy, 10);
+    return ID_PRODUCE_ITEMS.ONION;
+  });
+
+  const [targetFishId, setTargetFishId] = useState(() => {
+    const saved = localStorage.getItem('weight_contest_fish');
+    const legacy = localStorage.getItem('weight_contest_crop');
+    if (saved) return parseInt(saved, 10);
+    if (legacy && Object.values(ID_FISH_ITEMS || {}).includes(parseInt(legacy, 10))) return parseInt(legacy, 10);
+    const defaultFish = Object.values(ID_FISH_ITEMS || {})[0] || 10001; 
+    return defaultFish;
+  });
+
+  const getTargetData = (id) => {
+    let targetData = (allItems || []).find((item) => item.id === id);
+    if (!targetData) {
+      let fallbackLabel = "Unknown";
+      let fallbackImage = "";
+      let fallbackPos = 0;
+      if (ALL_ITEMS[id]) {
+        fallbackLabel = ALL_ITEMS[id].label;
+        fallbackImage = ALL_ITEMS[id].image;
+        fallbackPos = ALL_ITEMS[id].pos || 0;
+      } else {
+        const fishEntry = Object.entries(ID_FISH_ITEMS || {}).find(([k, v]) => v === id);
+        if (fishEntry) fallbackLabel = fishEntry[0].replace(/_/g, ' ').toLowerCase();
+        else {
+          const prodEntry = Object.entries(ID_PRODUCE_ITEMS || {}).find(([k, v]) => v === id);
+          if (prodEntry) fallbackLabel = prodEntry[0].replace(/_/g, ' ').toLowerCase();
+        }
+      }
+      targetData = { id, label: fallbackLabel, count: 0, image: fallbackImage || "/images/items/seeds.png", pos: fallbackPos };
+    }
+    return targetData;
+  };
+
+  const targetProduceData = getTargetData(targetProduceId);
+  const targetFishData = getTargetData(targetFishId);
 
   // Sync toggles with window events
   useEffect(() => {
     const handleStorage = () => {
       setAutoSpawnEnabled(localStorage.getItem('auto_spawn_enabled') !== 'false');
       setShowDebugLabels(localStorage.getItem('show_debug_labels') !== 'false');
+      setIsDockRepaired(localStorage.getItem('sandbox_dock_repaired') === 'true');
+      setIsTavernUnlocked(localStorage.getItem('quest_q2_rebuild_tavern_completed') === 'true');
+      setSeenDockPrompt(localStorage.getItem('seen_dock_repair_prompt') === 'true');
+      setTutorialStep(parseInt(localStorage.getItem('sandbox_tutorial_step') || '0', 10));
     };
     window.addEventListener('storage', handleStorage);
     
     const handleSync = (e) => {
       if (e.type === 'toggleAutoSpawn') setAutoSpawnEnabled(e.detail);
       if (e.type === 'toggleDebugLabels') setShowDebugLabels(e.detail);
+      if (e.type === 'dockRepaired') setIsDockRepaired(true);
+      if (e.type === 'tavernUnlocked') setIsTavernUnlocked(true);
+      if (e.type === 'tutorialStepChanged') setTutorialStep(parseInt(localStorage.getItem('sandbox_tutorial_step') || '0', 10));
+      if (e.type === 'seenDockPrompt') setSeenDockPrompt(true);
+      if (e.type === 'questsRead') {
+        import('./farm').then(m => {
+          const allQuests = m.getQuestData();
+          const step = parseInt(localStorage.getItem('sandbox_tutorial_step') || '0', 10);
+          const comp = JSON.parse(localStorage.getItem('sandbox_completed_quests') || '[]');
+          
+          const availFish = allQuests.filter(q => q.type === 'fishing' && q.unlockCondition(step, comp) && !comp.includes(q.id));
+          setHasNewFishingMissions(availFish.some(q => !(localStorage.getItem('seen_fishing_missions_ids') || '').split(',').includes(q.id)));
+          
+          const availFarm = allQuests.filter(q => q.type === 'farming' && q.unlockCondition(step, comp) && !comp.includes(q.id));
+          setHasNewFarmingMissions(availFarm.some(q => !(localStorage.getItem('seen_farming_missions_ids') || '').split(',').includes(q.id)));
+        });
+      }
     };
     window.addEventListener('toggleAutoSpawn', handleSync);
     window.addEventListener('toggleDebugLabels', handleSync);
+    window.addEventListener('dockRepaired', handleSync);
+    window.addEventListener('tavernUnlocked', handleSync);
+    window.addEventListener('tutorialStepChanged', handleSync);
+    window.addEventListener('seenDockPrompt', handleSync);
+    window.addEventListener('questsRead', handleSync);
+
+    import('./farm').then(m => {
+      const allQuests = m.getQuestData();
+      const availableQuests = allQuests.filter(q => (!q.type || q.type === 'main') && q.unlockCondition(parseInt(localStorage.getItem('sandbox_tutorial_step') || '0', 10), JSON.parse(localStorage.getItem('sandbox_completed_quests') || '[]')));
+      const currentRead = JSON.parse(localStorage.getItem('sandbox_read_quests') || '[]');
+      const unread = availableQuests.some(q => !JSON.parse(localStorage.getItem('sandbox_completed_quests') || '[]').includes(q.id) && !currentRead.includes(q.id));
+      setHasUnreadMail(unread);
+      
+      const availFish = allQuests.filter(q => q.type === 'fishing' && q.unlockCondition(parseInt(localStorage.getItem('sandbox_tutorial_step') || '0', 10), JSON.parse(localStorage.getItem('sandbox_completed_quests') || '[]')) && !JSON.parse(localStorage.getItem('sandbox_completed_quests') || '[]').includes(q.id));
+      const seenFishArray = (localStorage.getItem('seen_fishing_missions_ids') || '').split(',').filter(Boolean);
+      const hasNewFish = availFish.some(q => !seenFishArray.includes(q.id));
+      setHasNewFishingMissions(hasNewFish);
+
+      const availFarm = allQuests.filter(q => q.type === 'farming' && q.unlockCondition(parseInt(localStorage.getItem('sandbox_tutorial_step') || '0', 10), JSON.parse(localStorage.getItem('sandbox_completed_quests') || '[]')) && !JSON.parse(localStorage.getItem('sandbox_completed_quests') || '[]').includes(q.id));
+      const seenFarmArray = (localStorage.getItem('seen_farming_missions_ids') || '').split(',').filter(Boolean);
+      const hasNewFarm = availFarm.some(q => !seenFarmArray.includes(q.id));
+      setHasNewFarmingMissions(hasNewFarm);
+    });
+
+    const handleLevelUp = (e) => {
+      setLevelUpData(e.detail);
+      setTimeout(() => setLevelUpData(null), 5000);
+      import('./farm').then(m => {
+        const allQuests = m.getQuestData();
+        const step = parseInt(localStorage.getItem('sandbox_tutorial_step') || '0', 10);
+        const comp = JSON.parse(localStorage.getItem('sandbox_completed_quests') || '[]');
+        const availableQuests = allQuests.filter(q => (!q.type || q.type === 'main') && q.unlockCondition(step, comp));
+        const currentRead = JSON.parse(localStorage.getItem('sandbox_read_quests') || '[]');
+        setHasUnreadMail(availableQuests.some(q => !comp.includes(q.id) && !currentRead.includes(q.id)));
+      });
+    };
+    window.addEventListener('levelUp', handleLevelUp);
+
+    const onChangeSimulatedDate = (e) => {
+      setSimulatedDay(e.detail.day);
+      setSimulatedDate(e.detail.date);
+    };
+    const handleOpenCrafting = (e) => {
+      setCraftingGoal(e.detail);
+      setShowCraftingDialog(true);
+    };
+    const onChangeContest = (e) => {
+      const { targetId, isFish } = e.detail;
+      if (isFish) {
+        setTargetFishId(targetId);
+        localStorage.setItem('weight_contest_fish', targetId.toString());
+      } else {
+        setTargetProduceId(targetId);
+        localStorage.setItem('weight_contest_produce', targetId.toString());
+      }
+    };
+
+    window.addEventListener('changeSimulatedDate', onChangeSimulatedDate);
+    window.addEventListener('openCraftingFor', handleOpenCrafting);
+    window.addEventListener('changeWeightContest', onChangeContest);
     
+    const storageSyncInterval = setInterval(() => {
+      setIsDockRepaired(localStorage.getItem('sandbox_dock_repaired') === 'true');
+      setIsTavernUnlocked(localStorage.getItem('quest_q2_rebuild_tavern_completed') === 'true');
+      setTutorialStep(parseInt(localStorage.getItem('sandbox_tutorial_step') || '0', 10));
+      setCompletedQuests(JSON.parse(localStorage.getItem('sandbox_completed_quests') || '[]'));
+      setSeenDockPrompt(localStorage.getItem('seen_dock_repair_prompt') === 'true');
+      
+      import('./farm').then(m => {
+        const allQuests = m.getQuestData();
+        const availableQuests = allQuests.filter(q => (!q.type || q.type === 'main') && q.unlockCondition(parseInt(localStorage.getItem('sandbox_tutorial_step') || '0', 10), JSON.parse(localStorage.getItem('sandbox_completed_quests') || '[]')));
+        const currentRead = JSON.parse(localStorage.getItem('sandbox_read_quests') || '[]');
+        const unread = availableQuests.some(q => !JSON.parse(localStorage.getItem('sandbox_completed_quests') || '[]').includes(q.id) && !currentRead.includes(q.id));
+        setHasUnreadMail(unread);
+        
+        const availFish = allQuests.filter(q => q.type === 'fishing' && q.unlockCondition(parseInt(localStorage.getItem('sandbox_tutorial_step') || '0', 10), JSON.parse(localStorage.getItem('sandbox_completed_quests') || '[]')) && !JSON.parse(localStorage.getItem('sandbox_completed_quests') || '[]').includes(q.id));
+        const seenFishArray = (localStorage.getItem('seen_fishing_missions_ids') || '').split(',').filter(Boolean);
+        const hasNewFish = availFish.some(q => !seenFishArray.includes(q.id));
+        setHasNewFishingMissions(hasNewFish);
+
+        const availFarm = allQuests.filter(q => q.type === 'farming' && q.unlockCondition(parseInt(localStorage.getItem('sandbox_tutorial_step') || '0', 10), JSON.parse(localStorage.getItem('sandbox_completed_quests') || '[]')) && !JSON.parse(localStorage.getItem('sandbox_completed_quests') || '[]').includes(q.id));
+        const seenFarmArray = (localStorage.getItem('seen_farming_missions_ids') || '').split(',').filter(Boolean);
+        const hasNewFarm = availFarm.some(q => !seenFarmArray.includes(q.id));
+        setHasNewFarmingMissions(hasNewFarm);
+      });
+    }, 1000);
+
     return () => {
+      clearInterval(storageSyncInterval);
       window.removeEventListener('storage', handleStorage);
       window.removeEventListener('toggleAutoSpawn', handleSync);
       window.removeEventListener('toggleDebugLabels', handleSync);
+      window.removeEventListener('dockRepaired', handleSync);
+      window.removeEventListener('tavernUnlocked', handleSync);
+      window.removeEventListener('tutorialStepChanged', handleSync);
+      window.removeEventListener('changeSimulatedDate', onChangeSimulatedDate);
+      window.removeEventListener('openCraftingFor', handleOpenCrafting);
+      window.removeEventListener('changeWeightContest', onChangeContest);
+      window.removeEventListener('levelUp', handleLevelUp);
+      window.removeEventListener('seenDockPrompt', handleSync);
+      window.removeEventListener('questsRead', handleSync);
     };
   }, []);
 
@@ -52,10 +269,15 @@ const AdminPanel = () => {
 
   const handleForceSpawnBug = () => window.dispatchEvent(new CustomEvent('forceSpawnBug'));
   const handleForceSpawnCrow = () => window.dispatchEvent(new CustomEvent('forceSpawnCrow'));
+  const handleForceSpawnRat = () => window.dispatchEvent(new CustomEvent('forceSpawnRat'));
 
   const handleConsoleSubmit = (e) => {
     e.preventDefault();
-    const cmd = consoleInput.trim().toLowerCase().replace(/\s+/g, ' ');
+    let cmd = consoleInput.trim().toLowerCase().replace(/\s+/g, ' ');
+    
+    if (cmd.startsWith('add ')) {
+      cmd = cmd.slice(4).trim();
+    }
     
     const deleteMatch = cmd.match(/^delete spot (\d+)$/);
     if (deleteMatch) {
@@ -81,28 +303,52 @@ const AdminPanel = () => {
       return;
     }
 
-    const setWeekdayMatch = cmd.match(/^set day (sunday|monday|tuesday|wednesday|thursday|friday|saturday)$/);
-    if (setWeekdayMatch) {
-      const dayStr = setWeekdayMatch[1];
-      const days = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
-      const dayIndex = days.indexOf(dayStr);
-      const newDate = dayIndex === 0 ? 7 : dayIndex;
-      setSimulatedDateInfo(newDate);
-      window.dispatchEvent(new CustomEvent('changeSimulatedDate', { detail: { day: dayIndex, date: newDate } }));
-      show(`Executed: changed day to ${dayStr.charAt(0).toUpperCase() + dayStr.slice(1)}`, "success");
+    const honeyMatch = cmd.match(/^honey (-?\d+)$/);
+    if (honeyMatch) {
+      const amount = parseInt(honeyMatch[1], 10);
+      const current = parseFloat(localStorage.getItem('sandbox_honey') || '0');
+      const newAmount = Math.max(0, current + amount);
+      localStorage.setItem('sandbox_honey', newAmount.toString());
+      window.dispatchEvent(new CustomEvent('sandboxHoneyChanged', { detail: newAmount.toString() }));
+      show(`Executed: ${amount > 0 ? 'Added' : 'Removed'} ${Math.abs(amount)} Honey`, "success");
       setConsoleInput('');
       return;
     }
 
-    const setDateMatch = cmd.match(/^set date (\d+)$/);
-    if (setDateMatch) {
-      const newDate = parseInt(setDateMatch[1], 10);
-      if (newDate >= 1 && newDate <= 31) {
-        setSimulatedDateInfo(newDate);
-        window.dispatchEvent(new CustomEvent('changeSimulatedDate', { detail: { day: newDate % 7, date: newDate } }));
-        show(`Executed: changed date to Day ${newDate}`, "success");
+    const lockedHoneyMatch = cmd.match(/^locked honey (-?\d+)$/);
+    if (lockedHoneyMatch) {
+      const amount = parseInt(lockedHoneyMatch[1], 10);
+      const current = parseFloat(localStorage.getItem('sandbox_locked_honey') || '0');
+      const newAmount = Math.max(0, current + amount);
+      localStorage.setItem('sandbox_locked_honey', newAmount.toString());
+      window.dispatchEvent(new CustomEvent('sandboxLockedHoneyChanged', { detail: newAmount.toString() }));
+      show(`Executed: ${amount > 0 ? 'Added' : 'Removed'} ${Math.abs(amount)} Locked Honey`, "success");
+      setConsoleInput('');
+      return;
+    }
+
+    const setBeeLevelMatch = cmd.match(/^set bee level (\d+)$/);
+    if (setBeeLevelMatch) {
+      const level = parseInt(setBeeLevelMatch[1], 10);
+      localStorage.setItem('sandbox_worker_bee_level', level.toString());
+      window.dispatchEvent(new CustomEvent('workerBeeLevelChanged', { detail: level }));
+      show(`Executed: Worker Bee level set to ${level}`, "success");
+      setConsoleInput('');
+      return;
+    }
+
+    const setUsernameMatch = consoleInput.trim().match(/^set username\s+(.+)$/i);
+    if (setUsernameMatch) {
+      const newUsername = setUsernameMatch[1].trim();
+      if (auth.currentUser) {
+        updateProfile(auth.currentUser, { displayName: newUsername }).catch(console.error);
+        setDoc(doc(db, "Players", auth.currentUser.uid), {
+          username: newUsername,
+          name: newUsername
+        }, { merge: true }).catch(console.error);
+        show(`Executed: username set to ${newUsername}`, "success");
       } else {
-        show("Date must be between 1 and 31", "error");
+        show("Error: Not signed in", "error");
       }
       setConsoleInput('');
       return;
@@ -132,6 +378,42 @@ const AdminPanel = () => {
       return;
     }
 
+    const ironPicaxeMatch = cmd.match(/^iron picaxe (-?\d+)$/) || cmd.match(/^iron pickaxe (-?\d+)$/);
+    if (ironPicaxeMatch) {
+      const amount = parseInt(ironPicaxeMatch[1], 10);
+      const sandboxLoot = JSON.parse(localStorage.getItem('sandbox_loot') || '{}');
+      sandboxLoot[9981] = (sandboxLoot[9981] || 0) + amount;
+      localStorage.setItem('sandbox_loot', JSON.stringify(sandboxLoot));
+      if (refetch) refetch();
+      show(`Executed: ${amount > 0 ? 'Added' : 'Removed'} ${Math.abs(amount)} Iron Pickaxe(s)`, "success");
+      setConsoleInput('');
+      return;
+    }
+
+    const netMatch = cmd.match(/^net (-?\d+)$/);
+    if (netMatch) {
+      const amount = parseInt(netMatch[1], 10);
+      const sandboxLoot = JSON.parse(localStorage.getItem('sandbox_loot') || '{}');
+      sandboxLoot[9988] = (sandboxLoot[9988] || 0) + amount;
+      localStorage.setItem('sandbox_loot', JSON.stringify(sandboxLoot));
+      if (refetch) refetch();
+      show(`Executed: ${amount > 0 ? 'Added' : 'Removed'} ${Math.abs(amount)} Bug Net(s)`, "success");
+      setConsoleInput('');
+      return;
+    }
+
+    const yarnMatch = cmd.match(/^yarn (-?\d+)$/);
+    if (yarnMatch) {
+      const amount = parseInt(yarnMatch[1], 10);
+      const sandboxLoot = JSON.parse(localStorage.getItem('sandbox_loot') || '{}');
+      sandboxLoot[9955] = Math.max(0, (sandboxLoot[9955] || 0) + amount);
+      localStorage.setItem('sandbox_loot', JSON.stringify(sandboxLoot));
+      if (refetch) refetch();
+      show(`Executed: ${amount > 0 ? 'Added' : 'Removed'} ${Math.abs(amount)} Yarn`, "success");
+      setConsoleInput('');
+      return;
+    }
+
     const woodMatch = cmd.match(/^wood (-?\d+)$/);
     if (woodMatch) {
       const amount = parseInt(woodMatch[1], 10);
@@ -144,6 +426,18 @@ const AdminPanel = () => {
       return;
     }
 
+    const specialWoodMatch = cmd.match(/^special wood (-?\d+)$/);
+    if (specialWoodMatch) {
+      const amount = parseInt(specialWoodMatch[1], 10);
+      const sandboxLoot = JSON.parse(localStorage.getItem('sandbox_loot') || '{}');
+      sandboxLoot[9942] = (sandboxLoot[9942] || 0) + amount;
+      localStorage.setItem('sandbox_loot', JSON.stringify(sandboxLoot));
+      if (refetch) refetch();
+      show(`Executed: ${amount > 0 ? 'Added' : 'Removed'} ${Math.abs(amount)} Special Wood`, "success");
+      setConsoleInput('');
+      return;
+    }
+
     const stoneMatch = cmd.match(/^stone (-?\d+)$/);
     if (stoneMatch) {
       const amount = parseInt(stoneMatch[1], 10);
@@ -152,6 +446,18 @@ const AdminPanel = () => {
       localStorage.setItem('sandbox_loot', JSON.stringify(sandboxLoot));
       if (refetch) refetch();
       show(`Executed: ${amount > 0 ? 'Added' : 'Removed'} ${Math.abs(amount)} Stone(s)`, "success");
+      setConsoleInput('');
+      return;
+    }
+
+    const plankMatch = cmd.match(/^(?:wooden )?plank(?:\s+(-?\d+))?$/);
+    if (plankMatch) {
+      const amount = parseInt(plankMatch[1] !== undefined ? plankMatch[1] : 1, 10);
+      const sandboxLoot = JSON.parse(localStorage.getItem('sandbox_loot') || '{}');
+      sandboxLoot[9989] = (sandboxLoot[9989] || 0) + amount;
+      localStorage.setItem('sandbox_loot', JSON.stringify(sandboxLoot));
+      if (refetch) refetch();
+      show(`Executed: ${amount > 0 ? 'Added' : 'Removed'} ${Math.abs(amount)} Wooden Plank(s)`, "success");
       setConsoleInput('');
       return;
     }
@@ -170,6 +476,62 @@ const AdminPanel = () => {
       return;
     }
 
+    if (cmd === 'reset tavern') {
+      localStorage.setItem('quest_q2_rebuild_tavern_completed', 'false');
+      setIsTavernUnlocked(false);
+      show("Executed: Tavern locked", "success");
+      setConsoleInput('');
+      return;
+    }
+
+    if (cmd === 'skip') {
+      window.dispatchEvent(new CustomEvent('skipTutorial'));
+      show("Executed: skipped tutorial", "success");
+      setConsoleInput('');
+      return;
+    }
+    
+    if (cmd === 'clear inventory') {
+      localStorage.setItem('sandbox_loot', '{}');
+      localStorage.setItem('sandbox_produce', '{}');
+      localStorage.setItem('sandbox_honey', '0');
+      localStorage.setItem('sandbox_locked_honey', '0');
+      if (refetch) refetch();
+      show("Executed: inventory and honey cleared", "success");
+      setConsoleInput('');
+      return;
+    }
+
+    if (cmd === 'reset dock') {
+      localStorage.setItem('sandbox_dock_repaired', 'false');
+      localStorage.setItem('sandbox_dock_unlocked', 'false');
+      setIsDockRepaired(false);
+      show("Executed: Dock reset to unrepaired", "success");
+      setConsoleInput('');
+      return;
+    }
+    
+    if (cmd === 'signout') {
+      if (auth.currentUser) {
+        setDoc(doc(db, "Players", auth.currentUser.uid), {
+          sandbox_loot: localStorage.getItem('sandbox_loot') || '{}',
+          sandbox_produce: localStorage.getItem('sandbox_produce') || '{}',
+          sandbox_honey: localStorage.getItem('sandbox_honey') || '0',
+          sandbox_locked_honey: localStorage.getItem('sandbox_locked_honey') || '0'
+        }, { merge: true });
+      }
+      
+      signOut(auth);
+      localStorage.removeItem('sandbox_loot');
+      localStorage.removeItem('sandbox_produce');
+      localStorage.removeItem('sandbox_honey');
+      localStorage.removeItem('sandbox_locked_honey');
+      localStorage.removeItem('sandbox_uid');
+      show("Executed: signed out", "success");
+      setConsoleInput('');
+      return;
+    }
+
     const speedMatch = cmd.match(/^crop speed (\d+)(?:%)?$/);
     if (speedMatch) {
       const speed = parseInt(speedMatch[1], 10);
@@ -183,6 +545,37 @@ const AdminPanel = () => {
       return;
     }
 
+    if (cmd === 'restart') {
+      window.dispatchEvent(new CustomEvent('adminClearCrops'));
+      window.dispatchEvent(new CustomEvent('adminClearPests'));
+      window.dispatchEvent(new CustomEvent('adminDeleteSpot', { detail: { id: null } }));
+      window.dispatchEvent(new CustomEvent('adminDeleteLadybug', { detail: { id: null } }));
+      window.dispatchEvent(new CustomEvent('adminDeleteSprinkler', { detail: { id: null } }));
+      window.dispatchEvent(new CustomEvent('adminDeleteUmbrella', { detail: { id: null } }));
+      
+      // Wipe local storage memory for all game elements
+      const keys = Object.keys(localStorage);
+      keys.forEach(k => {
+        if (k.startsWith('sandbox_') || k.startsWith('forest_') || k.startsWith('weight_contest_')) {
+          localStorage.removeItem(k);
+        }
+      });
+      
+      if (auth.currentUser) {
+        // Completely delete the user from Firestore to force the new user journey
+        deleteDoc(doc(db, "Players", auth.currentUser.uid)).then(() => {
+          window.location.reload();
+        }).catch((err) => {
+          console.error("Error deleting document:", err);
+          window.location.reload();
+        });
+      } else {
+        window.location.reload();
+      }
+      setConsoleInput('');
+      return;
+    }
+
     if (cmd === 'clear farm') {
       window.dispatchEvent(new CustomEvent('adminClearCrops'));
       window.dispatchEvent(new CustomEvent('adminClearPests'));
@@ -190,6 +583,11 @@ const AdminPanel = () => {
       window.dispatchEvent(new CustomEvent('adminDeleteLadybug', { detail: { id: null } }));
       window.dispatchEvent(new CustomEvent('adminDeleteSprinkler', { detail: { id: null } }));
       window.dispatchEvent(new CustomEvent('adminDeleteUmbrella', { detail: { id: null } }));
+      localStorage.setItem('sandbox_loot', '{}');
+      localStorage.setItem('sandbox_produce', '{}');
+      localStorage.setItem('sandbox_honey', '0');
+      localStorage.setItem('sandbox_locked_honey', '0');
+      if (refetch) refetch();
       show("Executed: farm completely cleared", "success");
       setConsoleInput('');
       return;
@@ -212,6 +610,44 @@ const AdminPanel = () => {
     if (cmd === 'reset forest') {
       localStorage.removeItem('forest_last_visited');
       show("Executed: forest timer reset", "success");
+      setConsoleInput('');
+      return;
+    }
+
+    if (cmd === 'reset mine') {
+      localStorage.removeItem('mine_last_visited');
+      show("Executed: mine timer reset", "success");
+      setConsoleInput('');
+      return;
+    }
+
+    if (cmd === 'crazycat') {
+      window.dispatchEvent(new CustomEvent('crazyCatShake'));
+      show("Executed: Crazy cat shake!", "success");
+      setConsoleInput('');
+      return;
+    }
+
+    if (cmd === 'cord') {
+      const handler = (e) => {
+        console.log(`Coordinates -> X: ${e.clientX}, Y: ${e.clientY}`);
+        alert(`Coordinates logged to console -> X: ${e.clientX}, Y: ${e.clientY}`);
+        window.removeEventListener('click', handler);
+      };
+      setTimeout(() => window.addEventListener('click', handler), 10);
+      show("Executed: Click anywhere to get coordinates", "info");
+      setConsoleInput('');
+      return;
+    }
+
+    const setSkillMatch = cmd.match(/^set (farming|fishing|foraging|mining|crafting) (\d+)$/);
+    if (setSkillMatch) {
+      const skillName = setSkillMatch[1];
+      const level = parseInt(setSkillMatch[2], 10);
+      const xpNeeded = Math.pow(level - 1, 2) * 150;
+      localStorage.setItem(`sandbox_${skillName}_xp`, xpNeeded.toString());
+      window.dispatchEvent(new CustomEvent('ls-update', { detail: { key: `sandbox_${skillName}_xp`, value: xpNeeded.toString() } }));
+      show(`Executed: ${skillName} level set to ${level}`, "success");
       setConsoleInput('');
       return;
     }
@@ -274,8 +710,8 @@ const AdminPanel = () => {
       let targetId = null;
       let targetLabel = "";
 
-      const invItem = allItems.find(i => (i.label || '').toLowerCase() === itemName) || 
-                      allItems.find(i => (i.label || '').toLowerCase().includes(itemName));
+      const invItem = (allItems || []).find(i => (i.label || '').toLowerCase() === itemName) || 
+                      (allItems || []).find(i => (i.label || '').toLowerCase().includes(itemName));
       
       if (invItem) {
         targetId = invItem.id;
@@ -287,18 +723,38 @@ const AdminPanel = () => {
           targetId = allItem.id;
           targetLabel = allItem.label;
         } else {
-          const searchMaps = [ID_PRODUCE_ITEMS, ID_FISH_ITEMS, ID_POTION_ITEMS, ID_CHEST_ITEMS, ID_SEEDS];
-          for (const idMap of searchMaps) {
-            if (!idMap) continue;
-            for (const [key, val] of Object.entries(idMap)) {
+          let baseItemName = itemName;
+          let isSeed = false;
+          if (itemName.endsWith(' seed') || itemName.endsWith(' seeds')) {
+            baseItemName = itemName.replace(/ seeds?$/, '').trim();
+            isSeed = true;
+          }
+
+          if (isSeed && ID_SEEDS) {
+            for (const [key, val] of Object.entries(ID_SEEDS)) {
               const readable = key.toLowerCase().replace(/_/g, ' ');
-              if (readable === itemName || readable.includes(itemName)) {
+              if (readable === baseItemName || readable.includes(baseItemName)) {
                 targetId = val;
-                targetLabel = readable;
+                targetLabel = readable + " seed";
                 break;
               }
             }
-            if (targetId !== null) break;
+          }
+
+          if (targetId === null) {
+            const searchMaps = [ID_PRODUCE_ITEMS, ID_FISH_ITEMS, ID_POTION_ITEMS, ID_CHEST_ITEMS, ID_SEEDS, ID_BAIT_ITEMS];
+            for (const idMap of searchMaps) {
+              if (!idMap) continue;
+              for (const [key, val] of Object.entries(idMap)) {
+                const readable = key.toLowerCase().replace(/_/g, ' ');
+                if (readable === itemName || readable.includes(itemName)) {
+                  targetId = val;
+                  targetLabel = readable;
+                  break;
+                }
+              }
+              if (targetId !== null) break;
+            }
           }
         }
       }
@@ -314,6 +770,32 @@ const AdminPanel = () => {
       }
     }
 
+    if (cmd === 'animal farm') {
+      const comp = JSON.parse(localStorage.getItem('sandbox_completed_quests') || '[]');
+      if (!comp.includes('q16_build_barn')) {
+        comp.push('q16_build_barn');
+        localStorage.setItem('sandbox_completed_quests', JSON.stringify(comp));
+      }
+      show("Executed: unlocked animal farm (please refresh)", "success");
+      setConsoleInput('');
+      return;
+    }
+
+    if (cmd === 'skip time') {
+      const skipAmount = 24 * 60 * 60 * 1000;
+      
+      const fVisit = localStorage.getItem('forest_last_visited');
+      if (fVisit) localStorage.setItem('forest_last_visited', (parseInt(fVisit, 10) - skipAmount).toString());
+      
+      const mVisit = localStorage.getItem('mine_last_visited');
+      if (mVisit) localStorage.setItem('mine_last_visited', (parseInt(mVisit, 10) - skipAmount).toString());
+      
+      window.dispatchEvent(new CustomEvent('skipTime'));
+      show("Executed: Fast forwarded time by 24 hours", "success");
+      setConsoleInput('');
+      return;
+    }
+
     if (cmd === 'toc') {
       setShowTOC(true);
       setConsoleInput('');
@@ -325,59 +807,446 @@ const AdminPanel = () => {
   };
 
   const isConsoleInputValid = (input) => {
-    if (!input) return true;
-    const cmd = input.trimStart().toLowerCase().replace(/\s+/g, ' ');
-    if ("delete spot ".startsWith(cmd)) return true;
-    if (cmd.startsWith("delete spot ")) return /^\d*$/.test(cmd.slice(12));
-    if ("delete ladybug ".startsWith(cmd)) return true;
-    if (cmd.startsWith("delete ladybug ")) return /^\d*$/.test(cmd.slice(15));
-    if ("delete lspot ".startsWith(cmd)) return true;
-    if (cmd.startsWith("delete lspot ")) return /^\d*$/.test(cmd.slice(13));
-    if ("crop speed ".startsWith(cmd)) return true;
-    if (cmd.startsWith("crop speed ")) return /^\d+%?$/.test(cmd.slice(11));
-    if ("set day ".startsWith(cmd)) return true;
-    if (cmd.startsWith("set day ")) {
-      const arg = cmd.slice(8);
-      return ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"].some(d => d.startsWith(arg));
-    }
-    if ("set date ".startsWith(cmd)) return true;
-    if (cmd.startsWith("set date ")) return /^\d*$/.test(cmd.slice(9));
-    if ("axe ".startsWith(cmd)) return true;
-    if (cmd.startsWith("axe ")) return /^-?\d*$/.test(cmd.slice(4));
-    if ("picaxe ".startsWith(cmd)) return true;
-    if (cmd.startsWith("picaxe ")) return /^-?\d*$/.test(cmd.slice(7));
-    if ("wood ".startsWith(cmd)) return true;
-    if (cmd.startsWith("wood ")) return /^-?\d*$/.test(cmd.slice(5));
-    if ("stone ".startsWith(cmd)) return true;
-    if (cmd.startsWith("stone ")) return /^-?\d*$/.test(cmd.slice(6));
-    if ("set contest ".startsWith(cmd)) return true;
-    if (cmd.startsWith("set contest ")) return true;
-    if ("clear farm".startsWith(cmd) || cmd === "clear farm") return true;
-    if ("reset forest".startsWith(cmd) || cmd === "reset forest") return true;
-    
-    if ("clear crop".startsWith(cmd) || cmd === "clear crop") return true;
-    if ("clear pest".startsWith(cmd) || cmd === "clear pest") return true;
-    if ("toc".startsWith(cmd) || cmd === "toc") return true;
-    if ("delete ladybug".startsWith(cmd) || cmd === "delete ladybug") return true;
-    if ("delete lspot".startsWith(cmd) || cmd === "delete lspot") return true;
+    if (!input) return true; // Empty input is always valid for partial typing
 
-    const matchAddItem = cmd.match(/^(.+?)\s+(-?\d+)$/);
-    if (matchAddItem) {
-      const itemName = matchAddItem[1].trim();
-      if (!["delete spot", "delete ladybug", "delete lspot", "crop speed", "set day", "set date", "force rat", "set contest"].includes(itemName)) {
+    let normalizedCmd = input.trim().toLowerCase().replace(/\s+/g, ' ');
+
+    // Handle 'add ' prefix for item commands
+    if (normalizedCmd.startsWith('add ')) {
+      normalizedCmd = normalizedCmd.slice(4).trim();
+    }
+
+    const commands = {
+      'delete spot': (arg) => arg === '' || /^\d+$/.test(arg),
+      'delete ladybug': (arg) => arg === '' || /^\d+$/.test(arg),
+      'delete lspot': (arg) => arg === '' || /^\d+$/.test(arg),
+      'crop speed': (arg) => /^\d+%?$/.test(arg),
+      'set username': (arg) => arg.length > 0,
+      'set farming': (arg) => /^\d+$/.test(arg),
+      'set fishing': (arg) => /^\d+$/.test(arg),
+      'set foraging': (arg) => /^\d+$/.test(arg),
+      'set mining': (arg) => /^\d+$/.test(arg),
+      'set crafting': (arg) => /^\d+$/.test(arg),
+      'honey': (arg) => /^-?\d+$/.test(arg),
+      'locked honey': (arg) => /^-?\d+$/.test(arg),
+      'axe': (arg) => /^-?\d+$/.test(arg),
+      'picaxe': (arg) => /^-?\d+$/.test(arg),
+      'iron picaxe': (arg) => /^-?\d+$/.test(arg),
+      'iron pickaxe': (arg) => /^-?\d+$/.test(arg),
+      'net': (arg) => /^-?\d+$/.test(arg),
+      'yarn': (arg) => /^-?\d+$/.test(arg),
+      'wood': (arg) => /^-?\d+$/.test(arg),
+      'special wood': (arg) => /^-?\d+$/.test(arg),
+      'stone': (arg) => /^-?\d+$/.test(arg),
+      'plank': (arg) => /^-?\d+$/.test(arg),
+      'wooden plank': (arg) => /^-?\d+$/.test(arg),
+      'set bee level': (arg) => /^\d+$/.test(arg),
+      'set contest': (arg) => arg.length > 0,
+      'clear farm': () => true,
+      'reset forest': () => true,
+      'reset mine': () => true,
+      'reset dock': () => true,
+      'restart': () => true,
+      'skip': () => true,
+      'clear crop': () => true,
+      'clear pest': () => true,
+      'clear inventory': () => true,
+      'signout': () => true,
+      'toc': () => true,
+      'crazycat': () => true,
+      'cord': () => true,
+      'animal farm': () => true,
+      'skip time': () => true,
+    };
+
+    for (const cmdPrefix in commands) {
+      if (normalizedCmd.startsWith(cmdPrefix)) {
+        const arg = normalizedCmd.slice(cmdPrefix.length).trim();
+        // If it's a full command match or a partial command with a valid argument prefix
+        if (normalizedCmd === cmdPrefix || commands[cmdPrefix](arg)) {
+          return true;
+        }
+      } else if (cmdPrefix.startsWith(normalizedCmd) && normalizedCmd.length > 0) {
+        // Allow partial command typing (e.g., "cle" for "clear farm")
         return true;
       }
     }
 
-    return false;
+    // Generic item add command (e.g., "corn 5")
+    const genericAddItemMatch = normalizedCmd.match(/^(.+?)\s+(-?\d+)$/);
+    if (genericAddItemMatch) {
+      // For generic add item, we just need the format to be correct,
+      // actual item validation happens in handleConsoleSubmit
+      return true;
+    }
+
+    return false; // No valid command or partial command found
+  };
+
+  const badgeStyle = {
+    position: 'absolute', top: '-5px', right: '-5px', width: '22px', height: '22px',
+    backgroundColor: '#ff4444', borderRadius: '50%', border: '2px solid white',
+    zIndex: 11, display: 'flex', justifyContent: 'center', alignItems: 'center',
+    color: 'white', fontWeight: 'bold', fontSize: '14px', fontFamily: 'monospace',
+    animation: 'pulse-dot 1s infinite', pointerEvents: 'none'
   };
 
   return (
     <>
+      <style>{`
+        img[src*="wood.png"] {
+          transform: scale(0.15);
+        }
+        @keyframes pulse-dot { 0% { transform: scale(1); } 50% { transform: scale(1.3); } 100% { transform: scale(1); } }
+        @keyframes mailboxAlert { 0%, 100% { transform: scale(1); filter: drop-shadow(0 0 2px rgba(255,255,255,0.3)); } 50% { transform: scale(0.9); filter: drop-shadow(0 0 12px rgba(255,255,255,1)); } }
+        @keyframes mailboxHover { 0% { transform: scale(1.1) rotate(0deg); } 25% { transform: scale(1.1) rotate(-5deg); } 50% { transform: scale(1.1) rotate(5deg); } 75% { transform: scale(1.1) rotate(-5deg); } 100% { transform: scale(1.1) rotate(0deg); } }
+      `}</style>
+      {/* Global Persisted Elements */}
+
+      {tutorialStep >= 11 && !isPanelOpen && !isForagingOrMining && (
+        <>
+          {/* Crafting Icon Overlay */}
+          <div 
+            onClick={() => {
+              setShowCraftingDialog(true);
+              setSeenCrafting(true);
+              localStorage.setItem('seen_crafting_step_' + tutorialStep, 'true');
+              if (tutorialStep === 25) {
+                setTutorialStep(26);
+                localStorage.setItem('sandbox_tutorial_step', '26');
+                window.dispatchEvent(new CustomEvent('tutorialStepChanged'));
+              }
+            }}
+            onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'scale(1.1)';
+              e.currentTarget.style.filter = 'drop-shadow(0px 0px 8px rgba(255, 255, 255, 0.8))';
+            }}
+            onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'scale(1)';
+              e.currentTarget.style.filter = 'drop-shadow(0px 4px 6px rgba(0,0,0,0.5))';
+            }}
+          style={{ position: 'fixed', top: '270px', right: '20px', zIndex: tutorialStep === 25 ? 100001 : 9998, cursor: 'pointer', transition: 'all 0.2s ease', filter: 'drop-shadow(0px 4px 6px rgba(0,0,0,0.5))', animation: tutorialStep === 25 ? 'craftingGlow 1.5s infinite' : 'none', borderRadius: '12px' }}
+          >
+          {(!seenCrafting && tutorialStep >= 25) && <div style={badgeStyle}>!</div>}
+          <img src="/images/Crafting/Crafting.png" alt="Crafting" style={{ height: '240px', objectFit: 'contain' }} onError={(e) => { e.target.src = '/images/crafting/crafting.png'; }} />
+          </div>
+
+          {/* Weight Contest Icon Overlay */}
+          <div 
+            onClick={() => {
+              setShowWeightContest(true);
+              setSeenWeightContest(true);
+              localStorage.setItem('seen_weight_contest_today', new Date().toDateString());
+              if (tutorialStep === 29) {
+                setTutorialStep(30);
+                localStorage.setItem('sandbox_tutorial_step', '30');
+                window.dispatchEvent(new CustomEvent('tutorialStepChanged'));
+              }
+            }}
+            onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'scale(1.1)';
+              e.currentTarget.style.filter = 'drop-shadow(0px 0px 8px rgba(255, 234, 0, 0.8))';
+            }}
+            onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'scale(1)';
+              e.currentTarget.style.filter = 'drop-shadow(0px 4px 6px rgba(0,0,0,0.5))';
+            }}
+          style={{ position: 'fixed', top: '20px', right: '20px', zIndex: tutorialStep === 29 ? 100001 : 9998, cursor: 'pointer', transition: 'all 0.2s ease', filter: 'drop-shadow(0px 4px 6px rgba(0,0,0,0.5))', animation: tutorialStep === 29 ? 'craftingGlow 1.5s infinite' : 'none', borderRadius: '12px' }}
+          >
+          {(!seenWeightContest && tutorialStep >= 29) && <div style={badgeStyle}>!</div>}
+          <img src="/images/weight/weightcontest.png" alt="Weight Contest" style={{ height: '240px', objectFit: 'contain' }} />
+            {targetProduceData && (
+              <div style={{
+              position: 'absolute', top: '84px', left: '30%', transform: 'translateX(-50%)',
+              width: '60px', height: '60px', background: 'rgba(0,0,0,0.6)', 
+              border: '3px solid #5a402a', borderRadius: '50%', 
+                display: 'flex', justifyContent: 'center', alignItems: 'center', overflow: 'hidden'
+              }}>
+                {targetProduceData.image && targetProduceData.image.includes('crop') ? (
+                   <div style={{ 
+                       width: `${ONE_SEED_WIDTH}px`, height: `${ONE_SEED_HEIGHT}px`, 
+                       backgroundImage: `url(${targetProduceData.image})`, 
+                       backgroundPosition: `-${5 * ONE_SEED_WIDTH}px -${(targetProduceData.pos || 0) * ONE_SEED_HEIGHT}px`,
+                     transform: 'scale(0.9)', backgroundRepeat: 'no-repeat'
+                   }} />
+                ) : targetProduceData.image && targetProduceData.image.includes('seeds') ? (
+                 <div className="item-icon item-icon-seeds" style={{ transform: 'scale(0.9)', backgroundPositionY: targetProduceData.pos ? `-${targetProduceData.pos * ONE_SEED_HEIGHT * 0.308}px` : 0 }}></div>
+                ) : (
+                   <img src={targetProduceData.image} alt={targetProduceData.label} style={{ width: '80%', height: '80%', objectFit: 'contain' }} />
+                )}
+              </div>
+            )}
+            {targetFishData && (
+              <div style={{
+              position: 'absolute', top: '84px', left: '70%', transform: 'translateX(-50%)',
+              width: '60px', height: '60px', background: 'rgba(0,0,0,0.6)', 
+              border: '3px solid #5a402a', borderRadius: '50%', 
+                display: 'flex', justifyContent: 'center', alignItems: 'center', overflow: 'hidden'
+              }}>
+                <img src={targetFishData.image} alt={targetFishData.label} style={{ width: '80%', height: '80%', objectFit: 'contain' }} />
+              </div>
+            )}
+          </div>
+
+          {/* Calendar Icon Overlay */}
+          <div 
+            onClick={() => {
+              setShowCalendar(true);
+              setSeenCalendar(true);
+              localStorage.setItem('seen_calendar_today', new Date().toDateString());
+              if (tutorialStep === 27) {
+                setTutorialStep(28);
+                localStorage.setItem('sandbox_tutorial_step', '28');
+                window.dispatchEvent(new CustomEvent('tutorialStepChanged'));
+              }
+            }}
+            onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'scale(1.1)';
+              e.currentTarget.style.filter = 'drop-shadow(0px 0px 8px rgba(255, 255, 255, 0.8))';
+            }}
+            onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'scale(1)';
+              e.currentTarget.style.filter = 'drop-shadow(0px 4px 6px rgba(0,0,0,0.5))';
+            }}
+          style={{ position: 'fixed', top: '520px', right: '20px', zIndex: tutorialStep === 27 ? 100001 : 9998, cursor: 'pointer', transition: 'all 0.2s ease', filter: 'drop-shadow(0px 4px 6px rgba(0,0,0,0.5))', animation: tutorialStep === 27 ? 'craftingGlow 1.5s infinite' : 'none', borderRadius: '12px' }}
+          >
+          {(hasUnclaimedDaily && !seenCalendar) && <div style={badgeStyle}>!</div>}
+          <img src="/images/calendar/calendar.png" alt="Calendar" style={{ height: '240px', objectFit: 'contain' }} />
+          </div>
+        </>
+      )}
+
+      {/* Global Mailbox Icon Overlay */}
+      {tutorialStep >= 0 && !isPanelOpen && (
+        <div
+          onPointerDown={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            setShowMailboxDialog(true);
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'scale(1.1)';
+            e.currentTarget.style.filter = 'drop-shadow(0px 0px 8px rgba(255, 255, 255, 0.8))';
+            e.currentTarget.style.animation = 'mailboxHover 0.5s ease-in-out infinite alternate';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'scale(1)';
+            e.currentTarget.style.filter = 'drop-shadow(0px 4px 6px rgba(0,0,0,0.5))';
+            e.currentTarget.style.animation = 'none';
+          }}
+          style={{ position: 'fixed', left: '540px', top: '20px', zIndex: 100000, cursor: 'pointer', transition: 'all 0.2s ease', filter: 'drop-shadow(0px 4px 6px rgba(0,0,0,0.5))', display: 'flex', flexDirection: 'column', alignItems: 'center' }}
+        >
+          {hasUnreadMail && <div style={badgeStyle}>!</div>}
+          {mailboxImageError ? (
+            <span style={{ fontSize: '50px', filter: 'drop-shadow(0 2px 4px black)', animation: hasUnreadMail ? 'mailboxAlert 1.5s infinite ease-in-out' : 'none' }}>📬</span>
+          ) : (
+            <img src="/images/farm/mailbox.png" alt="Mailbox" style={{ height: '70px', objectFit: 'contain', animation: hasUnreadMail ? 'mailboxAlert 1.5s infinite ease-in-out' : 'none' }} onError={() => setMailboxImageError(true)} />
+          )}
+        </div>
+      )}
+
+      {/* Dialogs */}
+      <React.Suspense fallback={null}>
+        {showWeightContest && <WeightContestDialog onClose={() => setShowWeightContest(false)} simulatedDay={simulatedDay} targetProduceId={targetProduceId} targetFishId={targetFishId} onProduceChange={setTargetProduceId} onFishChange={setTargetFishId} targetProduceData={targetProduceData} targetFishData={targetFishData} refetchItems={refetch} />}
+        {showCalendar && <CalendarDialog onClose={() => { setShowCalendar(false); setSeenCalendar(false); }} simulatedDay={simulatedDay} simulatedDate={simulatedDate} refetch={refetch} onClaimed={() => { setHasUnclaimedDaily(false); setSeenCalendar(false); }} />}
+        {showCraftingDialog && <CraftingDialog onClose={() => { setShowCraftingDialog(false); setCraftingGoal(null); }} refetchSeeds={refetch} tutorialStep={tutorialStep} craftingGoal={craftingGoal} onAdvanceTutorial={() => { setTutorialStep(27); localStorage.setItem('sandbox_tutorial_step', '27'); window.dispatchEvent(new CustomEvent('tutorialStepChanged')); setShowCraftingDialog(false); }} />}
+        {showMailboxDialog && (
+          <MailboxDialog
+            onClose={() => setShowMailboxDialog(false)}
+            tutorialStep={tutorialStep}
+            completedQuests={completedQuests}
+            setCompletedQuests={setCompletedQuests}
+            readQuests={readQuests}
+            setReadQuests={setReadQuests}
+            refetch={refetch}
+            onTutorialAdvance={() => {
+              if (tutorialStep === 0) {
+                setTutorialStep(1);
+                localStorage.setItem('sandbox_tutorial_step', '1');
+                window.dispatchEvent(new CustomEvent('tutorialStepChanged'));
+              }
+            }}
+          />
+        )}
+      </React.Suspense>
+
+      {levelUpData && (
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', zIndex: 1000000, display: 'flex', justifyContent: 'center', alignItems: 'center', pointerEvents: 'none', overflow: 'hidden' }}>
+          <div style={{ backgroundColor: 'rgba(31, 22, 16, 0.9)', border: '4px solid #ffea00', borderRadius: '16px', padding: '40px', textAlign: 'center', animation: 'levelUpPop 0.5s ease-out forwards', boxShadow: '0 0 50px #ffea00' }}>
+            <h1 style={{ color: '#ffea00', fontSize: '48px', margin: '0 0 10px 0', textShadow: '0 4px 10px rgba(0,0,0,0.8)' }}>LEVEL UP! 🎉</h1>
+            <p style={{ color: '#00ff41', fontSize: '32px', margin: 0, fontWeight: 'bold' }}>{levelUpData.skill} Level {levelUpData.level}</p>
+          </div>
+          <style>{`
+            @keyframes levelUpPop {
+              0% { transform: scale(0.5); opacity: 0; }
+              70% { transform: scale(1.1); opacity: 1; }
+              100% { transform: scale(1); opacity: 1; }
+            }
+            .confetti {
+              position: absolute;
+              width: 15px;
+              height: 15px;
+              animation: fall linear forwards;
+            }
+            @keyframes fall {
+              to { transform: translateY(100vh) rotate(720deg); }
+            }
+          `}</style>
+          {Array.from({ length: 80 }).map((_, i) => {
+            const colors = ['#ffea00', '#00ff41', '#00bfff', '#ff4444', '#ff00ff', '#ffffff'];
+            const color = colors[Math.floor(Math.random() * colors.length)];
+            const left = Math.random() * 100 + 'vw';
+            const animDuration = Math.random() * 2 + 2 + 's';
+            const animDelay = Math.random() * 0.5 + 's';
+            return (
+              <div key={i} className="confetti" style={{ left, top: '-20px', backgroundColor: color, animationDuration: animDuration, animationDelay: animDelay }} />
+            );
+          })}
+        </div>
+      )}
+
+      {(() => {
+        const needsToFish = hasNewFishingMissions;
+        const needsToFarm = hasNewFarmingMissions;
+        return (((!isDockRepaired && !seenDockPrompt) || needsToFish) || (!isTavernUnlocked && tutorialStep >= 32) || needsToFarm) ? (
+        <style>{`
+          @keyframes quest-pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.15); }
+          }
+          @keyframes quest-bounce {
+            0%, 100% { transform: translateX(-50%) translateY(0); }
+            50% { transform: translateX(-50%) translateY(-10px); }
+          }
+
+          ${((!isDockRepaired && !seenDockPrompt) || needsToFish) ? `
+          /* Global Map Icon Quest Indicator */
+          a[href*="/house"], img[src*="house"] {
+            position: relative;
+            overflow: visible !important;
+          }
+          a[href*="/house"]::after {
+            content: "!";
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #ff4444;
+            color: white;
+            border-radius: 50%;
+            width: 22px;
+            height: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-family: monospace;
+            font-size: 16px;
+            z-index: 100000;
+            border: 2px solid white;
+            animation: quest-pulse 1s infinite;
+            pointer-events: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+          }
+          
+          /* Specific Hotspot Quest Indicator (House Scene) */
+          .quest-active-hotspot {
+            overflow: visible !important;
+          }
+          .quest-active-hotspot::after {
+            content: "!";
+            position: absolute;
+            top: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #ff4444;
+            color: white;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-family: monospace;
+            font-size: 20px;
+            z-index: 100000;
+            border: 2px solid white;
+            animation: quest-bounce 1.5s infinite ease-in-out;
+            pointer-events: none;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.5);
+          }
+          ` : ''}
+
+          ${(!isTavernUnlocked && tutorialStep >= 32) ? `
+          /* Tavern Quest Indicator */
+          a[href*="/tavern" i] {
+            position: relative;
+            overflow: visible !important;
+          }
+          a[href*="/tavern" i]::after {
+            content: "!";
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #ffea00;
+            color: black;
+            border-radius: 50%;
+            width: 22px;
+            height: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-family: monospace;
+            font-size: 16px;
+            z-index: 100000;
+            border: 2px solid black;
+            animation: quest-pulse 1s infinite;
+            pointer-events: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+          }
+          ` : ''}
+
+          ${needsToFarm ? `
+          /* Farm Quest Indicator */
+          a[href*="/farm" i] {
+            position: relative;
+            overflow: visible !important;
+          }
+          a[href*="/farm" i]::after {
+            content: "!";
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #00ff41;
+            color: black;
+            border-radius: 50%;
+            width: 22px;
+            height: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-family: monospace;
+            font-size: 16px;
+            z-index: 100000;
+            border: 2px solid black;
+            animation: quest-pulse 1s infinite;
+            pointer-events: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+          }
+          ` : ''}
+        `}</style>
+        ) : null;
+      })()}
       <div style={{ position: 'fixed', bottom: '20px', left: '20px', zIndex: 10000, display: 'flex', flexDirection: 'column', gap: '10px' }}>
         {isAdminPanelOpen && (
           <div style={{ backgroundColor: 'rgba(0,0,0,0.9)', border: '2px solid #00ff41', padding: '15px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '10px', minWidth: '200px' }}>
             <h3 style={{ color: '#00ff41', margin: '0 0 10px 0', borderBottom: '1px solid #00ff41', paddingBottom: '5px', fontFamily: 'monospace', fontSize: '16px' }}>ADMIN PANEL</h3>
+            
+            <button onClick={() => signOut(auth)} style={{ backgroundColor: '#000', color: '#ff4444', border: '1px solid #ff4444', padding: '8px', cursor: 'pointer', fontFamily: 'monospace', fontSize: '14px', fontWeight: 'bold' }}>
+              [SIGN OUT FIREBASE]
+            </button>
             
             <button onClick={toggleAutoSpawn} style={{ backgroundColor: '#000', color: autoSpawnEnabled ? '#00ff41' : '#ff4444', border: `1px solid ${autoSpawnEnabled ? '#00ff41' : '#ff4444'}`, padding: '8px', cursor: 'pointer', fontFamily: 'monospace', fontSize: '14px' }}>
               AUTO SPAWN: {autoSpawnEnabled ? 'ON' : 'OFF'}
@@ -393,6 +1262,9 @@ const AdminPanel = () => {
               </button>
               <button onClick={handleForceSpawnCrow} style={{ flex: 1, backgroundColor: '#000', color: '#ff4444', border: '1px solid #ff4444', padding: '8px', cursor: 'pointer', fontFamily: 'monospace', fontSize: '14px' }}>
                 + CROW
+              </button>
+              <button onClick={handleForceSpawnRat} style={{ flex: 1, backgroundColor: '#000', color: '#ff4444', border: '1px solid #ff4444', padding: '8px', cursor: 'pointer', fontFamily: 'monospace', fontSize: '14px' }}>
+                + RAT
               </button>
             </div>
             
@@ -420,15 +1292,34 @@ const AdminPanel = () => {
             <li><strong style={{color: '#fff'}}>clear crop</strong>      - Deletes all planted crops</li>
             <li><strong style={{color: '#fff'}}>clear pest</strong>      - Clears all active bugs and crows</li>
             <li><strong style={{color: '#fff'}}>clear farm</strong>      - Resets entire farm state</li>
-            <li><strong style={{color: '#fff'}}>set day [day]</strong>   - Changes simulated day (e.g. sunday)</li>
-            <li><strong style={{color: '#fff'}}>set date [x]</strong>    - Jumps to a specific date (1-31)</li>
+            <li><strong style={{color: '#fff'}}>restart</strong>         - Restarts account, setting everything to 0</li>
+            <li><strong style={{color: '#fff'}}>skip</strong>            - Skips the intro tutorial</li>
+            <li><strong style={{color: '#fff'}}>clear inventory</strong> - Resets all items and honey to 0</li>
+            <li><strong style={{color: '#fff'}}>signout</strong>         - Signs out of the game</li>
+            <li><strong style={{color: '#fff'}}>reset dock</strong>      - Resets dock repair quest</li>
+            <li><strong style={{color: '#fff'}}>set username [x]</strong>- Changes your username</li>
+            <li><strong style={{color: '#fff'}}>set [skill] [x]</strong> - Sets level for skill (e.g. set farming 10)</li>
+            <li><strong style={{color: '#fff'}}>add honey [x]</strong>   - Adds x honey (coins)</li>
+            <li><strong style={{color: '#fff'}}>add locked honey [x]</strong> - Adds x locked honey</li>
             <li><strong style={{color: '#fff'}}>axe [x]</strong>         - Adds x axes (can be negative)</li>
             <li><strong style={{color: '#fff'}}>picaxe [x]</strong>      - Adds x pickaxes (can be negative)</li>
+            <li><strong style={{color: '#fff'}}>iron picaxe [x]</strong> - Adds x iron pickaxes</li>
             <li><strong style={{color: '#fff'}}>wood [x]</strong>        - Adds x wood logs (can be negative)</li>
+            <li><strong style={{color: '#fff'}}>special wood [x]</strong>- Adds x special wood (can be negative)</li>
             <li><strong style={{color: '#fff'}}>stone [x]</strong>       - Adds x stones (can be negative)</li>
+            <li><strong style={{color: '#fff'}}>plank [x]</strong>       - Adds x wooden planks (can be negative)</li>
             <li><strong style={{color: '#fff'}}>[item] [x]</strong>      - Adds x amount of any item (e.g. "corn 5")</li>
+            <li><strong style={{color: '#fff'}}>[crop] seed [x]</strong> - Adds x amount of a seed (e.g. "pumpkin seed 10")</li>
+            <li><strong style={{color: '#fff'}}>net [x]</strong>         - Adds x bug nets</li>
+            <li><strong style={{color: '#fff'}}>yarn [x]</strong>        - Adds x yarn</li>
+            <li><strong style={{color: '#fff'}}>set bee level [x]</strong> - Forces Worker Bee to level x</li>
             <li><strong style={{color: '#fff'}}>set contest [item]</strong> - Sets weight contest target</li>
-            <li><strong style={{color: '#fff'}}>reset forest</strong>    - Resets the 2-hour forest lock</li>
+            <li><strong style={{color: '#fff'}}>reset forest</strong>    - Resets the 45-min forest lock</li>
+            <li><strong style={{color: '#fff'}}>reset mine</strong>      - Resets the 45-min mine lock</li>
+            <li><strong style={{color: '#fff'}}>crazycat</strong>        - Forces the hungry cat shake</li>
+            <li><strong style={{color: '#fff'}}>cord</strong>            - Get screen coordinates on next click</li>
+            <li><strong style={{color: '#fff'}}>animal farm</strong>     - Unlocks the Animal Farm feature</li>
+            <li><strong style={{color: '#fff'}}>skip time</strong>       - Fast forwards time by 24 hours</li>
             <li><strong style={{color: '#fff'}}>toc</strong>             - Opens this command list</li>
           </ul>
           <button onClick={() => setShowTOC(false)} style={{ backgroundColor: '#000', color: '#ff4444', border: '1px solid #ff4444', padding: '8px 12px', cursor: 'pointer', fontFamily: 'monospace', width: '100%', marginTop: '10px', transition: 'all 0.2s' }}>

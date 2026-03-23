@@ -461,8 +461,8 @@ const CropItem = ({
           }}
         >
           <style>{`
-            @keyframes crowFlyIn {
-              0% { top: -80vh; left: 80%; transform: translate(-50%, -50%) scale(3); opacity: 0; }
+            @keyframes ratAppear {
+              0% { top: 35%; left: -200px; transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
               100% { top: 35%; left: 50%; transform: translate(-50%, -50%) scale(1); opacity: 1; }
             }
           `}</style>
@@ -528,8 +528,8 @@ const CropItem = ({
           />
         </div>
       )}
-      {/* Needs Water Indicator */}
-      {data.needsWater && (
+      {/* Status Indicator */}
+      {(data.needsWater || data.growStatus === 2) && (
         <div style={{
           position: "absolute",
           top: "-25px",
@@ -537,10 +537,12 @@ const CropItem = ({
           transform: "translateX(-50%)",
           zIndex: 9999,
           pointerEvents: "none",
-          animation: "waterBounce 1.5s infinite"
+          animation: "statusBounce 1.5s infinite"
         }}>
-          <style>{`@keyframes waterBounce { 0%, 100% { transform: translateX(-50%) translateY(0); } 50% { transform: translateX(-50%) translateY(-10px); } }`}</style>
-          <div style={{ fontSize: '28px', filter: 'drop-shadow(0px 2px 2px black)' }}>💧</div>
+          <style>{`@keyframes statusBounce { 0%, 100% { transform: translateX(-50%) translateY(0); } 50% { transform: translateX(-50%) translateY(-10px); } }`}</style>
+          <div style={{ fontSize: '28px', filter: 'drop-shadow(0px 2px 2px black)' }}>
+            {data.growStatus === 2 ? '✅' : ((data.bugCountdown > 0 || data.crowCountdown > 0 || data.ratCountdown > 0) ? '❗' : '💧')}
+          </div>
         </div>
       )}
     </div>

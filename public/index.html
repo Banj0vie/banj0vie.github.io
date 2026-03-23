@@ -2,18 +2,6 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <script>
-      window.global = window;
-      // This "fakes" the environment variables so the Solana libraries don't panic
-      window.process = { 
-        env: { 
-          NODE_ENV: 'production',
-          REACT_APP_PROGRAM_ID: '11111111111111111111111111111111',
-          REACT_APP_SOLANA_CLUSTER: 'devnet',
-          REACT_APP_RPC_ENDPOINT: 'https://api.devnet.solana.com'
-        } 
-      };
-    </script>
     <link rel="icon" href="%PUBLIC_URL%/favicon.svg" type="image/svg+xml" />
     <link rel="alternate icon" href="%PUBLIC_URL%/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
