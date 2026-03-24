@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useNotification } from "../contexts/NotificationContext";
 import { useItems } from "../hooks/useItems";
 import { ALL_ITEMS } from "../constants/item_data";
@@ -51,6 +51,30 @@ const AdminPanel = () => {
 
   const [isPetOpen, setIsPetOpen] = useState(false);
   const [isSeedOpen, setIsSeedOpen] = useState(false);
+
+  const adminPanelRef = useRef(null);
+  const tocRef = useRef(null);
+
+  // Handle clicking outside to close Admin Panel and Command List
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      let clickedTOC = false;
+      if (showTOC && tocRef.current) {
+        if (!tocRef.current.contains(event.target)) {
+          setShowTOC(false);
+        } else {
+          clickedTOC = true;
+        }
+      }
+      
+      if (isAdminPanelOpen && adminPanelRef.current && !adminPanelRef.current.contains(event.target) && !clickedTOC) {
+        setIsAdminPanelOpen(false);
+      }
+    };
+
+    document.addEventListener('pointerdown', handleClickOutside);
+    return () => document.removeEventListener('pointerdown', handleClickOutside);
+  }, [isAdminPanelOpen, showTOC]);
 
   useEffect(() => {
     const handlePetOpen = (e) => setIsPetOpen(e.detail);
@@ -767,6 +791,19 @@ const AdminPanel = () => {
       return;
     }
 
+    if (cmd === 'skip cat') {
+      const catTime = localStorage.getItem('sandbox_cat_first_fed_time');
+      if (catTime) {
+        localStorage.setItem('sandbox_cat_first_fed_time', (parseInt(catTime, 10) - 24 * 60 * 60 * 1000).toString());
+        window.dispatchEvent(new CustomEvent('skipCatTime'));
+        show("Executed: Skipped cat spawn wait time", "success");
+      } else {
+        show("Cat hasn't been fed yet!", "error");
+      }
+      setConsoleInput('');
+      return;
+    }
+
     if (cmd === 'toc') {
       setShowTOC(true);
       setConsoleInput('');
@@ -828,6 +865,7 @@ const AdminPanel = () => {
       'cord': () => true,
       'animal farm': () => true,
       'skip time': () => true,
+      'skip cat': () => true,
     };
 
     for (const cmdPrefix in commands) {
@@ -1207,9 +1245,9 @@ const AdminPanel = () => {
         `}</style>
         ) : null;
       })()}
-      <div style={{ position: 'fixed', bottom: '20px', left: '20px', zIndex: 10000, display: 'flex', flexDirection: 'column', gap: '10px' }}>
+      <div ref={adminPanelRef} style={{ position: 'fixed', bottom: '20px', left: '20px', zIndex: 10000, display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '90vh' }}>
         {isAdminPanelOpen && (
-          <div style={{ backgroundColor: 'rgba(0,0,0,0.9)', border: '2px solid #00ff41', padding: '15px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '10px', minWidth: '200px' }}>
+          <div style={{ backgroundColor: 'rgba(0,0,0,0.9)', border: '2px solid #00ff41', padding: '15px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '10px', minWidth: '200px', overflowY: 'auto' }}>
             <h3 style={{ color: '#00ff41', margin: '0 0 10px 0', borderBottom: '1px solid #00ff41', paddingBottom: '5px', fontFamily: 'monospace', fontSize: '16px' }}>ADMIN PANEL</h3>
             
             <button onClick={() => { localStorage.clear(); window.location.reload(); }} style={{ backgroundColor: '#000', color: '#ff4444', border: '1px solid #ff4444', padding: '8px', cursor: 'pointer', fontFamily: 'monospace', fontSize: '14px', fontWeight: 'bold' }}>
@@ -1249,7 +1287,7 @@ const AdminPanel = () => {
       </div>
 
       {showTOC && (
-        <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', backgroundColor: 'rgba(0,0,0,0.95)', border: '2px solid #00ff41', padding: '20px', borderRadius: '8px', zIndex: 10002, color: '#00ff41', fontFamily: 'monospace', minWidth: '350px' }}>
+        <div ref={tocRef} style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', backgroundColor: 'rgba(0,0,0,0.95)', border: '2px solid #00ff41', padding: '20px', borderRadius: '8px', zIndex: 10002, color: '#00ff41', fontFamily: 'monospace', minWidth: '350px', maxHeight: '80vh', overflowY: 'auto' }}>
           <h2 style={{ marginTop: 0, borderBottom: '1px solid #00ff41', paddingBottom: '10px', fontSize: '18px' }}>&gt;_ COMMAND_LIST</h2>
           <ul style={{ listStyleType: 'none', padding: 0, lineHeight: '1.8', fontSize: '14px' }}>
             <li><strong style={{color: '#fff'}}>delete spot [x]</strong> - Removes scarecrow from spot x</li>
@@ -1288,6 +1326,7 @@ const AdminPanel = () => {
             <li><strong style={{color: '#fff'}}>cord</strong>            - Get screen coordinates on next click</li>
             <li><strong style={{color: '#fff'}}>animal farm</strong>     - Unlocks the Animal Farm feature</li>
             <li><strong style={{color: '#fff'}}>skip time</strong>       - Fast forwards time by 24 hours</li>
+            <li><strong style={{color: '#fff'}}>skip cat</strong>        - Skips the wait time for the cat to spawn</li>
             <li><strong style={{color: '#fff'}}>toc</strong>             - Opens this command list</li>
           </ul>
           <button onClick={() => setShowTOC(false)} style={{ backgroundColor: '#000', color: '#ff4444', border: '1px solid #ff4444', padding: '8px 12px', cursor: 'pointer', fontFamily: 'monospace', width: '100%', marginTop: '10px', transition: 'all 0.2s' }}>

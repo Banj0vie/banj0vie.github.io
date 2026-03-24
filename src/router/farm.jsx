@@ -1911,10 +1911,16 @@ export const CraftingDialog = ({ onClose, refetchSeeds, tutorialStep, onAdvanceT
               cursor: 'pointer', 
               fontFamily: 'monospace', 
               fontWeight: 'bold',
-              fontSize: '16px'
+              fontSize: '16px',
+              position: 'relative'
             }}
           >
             Tools
+            {(highlightAxe || highlightPickaxe) && activeTab !== 'tools' && (
+              <div style={{ position: 'absolute', top: '-25px', left: '50%', transform: 'translateX(-50%)', animation: 'bounce 1s infinite' }}>
+                <span style={{ fontSize: '24px', color: '#00ff41', filter: 'drop-shadow(0px 2px 2px black)' }}>⬇️</span>
+              </div>
+            )}
           </button>
           <button 
             onClick={() => setActiveTab('items')} 
@@ -1927,10 +1933,16 @@ export const CraftingDialog = ({ onClose, refetchSeeds, tutorialStep, onAdvanceT
               cursor: 'pointer', 
               fontFamily: 'monospace', 
               fontWeight: 'bold',
-              fontSize: '16px'
+              fontSize: '16px',
+              position: 'relative'
             }}
           >
             Items
+            {highlightSticks && activeTab !== 'items' && (
+              <div style={{ position: 'absolute', top: '-25px', left: '50%', transform: 'translateX(-50%)', animation: 'bounce 1s infinite' }}>
+                <span style={{ fontSize: '24px', color: '#00ff41', filter: 'drop-shadow(0px 2px 2px black)' }}>⬇️</span>
+              </div>
+            )}
           </button>
           <button 
             onClick={() => setActiveTab('buildings')} 
@@ -3724,6 +3736,11 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
       }
     };
 
+    const onSkipCatTime = () => {
+      const fTime = localStorage.getItem('sandbox_cat_first_fed_time');
+      if (fTime) setFirstFedTime(parseInt(fTime, 10));
+    };
+
     const handleOpenCrafting = (e) => {
       setIsPlacingScarecrow(false);
       setIsPlacingLadybug(false);
@@ -3754,6 +3771,7 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
     window.addEventListener('resetPlotPrep', onResetPlotPrep);
     window.addEventListener('skipTutorial', onSkipTutorial);
     window.addEventListener('skipTime', onSkipTime);
+    window.addEventListener('skipCatTime', onSkipCatTime);
     window.addEventListener('openCraftingFor', handleOpenCrafting);
 
     return () => {
@@ -3772,6 +3790,7 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
       window.removeEventListener('resetPlotPrep', onResetPlotPrep);
       window.removeEventListener('skipTutorial', onSkipTutorial);
       window.removeEventListener('skipTime', onSkipTime);
+      window.removeEventListener('skipCatTime', onSkipCatTime);
       window.removeEventListener('openCraftingFor', handleOpenCrafting);
     };
   }, [handleRemoveScarecrow, handleRemoveLadybug, handleRemoveSprinkler, handleRemoveUmbrella, loadCropsFromContract, cropArray, updatePlotPrep]);
