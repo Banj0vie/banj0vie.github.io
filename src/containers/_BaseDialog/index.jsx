@@ -3,7 +3,6 @@ import './style.css';
 
 const BaseDialog = ({ className = "", title, onClose, children, header = null, headerWidth = 210, headerOffset = 0 }) => {
   const titleRef = useRef(null);
-  const hoverAudioRef = useRef(null);
   const clickAudioRef = useRef(null);
 
   useEffect(() => {
@@ -57,12 +56,8 @@ const BaseDialog = ({ className = "", title, onClose, children, header = null, h
   }, [title]);
 
   useEffect(() => {
-    if (!hoverAudioRef.current) {
-      hoverAudioRef.current = new Audio("/sounds/ButtonHover.wav");
-      hoverAudioRef.current.preload = "auto";
-    }
     if (!clickAudioRef.current) {
-      clickAudioRef.current = new Audio("/sounds/ButtonClick.wav");
+      clickAudioRef.current = new Audio("/sounds/ButtonHover.wav");
       clickAudioRef.current.preload = "auto";
     }
   }, []);
@@ -88,12 +83,6 @@ const BaseDialog = ({ className = "", title, onClose, children, header = null, h
             </div>
             <div
               className="modal-close"
-              onMouseEnter={() => {
-                const audio = hoverAudioRef.current;
-                if (!audio) return;
-                audio.currentTime = 0;
-                audio.play().catch(() => {});
-              }}
               onClick={(event) => {
                 const audio = clickAudioRef.current;
                 if (audio) {
@@ -111,5 +100,3 @@ const BaseDialog = ({ className = "", title, onClose, children, header = null, h
 }
 
 export default BaseDialog;
-
-

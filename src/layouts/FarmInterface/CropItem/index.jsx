@@ -29,7 +29,6 @@ const CropItem = ({
   // tooltipRef removed; portal rendering handled by CropTooltip
   const rootRef = useRef(null);
   const [portalContainer, setPortalContainer] = useState(null);
-  const hoverAudioRef = useRef(null);
   const clickAudioRef = useRef(null);
   const [showDebug, setShowDebug] = useState(() => localStorage.getItem('show_debug_labels') !== 'false');
   const [plotPrep, setPlotPrep] = useState(() => JSON.parse(localStorage.getItem('sandbox_plot_prep') || '{}'));
@@ -61,12 +60,8 @@ const CropItem = ({
   }, [isPlanting, selectedIndexes, index]);
 
   useEffect(() => {
-    if (!hoverAudioRef.current) {
-      hoverAudioRef.current = new Audio("/sounds/ButtonHover.wav");
-      hoverAudioRef.current.preload = "auto";
-    }
     if (!clickAudioRef.current) {
-      clickAudioRef.current = new Audio("/sounds/ButtonClick.wav");
+      clickAudioRef.current = new Audio("/sounds/ButtonHover.wav");
       clickAudioRef.current.preload = "auto";
     }
   }, []);
@@ -140,11 +135,6 @@ const CropItem = ({
   };
 
   const handleMouseEnter = (e) => {
-    const hoverAudio = hoverAudioRef.current;
-    if (hoverAudio && !isDisabled) {
-      hoverAudio.currentTime = 0;
-      hoverAudio.play().catch(() => {});
-    }
     if (!data.seedId) return;
     
     setTooltipVisible(true);

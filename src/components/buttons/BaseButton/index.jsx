@@ -13,7 +13,6 @@ const BaseButton = ({
 }) => {
   const backClickAudioRef = useRef(null);
   const clickAudioRef = useRef(null);
-  const hoverAudioRef = useRef(null);
 
   useEffect(() => {
     if (!backClickAudioRef.current) {
@@ -24,29 +23,15 @@ const BaseButton = ({
 
   useEffect(() => {
     if (!clickAudioRef.current) {
-      clickAudioRef.current = new Audio("/sounds/ButtonClick.wav");
+      clickAudioRef.current = new Audio("/sounds/ButtonHover.wav");
       clickAudioRef.current.preload = "auto";
     }
   }, [clickAudioRef.current]);
  
-  useEffect(() => {
-    if (!hoverAudioRef.current) {
-      hoverAudioRef.current = new Audio("/sounds/ButtonHover.wav");
-      hoverAudioRef.current.preload = "auto";
-    }
-  }, [hoverAudioRef.current]);
-
   return (
     <div className={`${className} base-button-wrapper`}>
       <div
         className={`base-button ${disabled && "base-button-disabled"} ${focused && "base-button-focused"}`}
-        onMouseEnter={() => {
-          if (disabled) return;
-          const audio = hoverAudioRef.current;
-          if (!audio) return;
-          audio.currentTime = 0;
-          audio.play().catch(() => {});
-        }}
         onClick={(e) => {
           if (!disabled && typeof onClick === 'function') {
             if (String(label).toLowerCase() === "back") {

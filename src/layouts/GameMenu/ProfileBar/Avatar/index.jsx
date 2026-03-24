@@ -6,7 +6,6 @@ const Avatar = ({ src, alt = "avatar" }) => {
   const [isAvatarDialog, setIsAvatarDialog] = useState(false);
   const [avatarImage, setAvatarImage] = useState(null);
   const [loading, setLoading] = useState(true);
-  const hoverAudioRef = useRef(null);
   const clickAudioRef = useRef(null);
 
 
@@ -47,12 +46,8 @@ const Avatar = ({ src, alt = "avatar" }) => {
   }, []);
 
   useEffect(() => {
-    if (!hoverAudioRef.current) {
-      hoverAudioRef.current = new Audio("/sounds/ButtonHover.wav");
-      hoverAudioRef.current.preload = "auto";
-    }
     if (!clickAudioRef.current) {
-      clickAudioRef.current = new Audio("/sounds/ButtonClick.wav");
+      clickAudioRef.current = new Audio("/sounds/ButtonHover.wav");
       clickAudioRef.current.preload = "auto";
     }
   }, []);
@@ -79,12 +74,6 @@ const Avatar = ({ src, alt = "avatar" }) => {
                 audio.play().catch(() => {});
               }
               setIsAvatarDialog(true);
-            }}
-            onMouseEnter={() => {
-              const audio = hoverAudioRef.current;
-              if (!audio) return;
-              audio.currentTime = 0;
-              audio.play().catch(() => {});
             }}
             onError={(e) => {
               e.target.src = fallbackSrc;

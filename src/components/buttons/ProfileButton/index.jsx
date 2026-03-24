@@ -6,18 +6,11 @@ const ProfileButton = ({ icon, text, title, ariaLabel, style, bg, onClick, disab
   const backgroundUrl = bg || profileAssets.buttonBg;
   const baseClassName = `profile-btn${text ? ' with-text' : ' only-icon'}${disabled ? ' disabled' : ''}`;
   const finalClassName = className ? `${baseClassName} ${className}` : baseClassName;
-  const hoverAudioRef = useRef(null);
   const clickAudioRef = useRef(null);
 
   useEffect(() => {
-    if (!hoverAudioRef.current) {
-      hoverAudioRef.current = new Audio("/sounds/ButtonHover.wav");
-      hoverAudioRef.current.preload = "auto";
-    }
-  }, []);
-  useEffect(() => {
     if (!clickAudioRef.current) {
-      clickAudioRef.current = new Audio("/sounds/ButtonClick.wav");
+      clickAudioRef.current = new Audio("/sounds/ButtonHover.wav");
       clickAudioRef.current.preload = "auto";
     }
   }, []);
@@ -54,13 +47,6 @@ const ProfileButton = ({ icon, text, title, ariaLabel, style, bg, onClick, disab
       tabIndex={disabled ? -1 : 0}
       onClick={handleClick}
       onKeyDown={handleKeyDown}
-      onMouseEnter={() => {
-        if (disabled) return;
-        const audio = hoverAudioRef.current;
-        if (!audio) return;
-        audio.currentTime = 0;
-        audio.play().catch(() => {});
-      }}
       style={style}
     >
       {bg && <img src={bg} alt="" className={`pb-bg${text ? '-with-text' : ''}`} aria-hidden="true" />}
@@ -71,5 +57,3 @@ const ProfileButton = ({ icon, text, title, ariaLabel, style, bg, onClick, disab
 };
 
 export default ProfileButton;
-
-
