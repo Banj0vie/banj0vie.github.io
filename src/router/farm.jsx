@@ -534,7 +534,7 @@ export const getQuestData = () => [
 ];
 
 // --- TAMAGOTCHI DIALOG ---
-const TamagotchiDialog = ({ onClose, onFeed, onWater, catFeedTimeLeft, bowlWaterFilled, bowlFishId, starvingTime, isCatUnlocked, firstFedTime, catHappiness, currentHunger }) => {
+const TamagotchiDialog = ({ onClose, onFeed, onWater, catFeedTimeLeft, bowlWaterFilled, bowlFishId, starvingTime, isCatUnlocked, firstFedTime, catHappiness, currentHunger, catHealth }) => {
   const [activePet, setActivePet] = useState('felix');
 
   const isHungry = starvingTime > 0 || (currentHunger < 50);
@@ -542,7 +542,7 @@ const TamagotchiDialog = ({ onClose, onFeed, onWater, catFeedTimeLeft, bowlWater
   const isHappy = catHappiness >= 50;
 
   const happiness = Math.round(catHappiness || 0);
-  const health = starvingTime > 0 ? 30 : 100;
+  const health = Math.round(catHealth || 100);
   const hunger = Math.round(currentHunger || 0);
   const thirst = bowlWaterFilled ? 100 : 15;
 
@@ -2927,6 +2927,7 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
   const [firstFedTime, setFirstFedTime] = useState(() => parseInt(localStorage.getItem('sandbox_cat_first_fed_time') || '0', 10));
   const [isCatUnlocked, setIsCatUnlocked] = useState(false);
   const [catHappiness, setCatHappiness] = useState(() => parseFloat(localStorage.getItem('sandbox_cat_happiness') || '50'));
+  const [catHealth, setCatHealth] = useState(() => parseFloat(localStorage.getItem('sandbox_cat_health') || '100'));
   const [currentHunger, setCurrentHunger] = useState(0);
   const [yarnState, setYarnState] = useState(null);
 
@@ -3159,8 +3160,9 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
             setCatFeedTimeLeft('');
         }
         
-        // Happiness Decay
+        // Happiness and Health Decay or Increase
         let happy = parseFloat(localStorage.getItem('sandbox_cat_happiness') || '50');
+        let hlth = parseFloat(localStorage.getItem('sandbox_cat_health') || '100');
         let lastUpdateStr = localStorage.getItem('sandbox_cat_happy_update');
         if (!lastUpdateStr) {
            lastUpdateStr = Date.now().toString();
@@ -3174,9 +3176,22 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
            if (hungerVal < 50) {
               happy = Math.max(0, happy - (10 * elapsedHours)); // 10% per hour
               localStorage.setItem('sandbox_cat_happiness', happy.toString());
+           } else if (hungerVal >= 95 && bowlWaterFilled && starvingTime === 0) {
+              happy = Math.min(100, happy + (10 * elapsedHours)); // +10% per hour increase
+              localStorage.setItem('sandbox_cat_happiness', happy.toString());
            }
+           
+           if (starvingTime > 0) {
+              hlth = Math.max(0, hlth - (20 * elapsedHours));
+              localStorage.setItem('sandbox_cat_health', hlth.toString());
+           } else if (hungerVal >= 80 && bowlWaterFilled) {
+              hlth = Math.min(100, hlth + (10 * elapsedHours));
+              localStorage.setItem('sandbox_cat_health', hlth.toString());
+           }
+           
            localStorage.setItem('sandbox_cat_happy_update', now.toString());
            setCatHappiness(happy);
+           setCatHealth(hlth);
         }
     }, 1000);
     return () => clearInterval(timer);
@@ -3842,6 +3857,20 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
       setIsFarmMenu(false);
       setTimeout(() => show("Select a purple border to place your umbrella!", "info"), 500);
     }
+
+    if (localStorage.getItem("pendingYarnPlacement") === "true") {
+      localStorage.removeItem("pendingYarnPlacement");
+      setYarnState({ active: true, phase: 'cursor', x: 960, y: 540, vx: 0, vy: 0, angle: 0, direction: 1 });
+      setIsUsingPotion(false);
+      setIsPlanting(false);
+      setIsFarmMenu(false);
+      
+      const sandboxLoot = JSON.parse(localStorage.getItem('sandbox_loot') || '{}');
+      sandboxLoot[9955] = Math.max(0, (sandboxLoot[9955] || 0) - 1);
+      localStorage.setItem('sandbox_loot', JSON.stringify(sandboxLoot));
+      
+      setTimeout(() => show("Click anywhere to place the yarn!", "info"), 500);
+    }
   }, [show]);
 
   useEffect(() => {
@@ -3926,8 +3955,8 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
         return;
       }
       
-      if (id === 9955) {
-        setYarnState({ active: true, phase: 'idle', x: 960, y: 800, vx: 0, vy: 0, angle: 0, direction: 1 });
+      if (Number(id) === 9955) {
+        setYarnState({ active: true, phase: 'cursor', x: 960, y: 540, vx: 0, vy: 0, angle: 0, direction: 1 });
         setIsUsingPotion(false);
         setIsPlanting(false);
         setIsFarmMenu(false);
@@ -3937,7 +3966,7 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
         localStorage.setItem('sandbox_loot', JSON.stringify(sandboxLoot));
         if (refetch) refetch();
         
-        show("Click and hold the yarn to aim!", "info");
+        show("Click anywhere to place the yarn!", "info");
         return;
       }
 
@@ -4078,10 +4107,16 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
 
              if (dist < 60) {
                  let happy = parseFloat(localStorage.getItem('sandbox_cat_happiness') || '50');
-                 happy = Math.min(100, happy + 30);
+                 happy = Math.min(100, happy + 40);
                  localStorage.setItem('sandbox_cat_happiness', happy.toString());
                  setCatHappiness(happy);
-                 show("Felix caught the yarn! Happiness +30%", "success");
+
+                 let hlth = parseFloat(localStorage.getItem('sandbox_cat_health') || '100');
+                 hlth = Math.min(100, hlth + 20);
+                 localStorage.setItem('sandbox_cat_health', hlth.toString());
+                 setCatHealth(hlth);
+
+                 show("Felix caught the yarn! Happiness +40%, Health +20%", "success");
                  
                  setTimeout(() => setYarnState(null), 10);
                  setCatState('sit');
@@ -4100,22 +4135,6 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
     }, 50); 
     return () => clearInterval(chaseInterval);
   }, [yarnState?.active]);
-
-  useEffect(() => {
-    if (!yarnState || yarnState.phase !== 'aiming') return;
-    const handleUp = () => {
-       setYarnState(prev => {
-         if (!prev || prev.phase !== 'aiming') return prev;
-         const rad = prev.angle * (Math.PI / 180);
-         const power = 40; 
-         const vx = Math.sin(rad) * power;
-         const vy = -Math.cos(rad) * power;
-         return { ...prev, phase: 'rolling', vx, vy };
-       });
-    };
-    window.addEventListener('pointerup', handleUp);
-    return () => window.removeEventListener('pointerup', handleUp);
-  }, [yarnState?.phase]);
 
   // Keep Farm updated with tutorial steps that progress outside of Farm
   useEffect(() => {
@@ -6141,28 +6160,101 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
           );
         })}
 
-        {yarnState && yarnState.active && (
+        {yarnState && yarnState.phase === 'cursor' && (
           <div
             style={{
               position: 'absolute',
-              left: yarnState.x - 25,
-              top: yarnState.y - 25,
+              top: 0, left: 0, width: '1920px', height: '1080px',
+              zIndex: 99999,
+              cursor: 'none'
+            }}
+            onPointerMove={(e) => {
+              const x = e.nativeEvent.offsetX;
+              const y = e.nativeEvent.offsetY;
+              setYarnState(prev => ({ ...prev, x, y }));
+            }}
+            onPointerDown={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              const x = e.nativeEvent.offsetX;
+              const y = e.nativeEvent.offsetY;
+              setYarnState(prev => ({ ...prev, phase: 'idle', x, y }));
+              show("Drag the yarn down to aim!", "info");
+            }}
+          >
+            <div
+              style={{
+                position: 'absolute',
+                left: `${yarnState.x - 25}px`,
+                top: `${yarnState.y - 25}px`,
+                width: '50px',
+                height: '50px',
+                pointerEvents: 'none',
+                filter: 'drop-shadow(0px 4px 6px rgba(0,0,0,0.5))',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center'
+              }}
+            >
+              <img src="/images/pets/yarn.png" alt="Yarn" style={{ width: '100%', height: '100%', objectFit: 'contain', transform: 'scale(0.5)' }} onError={(e) => e.target.src='/images/items/seeds.png'} />
+            </div>
+          </div>
+        )}
+
+        {yarnState && yarnState.active && yarnState.phase !== 'cursor' && (
+          <div
+            style={{
+              position: 'absolute',
+              left: `${yarnState.x - 25}px`,
+              top: `${yarnState.y - 25}px`,
               width: '50px',
               height: '50px',
-              zIndex: 1000,
-              cursor: yarnState.phase === 'idle' ? 'grab' : (yarnState.phase === 'aiming' ? 'grabbing' : 'default'),
-              filter: 'drop-shadow(0px 4px 6px rgba(0,0,0,0.5))'
+              zIndex: 100000,
+              cursor: yarnState.phase === 'idle' ? 'grab' : (yarnState.phase === 'dragging' || yarnState.phase === 'aiming' ? 'grabbing' : 'default'),
+              filter: 'drop-shadow(0px 4px 6px rgba(0,0,0,0.5))',
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center'
             }}
             onPointerDown={(e) => {
               e.stopPropagation();
               e.preventDefault();
               if (yarnState.phase === 'idle' || yarnState.phase === 'rolling') {
-                 setYarnState(prev => ({ ...prev, phase: 'aiming', vx: 0, vy: 0, angle: prev.angle || 0 }));
+                 e.currentTarget.setPointerCapture(e.pointerId);
+                 setYarnState(prev => ({ ...prev, phase: 'dragging', startY: e.clientY, vx: 0, vy: 0, angle: prev.angle || 0 }));
+              }
+            }}
+            onPointerMove={(e) => {
+              if (yarnState.phase === 'dragging' && e.clientY > (yarnState.startY || 0) + 30) {
+                 setYarnState(prev => ({ ...prev, phase: 'aiming' }));
+              }
+            }}
+            onPointerUp={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              e.currentTarget.releasePointerCapture(e.pointerId);
+              if (yarnState.phase === 'aiming') {
+                 setYarnState(prev => {
+                   if (!prev || prev.phase !== 'aiming') return prev;
+                   const rad = prev.angle * (Math.PI / 180);
+                   const power = 15; 
+                   const vx = Math.sin(rad) * power;
+                   const vy = -Math.cos(rad) * power;
+                   return { ...prev, phase: 'rolling', vx, vy };
+                 });
+              } else if (yarnState.phase === 'dragging') {
+                 setYarnState(prev => ({ ...prev, phase: 'idle' }));
               }
             }}
           >
-             <img src="/images/pets/yarn.png" alt="Yarn" style={{ width: '100%', height: '100%', objectFit: 'contain' }} onError={(e) => e.target.src='/images/items/seeds.png'} />
+             <img src="/images/pets/yarn.png" alt="Yarn" style={{ width: '100%', height: '100%', objectFit: 'contain', transform: 'scale(0.5)', pointerEvents: 'none' }} onError={(e) => e.target.src='/images/items/seeds.png'} />
              
+             {yarnState.phase === 'idle' && (
+               <div style={{ position: 'absolute', top: '-30px', left: '50%', transform: 'translateX(-50%)', whiteSpace: 'nowrap', color: '#ffea00', fontWeight: 'bold', textShadow: '1px 1px 2px black', fontSize: '14px', pointerEvents: 'none' }}>
+                 Drag down to aim!
+               </div>
+             )}
+
              {yarnState.phase === 'aiming' && (
                <div style={{
                  position: 'absolute',
@@ -6718,7 +6810,7 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
       )}
 
       {/* Cancel Placement Button */}
-      {(isPlacingScarecrow || isPlacingLadybug || isPlacingSprinkler || isPlacingUmbrella || isPlacingTesla) && (
+      {(isPlacingScarecrow || isPlacingLadybug || isPlacingSprinkler || isPlacingUmbrella || isPlacingTesla || yarnState?.phase === 'cursor') && (
         <div style={{ position: 'fixed', top: '20px', left: '50%', transform: 'translateX(-50%)', zIndex: 10000 }}>
           <button 
             onClick={() => {
@@ -6727,6 +6819,13 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
               setIsPlacingTesla(false);
               setIsPlacingSprinkler(false);
               setIsPlacingUmbrella(false);
+              if (yarnState?.phase === 'cursor') {
+                setYarnState(null);
+                const sandboxLoot = JSON.parse(localStorage.getItem('sandbox_loot') || '{}');
+                sandboxLoot[9955] = (sandboxLoot[9955] || 0) + 1;
+                localStorage.setItem('sandbox_loot', JSON.stringify(sandboxLoot));
+                if (refetch) refetch();
+              }
               setIsPlanting(true);
             }}
             style={{ backgroundColor: 'rgba(0,0,0,0.8)', color: '#ff4444', border: '2px solid #ff4444', padding: '10px 20px', borderRadius: '8px', cursor: 'pointer', fontFamily: 'monospace', fontSize: '16px', fontWeight: 'bold', boxShadow: '0 0 10px rgba(255,68,68,0.5)' }}
@@ -7046,6 +7145,7 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
       isCatUnlocked={isCatUnlocked}
       firstFedTime={firstFedTime}
       catHappiness={catHappiness}
+      catHealth={catHealth}
       currentHunger={currentHunger}
       onWater={() => {
         if (!bowlWaterFilled) {
