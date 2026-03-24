@@ -8,6 +8,7 @@ import { signOut, updateProfile } from "firebase/auth";
 import { doc, setDoc, deleteDoc } from "firebase/firestore";
 import { getSimulatedDateInfo, getWeatherForDay } from "../components/WeatherOverlay";
 import { ONE_SEED_HEIGHT, ONE_SEED_WIDTH } from "../constants/item_seed";
+import { useLocation } from "react-router-dom";
 
 const WeightContestDialog = React.lazy(() => import("./farm").then(m => ({ default: m.WeightContestDialog })));
 const CalendarDialog = React.lazy(() => import("./farm").then(m => ({ default: m.CalendarDialog })));
@@ -21,6 +22,7 @@ const AdminPanel = () => {
   const [consoleInput, setConsoleInput] = useState('');
   const [showTOC, setShowTOC] = useState(false);
   const { show } = useNotification();
+  const location = useLocation();
   const { refetch, all: allItems, seeds: currentSeeds } = useItems();
   const [isDockRepaired, setIsDockRepaired] = useState(() => localStorage.getItem('sandbox_dock_repaired') === 'true');
   const [isTavernUnlocked, setIsTavernUnlocked] = useState(() => localStorage.getItem('quest_q2_rebuild_tavern_completed') === 'true');
@@ -35,7 +37,7 @@ const AdminPanel = () => {
   const [simulatedDay, setSimulatedDay] = useState(() => getSimulatedDateInfo().day);
   const [simulatedDate, setSimulatedDate] = useState(() => getSimulatedDateInfo().date);
   const [hasUnclaimedDaily, setHasUnclaimedDaily] = useState(() => localStorage.getItem('sandbox_last_claim_date') !== new Date().toDateString());
-  const isForagingOrMining = window.location.pathname === '/forest' || window.location.pathname === '/mine';
+  const isForagingOrMining = location.pathname === '/forest' || location.pathname === '/mine';
   const [tutorialStep, setTutorialStep] = useState(() => parseInt(localStorage.getItem('sandbox_tutorial_step') || '0', 10));
   const [completedQuests, setCompletedQuests] = useState(() => JSON.parse(localStorage.getItem('sandbox_completed_quests') || '[]'));
   const [levelUpData, setLevelUpData] = useState(null);

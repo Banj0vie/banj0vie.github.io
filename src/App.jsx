@@ -459,7 +459,7 @@ const App = () => {
         <WalletProvider wallets={wallets} autoConnect>
           <WalletModalProvider>
             <NotificationProvider>
-              <Router>
+              <Router basename={process.env.PUBLIC_URL}>
                 <BackgroundMusic />
                 
                 <div style={{

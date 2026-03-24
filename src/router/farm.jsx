@@ -23,6 +23,7 @@ import BaseButton from "../components/buttons/BaseButton";
 import ChestRollingDialog from "../containers/Menu_Inventory/ChestRollingDialog";
 import AdminPanel from "./index";
 import WeatherOverlay, { getSimulatedDateInfo, getWeatherForDay } from "../components/WeatherOverlay";
+import { useNavigate } from "react-router-dom";
 
 export const getQuestData = () => [
   {
@@ -2805,6 +2806,7 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
   const hotspots = FARM_HOTSPOTS;
   const settings = useAppSelector(selectSettings) || defaultSettings;
   const { seeds: currentSeeds, refetch: refetchSeeds, all: allItems, refetch } = useItems();
+  const navigate = useNavigate();
 
   const [tutorialStep, setTutorialStep] = useState(() => parseInt(localStorage.getItem('sandbox_tutorial_step') || '0', 10));
 
@@ -6191,7 +6193,7 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
               show(`The forest is resting! Come back in ${m}m ${s}s.`, "error");
               return;
             }
-            window.location.href = '/forest';
+            navigate('/forest');
           }}
           style={{ position: 'absolute', bottom: 'calc(100% - 110px)', right: 'calc(15% - 900px)', zIndex: 9998, cursor: forestLockTime > 0 ? 'not-allowed' : 'pointer', transition: 'all 0.2s ease', filter: 'drop-shadow(0px 4px 6px rgba(0,0,0,0.5))', opacity: forestLockTime > 0 ? 0.6 : 1 }}
         >
@@ -6250,7 +6252,7 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
               show(`The mine is resting! Come back in ${m}m ${s}s.`, "error");
               return;
             }
-            window.location.href = '/mine';
+            navigate('/mine');
           }}
           style={{ position: 'absolute', top: '518px', left: '938px', zIndex: 9998, cursor: mineLockTime > 0 ? 'not-allowed' : 'pointer', transition: 'all 0.2s ease', filter: 'drop-shadow(0px 4px 6px rgba(0,0,0,0.5))', opacity: mineLockTime > 0 ? 0.6 : 1 }}
         >
@@ -6282,7 +6284,7 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
             onPointerDown={(e) => {
               e.stopPropagation();
               e.preventDefault();
-              window.location.href = '/animal';
+              navigate('/animal');
             }}
             style={{ position: 'absolute', top: '518px', left: '200px', zIndex: 9998, cursor: 'pointer', transition: 'all 0.2s ease', filter: 'drop-shadow(0px 4px 6px rgba(0,0,0,0.5))' }}
           >
