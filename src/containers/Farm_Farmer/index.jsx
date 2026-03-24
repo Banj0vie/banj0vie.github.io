@@ -2,8 +2,6 @@ import React from "react";
 import "./style.css";
 import BaseDialog from "../_BaseDialog";
 import BaseButton from "../../components/buttons/BaseButton";
-import { db, auth } from '../../firebase';
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 
 const FarmerDialog = ({
   onClose,
@@ -36,22 +34,9 @@ const FarmerDialog = ({
         ></BaseButton>
         <BaseButton
           label="Harvest"
-          onClick={async () => {
+          onClick={() => {
             onClose();
             actions.harvest();
-
-            try {
-              const playerName = auth.currentUser ? (auth.currentUser.displayName || auth.currentUser.email) : "Anonymous";
-              await addDoc(collection(db, "Harvests"), {
-                player: playerName,
-                type: "Crop", 
-                amount: 1,
-                time: serverTimestamp()
-              });
-              console.log("Harvest saved to the cloud!");
-            } catch (e) {
-              console.error("Error saving harvest: ", e);
-            }
           }}
         ></BaseButton>
         <BaseButton
