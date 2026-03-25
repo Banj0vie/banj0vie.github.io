@@ -113,7 +113,7 @@ const Market = () => {
       {tutorialStep >= 11 && tutorialStep <= 17 && (
         <div style={{ position: 'fixed', right: '40px', top: '50%', transform: 'translateY(-50%)', zIndex: 100000, display: 'flex', justifyContent: 'center', alignItems: 'center', pointerEvents: 'none' }}>
           <style>{`
-            a[href*="/farm"], a[href*="/house"], a[href*="/valley"], a[href*="/market"], a[href*="/tavern"] { pointer-events: none !important; opacity: 0.5 !important; }
+            a[href*="/farm"], a[href*="/house"], a[href*="/valley"], a[href*="/market"], a[href*="/tavern"] { pointer-events: none !important; }
             div[title], button[title], .hotspot, .map-btn { pointer-events: none !important; } /* Disable clicking on map hotspots during tutorial */
             @keyframes marketHighlightBox { 0%, 100% { box-shadow: 0 0 20px 5px #00ff41; background-color: rgba(0, 255, 65, 0.2); } 50% { box-shadow: 0 0 5px 2px #00ff41; background-color: transparent; } }
             @keyframes mapIconHighlight { 0%, 100% { box-shadow: 0 0 20px 5px #00ff41; transform: scale(1.1); background-color: rgba(0,255,65,0.3); } 50% { box-shadow: 0 0 10px 2px #00ff41; transform: scale(1); background-color: transparent; } }
@@ -123,7 +123,7 @@ const Market = () => {
             ${tutorialStep === 14 ? `div[title*="QUEEN" i] { animation: marketHighlightBox 1.5s infinite !important; border-radius: 12px; }` : ''}
             ${tutorialStep === 15 ? `div[title*="LEADERBOARD" i] { animation: marketHighlightBox 1.5s infinite !important; border-radius: 12px; }` : ''}
             ${tutorialStep === 16 ? `div[title*="BANKER" i] { animation: marketHighlightBox 1.5s infinite !important; border-radius: 12px; }` : ''}
-            ${tutorialStep === 17 ? `a[href*="/house"], img[src*="house" i] { animation: mapIconHighlight 1.5s infinite !important; border-radius: 12px; position: relative; z-index: 100001; pointer-events: auto !important; opacity: 1 !important; }` : ''}
+            ${tutorialStep === 17 ? `a[href*="/house"], img[src*="house" i] { animation: mapIconHighlight 1.5s infinite !important; border-radius: 12px; position: relative; z-index: 100001; pointer-events: auto !important; }` : ''}
           `}</style>
           <div style={{ position: 'relative', width: '320px', backgroundColor: 'rgba(0,0,0,0.9)', border: '4px solid #ffea00', borderRadius: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '25px', gap: '15px', boxShadow: '0 10px 25px rgba(0,0,0,0.8)', pointerEvents: 'auto' }}>
              <img src="/images/bees/sir.png" alt="Sir" style={{ height: '100px', objectFit: 'contain' }} />

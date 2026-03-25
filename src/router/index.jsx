@@ -181,7 +181,8 @@ const AdminPanel = () => {
       const allQuests = m.getQuestData();
       const availableQuests = allQuests.filter(q => (!q.type || q.type === 'main') && q.unlockCondition(parseInt(localStorage.getItem('sandbox_tutorial_step') || '0', 10), JSON.parse(localStorage.getItem('sandbox_completed_quests') || '[]')));
       const currentRead = JSON.parse(localStorage.getItem('sandbox_read_quests') || '[]');
-      const unread = availableQuests.some(q => !JSON.parse(localStorage.getItem('sandbox_completed_quests') || '[]').includes(q.id) && !currentRead.includes(q.id));
+          const discarded = JSON.parse(localStorage.getItem('sandbox_discarded_quests') || '[]');
+          const unread = availableQuests.some(q => !discarded.includes(q.id) && !currentRead.includes(q.id));
       setHasUnreadMail(unread);
       
       const availFish = allQuests.filter(q => q.type === 'fishing' && q.unlockCondition(parseInt(localStorage.getItem('sandbox_tutorial_step') || '0', 10), JSON.parse(localStorage.getItem('sandbox_completed_quests') || '[]')) && !JSON.parse(localStorage.getItem('sandbox_completed_quests') || '[]').includes(q.id));
@@ -204,7 +205,8 @@ const AdminPanel = () => {
         const comp = JSON.parse(localStorage.getItem('sandbox_completed_quests') || '[]');
         const availableQuests = allQuests.filter(q => (!q.type || q.type === 'main') && q.unlockCondition(step, comp));
         const currentRead = JSON.parse(localStorage.getItem('sandbox_read_quests') || '[]');
-        setHasUnreadMail(availableQuests.some(q => !comp.includes(q.id) && !currentRead.includes(q.id)));
+        const discarded = JSON.parse(localStorage.getItem('sandbox_discarded_quests') || '[]');
+        setHasUnreadMail(availableQuests.some(q => !discarded.includes(q.id) && !currentRead.includes(q.id)));
       });
     };
     window.addEventListener('levelUp', handleLevelUp);
@@ -243,7 +245,8 @@ const AdminPanel = () => {
         const allQuests = m.getQuestData();
         const availableQuests = allQuests.filter(q => (!q.type || q.type === 'main') && q.unlockCondition(parseInt(localStorage.getItem('sandbox_tutorial_step') || '0', 10), JSON.parse(localStorage.getItem('sandbox_completed_quests') || '[]')));
         const currentRead = JSON.parse(localStorage.getItem('sandbox_read_quests') || '[]');
-        const unread = availableQuests.some(q => !JSON.parse(localStorage.getItem('sandbox_completed_quests') || '[]').includes(q.id) && !currentRead.includes(q.id));
+        const discarded = JSON.parse(localStorage.getItem('sandbox_discarded_quests') || '[]');
+        const unread = availableQuests.some(q => !discarded.includes(q.id) && !currentRead.includes(q.id));
         setHasUnreadMail(unread);
         
         const availFish = allQuests.filter(q => q.type === 'fishing' && q.unlockCondition(parseInt(localStorage.getItem('sandbox_tutorial_step') || '0', 10), JSON.parse(localStorage.getItem('sandbox_completed_quests') || '[]')) && !JSON.parse(localStorage.getItem('sandbox_completed_quests') || '[]').includes(q.id));
@@ -273,7 +276,7 @@ const AdminPanel = () => {
       window.removeEventListener('seenDockPrompt', handleSync);
       window.removeEventListener('questsRead', handleSync);
     };
-  }, []);
+  }, [location.pathname]);
 
   const toggleAutoSpawn = () => {
     const newVal = !autoSpawnEnabled;
@@ -918,15 +921,23 @@ const AdminPanel = () => {
   return (
     <>
       <style>{`
+        /* Left Navigation Ordering & Visibility based on Tutorial Step */
+        a[href*="/farm"] { order: 1; }
+        a[href*="/market"] { order: 2; ${tutorialStep < 10 ? 'display: none !important;' : ''} }
+        a[href*="/house"] { order: 3; ${tutorialStep < 17 ? 'display: none !important;' : ''} }
+        a[href*="/tavern" i] { order: 4; ${tutorialStep < 32 ? 'display: none !important;' : ''} }
+        a[href*="/valley"] { order: 5; ${tutorialStep < 32 ? 'display: none !important;' : ''} }
+
         @keyframes pulse-dot { 0% { transform: scale(1); } 50% { transform: scale(1.3); } 100% { transform: scale(1); } }
         @keyframes mailboxAlert { 0%, 100% { transform: scale(1); filter: drop-shadow(0 0 2px rgba(255,255,255,0.3)); } 50% { transform: scale(0.9); filter: drop-shadow(0 0 12px rgba(255,255,255,1)); } }
         @keyframes mailboxHover { 0% { transform: scale(1.1) rotate(0deg); } 25% { transform: scale(1.1) rotate(-5deg); } 50% { transform: scale(1.1) rotate(5deg); } 75% { transform: scale(1.1) rotate(-5deg); } 100% { transform: scale(1.1) rotate(0deg); } }
       `}</style>
       {/* Global Persisted Elements */}
 
-      {tutorialStep >= 11 && !isPanelOpen && !isForagingOrMining && (
+      {!isPanelOpen && !isForagingOrMining && (
         <>
           {/* Crafting Icon Overlay */}
+          {tutorialStep >= 25 && (
           <div 
             onClick={() => {
               setShowCraftingDialog(true);
@@ -951,8 +962,10 @@ const AdminPanel = () => {
           {(!seenCrafting && tutorialStep >= 25) && <div style={badgeStyle}>!</div>}
           <img src="/images/crafting/crafting.png" alt="Crafting" style={{ height: '240px', objectFit: 'contain' }} onError={(e) => { e.target.onerror = null; e.target.src = '/images/crafting/Crafting.png'; }} />
           </div>
+          )}
 
           {/* Weight Contest Icon Overlay */}
+          {tutorialStep >= 29 && (
           <div 
             onClick={() => {
               setShowWeightContest(true);
@@ -1008,8 +1021,10 @@ const AdminPanel = () => {
               </div>
             )}
           </div>
+          )}
 
           {/* Calendar Icon Overlay */}
+          {tutorialStep >= 27 && (
           <div 
             onClick={() => {
               setShowCalendar(true);
@@ -1034,6 +1049,7 @@ const AdminPanel = () => {
           {(hasUnclaimedDaily && !seenCalendar) && <div style={badgeStyle}>!</div>}
           <img src="/images/calendar/calendar.png" alt="Calendar" style={{ height: '240px', objectFit: 'contain' }} />
           </div>
+          )}
         </>
       )}
 

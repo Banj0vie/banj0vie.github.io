@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { useAppSelector } from "../../solana/store";
 import { selectSettings } from "../../solana/store/slices/uiSlice";
 import { clampVolume } from "../../utils/basic";
+import { defaultSettings } from "../../utils/settings";
 
 const BackgroundMusic = () => {
   const settings = useAppSelector(selectSettings);
@@ -23,19 +24,19 @@ const BackgroundMusic = () => {
   useEffect(() => {
     const unlock = () => {
       setIsUnlocked(true);
-      window.removeEventListener("pointerdown", unlock);
-      window.removeEventListener("keydown", unlock);
-      window.removeEventListener("touchstart", unlock);
+      window.removeEventListener("pointerdown", unlock, true);
+      window.removeEventListener("keydown", unlock, true);
+      window.removeEventListener("touchstart", unlock, true);
     };
 
-    window.addEventListener("pointerdown", unlock);
-    window.addEventListener("keydown", unlock);
-    window.addEventListener("touchstart", unlock);
+    window.addEventListener("pointerdown", unlock, true);
+    window.addEventListener("keydown", unlock, true);
+    window.addEventListener("touchstart", unlock, true);
 
     return () => {
-      window.removeEventListener("pointerdown", unlock);
-      window.removeEventListener("keydown", unlock);
-      window.removeEventListener("touchstart", unlock);
+      window.removeEventListener("pointerdown", unlock, true);
+      window.removeEventListener("keydown", unlock, true);
+      window.removeEventListener("touchstart", unlock, true);
     };
   }, []);
 
@@ -45,7 +46,7 @@ const BackgroundMusic = () => {
       return;
     }
 
-    const volumeSetting = parseFloat(settings?.musicVolume ?? 0) / 100;
+    const volumeSetting = parseFloat(settings?.musicVolume ?? defaultSettings.musicVolume) / 100;
     const volume = clampVolume(volumeSetting);
     audio.volume = volume;
 
@@ -63,4 +64,3 @@ const BackgroundMusic = () => {
 };
 
 export default BackgroundMusic;
-

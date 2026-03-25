@@ -109,6 +109,12 @@ const CropItem = ({
 
   const handleMouseMove = (e) => {
     if (!data.seedId) return;
+
+    // Determine offset direction based on cursor position on screen
+    const isBottomHalf = e.clientY > window.innerHeight / 2;
+    const xOffset = 25; // Middle to the right
+    const yOffset = isBottomHalf ? -130 : 20; // Bottom goes to top, top goes to bottom
+
     // Compute tooltip position relative to the portal container (if present)
     if (portalContainer && portalContainer !== document.body) {
       const rect = portalContainer.getBoundingClientRect();
@@ -122,16 +128,16 @@ const CropItem = ({
           ? rect.height / portalContainer.offsetHeight
           : 1;
       // Map client coordinates into container local coordinates by dividing by scale
-      const localX = (e.clientX - rect.left) / (scaleX || 1) + 12;
-      const localY = (e.clientY - rect.top) / (scaleY || 1) + 12;
-      setTooltipPos({ x: localX, y: localY });
+      const localX = (e.clientX - rect.left) / (scaleX || 1) + xOffset;
+      const localY = (e.clientY - rect.top) / (scaleY || 1) + yOffset;
+      setTooltipPos({ x: localX, y: localY, isBottomHalf });
       return;
     }
 
     // Fallback: position relative to viewport (use fixed positioning)
-    const x = e.clientX + 12; // slight offset
-    const y = e.clientY + 12;
-    setTooltipPos({ x, y });
+    const x = e.clientX + xOffset;
+    const y = e.clientY + yOffset;
+    setTooltipPos({ x, y, isBottomHalf });
   };
 
   const handleMouseEnter = (e) => {
@@ -186,13 +192,13 @@ const CropItem = ({
   let frameIndex = 0;
   if (data.seedId && ALL_ITEMS[data.seedId]) {
     if (data.growStatus === -1) {
-      frameIndex = 1; // newly planted
+      frameIndex = 0; // newly planted (sign)
     } else if (data.growStatus === 2) {
       frameIndex = FRAMES_PER_SEED - 1; // ready frame
     } else {
       // growing: interpolate frames based on progress, keep last frame for ready
       const clamped = Math.max(0, Math.min(0.999, growthProgress || 0));
-      frameIndex = 1 + Math.floor(clamped * (FRAMES_PER_SEED - 2));
+      frameIndex = Math.floor(clamped * (FRAMES_PER_SEED - 1));
     }
   }
 
@@ -202,14 +208,13 @@ const CropItem = ({
 
     // Use the exact same logic as the sprite frame calculation
     if (data.growStatus === -1) {
-      return 1; // newly planted
+      return 0; // newly planted
     } else if (data.growStatus === 2) {
       return 5; // ready frame (all 5 segments)
     } else {
       // growing: interpolate segments based on progress, same as sprite frames
       const clamped = Math.max(0, Math.min(0.999, growthProgress || 0));
-      const segments = 1 + Math.floor(clamped * 4); // 1-5 segments based on progress
-      return segments;
+      return Math.floor(clamped * 5); // 0-4 segments based on progress
     }
   };
 
