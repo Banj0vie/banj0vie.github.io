@@ -3417,6 +3417,8 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
   // Forest Lock Timer
   const [forestLockTime, setForestLockTime] = useState(0);
   const [mineLockTime, setMineLockTime] = useState(0);
+  const [selectedTool, setSelectedTool] = useState(null);
+  const toggleTool = (name) => setSelectedTool(prev => prev === name ? null : name);
 
   useEffect(() => {
     const checkLock = () => {
@@ -6255,8 +6257,9 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
 
       {/* Farming Board Overlay */}
 
+
       <PanZoomViewport
-        backgroundSrc="/images/backgrounds/farm.webp"
+        backgroundSrc="/images/backgrounds/realfarm.png"
         hotspots={tutorialStep >= 32 ? hotspots : []}
         width={width}
         height={height}
@@ -6264,8 +6267,152 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
         hideMenu={isFarmMenu}
         bees={bees}
         initialScale={1.3}
+        backgroundOffsetX={40}
+        backgroundOffsetY={-40}
         disablePanZoom
       >
+        {/* Belt Top - hidden */}
+        <img src="/images/farming/realbelttop.png" alt="Belt Top" style={{ position: 'absolute', top: '525px', left: '542px', width: '376px', pointerEvents: 'none', zIndex: 7 }} draggable={false} />
+        {/* Belt Bottom */}
+        <img src="/images/farming/realbeltbottom.png" alt="Belt Bottom" style={{ position: 'absolute', top: '500px', left: '450px', width: '560px', pointerEvents: 'none', zIndex: 5 }} draggable={false} />
+        {/* Farm Items */}
+        <img
+          src="/images/farming/realfork.png"
+          alt="Fork"
+          draggable={false}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.filter = 'drop-shadow(0px 0px 6px rgba(255,255,255,0.8))';
+            e.currentTarget.style.transform = 'scale(1.15)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.filter = selectedTool === 'fork' ? 'drop-shadow(0px 0px 6px rgba(255,255,255,0.8))' : 'none';
+            e.currentTarget.style.transform = selectedTool === 'fork' ? 'translateY(-15px)' : 'none';
+          }}
+          onClick={() => { toggleTool('fork'); const next = selectedTool !== 'fork'; setIsHoeing(next); setIsWatering(false); setIsDigging(false); setIsDirting(false); setIsSeeding(false); setIsPlanting(false); }}
+          style={{
+            position: 'absolute',
+            top: '518px',
+            left: '876px',
+            width: '28px',
+            zIndex: 6,
+            cursor: 'pointer',
+            transform: selectedTool === 'fork' ? 'translateY(-15px)' : 'none',
+            filter: selectedTool === 'fork' ? 'drop-shadow(0px 0px 6px rgba(255,255,255,0.8))' : 'none',
+            transition: 'transform 0.4s ease, filter 0.2s ease',
+            animation: selectedTool === 'fork' ? 'mapFloat 2s ease-in-out infinite' : 'none',
+          }}
+        />
+        <img
+          src="/images/farming/realsoil.png"
+          alt="Soil"
+          draggable={false}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.filter = 'drop-shadow(0px 0px 6px rgba(255,255,255,0.8))';
+            e.currentTarget.style.transform = 'scale(1.15)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.filter = selectedTool === 'soil' ? 'drop-shadow(0px 0px 6px rgba(255,255,255,0.8))' : 'none';
+            e.currentTarget.style.transform = selectedTool === 'soil' ? 'translateY(-15px)' : 'none';
+          }}
+          onClick={() => { toggleTool('soil'); const next = selectedTool !== 'soil'; setIsDirting(next); setIsHoeing(false); setIsWatering(false); setIsDigging(false); setIsSeeding(false); setIsPlanting(false); }}
+          style={{
+            position: 'absolute',
+            top: '508px',
+            left: '790px',
+            width: '52px',
+            zIndex: 6,
+            cursor: 'pointer',
+            transform: selectedTool === 'soil' ? 'translateY(-15px)' : 'none',
+            filter: selectedTool === 'soil' ? 'drop-shadow(0px 0px 6px rgba(255,255,255,0.8))' : 'none',
+            transition: 'transform 0.4s ease, filter 0.2s ease',
+            animation: selectedTool === 'soil' ? 'mapFloat 2s ease-in-out infinite' : 'none',
+          }}
+        />
+        <img
+          src="/images/farming/realseeds.png"
+          alt="Seeds"
+          draggable={false}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.filter = 'drop-shadow(0px 0px 6px rgba(255,255,255,0.8))';
+            e.currentTarget.style.transform = 'scale(1.15)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.filter = selectedTool === 'seeds' ? 'drop-shadow(0px 0px 6px rgba(255,255,255,0.8))' : 'none';
+            e.currentTarget.style.transform = selectedTool === 'seeds' ? 'translateY(-15px)' : 'none';
+          }}
+          onClick={() => { toggleTool('seeds'); const next = selectedTool !== 'seeds'; setIsSeeding(next); setIsDirting(false); setIsHoeing(false); setIsWatering(false); setIsDigging(false); setIsPlanting(false); }}
+          style={{
+            position: 'absolute',
+            top: '507px',
+            left: '709px',
+            width: '43px',
+            zIndex: 6,
+            cursor: 'pointer',
+            transform: selectedTool === 'seeds' ? 'translateY(-15px)' : 'none',
+            filter: selectedTool === 'seeds' ? 'drop-shadow(0px 0px 6px rgba(255,255,255,0.8))' : 'none',
+            transition: 'transform 0.4s ease, filter 0.2s ease',
+            animation: selectedTool === 'seeds' ? 'mapFloat 2s ease-in-out infinite' : 'none',
+          }}
+        />
+        <img
+          src="/images/farming/realbucket.png"
+          alt="Bucket"
+          draggable={false}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.filter = 'drop-shadow(0px 0px 6px rgba(255,255,255,0.8))';
+            e.currentTarget.style.transform = 'scale(1.15)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.filter = selectedTool === 'bucket' ? 'drop-shadow(0px 0px 6px rgba(255,255,255,0.8))' : 'none';
+            e.currentTarget.style.transform = selectedTool === 'bucket' ? 'translateY(-15px)' : 'none';
+          }}
+          onClick={() => { toggleTool('bucket'); const next = selectedTool !== 'bucket'; setIsWatering(next); setIsHoeing(false); setIsDigging(false); setIsDirting(false); setIsSeeding(false); setIsPlanting(false); }}
+          style={{
+            position: 'absolute',
+            top: '507px',
+            left: '615px',
+            width: '63px',
+            zIndex: 6,
+            cursor: 'pointer',
+            transform: selectedTool === 'bucket' ? 'translateY(-15px)' : 'none',
+            filter: selectedTool === 'bucket' ? 'drop-shadow(0px 0px 6px rgba(255,255,255,0.8))' : 'none',
+            transition: 'transform 0.4s ease, filter 0.2s ease',
+            animation: selectedTool === 'bucket' ? 'mapFloat 2s ease-in-out infinite' : 'none',
+          }}
+        />
+        <img
+          src="/images/farming/realshovel.png"
+          alt="Shovel"
+          draggable={false}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.filter = 'drop-shadow(0px 0px 6px rgba(255,255,255,0.8))';
+            e.currentTarget.style.transform = 'scale(1.15)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.filter = selectedTool === 'shovel' ? 'drop-shadow(0px 0px 6px rgba(255,255,255,0.8))' : 'none';
+            e.currentTarget.style.transform = selectedTool === 'shovel' ? 'translateY(-15px)' : 'none';
+          }}
+          onClick={() => { toggleTool('shovel'); const next = selectedTool !== 'shovel'; setIsDigging(next); setIsHoeing(false); setIsWatering(false); setIsDirting(false); setIsSeeding(false); setIsPlanting(false); }}
+          style={{
+            position: 'absolute',
+            top: '520px',
+            left: '555px',
+            width: '30px',
+            zIndex: 6,
+            cursor: 'pointer',
+            transform: selectedTool === 'shovel' ? 'translateY(-15px)' : 'none',
+            filter: selectedTool === 'shovel' ? 'drop-shadow(0px 0px 6px rgba(255,255,255,0.8))' : 'none',
+            transition: 'transform 0.4s ease, filter 0.2s ease',
+            animation: selectedTool === 'shovel' ? 'mapFloat 2s ease-in-out infinite' : 'none',
+          }}
+        />
+        {/* Well */}
+        <img src="/images/land/well.png" alt="Well" style={{ position: 'absolute', top: '410px', left: '250px', width: '190px', pointerEvents: 'none', zIndex: 10 }} draggable={false} />
+        <img src="/images/label/welllabel.png" alt="Well Label" style={{ position: 'absolute', top: '360px', left: '265px', width: '68px', pointerEvents: 'none', zIndex: 11, animation: 'mapFloat 2.6s ease-in-out infinite' }} draggable={false} />
+        {/* Mine */}
+        <img src="/images/land/mine.png" alt="Mine" style={{ position: 'absolute', top: '417px', left: '1023.5px', width: '235px', pointerEvents: 'none', zIndex: 10 }} draggable={false} />
+        <img src="/images/label/mineslabel.png" alt="Mine Label" style={{ position: 'absolute', top: '367px', left: '1055px', width: '78px', pointerEvents: 'none', zIndex: 11, animation: 'mapFloat 2.6s ease-in-out infinite' }} draggable={false} />
+
         <FarmInterface
           key={isFarmMenu ? `preview-${previewUpdateKey}` : "main"}
           cropArray={isFarmMenu ? previewCropArray : cropArray}
@@ -6557,9 +6704,9 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
             }
             navigate('/forest');
           }}
-          style={{ position: 'absolute', bottom: 'calc(100% - 110px)', right: 'calc(15% - 900px)', zIndex: 9998, cursor: forestLockTime > 0 ? 'not-allowed' : 'pointer', transition: 'all 0.2s ease', filter: 'drop-shadow(0px 4px 6px rgba(0,0,0,0.5))', opacity: forestLockTime > 0 ? 0.6 : 1 }}
+          style={{ position: 'absolute', bottom: 'calc(100% - 180px)', right: 'calc(15% - 1190px)', zIndex: 9998, cursor: forestLockTime > 0 ? 'not-allowed' : 'pointer', transition: 'all 0.2s ease', filter: 'drop-shadow(0px 4px 6px rgba(0,0,0,0.5))', opacity: forestLockTime > 0 ? 0.6 : 1, animation: 'mapFloat 2.6s ease-in-out infinite', willChange: 'transform' }}
         >
-          <img src="/images/forest/forestlabel.png" alt="Forest" style={{ height: '80px', objectFit: 'contain' }} />
+          <img src="/images/label/forestlabel (2).png" alt="Forest" style={{ height: '50px', objectFit: 'contain' }} />
           {forestLockTime > 0 && (
             <div style={{ position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)', backgroundColor: 'rgba(0,0,0,0.8)', color: '#ff4444', padding: '4px 8px', borderRadius: '4px', fontSize: '14px', fontWeight: 'bold', whiteSpace: 'nowrap', marginTop: '5px', border: '1px solid #ff4444', fontFamily: 'monospace' }}>
               {Math.floor(forestLockTime / 60000)}m {Math.floor((forestLockTime % 60000) / 1000)}s
@@ -6582,7 +6729,7 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
             e.preventDefault();
             handleWellDrop();
           }}
-          style={{ position: 'absolute', top: '518px', left: '638px', zIndex: 9998, cursor: 'pointer', transition: 'all 0.2s ease', filter: 'drop-shadow(0px 4px 6px rgba(0,0,0,0.5))' }}
+          style={{ display: 'none', position: 'absolute', top: '355px', left: '235px', zIndex: 9998, cursor: 'pointer', transition: 'all 0.2s ease', filter: 'drop-shadow(0px 4px 6px rgba(0,0,0,0.5))' }}
         >
           <div style={{ backgroundColor: 'rgba(31, 22, 16, 0.9)', padding: '15px 30px', borderRadius: '12px', border: '3px solid #5a402a', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column' }}>
             <span style={{ color: '#00bfff', fontFamily: 'monospace', fontSize: '24px', fontWeight: 'bold', textShadow: '2px 2px 0 #000' }}>
@@ -6616,7 +6763,7 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
             }
             navigate('/mine');
           }}
-          style={{ position: 'absolute', top: '518px', left: '938px', zIndex: 9998, cursor: mineLockTime > 0 ? 'not-allowed' : 'pointer', transition: 'all 0.2s ease', filter: 'drop-shadow(0px 4px 6px rgba(0,0,0,0.5))', opacity: mineLockTime > 0 ? 0.6 : 1 }}
+          style={{ display: 'none', position: 'absolute', top: '518px', left: '938px', zIndex: 9998, cursor: mineLockTime > 0 ? 'not-allowed' : 'pointer', transition: 'all 0.2s ease', filter: 'drop-shadow(0px 4px 6px rgba(0,0,0,0.5))', opacity: mineLockTime > 0 ? 0.6 : 1 }}
         >
           <div style={{ backgroundColor: 'rgba(31, 22, 16, 0.9)', padding: '15px 30px', borderRadius: '12px', border: '3px solid #5a402a', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column' }}>
             <span style={{ color: '#fff', fontFamily: 'monospace', fontSize: '24px', fontWeight: 'bold', textShadow: '2px 2px 0 #000' }}>
@@ -6659,7 +6806,7 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
         )}
 
         {/* Farmer Bag Icon Overlay - Static inside PanZoomViewport */}
-        {tutorialStep >= 4 && tutorialStep !== 10 && (
+        {false && tutorialStep >= 4 && tutorialStep !== 10 && (
         <div 
           onPointerDown={(e) => {
             e.stopPropagation();

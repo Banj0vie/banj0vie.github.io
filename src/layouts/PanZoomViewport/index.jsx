@@ -40,6 +40,8 @@ const PanZoomViewport = ({
   stuffs = [],
   initialScale = 1,
   disablePanZoom = false,
+  backgroundOffsetX = 0,
+  backgroundOffsetY = 0,
 }) => {
   const containerRef = useRef(null);
   const navigate = useNavigate();
@@ -260,6 +262,7 @@ const PanZoomViewport = ({
                 onDragStart={(e) => e.preventDefault()}
                 loading="eager"
                 decoding="sync"
+                style={(backgroundOffsetX !== 0 || backgroundOffsetY !== 0) ? { marginLeft: `${backgroundOffsetX}px`, marginTop: `${backgroundOffsetY}px` } : undefined}
               />
             )}
             {bees.map((b, index) => (
