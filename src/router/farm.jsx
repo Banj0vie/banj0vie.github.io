@@ -6271,15 +6271,15 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
         dialogs={dialogs}
         hideMenu={isFarmMenu}
         bees={bees}
-        initialScale={1.3}
+        initialScale={1.0}
         backgroundOffsetX={40}
         backgroundOffsetY={-40}
         disablePanZoom
       >
         {/* Belt Top - hidden */}
-        <img src="/images/farming/realbelttop.png" alt="Belt Top" style={{ position: 'absolute', top: '525px', left: '542px', width: '376px', pointerEvents: 'none', zIndex: 7 }} draggable={false} />
+        <img src="/images/farming/realbelttop.png" alt="Belt Top" style={{ position: 'absolute', top: '655px', left: '542px', width: '376px', pointerEvents: 'none', zIndex: 7 }} draggable={false} />
         {/* Belt Bottom */}
-        <img src="/images/farming/realbeltbottom.png" alt="Belt Bottom" style={{ position: 'absolute', top: '500px', left: '450px', width: '560px', pointerEvents: 'none', zIndex: 5 }} draggable={false} />
+        <img src="/images/farming/realbeltbottom.png" alt="Belt Bottom" style={{ position: 'absolute', top: '630px', left: '450px', width: '560px', pointerEvents: 'none', zIndex: 5 }} draggable={false} />
         {/* Farm Items */}
         <img
           src="/images/farming/realfork.png"
@@ -6296,7 +6296,7 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
           onClick={() => { toggleTool('fork'); const next = selectedTool !== 'fork'; setIsHoeing(next); setIsWatering(false); setIsDigging(false); setIsDirting(false); setIsSeeding(false); setIsPlanting(false); }}
           style={{
             position: 'absolute',
-            top: '518px',
+            top: '648px',
             left: '874px',
             width: '28px',
             zIndex: 6,
@@ -6322,7 +6322,7 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
           onClick={() => { toggleTool('soil'); const next = selectedTool !== 'soil'; setIsDirting(next); setIsHoeing(false); setIsWatering(false); setIsDigging(false); setIsSeeding(false); setIsPlanting(false); }}
           style={{
             position: 'absolute',
-            top: '508px',
+            top: '638px',
             left: '618px',
             width: '52px',
             zIndex: 6,
@@ -6348,7 +6348,7 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
           onClick={() => { toggleTool('seeds'); const next = selectedTool !== 'seeds'; setIsSeeding(next); setIsDirting(false); setIsHoeing(false); setIsWatering(false); setIsDigging(false); setIsPlanting(false); }}
           style={{
             position: 'absolute',
-            top: '507px',
+            top: '637px',
             left: '709px',
             width: '43px',
             zIndex: 6,
@@ -6374,7 +6374,7 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
           onClick={() => { toggleTool('bucket'); const next = selectedTool !== 'bucket'; setIsWatering(next); setIsHoeing(false); setIsDigging(false); setIsDirting(false); setIsSeeding(false); setIsPlanting(false); }}
           style={{
             position: 'absolute',
-            top: '508px',
+            top: '638px',
             left: '785px',
             width: '63px',
             zIndex: 6,
@@ -6400,7 +6400,7 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
           onClick={() => { toggleTool('shovel'); const next = selectedTool !== 'shovel'; setIsDigging(next); setIsHoeing(false); setIsWatering(false); setIsDirting(false); setIsSeeding(false); setIsPlanting(false); }}
           style={{
             position: 'absolute',
-            top: '520px',
+            top: '650px',
             left: '555px',
             width: '30px',
             zIndex: 6,
@@ -7201,7 +7201,7 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
       )}
 
       {/* Interactive Bowls */}
-      {tutorialStep >= 32 && !hideIcons && (
+      {false && tutorialStep >= 32 && !hideIcons && (
         <div style={{ position: 'fixed', bottom: '20px', left: '50%', transform: 'translateX(-50%)', display: 'flex', alignItems: 'flex-end', gap: '15px', zIndex: 9999 }}>
           
           {/* Tamagotchi Pet Device */}
