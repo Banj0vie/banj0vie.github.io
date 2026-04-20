@@ -15,35 +15,35 @@ export const HOUSE_HOTSPOTS = [
 
 export const HOUSE_BEES = [
   {
-    image: "/images/bees/bee_npc.gif",
+    image: "/images/bees/fisherbee.gif",
     x: 100,
     y: 100,
-    flip: false,
+    flip: true,
     delay: 0,
   },
   {
-    image: "/images/bees/bee_npc.gif",
+    image: "/images/bees/fisherbee.gif",
     x: 314,
     y: 392,
-    flip: false,
+    flip: true,
     delay: 0.2,
   },
   {
-    image: "/images/bees/bee_npc.gif",
+    image: "/images/bees/basic.gif",
     x: 505,
     y: 145,
     flip: true,
     delay: 0.8,
   },
   {
-    image: "/images/bees/bee_npc.gif",
+    image: "/images/bees/basic.gif",
     x: 820,
     y: 400,
     flip: true,
     delay: 0.6,
   },
   {
-    image: "/images/bees/bee_2.png",
+    image: "/images/bees/farmer.gif",
     x: 684,
     y: 241,
     flip: false,

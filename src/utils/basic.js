@@ -1,5 +1,5 @@
 import { ALL_ITEMS } from "../constants/item_data";
-import { ID_SEEDS, ID_PRODUCE_ITEMS, ID_POTION_ITEMS, ID_CHEST_ITEMS, CAT_FEEBLE_SEED, CAT_PICO_SEED, CAT_BASIC_SEED, CAT_PREMIUM_SEED, CAT_PICO_PRODUCE, CAT_BASIC_PRODUCE, CAT_PREMIUM_PRODUCE, CAT_CHEST } from "../constants/app_ids";
+import { ID_SEEDS, ID_PRODUCE_ITEMS, ID_POTION_ITEMS, ID_CHEST_ITEMS, CAT_PICO_SEED, CAT_BASIC_SEED, CAT_PREMIUM_SEED, CAT_PICO_PRODUCE, CAT_BASIC_PRODUCE, CAT_PREMIUM_PRODUCE, CAT_CHEST } from "../constants/app_ids";
 
 export function generateId(prefix = "id") {
   return `${prefix}-${Math.random().toString(36).substr(2, 9)}`;
@@ -149,7 +149,6 @@ export const GROWTH_RARE = 5 * 60; // 8 * 60 * 60;
 export const GROWTH_EPIC = 6 * 60; // 12 * 60 * 60;
 export const GROWTH_LEGENDARY = 7 * 60; // 24 * 60 * 60;
 
-export const feebleSeedArray = [1, 2, 3, 4, 5];
 export const picoSeedArray = [1, 2, 3, 4, 5];
 export const basicSeedArray = [4, 7, 9, 11, 12];
 export const premiumSeedArray = [3, 6, 8, 10, 11];
@@ -158,9 +157,7 @@ export const getSubtype = (seedId) => {
   const category = seedId >> 8;
   const id = seedId & 0xFF;
   let array = [];
-  if (category === 1) {
-    array = feebleSeedArray;
-  } else if (category === 2) {
+  if (category === 2) {
     array = picoSeedArray;
   } else if (category === 3) {
     array = basicSeedArray;
@@ -203,7 +200,6 @@ export const chestLootTable = (chestType) => {
   const seedIds = values(ID_SEEDS);
   const produceIds = values(ID_PRODUCE_ITEMS);
 
-  const feebleSeeds = byCategory(seedIds, CAT_FEEBLE_SEED);
   const picoSeeds = byCategory(seedIds, CAT_PICO_SEED);
   const basicSeeds = byCategory(seedIds, CAT_BASIC_SEED);
   const premiumSeeds = byCategory(seedIds, CAT_PREMIUM_SEED);
@@ -220,7 +216,6 @@ export const chestLootTable = (chestType) => {
     case ID_CHEST_ITEMS.CHEST_WOOD: // CHEST_WOOD
       return [
         ...picoProduce,
-        ...feebleSeeds,
         ...picoSeeds,
       ];
     case ID_CHEST_ITEMS.CHEST_BRONZE: // CHEST_BRONZE
@@ -228,7 +223,6 @@ export const chestLootTable = (chestType) => {
         ...picoProduce,
         growth,
         pesticide,
-        ...feebleSeeds,
         ...picoSeeds,
         ...basicSeeds,
       ];
@@ -238,7 +232,6 @@ export const chestLootTable = (chestType) => {
         growth,
         pesticide,
         fertilizer,
-        ...feebleSeeds,
         ...picoSeeds,
         ...basicSeeds,
       ];

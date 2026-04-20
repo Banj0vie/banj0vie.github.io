@@ -11,7 +11,7 @@ export const FARM_HOTSPOTS = [
 
 export const FARM_BEES = [
   {
-    image: "/images/bees/bee_2.png",
+    image: "/images/bees/farmer.gif",
     x: 675,
     y: 290,
     flip: false,

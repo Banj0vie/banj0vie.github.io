@@ -28,6 +28,7 @@ import Shop from "../containers/Shop";
 import FarmCustomizePanel from "../containers/FarmCustomizePanel";
 import PokemonPackRipDialog from "../containers/Market_Vendor/PokemonPackRipDialog";
 import { getRaritySeedId } from "../constants/app_ids";
+const FestivalsDialog = React.lazy(() => import("../containers/FestivalsDialog"));
 
 export const getQuestData = () => [
 
@@ -44,7 +45,7 @@ export const getQuestData = () => [
       "Also before I left the cat ran away again, please leave him a bowl of water and a nice fish, he should come back when he smells it, thank you and enjoy the wonders of being a farmer!"
     ],
     rewards: [
-      { id: 'pabee_pack', count: 1, name: "Papabee's Pack", image: "/images/cardback/commonback.png" },
+      { id: 'pabee_pack', count: 1, name: "Papabee's Pack", image: "/images/cardfront/card1idle/idle_1/idle_1_00000.png" },
     ],
     reqs: [],
     unlockCondition: (step, completed) => true
@@ -54,60 +55,237 @@ export const getQuestData = () => [
     id: "q1b_pabee_first_crop",
     type: "main",
     sender: "Pabee",
-    subject: "Your First Harvest",
+    subject: "Keep It Growing",
+    mailImage: "/images/mail/mailpapabee.png",
     body: [
-      "Great to hear you are settling in!",
-      "Go ahead and plant a couple of those seeds I left you and bring me your first harvest.",
+      "Looking good out there, son!",
+      "Go ahead and plant those seeds I left you and bring me your first harvest.",
       "Farming is simple once you get the hang of it — and I want to make sure you get started right!"
     ],
     rewards: [
-      { id: 'gold', count: 500, name: "Gold", image: "/images/items/gold.png" },
-      { id: ID_SEEDS?.CARROT || 131848, count: 8, name: "Carrot Seeds", image: "/images/items/seeds.png" },
-      { id: ID_BAIT_ITEMS?.BAIT_1 || 30001, count: 3, name: "Bait I", image: "/images/items/seeds.png" }
+      { id: 'pico_pack', seeds: [getRaritySeedId(ID_SEEDS.CARROT, 1), getRaritySeedId(ID_SEEDS.TOMATO, 1)], count: 1, name: "Pico Seeds Pack", image: "/images/cardfront/card1idle/idle_1/idle_1_00000.png" },
     ],
     reqs: [
-      { id: ID_PRODUCE_ITEMS?.CARROT || 131588, count: 2, name: "Carrots", image: ALL_ITEMS[ID_PRODUCE_ITEMS?.CARROT]?.image || "/images/items/carrot.png" }
+      { id: ID_PRODUCE_ITEMS?.CARROT, count: 2, name: "Carrots", pos: 3 }
     ],
     unlockCondition: (step, completed) => step >= 32 && completed.includes("q1_pabee_intro")
   },
 
   {
-    id: "q1c_uncle_bee_hello",
+    id: "q1_beejamin_welcome",
     type: "main",
-    sender: "Great Uncle Sir Bee",
-    subject: "A Letter from your Uncle",
+    sender: "Beejamin",
+    subject: "YO! New Farmer Alert!",
+    mailImage: "/images/mail/mailbeejamin.png",
     body: [
-      "Nephew.",
-      "I heard you took over the farm. Good.",
-      "I have left a small contribution for your operations. Use it wisely — the valley does not reward laziness.",
-      "Make me proud."
+      "YO! Heard you moved into the old farm! That's SICK!",
+      "I'm Beejamin. I lift boulders and stuff. Big supporter of the hustle!",
+      "Planted these potato seeds last season but I kinda forgot to go back for them haha. ENJOY! Grow big stuff!"
     ],
     rewards: [
-      { id: 'gold', count: 800, name: "Gold", image: "/images/items/gold.png" },
-      { id: ID_SEEDS?.POTATO || 131849, count: 6, name: "Potato Seeds", image: "/images/items/seeds.png" },
-      { id: ID_SEEDS?.TOMATO || 131850, count: 6, name: "Tomato Seeds", image: "/images/items/seeds.png" }
+      { id: 'pico_pack', seeds: [getRaritySeedId(ID_SEEDS.POTATO, 1), getRaritySeedId(ID_SEEDS.POTATO, 1)], count: 1, name: "Pico Seeds Pack", image: "/images/cardfront/card1idle/idle_1/idle_1_00000.png" },
     ],
     reqs: [],
-    unlockCondition: (step, completed) => step >= 32 && completed.includes("q1b_pabee_first_crop")
+    unlockCondition: (step, completed) => completed.includes("q1b_queen_harvest")
   },
 
   {
-    id: "q1d_mayor_intro",
+    id: "q1b_beejamin_harvest",
+    type: "main",
+    sender: "Beejamin",
+    subject: "How's the Potato Life??",
+    mailImage: "/images/mail/mailbeejamin.png",
+    body: [
+      "BRO. Did you grow the potatoes yet??",
+      "I bet they are SO BIG. Potatoes are like nature's dumbbells.",
+      "Send me proof and I'll hook you up with something nice."
+    ],
+    rewards: [
+      { id: 'honey', count: 650, name: "HNY", image: "/images/profile_bar/unlocked_balance_icon.png" },
+      { id: 'gems', count: 20, name: "Gems", image: "/images/profile_bar/unlocked_balance_icon.png" },
+    ],
+    reqs: [
+      { id: ID_PRODUCE_ITEMS?.POTATO, count: 2, name: "Potatoes", pos: 24 }
+    ],
+    unlockCondition: (step, completed) => step >= 32 && completed.includes("q1_beejamin_welcome")
+  },
+
+  {
+    id: "q1_dewey_welcome",
+    type: "main",
+    sender: "Captain Dewey",
+    subject: "Greetings From the Sea",
+    mailImage: "/images/mail/maildewey.png",
+    body: [
+      "Aye, word travels fast on the water, new farmer.",
+      "I be Captain Dewey, and I sail these shores without fear — except the scurvy. That'll get ye before any storm.",
+      "Take these onion seeds. Grow 'em, eat 'em, and keep yer insides from goin' rotten. Yarr."
+    ],
+    rewards: [
+      { id: 'pico_pack', seeds: [getRaritySeedId(ID_SEEDS.ONION, 1), getRaritySeedId(ID_SEEDS.ONION, 1)], count: 1, name: "Pico Seeds Pack", image: "/images/cardfront/card1idle/idle_1/idle_1_00000.png" },
+    ],
+    reqs: [],
+    unlockCondition: (step, completed) => completed.includes("q1_mayor_welcome")
+  },
+
+  {
+    id: "q1b_dewey_harvest",
+    type: "main",
+    sender: "Captain Dewey",
+    subject: "The Scurvy Report",
+    mailImage: "/images/mail/maildewey.png",
+    body: [
+      "Ahoy! I hope those onions are growin' strong.",
+      "A sailor without his onions is a sailor courtin' disaster. Bring me yer harvest and I'll see ye rewarded.",
+      "Yarr, the sea respects those who tend their land too."
+    ],
+    rewards: [
+      { id: 'honey', count: 650, name: "HNY", image: "/images/profile_bar/unlocked_balance_icon.png" },
+      { id: 'gems', count: 20, name: "Gems", image: "/images/profile_bar/unlocked_balance_icon.png" },
+    ],
+    reqs: [
+      { id: ID_PRODUCE_ITEMS?.ONION, count: 2, name: "Onions", pos: 27 }
+    ],
+    unlockCondition: (step, completed) => step >= 32 && completed.includes("q1_dewey_welcome")
+  },
+
+  {
+    id: "q1_mayor_welcome",
     type: "main",
     sender: "Mayor Prezibee",
     subject: "Welcome to Harvest Valley!",
+    mailImage: "/images/mail/mailmayor.png",
     body: [
-      "Dear new Farmer,",
-      "On behalf of everyone in Harvest Valley, welcome! We are thrilled to have such an energetic new member of our community.",
-      "I have taken the liberty of stocking your supply with a little something to help you on your way. The valley takes care of its own!"
+      "Dear New Resident of Harvest Valley,",
+      "On behalf of the township, I extend my most formal welcome. Our valley thrives when its farmers thrive, and I have every confidence in your potential.",
+      "Enclosed you will find a fine selection of celery seeds — a crop that speaks of discipline and patience. The valley is watching."
     ],
     rewards: [
-      { id: 'gold', count: 600, name: "Gold", image: "/images/items/gold.png" },
-      { id: ID_BAIT_ITEMS?.BAIT_1 || 30001, count: 5, name: "Bait I", image: "/images/items/seeds.png" },
-      { id: ID_SEEDS?.CORN || 131851, count: 5, name: "Corn Seeds", image: "/images/items/seeds.png" }
+      { id: 'pico_pack', seeds: [getRaritySeedId(ID_SEEDS.CELERY, 1), getRaritySeedId(ID_SEEDS.CELERY, 1)], count: 1, name: "Pico Seeds Pack", image: "/images/cardfront/card1idle/idle_1/idle_1_00000.png" },
     ],
     reqs: [],
-    unlockCondition: (step, completed) => completed.includes("q1c_uncle_bee_hello")
+    unlockCondition: (step, completed) => completed.includes("q1_potionmaster_welcome")
+  },
+
+  {
+    id: "q1b_mayor_harvest",
+    type: "main",
+    sender: "Mayor Prezibee",
+    subject: "A Civic Update Request",
+    mailImage: "/images/mail/mailmayor.png",
+    body: [
+      "Greetings, Farmer.",
+      "As part of our ongoing Valley Growth Initiative, I am formally requesting a progress update in the form of a celery sample.",
+      "Produce said celery and the township will compensate you accordingly."
+    ],
+    rewards: [
+      { id: 'honey', count: 650, name: "HNY", image: "/images/profile_bar/unlocked_balance_icon.png" },
+      { id: 'gems', count: 20, name: "Gems", image: "/images/profile_bar/unlocked_balance_icon.png" },
+    ],
+    reqs: [
+      { id: ID_PRODUCE_ITEMS?.CELERY, count: 2, name: "Celery" }
+    ],
+    unlockCondition: (step, completed) => step >= 32 && completed.includes("q1_mayor_welcome")
+  },
+
+  {
+    id: "q1_potionmaster_welcome",
+    type: "main",
+    sender: "The Potion Master",
+    subject: "A Most Exciting Development!",
+    mailImage: "/images/mail/mailpotionmaster.png",
+    body: [
+      "OH! A new farmer! Wonderful! Spectacular!",
+      "I'm Zim — the Potion Master. I've been cataloguing the botanical resonance frequencies of local crops for seventeen years and let me tell you, RADISHES are criminally underrated.",
+      "Please grow some. For science. And friendship!"
+    ],
+    rewards: [
+      { id: 'pico_pack', seeds: [getRaritySeedId(ID_SEEDS.RADISH, 1), getRaritySeedId(ID_SEEDS.RADISH, 1)], count: 1, name: "Pico Seeds Pack", image: "/images/cardfront/card1idle/idle_1/idle_1_00000.png" },
+    ],
+    reqs: [],
+    unlockCondition: (step, completed) => completed.includes("q1_beejamin_welcome")
+  },
+
+  {
+    id: "q1b_potionmaster_harvest",
+    type: "main",
+    sender: "The Potion Master",
+    subject: "URGENT: Botanical Data Needed",
+    mailImage: "/images/mail/mailpotionmaster.png",
+    body: [
+      "THE RADISHES! Have you grown the radishes?!",
+      "I have been positively vibrating with anticipation. The quantum herb energy of a fresh radish is simply irreplaceable.",
+      "Bring them to me — scientifically! — and I shall reward you handsomely."
+    ],
+    rewards: [
+      { id: 'honey', count: 650, name: "HNY", image: "/images/profile_bar/unlocked_balance_icon.png" },
+      { id: 'gems', count: 20, name: "Gems", image: "/images/profile_bar/unlocked_balance_icon.png" },
+    ],
+    reqs: [
+      { id: ID_PRODUCE_ITEMS?.RADISH, count: 2, name: "Radishes", pos: 28 }
+    ],
+    unlockCondition: (step, completed) => step >= 32 && completed.includes("q1_potionmaster_welcome")
+  },
+
+  {
+    id: "q1_queen_welcome",
+    type: "main",
+    sender: "Queen Beeatrice",
+    subject: "A Letter from the Queen",
+    mailImage: "/images/mail/mailqueen.png",
+    body: [
+      "My dear child,",
+      "I heard you've taken on your grandfather's old farm and my heart just swelled with pride for you.",
+      "I've sent along some lettuce seeds from my personal garden. They're grown with care, and I hope you tend to them the same way. You are so loved here in Harvest Valley."
+    ],
+    rewards: [
+      { id: 'pico_pack', seeds: [getRaritySeedId(ID_SEEDS.LETTUCE, 1), getRaritySeedId(ID_SEEDS.LETTUCE, 1)], count: 1, name: "Pico Seeds Pack", image: "/images/cardfront/card1idle/idle_1/idle_1_00000.png" },
+    ],
+    reqs: [],
+    unlockCondition: (step, completed) => completed.includes("q1b_pabee_first_crop")
+  },
+
+  {
+    id: "q1b_queen_harvest",
+    type: "main",
+    sender: "Queen Beeatrice",
+    subject: "Growing Well?",
+    mailImage: "/images/mail/mailqueen.png",
+    body: [
+      "Dearest Farmer,",
+      "I've been thinking about you and those little lettuce seeds. I do hope they've been getting enough water.",
+      "When you've harvested some, send them along — I'd love to see how your garden is coming. And of course, I'll make sure you're well rewarded, dear."
+    ],
+    rewards: [
+      { id: 'honey', count: 650, name: "HNY", image: "/images/profile_bar/unlocked_balance_icon.png" },
+      { id: 'gems', count: 20, name: "Gems", image: "/images/profile_bar/unlocked_balance_icon.png" },
+    ],
+    reqs: [
+      { id: ID_PRODUCE_ITEMS?.LETTUCE, count: 2, name: "Lettuce", pos: 26 }
+    ],
+    unlockCondition: (step, completed) => step >= 32 && completed.includes("q1_queen_welcome")
+  },
+
+  {
+    id: "q1_end_papabee",
+    type: "main",
+    sender: "Pabee",
+    subject: "About Those Extra Plots...",
+    mailImage: "/images/mail/mailpapabee.png",
+    body: [
+      "You're doing incredible, kid — better than I ever did in my first season.",
+      "Now, I know three plots feels limiting. Here's something I should've told you sooner: down by the docks, there's an old gardener who knows this land better than anyone.",
+      "Go introduce yourself. Tell her Pabee sent you. She'll know what to do about getting you some more room to grow."
+    ],
+    rewards: [],
+    reqs: [],
+    unlockCondition: (step, completed) =>
+      completed.includes("q1b_pabee_first_crop") &&
+      completed.includes("q1b_beejamin_harvest") &&
+      completed.includes("q1b_dewey_harvest") &&
+      completed.includes("q1b_mayor_harvest") &&
+      completed.includes("q1b_potionmaster_harvest") &&
+      completed.includes("q1b_queen_harvest")
   },
 
   // Wave 2: Unlocking the World (60-120 min)
@@ -118,18 +296,15 @@ export const getQuestData = () => [
     sender: "Mayor Prezibee",
     subject: "The Old Dock",
     body: [
-      "I have a small favour to ask.",
-      "The old town dock has been sitting in disrepair for years. The anglers are miserable!",
-      "If you can contribute 500 Gold toward the repairs, the town will handle the rest. And I promise we will make it worth your while."
+      "I have a proposition for you.",
+      "The old town dock has been sitting in disrepair for years and the fishing community is suffering for it.",
+      "The repairs will cost 1,500 Gold — it's an investment, not a handout. Once construction begins it will take about 2 hours. But I assure you, the return will be worth every coin."
     ],
-    rewards: [
-      { id: 'gold', count: 300, name: "Gold", image: "/images/items/gold.png" },
-      { id: ID_BAIT_ITEMS?.BAIT_2 || 30002, count: 5, name: "Bait II", image: "/images/items/seeds.png" }
-    ],
+    rewards: [],
     reqs: [
-      { id: 'gold', count: 500, name: "Gold", image: "/images/items/gold.png" }
+      { id: 'gold', count: 1500, name: "Gold", image: "/images/items/gold.png" }
     ],
-    unlockCondition: (step, completed) => completed.includes("q1d_mayor_intro")
+    unlockCondition: (step, completed) => completed.includes("q2b_missionboard_challenge")
   },
 
   {
@@ -143,7 +318,8 @@ export const getQuestData = () => [
       "Here, take this — I've been saving it. Start with the basics, there's plenty of fish out there waiting for you!"
     ],
     rewards: [
-      { id: 'gold', count: 400, name: "Gold", image: "/images/items/gold.png" },
+      { id: 'honey', count: 400, name: "HNY", image: "/images/profile_bar/unlocked_balance_icon.png" },
+      { id: 'gems', count: 10, name: "Gems" },
       { id: ID_BAIT_ITEMS?.BAIT_1 || 30001, count: 8, name: "Bait I", image: "/images/items/seeds.png" },
       { id: ID_BAIT_ITEMS?.BAIT_2 || 30002, count: 3, name: "Bait II", image: "/images/items/seeds.png" }
     ],
@@ -163,7 +339,8 @@ export const getQuestData = () => [
       "Bring 500 Gold and 20 Potatoes to the Tavern. Do not dawdle."
     ],
     rewards: [
-      { id: 'gold', count: 800, name: "Gold", image: "/images/items/gold.png" },
+      { id: 'honey', count: 800, name: "HNY", image: "/images/profile_bar/unlocked_balance_icon.png" },
+      { id: 'gems', count: 10, name: "Gems" },
       { id: ID_POTION_ITEMS?.POTION_GROWTH_ELIXIR || 132104, count: 2, name: "Growth Elixir", image: ALL_ITEMS[ID_POTION_ITEMS?.POTION_GROWTH_ELIXIR]?.image || "/images/items/potion1.png" },
       { id: ID_BAIT_ITEMS?.BAIT_2 || 30002, count: 5, name: "Bait II", image: "/images/items/seeds.png" }
     ],
@@ -188,7 +365,8 @@ export const getQuestData = () => [
       "Catch them in the forest bushes using a Bug Net and I'll share a prototype potion with you."
     ],
     rewards: [
-      { id: 'gold', count: 400, name: "Gold", image: "/images/items/gold.png" },
+      { id: 'honey', count: 400, name: "HNY", image: "/images/profile_bar/unlocked_balance_icon.png" },
+      { id: 'gems', count: 40, name: "Gems" },
       { id: ID_POTION_ITEMS?.POTION_GROWTH_ELIXIR || 132104, count: 2, name: "Growth Elixir", image: ALL_ITEMS[ID_POTION_ITEMS?.POTION_GROWTH_ELIXIR]?.image || "/images/items/potion1.png" }
     ],
     reqs: [
@@ -209,15 +387,12 @@ export const getQuestData = () => [
       "Give it a try next time you plant something!"
     ],
     rewards: [
-      { id: 'gold', count: 250, name: "Gold", image: "/images/items/gold.png" },
+      { id: 'honey', count: 250, name: "HNY", image: "/images/profile_bar/unlocked_balance_icon.png" },
+      { id: 'gems', count: 35, name: "Gems" },
       { id: ID_BAIT_ITEMS?.BAIT_2 || 30002, count: 3, name: "Bait II", image: "/images/items/seeds.png" }
     ],
     reqs: [],
-    unlockCondition: (step, completed) => {
-      const xp = parseInt(localStorage.getItem('sandbox_farming_xp') || '0', 10);
-      const level = Math.floor(Math.sqrt((xp || 0) / 150)) + 1;
-      return level >= 5;
-    }
+    unlockCondition: (step, completed) => completed.includes("q5_first_catch")
   },
 
   {
@@ -231,7 +406,8 @@ export const getQuestData = () => [
       "Please accept this premium bait as a token of our gratitude. It should make fishing a breeze!"
     ],
     rewards: [
-      { id: 'gold', count: 200, name: "Gold", image: "/images/items/gold.png" },
+      { id: 'honey', count: 200, name: "HNY", image: "/images/profile_bar/unlocked_balance_icon.png" },
+      { id: 'gems', count: 25, name: "Gems" },
       { id: ID_BAIT_ITEMS?.BAIT_1 || 30001, count: 3, name: "Bait I", image: "/images/items/seeds.png" }
     ],
     reqs: [],
@@ -249,12 +425,13 @@ export const getQuestData = () => [
       "Why don't you try out that bait the Mayor gave you? Cast a line off the dock and bring me 3 Fish. Let's see what you've got!"
     ],
     rewards: [
-      { id: 'gold', count: 200, name: "Gold", image: "/images/items/gold.png" },
+      { id: 'honey', count: 200, name: "HNY", image: "/images/profile_bar/unlocked_balance_icon.png" },
+      { id: 'gems', count: 15, name: "Gems" },
       { id: ID_BAIT_ITEMS?.BAIT_1 || 30001, count: 3, name: "Bait I", image: "/images/items/seeds.png" },
       { id: 'honey', count: 150, name: "Honey", image: "/images/items/honey.png" }
     ],
     reqs: [
-      { 
+      {
         id: 'tracked_fish_q5', 
         count: 3, 
         name: "Any Fish", 
@@ -284,12 +461,13 @@ export const getQuestData = () => [
       "Can you head to the pond and catch 5 more Fish for us? I'll make it worth your while!"
     ],
     rewards: [
-      { id: 'gold', count: 200, name: "Gold", image: "/images/items/gold.png" },
+      { id: 'honey', count: 200, name: "HNY", image: "/images/profile_bar/unlocked_balance_icon.png" },
+      { id: 'gems', count: 10, name: "Gems" },
       { id: ID_CHEST_ITEMS?.CHEST_BRONZE || 20001, count: 1, name: "Bronze Chest", image: "/images/items/chest.png" },
       { id: 'honey', count: 300, name: "Honey", image: "/images/items/honey.png" }
     ],
     reqs: [
-      { 
+      {
         id: 'tracked_fish_q6', 
         count: 5, 
         name: "Any Fish", 
@@ -319,7 +497,7 @@ export const getQuestData = () => [
       "Gather some materials so we can build you a Rowboat. Bring me 30 Wood Logs, 20 Sticks, and 10 Iron Ore!"
     ],
     rewards: [
-      { id: 'gold', count: 300, name: "Gold", image: "/images/items/gold.png" },
+      { id: 'honey', count: 300, name: "HNY", image: "/images/profile_bar/unlocked_balance_icon.png" },
       { id: ID_BAIT_ITEMS?.BAIT_2 || 30002, count: 5, name: "Bait II", image: "/images/items/seeds.png" },
       { id: 'honey', count: 500, name: "Honey", image: "/images/items/honey.png" }
     ],
@@ -342,14 +520,14 @@ export const getQuestData = () => [
       "Grow 10 Potatoes and bring them to me. I'll give you some seeds to keep you going!"
     ],
     rewards: [
-      { id: 'gold', count: 250, name: "Gold", image: "/images/items/gold.png" },
+      { id: 'honey', count: 250, name: "HNY", image: "/images/profile_bar/unlocked_balance_icon.png" },
       { id: ID_SEEDS?.CARROT || 131848, count: 5, name: "Carrot Seeds", image: "/images/items/seeds.png" },
       { id: 'honey', count: 200, name: "Honey", image: "/images/items/honey.png" }
     ],
     reqs: [
       { id: ID_PRODUCE_ITEMS?.POTATO || 131586, count: 10, name: "Potatoes", image: ALL_ITEMS[ID_PRODUCE_ITEMS?.POTATO]?.image || "/images/items/potato.png" }
     ],
-    unlockCondition: (step, completed) => completed.includes("q2_rebuild_tavern")
+    unlockCondition: (step, completed) => completed.includes("q2_missionboard_intro")
   },
 
   {
@@ -363,7 +541,7 @@ export const getQuestData = () => [
       "I'll trade you some gold and a couple of chests for them."
     ],
     rewards: [
-      { id: 'gold', count: 350, name: "Gold", image: "/images/items/gold.png" },
+      { id: 'honey', count: 350, name: "HNY", image: "/images/profile_bar/unlocked_balance_icon.png" },
       { id: ID_CHEST_ITEMS?.CHEST_BRONZE || 20001, count: 2, name: "Bronze Chests", image: "/images/items/chest.png" }
     ],
     reqs: [
@@ -383,8 +561,7 @@ export const getQuestData = () => [
       "Craft 3 Crab Pots and set them up. Bring me 5 Crabs to prove they work!"
     ],
     rewards: [
-      { id: 'gold', count: 200, name: "Gold", image: "/images/items/gold.png" },
-      { id: 'honey', count: 250, name: "Honey", image: "/images/items/honey.png" },
+      { id: 'honey', count: 450, name: "HNY", image: "/images/profile_bar/unlocked_balance_icon.png" },
       { id: ID_CHEST_ITEMS?.CHEST_BRONZE || 20001, count: 1, name: "Bronze Chest", image: "/images/items/chest.png" }
     ],
     reqs: [
@@ -404,7 +581,7 @@ export const getQuestData = () => [
       "They only surface when it's raining. Take your Rowboat out on the next rainy day and catch one!"
     ],
     rewards: [
-      { id: 'gold', count: 150, name: "Gold", image: "/images/items/gold.png" },
+      { id: 'honey', count: 150, name: "HNY", image: "/images/profile_bar/unlocked_balance_icon.png" },
       { id: ID_POTION_ITEMS?.POTION_GROWTH_ELIXIR || 132104, count: 2, name: "Growth Elixir", image: "/images/items/potion1.png" },
       { id: 9998, count: 1, name: "Water Sprinkler", image: "/images/items/watersprinkler.png" }
     ],
@@ -424,7 +601,7 @@ export const getQuestData = () => [
       "Build a Sailboat so you can catch the real prizes."
     ],
     rewards: [
-      { id: 'gold', count: 100, name: "Gold", image: "/images/items/gold.png" },
+      { id: 'honey', count: 100, name: "HNY", image: "/images/profile_bar/unlocked_balance_icon.png" },
       { id: ID_BAIT_ITEMS?.BAIT_3 || 30003, count: 10, name: "Bait III", image: "/images/items/seeds.png" }
     ],
     reqs: [
@@ -443,7 +620,7 @@ export const getQuestData = () => [
       "You'll need a Tesla Tower on your boat to survive!"
     ],
     rewards: [
-      { id: 'gold', count: 100, name: "Gold", image: "/images/items/gold.png" },
+      { id: 'honey', count: 100, name: "HNY", image: "/images/profile_bar/unlocked_balance_icon.png" },
       { id: 9954, count: 1, name: "Magic Ring", image: "/images/items/seeds.png" },
       { id: ID_CHEST_ITEMS?.CHEST_GOLD || 20003, count: 1, name: "Gold Chest", image: "/images/items/chest.png" }
     ],
@@ -463,7 +640,7 @@ export const getQuestData = () => [
       "Forging Steel Plates from Iron and Coal will let you build the ultimate fishing vessel."
     ],
     rewards: [
-      { id: 'gold', count: 80, name: "Gold", image: "/images/items/gold.png" },
+      { id: 'honey', count: 80, name: "HNY", image: "/images/profile_bar/unlocked_balance_icon.png" },
       { id: 9962, count: 1, name: "Engine", image: "/images/crafting/engine.png" }
     ],
     reqs: [
@@ -482,8 +659,7 @@ export const getQuestData = () => [
       "It's massive, loud, and can reach the deepest parts of the ocean."
     ],
     rewards: [
-      { id: 'gold', count: 80, name: "Gold", image: "/images/items/gold.png" },
-      { id: 'honey', count: 1000, name: "Honey", image: "/images/items/honey.png" }
+      { id: 'honey', count: 1080, name: "HNY", image: "/images/profile_bar/unlocked_balance_icon.png" }
     ],
     reqs: [
       { id: 9963, count: 1, name: "Trawler", image: "/images/items/trawler.png" }
@@ -501,7 +677,7 @@ export const getQuestData = () => [
       "Take the Trawler out and catch the Kraken. Be warned, it will put up the fight of a lifetime."
     ],
     rewards: [
-      { id: 'gold', count: 50, name: "Gold", image: "/images/items/gold.png" },
+      { id: 'honey', count: 50, name: "HNY", image: "/images/profile_bar/unlocked_balance_icon.png" },
       { id: 9961, count: 5, name: "Red Gem", image: "/images/items/seeds.png" }
     ],
     reqs: [
@@ -521,7 +697,7 @@ export const getQuestData = () => [
       "Bring me 5 Ladybugs and 1 Bug Net so I know you're prepared!"
     ],
     rewards: [
-      { id: 'gold', count: 150, name: "Gold", image: "/images/items/gold.png" },
+      { id: 'honey', count: 150, name: "HNY", image: "/images/profile_bar/unlocked_balance_icon.png" },
       { id: ID_POTION_ITEMS?.POTION_GROWTH_ELIXIR || 132104, count: 1, name: "Growth Elixir", image: ALL_ITEMS[ID_POTION_ITEMS?.POTION_GROWTH_ELIXIR]?.image || "/images/items/potion1.png" }
     ],
     reqs: [
@@ -529,6 +705,96 @@ export const getQuestData = () => [
       { id: 9971, count: 1, name: "Bug Net", image: "/images/items/bug_net.png" }
     ],
     unlockCondition: (step, completed) => completed.includes("q8_first_harvest")
+  },
+
+  {
+    id: "q9c_pico_harvest",
+    type: "farming",
+    sender: "Farmer Bob",
+    subject: "Root Veggies Needed",
+    body: [
+      "You've been putting those pico seeds to good use, I can tell.",
+      "How about supplying me with some onions and radishes? Good stuff for the table.",
+      "I'll make it worth your while!"
+    ],
+    rewards: [
+      { id: 'honey', count: 300, name: "HNY", image: "/images/profile_bar/unlocked_balance_icon.png" },
+      { id: 'gems', count: 15, name: "Gems" },
+    ],
+    reqs: [
+      { id: ID_PRODUCE_ITEMS?.ONION, count: 5, name: "Onions", pos: 27 },
+      { id: ID_PRODUCE_ITEMS?.RADISH, count: 5, name: "Radishes", pos: 28 },
+    ],
+    unlockCondition: (step, completed) => completed.includes("q2_missionboard_intro")
+  },
+
+  {
+    id: "q9d_tavern_greens",
+    type: "farming",
+    sender: "Tavern Barkeep",
+    subject: "Fresh Greens for the Menu",
+    body: [
+      "Between you and me, the tavern menu was getting a bit stale.",
+      "We're adding some lighter options — salads, sides, that sort of thing.",
+      "Can you bring us some lettuce and celery? We'd really appreciate it!"
+    ],
+    rewards: [
+      { id: 'honey', count: 250, name: "HNY", image: "/images/profile_bar/unlocked_balance_icon.png" },
+      { id: 'gems', count: 15, name: "Gems" },
+    ],
+    reqs: [
+      { id: ID_PRODUCE_ITEMS?.LETTUCE, count: 5, name: "Lettuce", pos: 25 },
+      { id: ID_PRODUCE_ITEMS?.CABBAGE, count: 5, name: "Celery", pos: 26 },
+    ],
+    unlockCondition: (step, completed) => completed.includes("q2_missionboard_intro")
+  },
+
+  {
+    id: "q2_missionboard_intro",
+    type: "main",
+    sender: "Mayor Prezibee",
+    subject: "The Valley Mission Board",
+    mailImage: "/images/mail/mailmayor.png",
+    body: [
+      "Now that you're settling in, I wanted to make you aware of a key town resource: the Valley Mission Board.",
+      "Local residents post tasks there regularly — harvests they need, fish to be caught, all sorts of things. Complete them and you'll be compensated well.",
+      "Consider it your first step toward becoming a true pillar of this community. The board is always full — get to it!"
+    ],
+    rewards: [],
+    reqs: [],
+    unlockCondition: (step, completed) => completed.includes("q1_end_papabee")
+  },
+
+  {
+    id: "q2b_missionboard_challenge",
+    type: "main",
+    sender: "Mayor Prezibee",
+    subject: "Proving Your Worth",
+    mailImage: "/images/mail/mailmayor.png",
+    body: [
+      "I've been watching the mission board closely.",
+      "To formally recognize your commitment to Harvest Valley, I'd like to see you complete five tasks from the board.",
+      "It won't go unrewarded — the valley looks after those who look after it."
+    ],
+    rewards: [
+      { id: 'honey', count: 1500, name: "HNY", image: "/images/profile_bar/unlocked_balance_icon.png" },
+      { id: 'gems', count: 100, name: "Gems" },
+    ],
+    reqs: [
+      {
+        id: 'farming_board_5',
+        count: 5,
+        name: "Mission Board Tasks",
+        image: null,
+        fn: () => {
+          const completed = JSON.parse(localStorage.getItem('sandbox_completed_quests') || '[]');
+          const allQuests = getQuestData();
+          const farmingIds = allQuests.filter(q => q.type === 'farming').map(q => q.id);
+          return completed.filter(id => farmingIds.includes(id)).length;
+        }
+      }
+    ],
+    unlockCondition: (step, completed) => completed.includes("q2_missionboard_intro")
   },
 
 ];
@@ -2565,11 +2831,45 @@ export const RegionalQuestBoard = ({ onClose, title, questType, tutorialStep, re
   );
 };
 
+const DOCK_BUILD_MS = 2 * 60 * 60 * 1000; // 2 hours
+const DOCK_SKIP_GEMS = 150;
+
 export const MailboxDialog = ({ onClose, tutorialStep, refetch, onTutorialAdvance, completedQuests, setCompletedQuests, readQuests, setReadQuests }) => {
   const [animState, setAnimState] = useState(0); // 0: list, 1: opening, 2: reading, 3: claiming
   const [activeQuest, setActiveQuest] = useState(null);
   const [discardedQuests, setDiscardedQuests] = useState(() => JSON.parse(localStorage.getItem('sandbox_discarded_quests') || '[]'));
   const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
+  const [dockTimeLeft, setDockTimeLeft] = useState(null);
+
+  useEffect(() => {
+    const tick = () => {
+      const start = parseInt(localStorage.getItem('sandbox_dock_build_start') || '0', 10);
+      if (!start) { setDockTimeLeft(null); return; }
+      if (localStorage.getItem('sandbox_dock_repaired') === 'true') { setDockTimeLeft(0); return; }
+      const elapsed = Date.now() - start;
+      const remaining = Math.max(0, DOCK_BUILD_MS - elapsed);
+      setDockTimeLeft(remaining);
+      if (remaining === 0) {
+        localStorage.setItem('sandbox_dock_repaired', 'true');
+        localStorage.setItem('sandbox_dock_unlocked', 'true');
+        window.dispatchEvent(new CustomEvent('dockRepaired'));
+      }
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  const handleSkipDockBuild = () => {
+    const gems = parseInt(localStorage.getItem('sandbox_gems') || '0', 10);
+    if (gems < DOCK_SKIP_GEMS) { window.dispatchEvent(new CustomEvent('showNotification', { detail: { msg: `Need ${DOCK_SKIP_GEMS} gems to skip!`, type: 'error' } })); return; }
+    localStorage.setItem('sandbox_gems', String(gems - DOCK_SKIP_GEMS));
+    window.dispatchEvent(new CustomEvent('sandboxGemsChanged'));
+    localStorage.setItem('sandbox_dock_repaired', 'true');
+    localStorage.setItem('sandbox_dock_unlocked', 'true');
+    window.dispatchEvent(new CustomEvent('dockRepaired'));
+    setDockTimeLeft(0);
+  };
 
   const confirmDiscard = () => {
     const nextDiscarded = [...discardedQuests, activeQuest.id];
@@ -2645,10 +2945,10 @@ export const MailboxDialog = ({ onClose, tutorialStep, refetch, onTutorialAdvanc
     const quest = activeQuest;
     if (!quest) return;
 
-    // Deduct requirements
     const sandboxLoot = JSON.parse(localStorage.getItem('sandbox_loot') || '{}');
     const sandboxProduce = JSON.parse(localStorage.getItem('sandbox_produce') || '{}');
-    
+
+    // Only deduct gold requirements — crops/items are kept by the player
     for (const req of quest.reqs) {
       if (req.fn) continue;
       if (req.id === 'gold') {
@@ -2656,30 +2956,6 @@ export const MailboxDialog = ({ onClose, tutorialStep, refetch, onTutorialAdvanc
         const newGold = Math.max(0, currentGold - req.count);
         localStorage.setItem('sandbox_gold', newGold.toString());
         window.dispatchEvent(new CustomEvent('sandboxGoldChanged', { detail: newGold.toString() }));
-        continue;
-      }
-      let remaining = req.count;
-      const ids = Array.isArray(req.id) ? req.id : [req.id];
-      
-      for (const id of ids) {
-        if (remaining <= 0) break;
-        if (sandboxProduce[id] !== undefined) {
-          if (Array.isArray(sandboxProduce[id])) {
-            while (remaining > 0 && sandboxProduce[id].length > 0) {
-              sandboxProduce[id].pop();
-              remaining--;
-            }
-          } else {
-            const deduct = Math.min(Number(sandboxProduce[id]) || 0, remaining);
-            sandboxProduce[id] = (Number(sandboxProduce[id]) || 0) - deduct;
-            remaining -= deduct;
-          }
-        }
-        if (remaining > 0 && sandboxLoot[id]) {
-          const deduct = Math.min(Number(sandboxLoot[id]), remaining);
-          sandboxLoot[id] -= deduct;
-          remaining -= deduct;
-        }
       }
     }
 
@@ -2695,11 +2971,18 @@ export const MailboxDialog = ({ onClose, tutorialStep, refetch, onTutorialAdvanc
         const newGold = currentGold + reward.count;
         localStorage.setItem('sandbox_gold', newGold.toString());
         window.dispatchEvent(new CustomEvent('sandboxGoldChanged', { detail: newGold.toString() }));
+      } else if (reward.id === 'gems') {
+        const currentGems = parseInt(localStorage.getItem('sandbox_gems') || '0', 10);
+        const newGems = currentGems + reward.count;
+        localStorage.setItem('sandbox_gems', newGems.toString());
+        window.dispatchEvent(new CustomEvent('sandboxGemsChanged'));
+      } else if (reward.id === 'pico_pack') {
+        // Pack animation handles seed delivery via charPackOpen event
       } else {
         sandboxLoot[reward.id] = (sandboxLoot[reward.id] || 0) + reward.count;
       }
     }
-    
+
     localStorage.setItem('sandbox_loot', JSON.stringify(sandboxLoot));
     localStorage.setItem('sandbox_produce', JSON.stringify(sandboxProduce));
 
@@ -2707,14 +2990,17 @@ export const MailboxDialog = ({ onClose, tutorialStep, refetch, onTutorialAdvanc
     setCompletedQuests(nextCompleted);
     localStorage.setItem('sandbox_completed_quests', JSON.stringify(nextCompleted));
 
+    // Auto-delete letter after completion
+    const nextDiscarded = [...discardedQuests, quest.id];
+    setDiscardedQuests(nextDiscarded);
+    localStorage.setItem('sandbox_discarded_quests', JSON.stringify(nextDiscarded));
+
     if (quest.id === "q2_rebuild_tavern") {
       localStorage.setItem('quest_q2_rebuild_tavern_completed', 'true');
       window.dispatchEvent(new CustomEvent('tavernUnlocked'));
     }
     if (quest.id === "q2_unlock_dock") {
-      localStorage.setItem('sandbox_dock_unlocked', 'true');
-      localStorage.setItem('sandbox_dock_repaired', 'true');
-      window.dispatchEvent(new CustomEvent('dockRepaired'));
+      localStorage.setItem('sandbox_dock_build_start', Date.now().toString());
     }
 
     let xpSkill = "";
@@ -2727,7 +3013,11 @@ export const MailboxDialog = ({ onClose, tutorialStep, refetch, onTutorialAdvanc
         xpKey = 'sandbox_fishing_xp';
     }
 
-    if (xpSkill && quest.id !== 'q1_pabee_intro') {
+    const hasPicoPack = quest.rewards.some(r => r.id === 'pico_pack');
+    let didLevelUp = false;
+    let levelUpDetail = null;
+
+    if (xpSkill && quest.id !== 'q1_pabee_intro' && quest.reqs.length > 0) {
         const currentXp = parseInt(localStorage.getItem(xpKey) || '0', 10);
         const oldLevel = Math.floor(Math.sqrt((currentXp || 0) / 150)) + 1;
         const newXp = currentXp + 500;
@@ -2735,13 +3025,27 @@ export const MailboxDialog = ({ onClose, tutorialStep, refetch, onTutorialAdvanc
         window.dispatchEvent(new CustomEvent('ls-update', { detail: { key: xpKey, value: newXp.toString() } }));
         const newLevel = Math.floor(Math.sqrt((newXp || 0) / 150)) + 1;
         if (newLevel > oldLevel) {
-            window.dispatchEvent(new CustomEvent('levelUp', { detail: { skill: xpSkill, level: newLevel } }));
+            didLevelUp = true;
+            levelUpDetail = { skill: xpSkill, level: newLevel };
+            if (!hasPicoPack) {
+                window.dispatchEvent(new CustomEvent('levelUp', { detail: levelUpDetail }));
+            }
         }
         setTimeout(() => { window.dispatchEvent(new CustomEvent('showNotification', { detail: { msg: `+500 ${xpSkill} XP!`, type: "info" } })); }, 1000);
     }
 
     if (refetch) refetch();
-    setAnimState(3); // Show rewards
+
+    if (hasPicoPack) {
+      const packReward = quest.rewards.find(r => r.id === 'pico_pack');
+      window.dispatchEvent(new CustomEvent('closeMailbox'));
+      onClose();
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('charPackOpen', { detail: { seeds: packReward.seeds, onClosed: didLevelUp ? levelUpDetail : null } }));
+      }, 100);
+    } else {
+      setAnimState(3); // Show rewards
+    }
   };
 
   const handleOpenLetter = (quest) => {
@@ -2789,11 +3093,18 @@ export const MailboxDialog = ({ onClose, tutorialStep, refetch, onTutorialAdvanc
             </div>
             <div style={{ display: 'flex', justifyContent: 'center', gap: '15px' }}>
               <BaseButton label="Done" onClick={() => {
+                const packReward = activeQuest.rewards.find(r => r.id === 'pico_pack');
                 if (activeQuest.id === 'q1_pabee_intro') {
                   window.dispatchEvent(new CustomEvent('closeMailbox'));
                   onClose();
                   setTimeout(() => {
                     window.dispatchEvent(new CustomEvent('pabeePackOpen'));
+                  }, 100);
+                } else if (packReward) {
+                  window.dispatchEvent(new CustomEvent('closeMailbox'));
+                  onClose();
+                  setTimeout(() => {
+                    window.dispatchEvent(new CustomEvent('charPackOpen', { detail: { seeds: packReward.seeds } }));
                   }, 100);
                 } else {
                   setAnimState(0);
@@ -2832,7 +3143,11 @@ export const MailboxDialog = ({ onClose, tutorialStep, refetch, onTutorialAdvanc
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '15px' }}>
                   {reqCounts.map((req, i) => (
                     <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontFamily: 'monospace', fontSize: '14px' }}>
-                      <img src={req.image} style={{ width: '24px', height: '24px', objectFit: 'contain' }} alt={req.name} onError={(e) => { e.target.onerror = null; e.target.src = '/images/items/seeds.png'; }} />
+                      {ALL_ITEMS[req.id]?.pos >= 0 ? (
+                        <div style={{ width: '24px', height: '24px', backgroundImage: 'url(/images/crops/seeds.webp)', backgroundSize: `${(159 * 24 / 207.7647).toFixed(1)}px auto`, backgroundPositionX: 'center', backgroundPositionY: `-${(ALL_ITEMS[req.id].pos * 24).toFixed(1)}px`, backgroundRepeat: 'no-repeat', flexShrink: 0 }} />
+                      ) : req.image ? (
+                        <img src={req.image} style={{ width: '24px', height: '24px', objectFit: 'contain' }} alt={req.name} onError={(e) => { e.target.onerror = null; }} />
+                      ) : null}
                       <span style={{ color: req.current >= req.count ? '#006400' : '#8b0000', fontWeight: 'bold' }}>
                         {req.name}: {req.current}/{req.count}
                       </span>
@@ -2850,12 +3165,37 @@ export const MailboxDialog = ({ onClose, tutorialStep, refetch, onTutorialAdvanc
               </div>
             )}
 
-            {!completedQuests.includes(activeQuest.id) && activeQuest.reqs.length === 0 && activeQuest.rewards.some(r => r.id === 'pabee_pack') && (
+            {activeQuest.id === 'q2_unlock_dock' && completedQuests.includes('q2_unlock_dock') && dockTimeLeft > 0 && (
+              <div style={{ backgroundColor: 'rgba(30, 60, 100, 0.2)', border: '2px solid #4a7ab5', padding: '16px', borderRadius: '8px', marginBottom: '20px', textAlign: 'center', fontFamily: 'monospace' }}>
+                <p style={{ margin: '0 0 8px 0', color: '#3a5a8a', fontWeight: 'bold', fontSize: '15px' }}>
+                  🔨 Dock under construction...
+                </p>
+                <p style={{ margin: '0 0 12px 0', color: '#3a5a8a', fontSize: '20px', fontWeight: 'bold' }}>
+                  {Math.floor(dockTimeLeft / 3600000)}h {Math.floor((dockTimeLeft % 3600000) / 60000)}m {Math.floor((dockTimeLeft % 60000) / 1000)}s remaining
+                </p>
+                <button
+                  onClick={handleSkipDockBuild}
+                  style={{ background: '#4a7ab5', color: '#fff', border: 'none', borderRadius: '6px', padding: '8px 20px', fontFamily: 'monospace', fontSize: '14px', cursor: 'pointer', fontWeight: 'bold' }}
+                >
+                  Skip for {DOCK_SKIP_GEMS} 💎
+                </button>
+              </div>
+            )}
+
+            {activeQuest.id === 'q2_unlock_dock' && completedQuests.includes('q2_unlock_dock') && dockTimeLeft === 0 && (
+              <div style={{ backgroundColor: 'rgba(0, 100, 0, 0.15)', border: '2px solid #3a8a3a', padding: '12px 16px', borderRadius: '8px', marginBottom: '20px', textAlign: 'center', fontFamily: 'monospace' }}>
+                <p style={{ margin: 0, color: '#2a6a2a', fontWeight: 'bold', fontSize: '15px' }}>
+                  ✅ Dock construction complete! Head to the dock to meet Fisherman Finn.
+                </p>
+              </div>
+            )}
+
+            {!completedQuests.includes(activeQuest.id) && activeQuest.reqs.length === 0 && activeQuest.rewards.some(r => r.id === 'pabee_pack' || r.id === 'pico_pack') && (
               <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
                 <img
-                  src="/images/cardback/commonback.png"
+                  src="/images/cardfront/card1idle/idle_1/idle_1_00000.png"
                   alt="Gift"
-                  style={{ width: '90px', borderRadius: '8px', boxShadow: '0 4px 16px rgba(0,0,0,0.4)', animation: 'mapFloat 2s ease-in-out infinite' }}
+                  style={{ width: '120px', imageRendering: 'pixelated', animation: 'mapFloat 2s ease-in-out infinite' }}
                 />
               </div>
             )}
@@ -2874,12 +3214,22 @@ export const MailboxDialog = ({ onClose, tutorialStep, refetch, onTutorialAdvanc
                       <BaseButton label="Fold Letter" onClick={() => setAnimState(0)} />
                     </>
                   ) : activeQuest.reqs.length > 0 ? (
-                    <BaseButton label={isReadyToTurnIn ? "Turn In & Claim" : "Not Enough Items"} disabled={!isReadyToTurnIn} onClick={handleCompleteQuest} />
+                    <>
+                      <BaseButton label={activeQuest.id === 'q2_unlock_dock' ? (isReadyToTurnIn ? "Invest & Start Construction" : "Need 1,500 Gold") : (isReadyToTurnIn ? "Turn In & Claim" : "Not Enough Items")} disabled={!isReadyToTurnIn} onClick={handleCompleteQuest} />
+                      <BaseButton label="Fold Letter" onClick={() => setAnimState(0)} />
+                    </>
                   ) : (
-                    <BaseButton label="Claim Gifts" onClick={handleCompleteQuest} />
+                    <BaseButton label={activeQuest.rewards.length === 0 ? "Mark as Read" : "Claim Gifts"} onClick={handleCompleteQuest} />
                   )}
-                  {activeQuest.id !== 'q2_rebuild_tavern' && (
-                    <BaseButton label="Fold Letter" onClick={() => setAnimState(0)} />
+                  {activeQuest.id !== 'q2_rebuild_tavern' && activeQuest.rewards.length === 0 && (
+                    <BaseButton label="Fold Letter" onClick={() => {
+                      if (activeQuest.reqs.length === 0) {
+                        const nextDiscarded = [...discardedQuests, activeQuest.id];
+                        setDiscardedQuests(nextDiscarded);
+                        localStorage.setItem('sandbox_discarded_quests', JSON.stringify(nextDiscarded));
+                      }
+                      setAnimState(0);
+                    }} />
                   )}
                 </>
               )}
@@ -2920,6 +3270,7 @@ export const MailboxDialog = ({ onClose, tutorialStep, refetch, onTutorialAdvanc
         <div style={{ position: 'absolute', top: '24%', left: '49%', transform: 'translateX(-50%)', width: '78%', bottom: '12%', overflowY: activeQuestsList.length > 5 ? 'auto' : 'visible', overflowX: 'visible', display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center' }}>
           {activeQuestsList.length > 0 ? activeQuestsList.map(quest => {
             const isRead = readQuests.includes(quest.id);
+            const isReady = quest.reqs.length > 0 && !completedQuests.includes(quest.id) && checkRequirements(quest.reqs);
             return (
               <div
                 key={quest.id}
@@ -2928,9 +3279,12 @@ export const MailboxDialog = ({ onClose, tutorialStep, refetch, onTutorialAdvanc
                 onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.02)'; }}
                 onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}
               >
-                <img src="/images/mail/mailpapabee.png" alt="" style={{ width: '88%', display: 'block', borderRadius: '10px', margin: '0 auto' }} draggable={false} />
-                {!isRead && <img src="/images/mail/!.png" alt="!" style={{ position: 'absolute', top: '-11px', right: '14px', width: '28px', height: '28px' }} draggable={false} />}
-                <div style={{ position: 'absolute', top: 0, left: 0, right: '23px', bottom: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <img src={quest.mailImage || "/images/mail/mailpapabee.png"} alt="" style={{ width: '88%', display: 'block', borderRadius: '10px', margin: '0 auto' }} draggable={false} />
+                {isReady
+                  ? <div style={{ position: 'absolute', top: '-11px', right: '14px', width: '28px', height: '28px', background: '#2e7d32', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', boxShadow: '0 2px 6px rgba(0,0,0,0.5)' }}>✅</div>
+                  : !isRead && <img src="/images/mail/!.png" alt="!" style={{ position: 'absolute', top: '-11px', right: '14px', width: '28px', height: '28px' }} draggable={false} />
+                }
+                <div style={{ position: 'absolute', top: 0, left: 0, right: '23px', bottom: '20px', display: 'flex', alignItems: 'center', justifyContent: 'flex-start', paddingLeft: 'calc(30% - 10px)' }}>
                   <span style={{ fontFamily: 'Cartoonist', fontSize: '14px', color: '#FFFFFF', textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000' }}>{quest.subject}</span>
                 </div>
               </div>
@@ -2996,12 +3350,20 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
   const [tutPage, setTutPage] = useState(1);
   const tutPageRef = useRef(1);
   const setTutPageSync = (val) => { tutPageRef.current = val; setTutPage(val); localStorage.setItem('sandbox_tut_page', String(val)); window.dispatchEvent(new CustomEvent('tutPageChanged')); };
-  const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
+const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
   const [tutGemPlotIndex, setTutGemPlotIndex] = useState(null);
   const [showMissionBoard, setShowMissionBoard] = useState(false);
   const [showShop, setShowShop] = useState(false);
   const [showPabeePack, setShowPabeePack] = useState(false);
+  const [charPackInfo, setCharPackInfo] = useState(null);
   const [showFarmCustomize, setShowFarmCustomize] = useState(false);
+  const [showFestivals, setShowFestivals] = useState(false);
+
+  useEffect(() => {
+    const handler = () => setShowFestivals(true);
+    window.addEventListener('openFestivals', handler);
+    return () => window.removeEventListener('openFestivals', handler);
+  }, []);
 
   const [farmingXp, setFarmingXp] = useState(() => parseInt(localStorage.getItem('sandbox_farming_xp') || '0', 10));
   const farmingLevel = getLevelFromXp(farmingXp);
@@ -3037,7 +3399,7 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
       localStorage.setItem('sandbox_honey', newHoney.toString());
       window.dispatchEvent(new CustomEvent('sandboxHoneyChanged', { detail: newHoney.toString() }));
 
-      // Add 250 gems
+      // Add 250 gems (tutorial intro gift)
       const currentGems = parseInt(localStorage.getItem('sandbox_gems') || '0', 10);
       const newGems = currentGems + 250;
       localStorage.setItem('sandbox_gems', newGems.toString());
@@ -3048,6 +3410,26 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
     };
     window.addEventListener('pabeePackOpen', handler);
     return () => window.removeEventListener('pabeePackOpen', handler);
+  }, []);
+
+  useEffect(() => {
+    const handler = (e) => {
+      const { seeds, onClosed } = e.detail;
+      const loot = JSON.parse(localStorage.getItem('sandbox_loot') || '{}');
+      for (const seedId of seeds) {
+        loot[seedId] = (loot[seedId] || 0) + 1;
+      }
+      localStorage.setItem('sandbox_loot', JSON.stringify(loot));
+      setCharPackInfo({ seeds, tier: 2, pendingLevelUp: onClosed || null });
+    };
+    window.addEventListener('charPackOpen', handler);
+    return () => window.removeEventListener('charPackOpen', handler);
+  }, []);
+
+  useEffect(() => {
+    const handler = (e) => setUnlockedPlots(e.detail);
+    window.addEventListener('plotsUnlocked', handler);
+    return () => window.removeEventListener('plotsUnlocked', handler);
   }, []);
 
   const safeItems = allItems || [];
@@ -3077,6 +3459,7 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
   const [selectedSeed, setSelectedSeed] = useState(null);
   const [, setGrowthTimer] = useState(null);
   const [maxPlots, setMaxPlots] = useState(0);
+  const [unlockedPlots, setUnlockedPlots] = useState(() => JSON.parse(localStorage.getItem('sandbox_unlocked_plots') || '[6,7,8]'));
   const [previewUpdateKey, setPreviewUpdateKey] = useState(0);
   const [userCropsLoaded, setUserCropsLoaded] = useState(false);
   const [usedSeedsInPreview, setUsedSeedsInPreview] = useState({});
@@ -3166,6 +3549,17 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
   }, []);
 
   useEffect(() => {
+    if (isGlobalDialogOpen) {
+      setSelectedTool(null);
+      setIsWatering(false);
+      setIsDigging(false);
+      setIsHoeing(false);
+      setIsDirting(false);
+      setIsSeeding(false);
+    }
+  }, [isGlobalDialogOpen]);
+
+  useEffect(() => {
     window.dispatchEvent(new CustomEvent('petDialogOpen', { detail: showTamagotchiDialog || showBowlFishDialog }));
   }, [showTamagotchiDialog, showBowlFishDialog]);
 
@@ -3238,6 +3632,7 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
       });
     }
   }, [tutPage, tutorialStep]);
+
 
   // Set market tutorial flag when user is on tutPage 12
   useEffect(() => {
@@ -3323,6 +3718,7 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
     
     show("Growth skipped! Crop is ready to harvest.", "success");
     setSkipGrowTarget(null);
+    if (tutorialStep === 3 && tutPage === 10) setTutorialGrowSkipped(true);
   };
 
   // Plot Preparation State (0: Red X, 1: Hole, 2: Hole+Fish, 3: Dirt Pile)
@@ -3748,7 +4144,10 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
 
         await Promise.all(
           uniqueSeedIds.map(async (sid) => {
-            const baseGt = getGrowthTime(sid);
+            // Strip rarity bits (12+) so rarity-encoded IDs map to the correct base growth time
+            const numSid = Number(sid);
+            const baseSeedNum = numSid > 0xFFF ? numSid & 0xFFF : numSid;
+            const baseGt = getGrowthTime(baseSeedNum);
             const gt = Math.max(1, Math.floor(baseGt / currentSpeedMultiplier));
             const normalGt = Math.max(1, Math.floor(baseGt / baseSpeedMultiplier));
             growthTimeCache.set(sid.toString(), { gt, normalGt });
@@ -3780,7 +4179,7 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
                 
                 // Adjust plantedAt and record Growth Elixir application if any
                 const originalPlantedAt = (endTime - growthTime) * 1000;
-                item.contractPlantedAt = isNaN(originalPlantedAt) ? Date.now() : originalPlantedAt;
+                item.contractPlantedAt = (isNaN(originalPlantedAt) || originalPlantedAt <= 0) ? Date.now() : originalPlantedAt;
                 let wState = waterStateRef.current[crop.plotNumber];
                 let pausedMs = (wState && !isNaN(wState.pausedMs)) ? wState.pausedMs : 0;
                 item.plantedAt = item.contractPlantedAt + pausedMs;
@@ -4473,7 +4872,6 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
       });
       show("Bug squashed!", "success");
 
-      // After tutorial watering sequence: advance to tutPage 10 and spawn visual-only crow
       if (tutPostWaterRef.current) {
         tutPostWaterRef.current = false;
         setTutPageSync(10);
@@ -4568,9 +4966,8 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
         else if (wOverride === 'storm') currentWeather = '⚡';
 
         const currentTutorialStep = parseInt(localStorage.getItem('sandbox_tutorial_step') || '0', 10);
-        // Check rain before tutorial override so rain always auto-waters crops
-        const isRainingNow = currentWeather === '⚡' || currentWeather === '🌧️';
         if (currentTutorialStep < 32) currentWeather = null;
+        const isRainingNow = currentWeather === '⚡' || currentWeather === '🌧️';
         if (currentWeather === '⚡') {
           // ~5% chance every 1.5 hours (5400 seconds)
           if (Math.random() < 0.00001) {
@@ -5678,6 +6075,9 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
 
       if (result) {
         // Award XP
+        const totalHarvested = parseInt(localStorage.getItem('sandbox_total_harvested') || '0', 10);
+        localStorage.setItem('sandbox_total_harvested', String(totalHarvested + 1));
+
         const currentFarmingXp = parseInt(localStorage.getItem('sandbox_farming_xp') || '0', 10);
         const oldLevel = getLevelFromXp(currentFarmingXp);
         const newFarmingXp = currentFarmingXp + 10;
@@ -5962,6 +6362,17 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
 
     if (isWatering) {
       const item = cropArray.getItem(index);
+      // If crop is ready to harvest, collect it and deselect the watering can
+      if (item && item.seedId) {
+        const nowSec = Math.floor(Date.now() / 1000);
+        const endTime = Math.floor((item.plantedAt || 0) / 1000) + (item.growthTime || 0);
+        if (item.growStatus === 2 || nowSec >= endTime) {
+          setSelectedTool(null);
+          setIsWatering(false);
+          handleInstantHarvest(index);
+          return;
+        }
+      }
       if (item && item.needsWater) {
         const wState = waterStateRef.current[index];
         if (wState) {
@@ -5974,7 +6385,6 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
         playWaterSound();
         if (tutorialStep === 3 && tutPage === 8) {
           const plotIdx = tutWaterPlotRef.current !== null ? tutWaterPlotRef.current : index;
-          setTutPageSync(9);
           setSelectedTool(null);
           setIsWatering(false);
           tutPostWaterRef.current = true;
@@ -6296,20 +6706,34 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
           </div>
         </div>
         {/* XP Progress Bar */}
-        <div style={{ height: '12px', background: 'rgba(0,0,0,0.55)', borderRadius: '0 0 8px 8px', overflow: 'hidden', border: '2px solid rgba(0,0,0,0.35)', borderTop: 'none' }}>
-          <div style={{ width: `${Math.min(farmingProgress, 100)}%`, height: '100%', background: 'linear-gradient(90deg, #4caf50, #8bc34a)', transition: 'width 0.5s ease' }} />
-        </div>
-        <div style={{ textAlign: 'center', fontFamily: 'Cartoonist', fontSize: '11px', color: '#fff', textShadow: '1px 1px 0 #000, -1px -1px 0 #000', marginTop: '3px' }}>
-          {Math.round(farmingProgress)}% to Lv.{farmingLevel + 1}
+        <div style={{ position: 'relative', height: '20px', marginTop: '2px' }}>
+          <img src="/images/level/progress bar.png" alt="" style={{ width: '100%', height: '100%', objectFit: 'fill', display: 'block' }} />
+          <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', width: `${Math.min(farmingProgress, 100)}%`, transition: 'width 0.5s ease' }}>
+            <img src="/images/level/yellowbar.png" alt="" style={{ width: '100%', height: '100%', objectFit: 'fill', display: 'block' }} />
+          </div>
         </div>
       </div>
+
+      {/* Festivals Button */}
+      {tutorialStep >= 32 && <div style={{ position: 'fixed', top: '130px', right: '-25px', zIndex: 100, pointerEvents: 'auto' }}>
+        <img
+          src="/images/fest/festivalsbutton.png"
+          alt="Festivals"
+          style={{ height: '130px', objectFit: 'contain', cursor: 'pointer', transition: 'transform 0.1s ease, filter 0.1s ease' }}
+          onClick={() => window.dispatchEvent(new CustomEvent('openFestivals'))}
+          onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.08)'; e.currentTarget.style.filter = 'brightness(1.15)'; }}
+          onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.filter = 'brightness(1)'; }}
+          onMouseDown={e => { e.currentTarget.style.transform = 'scale(0.95)'; }}
+          onMouseUp={e => { e.currentTarget.style.transform = 'scale(1.08)'; }}
+        />
+      </div>}
 
       {/* Farming Board Overlay */}
 
 
       <PanZoomViewport
         backgroundSrc="/images/backgrounds/realfarm.png"
-        hotspots={tutorialStep >= 32 ? hotspots : []}
+        hotspots={tutorialStep >= 32 ? hotspots.filter(h => h.id !== ID_FARM_HOTSPOTS.FARMER || completedQuests.includes('q2_missionboard_intro')) : []}
         width={width}
         height={height}
         dialogs={dialogs}
@@ -6320,6 +6744,12 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
         backgroundOffsetY={-40}
         disablePanZoom
         onHotspotClick={(hotspotId) => {
+          setSelectedTool(null);
+          setIsWatering(false);
+          setIsDigging(false);
+          setIsHoeing(false);
+          setIsDirting(false);
+          setIsSeeding(false);
           if (hotspotId === ID_FARM_HOTSPOTS.FARMER) { setShowMissionBoard(true); return true; }
           return false;
         }}
@@ -6339,7 +6769,7 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
             width: '30px',
             zIndex: 6,
             cursor: 'pointer',
-            filter: selectedTool === 'shovel' ? 'drop-shadow(0px 0px 6px rgba(255,255,255,0.8))' : 'drop-shadow(0px 0px 10px yellow) drop-shadow(0px 0px 20px yellow)',
+            filter: selectedTool === 'shovel' ? 'drop-shadow(0px 0px 10px yellow) drop-shadow(0px 0px 20px yellow)' : 'none',
             transform: selectedTool === 'shovel' ? 'translateY(-15px)' : 'none',
             transition: 'transform 0.4s ease, filter 0.2s ease',
             animation: selectedTool === 'shovel' ? 'mapFloat 2s ease-in-out infinite' : 'none',
@@ -6360,7 +6790,7 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
             width: '43px',
             zIndex: 6,
             cursor: 'pointer',
-            filter: selectedTool === 'seeds' ? 'drop-shadow(0px 0px 6px rgba(255,255,255,0.8))' : 'drop-shadow(0px 0px 10px yellow) drop-shadow(0px 0px 20px yellow)',
+            filter: selectedTool === 'seeds' ? 'drop-shadow(0px 0px 10px yellow) drop-shadow(0px 0px 20px yellow)' : 'none',
             transform: selectedTool === 'seeds' ? 'translateY(-15px)' : 'none',
             transition: 'transform 0.4s ease, filter 0.2s ease',
             animation: selectedTool === 'seeds' ? 'mapFloat 2s ease-in-out infinite' : 'none',
@@ -6381,7 +6811,7 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
             width: '63px',
             zIndex: 6,
             cursor: 'pointer',
-            filter: selectedTool === 'bucket' ? 'drop-shadow(0px 0px 6px rgba(255,255,255,0.8))' : 'drop-shadow(0px 0px 10px yellow) drop-shadow(0px 0px 20px yellow)',
+            filter: selectedTool === 'bucket' ? 'drop-shadow(0px 0px 10px yellow) drop-shadow(0px 0px 20px yellow)' : 'none',
             transform: selectedTool === 'bucket' ? 'translateY(-15px)' : 'none',
             transition: 'transform 0.4s ease, filter 0.2s ease',
             animation: selectedTool === 'bucket' ? 'mapFloat 2s ease-in-out infinite' : 'none',
@@ -6402,7 +6832,7 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
             width: '52px',
             zIndex: 6,
             cursor: 'pointer',
-            filter: selectedTool === 'soil' ? 'drop-shadow(0px 0px 6px rgba(255,255,255,0.8))' : 'drop-shadow(0px 0px 10px yellow) drop-shadow(0px 0px 20px yellow)',
+            filter: selectedTool === 'soil' ? 'drop-shadow(0px 0px 10px yellow) drop-shadow(0px 0px 20px yellow)' : 'none',
             transform: selectedTool === 'soil' ? 'translateY(-15px)' : 'none',
             transition: 'transform 0.4s ease, filter 0.2s ease',
             animation: selectedTool === 'soil' ? 'mapFloat 2s ease-in-out infinite' : 'none',
@@ -6592,6 +7022,7 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
           totalPlots={30}
           selectedIndexes={selectedIndexes}
           crops={cropArray}
+          unlockedPlots={unlockedPlots}
         />
 
         {/* Cat Appearance */}
@@ -6639,7 +7070,7 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
         )}
 
         {/* Sir Bee Tutorial Overlay */}
-        {tutorialStep >= 1 && tutorialStep < 4 && (
+        {tutorialStep >= 1 && tutorialStep < 3 && (
           <>
             <img
               src="/images/bees/sir.png"
@@ -7101,6 +7532,98 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
     />
   )}
 
+  {tutorialStep === 3 && tutPage === 5 && !isSelectCropDialog && (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 99999, pointerEvents: 'none' }}>
+      <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <radialGradient id="sg1" cx="50%" cy="50%" r="50%">
+            <stop offset="60%" stopColor="black" stopOpacity="1"/>
+            <stop offset="100%" stopColor="black" stopOpacity="0"/>
+          </radialGradient>
+          <radialGradient id="sg2" cx="50%" cy="50%" r="50%">
+            <stop offset="60%" stopColor="black" stopOpacity="1"/>
+            <stop offset="100%" stopColor="black" stopOpacity="0"/>
+          </radialGradient>
+          <mask id="tut-mask-5">
+            <rect width="100%" height="100%" fill="white"/>
+            <ellipse cx="622" cy="735" rx="75" ry="60" fill="url(#sg1)"/>
+            <ellipse cx="538" cy="446" rx="65" ry="55" fill="url(#sg2)"/>
+          </mask>
+        </defs>
+        <rect width="100%" height="100%" fill="rgba(0,0,0,0.82)" mask="url(#tut-mask-5)"/>
+      </svg>
+    </div>
+  )}
+
+  {tutorialStep === 3 && tutPage === 6 && !isSelectCropDialog && (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 99999, pointerEvents: 'none' }}>
+      <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <radialGradient id="sg1f" cx="50%" cy="50%" r="50%">
+            <stop offset="60%" stopColor="black" stopOpacity="1"/>
+            <stop offset="100%" stopColor="black" stopOpacity="0"/>
+          </radialGradient>
+          <radialGradient id="sg2f" cx="50%" cy="50%" r="50%">
+            <stop offset="60%" stopColor="black" stopOpacity="1"/>
+            <stop offset="100%" stopColor="black" stopOpacity="0"/>
+          </radialGradient>
+          <mask id="tut-mask-6">
+            <rect width="100%" height="100%" fill="white"/>
+            <ellipse cx="696" cy="740" rx="75" ry="60" fill="url(#sg1f)"/>
+            <ellipse cx="538" cy="446" rx="65" ry="55" fill="url(#sg2f)"/>
+          </mask>
+        </defs>
+        <rect width="100%" height="100%" fill="rgba(0,0,0,0.82)" mask="url(#tut-mask-6)"/>
+      </svg>
+    </div>
+  )}
+
+  {tutorialStep === 3 && tutPage === 7 && !isSelectCropDialog && (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 99999, pointerEvents: 'none' }}>
+      <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <radialGradient id="sg1b" cx="50%" cy="50%" r="50%">
+            <stop offset="60%" stopColor="black" stopOpacity="1"/>
+            <stop offset="100%" stopColor="black" stopOpacity="0"/>
+          </radialGradient>
+          <radialGradient id="sg2b" cx="50%" cy="50%" r="50%">
+            <stop offset="60%" stopColor="black" stopOpacity="1"/>
+            <stop offset="100%" stopColor="black" stopOpacity="0"/>
+          </radialGradient>
+          <mask id="tut-mask-7">
+            <rect width="100%" height="100%" fill="white"/>
+            <ellipse cx="782" cy="740" rx="75" ry="60" fill="url(#sg1b)"/>
+            <ellipse cx="538" cy="446" rx="65" ry="55" fill="url(#sg2b)"/>
+          </mask>
+        </defs>
+        <rect width="100%" height="100%" fill="rgba(0,0,0,0.82)" mask="url(#tut-mask-7)"/>
+      </svg>
+    </div>
+  )}
+
+  {tutorialStep === 3 && tutPage === 8 && !isSelectCropDialog && (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 99999, pointerEvents: 'none' }}>
+      <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <radialGradient id="sg1c" cx="50%" cy="50%" r="50%">
+            <stop offset="60%" stopColor="black" stopOpacity="1"/>
+            <stop offset="100%" stopColor="black" stopOpacity="0"/>
+          </radialGradient>
+          <radialGradient id="sg2c" cx="50%" cy="50%" r="50%">
+            <stop offset="60%" stopColor="black" stopOpacity="1"/>
+            <stop offset="100%" stopColor="black" stopOpacity="0"/>
+          </radialGradient>
+          <mask id="tut-mask-8">
+            <rect width="100%" height="100%" fill="white"/>
+            <ellipse cx="867" cy="740" rx="75" ry="60" fill="url(#sg1c)"/>
+            <ellipse cx="538" cy="416" rx="80" ry="68" fill="url(#sg2c)"/>
+          </mask>
+        </defs>
+        <rect width="100%" height="100%" fill="rgba(0,0,0,0.82)" mask="url(#tut-mask-8)"/>
+      </svg>
+    </div>
+  )}
+
   <style>{`
     .tutorial-img { transition: transform 0.08s, filter 0.08s; cursor: pointer; }
     .tutorial-img:active { transform: scale(0.96); filter: brightness(0.8); }
@@ -7271,7 +7794,6 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
             if (currentGems < 50) { show("Not enough gems!", "error"); return; }
             localStorage.setItem('sandbox_gems', String(currentGems - 50));
             window.dispatchEvent(new CustomEvent('sandboxGemsChanged'));
-            // Crop is already marked ready — just close the popup so user can click to harvest
             setTutGemPopupOpen(false);
           }}
           style={{ display: 'inline-block', background: 'linear-gradient(135deg, #f5c842, #e0a800)', border: '3px solid #a67c00', borderRadius: '12px', padding: '12px 32px', fontFamily: 'Cartoonist', fontSize: '18px', color: '#3a2010', cursor: 'pointer', userSelect: 'none' }}
@@ -7357,6 +7879,34 @@ const Farm = ({ isFarmMenu, setIsFarmMenu }) => {
             }
           }}
         />
+      )}
+      {charPackInfo && (
+        <PokemonPackRipDialog
+          rollingInfo={{
+            id: charPackInfo.tier,
+            count: charPackInfo.seeds.length,
+            isReveal: true,
+            isComplete: true,
+            isFallback: false,
+            revealedSeeds: charPackInfo.seeds,
+          }}
+          onClose={() => {
+            const pending = charPackInfo?.pendingLevelUp;
+            setCharPackInfo(null);
+            if (pending) setTimeout(() => window.dispatchEvent(new CustomEvent('levelUp', { detail: pending })), 300);
+          }}
+          onBack={() => {
+            const pending = charPackInfo?.pendingLevelUp;
+            setCharPackInfo(null);
+            if (pending) setTimeout(() => window.dispatchEvent(new CustomEvent('levelUp', { detail: pending })), 300);
+          }}
+        />
+      )}
+
+      {showFestivals && (
+        <React.Suspense fallback={null}>
+          <FestivalsDialog onClose={() => setShowFestivals(false)} />
+        </React.Suspense>
       )}
     </div>
   );

@@ -29,7 +29,6 @@ const VendorMenu = ({
 
   // Tier mapping to match the contract
   const tierMap = {
-    [ID_CROP_CATEGORIES.FEEBLE_SEED]: 1,
     [ID_CROP_CATEGORIES.PICO_SEED]: 2,
     [ID_CROP_CATEGORIES.BASIC_SEED]: 3,
     [ID_CROP_CATEGORIES.PREMIUM_SEED]: 4,

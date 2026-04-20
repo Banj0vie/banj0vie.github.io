@@ -9,18 +9,6 @@ export const SEED_PACK_PRICE = {
 
 export const SEED_PACKS = [
     {
-        id: ID_CROP_CATEGORIES.FEEBLE_SEED,
-        items: [
-            {
-                label: "5x Seeds",
-                count: 5,
-                price: SEED_PACK_PRICE[1],
-                priceLabel: "500 HNY",
-                icon: "/images/crops/pack-pico-three.png",
-            },
-        ],
-        tip: "Feeble seeds won't give produce!",
-    }, {
         id: ID_CROP_CATEGORIES.PICO_SEED,
         items: [
             {
@@ -57,10 +45,6 @@ export const SEED_PACKS = [
 ]
 
 export const SEED_PACK_LIST = {
-    [ID_CROP_CATEGORIES.FEEBLE_SEED]: {
-        id: ID_CROP_CATEGORIES.FEEBLE_SEED,
-        label: "Feeble",
-    },
     [ID_CROP_CATEGORIES.PICO_SEED]: {
         id: ID_CROP_CATEGORIES.PICO_SEED,
         label: "Pico",
@@ -108,28 +92,6 @@ export const TYPE_LABEL_COLOR = {
 }
 
 export const SEED_TREE = {
-    [ID_CROP_CATEGORIES.FEEBLE_SEED]: {
-        [ID_RARE_TYPE.COMMON]: {
-            count: 1,
-            list: [ID_SEEDS.F_POTATO]
-        },
-        [ID_RARE_TYPE.UNCOMMON]: {
-            count: 1,
-            list: [ID_SEEDS.F_LETTUCE]
-        },
-        [ID_RARE_TYPE.RARE]: {
-            count: 1,
-            list: [ID_SEEDS.F_CABBAGE]
-        },
-        [ID_RARE_TYPE.EPIC]: {
-            count: 1,
-            list: [ID_SEEDS.F_ONION]
-        },
-        [ID_RARE_TYPE.LEGENDARY]: {
-            count: 1,
-            list: [ID_SEEDS.F_RADISH]
-        },
-    },
     [ID_CROP_CATEGORIES.PICO_SEED]: {
         [ID_RARE_TYPE.COMMON]: {
             count: 1,

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import BaseButton from "../../components/buttons/BaseButton";
 import { ALL_ITEMS, IMAGE_URL_CROP } from "../../constants/item_data";
 import { ONE_SEED_HEIGHT, ONE_SEED_WIDTH } from "../../constants/item_seed";
-import { ID_SEEDS, ID_RARE_TYPE } from "../../constants/app_ids";
+import { ID_SEEDS, ID_RARE_TYPE, ID_CROP_CATEGORIES } from "../../constants/app_ids";
 
 // Card front images keyed by [baseId][rarityLevel]
 const CARD_FRONT_IMAGES = {
@@ -221,29 +221,61 @@ const CARD_BACK_IMAGES = {
 
 const CARD_GLOW_TYPES = new Set([ID_RARE_TYPE.LEGENDARY]);
 
-const PICO_IDLE_FRAMES = 11;
-const PICO_IDLE_FPS = 12;
+const PACK_IDLE_FRAMES = 11;
+const PACK_IDLE_FPS = 12;
+const OPEN_FRAMES = 15;
+const OPEN_FRAME_OFFSET = 13;
+const DRAG_PX_FULL = 600;
 
-const PicoPackIdle = () => {
+const PACK_CONFIGS = {
+  2:        { idleDir: 'card1idle/idle_1',         idlePrefix: 'idle_1',       openDir: 'card1open/open_1',         openPrefix: 'open_1',       alt: 'Pico Seeds Pack' },
+  3:        { idleDir: 'basicseedidle/idle_2',     idlePrefix: 'idle_2',       openDir: 'basicseedopen/open_2',     openPrefix: 'open_2',       alt: 'Basic Seeds Pack' },
+  4:        { idleDir: 'premseedidle/idle_3',      idlePrefix: 'idle_3',       openDir: 'premseedopen/open_3',      openPrefix: 'open_3',       alt: 'Premium Seeds Pack' },
+  LEVEL_UP: { idleDir: 'levelupidle/Idle_levelUP', idlePrefix: 'Idle_LevelUP', openDir: 'levelupopen/Open_LevelUP', openPrefix: 'Open_LevelUP', alt: 'Level Up!' },
+};
+
+// Customize rewards per skill and level here
+// Gems: 250 + (level-1)*50, Gold: 250 + (level-1)*200
+export const LEVEL_UP_REWARDS = {
+  Farming:  (level) => [
+    { label: `${250 + (level - 1) * 200} Gold`, image: '/images/profile_bar/unlocked_balance_icon.png', color: '#ffea00' },
+    { label: `${250 + (level - 1) * 50} Gems`,  emoji: '💎',                                            color: '#00bfff' },
+  ],
+  Mining:   (level) => [
+    { label: `${250 + (level - 1) * 200} Gold`, image: '/images/profile_bar/unlocked_balance_icon.png', color: '#ffea00' },
+    { label: `${250 + (level - 1) * 50} Gems`,  emoji: '💎',                                            color: '#00bfff' },
+  ],
+  Foraging: (level) => [
+    { label: `${250 + (level - 1) * 200} Gold`, image: '/images/profile_bar/unlocked_balance_icon.png', color: '#ffea00' },
+    { label: `${250 + (level - 1) * 50} Gems`,  emoji: '💎',                                            color: '#00bfff' },
+  ],
+  Fishing:  (level) => [
+    { label: `${250 + (level - 1) * 200} Gold`, image: '/images/profile_bar/unlocked_balance_icon.png', color: '#ffea00' },
+    { label: `${250 + (level - 1) * 50} Gems`,  emoji: '💎',                                            color: '#00bfff' },
+  ],
+  Crafting: (level) => [
+    { label: `${250 + (level - 1) * 200} Gold`, image: '/images/profile_bar/unlocked_balance_icon.png', color: '#ffea00' },
+    { label: `${250 + (level - 1) * 50} Gems`,  emoji: '💎',                                            color: '#00bfff' },
+  ],
+};
+
+const PackIdle = ({ packId }) => {
   const [frame, setFrame] = useState(0);
+  const cfg = PACK_CONFIGS[packId] || PACK_CONFIGS[2];
   useEffect(() => {
-    const interval = setInterval(() => setFrame(f => (f + 1) % PICO_IDLE_FRAMES), 1000 / PICO_IDLE_FPS);
+    const interval = setInterval(() => setFrame(f => (f + 1) % PACK_IDLE_FRAMES), 1000 / PACK_IDLE_FPS);
     return () => clearInterval(interval);
   }, []);
   const frameStr = String(frame).padStart(5, '0');
   return (
     <img
-      src={`/images/cardfront/card1idle/idle_1/idle_1_${frameStr}.png`}
-      alt="Pico Seeds Pack"
+      src={`/images/cardfront/${cfg.idleDir}/${cfg.idlePrefix}_${frameStr}.png`}
+      alt={cfg.alt}
       draggable={false}
       style={{ height: '80vh', objectFit: 'contain', display: 'block', imageRendering: 'pixelated' }}
     />
   );
 };
-
-const OPEN_FRAMES = 15;        // open_1_00013 → open_1_00027
-const OPEN_FRAME_OFFSET = 13;  // first frame number
-const DRAG_PX_FULL = 1200;     // horizontal px needed to reach last frame
 
 const PokemonPackRipDialog = ({ rollingInfo, onClose, onBack, onBuyAgain }) => {
   const [showCards, setShowCards] = useState(false);
@@ -268,9 +300,37 @@ const PokemonPackRipDialog = ({ rollingInfo, onClose, onBack, onBuyAgain }) => {
   const startXRef = useRef(0);
   const reverseRafRef = useRef(null);
   const containerRef = useRef(null);
+  const canvasRef = useRef(null);
+  const pathPointsRef = useRef([]);
+  const fadeRafRef = useRef(null);
 
   const syncPhase = (p) => { phaseRef.current = p; setPhase(p); };
   const syncFrame = (f) => { openFrameRef.current = f; setOpenFrame(f); };
+
+  // Dispense sandbox rewards once on mount
+  const rewardGiven = useRef(false);
+  useEffect(() => {
+    if (rewardGiven.current) return;
+    rewardGiven.current = true;
+    if (rollingInfo.id === 'LEVEL_UP') {
+      const level = rollingInfo.level || 1;
+      const gems = 250 + (level - 1) * 50;
+      const gold = 250 + (level - 1) * 200;
+      const currentGems = parseInt(localStorage.getItem('sandbox_gems') || '0', 10);
+      localStorage.setItem('sandbox_gems', String(currentGems + gems));
+      window.dispatchEvent(new CustomEvent('sandboxGemsChanged'));
+      const currentGold = parseInt(localStorage.getItem('sandbox_gold') || '0', 10);
+      localStorage.setItem('sandbox_gold', String(currentGold + gold));
+      window.dispatchEvent(new CustomEvent('goldChanged', { detail: String(currentGold + gold) }));
+    } else if (rollingInfo.id === 'pabee_pack') {
+      const currentGold = parseInt(localStorage.getItem('sandbox_gold') || '0', 10);
+      localStorage.setItem('sandbox_gold', String(currentGold + 1000));
+      window.dispatchEvent(new CustomEvent('goldChanged', { detail: String(currentGold + 1000) }));
+      const currentGems = parseInt(localStorage.getItem('sandbox_gems') || '0', 10);
+      localStorage.setItem('sandbox_gems', String(currentGems + 250));
+      window.dispatchEvent(new CustomEvent('sandboxGemsChanged'));
+    }
+  }, []);
 
   const revealCards = () => {
     const numCards = (rollingInfo.revealedSeeds?.length || 0) + (rollingInfo.id === 'pabee_pack' ? 2 : 0);
@@ -310,71 +370,119 @@ const PokemonPackRipDialog = ({ rollingInfo, onClose, onBack, onBuyAgain }) => {
     }, FLY_DONE + 980);
   };
 
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  });
+
+  useEffect(() => {
+    return () => {
+      if (reverseRafRef.current) cancelAnimationFrame(reverseRafRef.current);
+      if (fadeRafRef.current) cancelAnimationFrame(fadeRafRef.current);
+    };
+  }, []);
+
+  const drawTraceLine = (points, alpha = 1) => {
+    const canvas = canvasRef.current;
+    if (!canvas || points.length < 2) return;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    // Outer glow
+    ctx.beginPath();
+    ctx.moveTo(points[0].x, points[0].y);
+    for (let i = 1; i < points.length; i++) ctx.lineTo(points[i].x, points[i].y);
+    ctx.strokeStyle = 'rgba(255, 234, 0, 0.5)';
+    ctx.lineWidth = 14;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.shadowColor = 'rgba(255, 234, 0, 0.9)';
+    ctx.shadowBlur = 20;
+    ctx.stroke();
+    // Bright core
+    ctx.beginPath();
+    ctx.moveTo(points[0].x, points[0].y);
+    for (let i = 1; i < points.length; i++) ctx.lineTo(points[i].x, points[i].y);
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.95)';
+    ctx.lineWidth = 3;
+    ctx.shadowColor = 'rgba(255, 255, 255, 1)';
+    ctx.shadowBlur = 6;
+    ctx.stroke();
+    ctx.restore();
+  };
+
+  const clearCanvas = () => {
+    const canvas = canvasRef.current;
+    if (canvas) canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+  };
+
   const handlePointerDown = (e) => {
-    if (phaseRef.current !== 'idle') return;
-    const rect = containerRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    const relX = e.clientX - rect.left - 125;
-    const relY = e.clientY - rect.top - 70;
-    // Only trigger from the top-left corner of the pack
-    if (relX < rect.width * 0.22 && relY < rect.height * 0.12) {
-      if (reverseRafRef.current) { cancelAnimationFrame(reverseRafRef.current); reverseRafRef.current = null; }
-      startXRef.current = e.clientX;
-      syncPhase('opening');
-      e.currentTarget.setPointerCapture(e.pointerId);
-    }
+    if (phaseRef.current === 'complete') return;
+    if (reverseRafRef.current) { cancelAnimationFrame(reverseRafRef.current); reverseRafRef.current = null; }
+    if (fadeRafRef.current) { cancelAnimationFrame(fadeRafRef.current); fadeRafRef.current = null; }
+    startXRef.current = e.clientX;
+    pathPointsRef.current = [{ x: e.clientX, y: e.clientY }];
+    clearCanvas();
+    syncPhase('opening');
+    e.currentTarget.setPointerCapture(e.pointerId);
   };
 
   const handlePointerMove = (e) => {
     if (phaseRef.current !== 'opening') return;
-    const DEAD_ZONE = 50;
-    const diff = Math.max(0, e.clientX - startXRef.current - DEAD_ZONE);
-    const frame = Math.min(OPEN_FRAMES - 1, Math.floor((diff / DRAG_PX_FULL) * OPEN_FRAMES));
+    const dx = Math.max(0, e.clientX - startXRef.current);
+    const frame = Math.min(OPEN_FRAMES - 1, Math.floor((dx / DRAG_PX_FULL) * OPEN_FRAMES));
     syncFrame(frame);
-    if (frame >= OPEN_FRAMES - 1) {
-      syncPhase('complete');
-      setTimeout(revealCards, 300);
-    }
+    pathPointsRef.current.push({ x: e.clientX, y: e.clientY });
+    drawTraceLine(pathPointsRef.current);
   };
 
   const handlePointerUp = () => {
     if (phaseRef.current !== 'opening') return;
-    if (openFrameRef.current >= OPEN_FRAMES * 0.4) {
-      syncPhase('completing');
-      const finish = () => {
-        const cur = openFrameRef.current;
-        if (cur >= OPEN_FRAMES - 1) {
-          syncPhase('complete');
+    if (openFrameRef.current >= OPEN_FRAMES - 1) {
+      syncPhase('complete');
+      clearCanvas();
+      const packsOpened = parseInt(localStorage.getItem('sandbox_packs_opened') || '0', 10);
+      localStorage.setItem('sandbox_packs_opened', String(packsOpened + 1));
+      setTimeout(revealCards, 300);
+    } else {
+      syncPhase('reversing');
+      // Fade out the trace
+      let alpha = 1;
+      const pts = [...pathPointsRef.current];
+      const fade = () => {
+        alpha -= 0.07;
+        if (alpha <= 0) { clearCanvas(); fadeRafRef.current = null; return; }
+        drawTraceLine(pts, alpha);
+        fadeRafRef.current = requestAnimationFrame(fade);
+      };
+      fadeRafRef.current = requestAnimationFrame(fade);
+
+      const reverse = () => {
+        if (openFrameRef.current <= 0) {
+          syncPhase('idle');
+          syncFrame(0);
           reverseRafRef.current = null;
-          setTimeout(revealCards, 300);
           return;
         }
-        syncFrame(Math.min(OPEN_FRAMES - 1, cur + 1));
-        reverseRafRef.current = requestAnimationFrame(finish);
+        syncFrame(openFrameRef.current - 1);
+        reverseRafRef.current = requestAnimationFrame(reverse);
       };
-      reverseRafRef.current = requestAnimationFrame(finish);
-      return;
+      reverseRafRef.current = requestAnimationFrame(reverse);
     }
-    syncPhase('reversing');
-    const step = () => {
-      const cur = openFrameRef.current;
-      if (cur <= 0) { syncPhase('idle'); syncFrame(0); reverseRafRef.current = null; return; }
-      syncFrame(Math.max(0, cur - 2));
-      reverseRafRef.current = requestAnimationFrame(step);
-    };
-    reverseRafRef.current = requestAnimationFrame(step);
   };
 
-  useEffect(() => {
-    return () => { if (reverseRafRef.current) cancelAnimationFrame(reverseRafRef.current); };
-  }, []);
 
-
-  const revealedSeeds = rollingInfo.revealedSeeds || [];
-  const bonusCards = rollingInfo.id === 'pabee_pack' ? [
-    { type: 'gold', label: '1000 HONEY', image: '/images/profile_bar/unlocked_balance_icon.png', color: '#ffea00' },
-    { type: 'gems', label: '250 Gems', emoji: '💎', color: '#00bfff' },
-  ] : [];
+  const isLevelUp = rollingInfo.id === 'LEVEL_UP';
+  const revealedSeeds = isLevelUp ? [] : (rollingInfo.revealedSeeds || []);
+  const bonusCards = isLevelUp
+    ? (LEVEL_UP_REWARDS[rollingInfo.skill]?.(rollingInfo.level) || []).map((r, i) => ({ ...r, type: `reward_${i}` }))
+    : rollingInfo.id === 'pabee_pack' ? [
+        { type: 'gold', label: '1000 HONEY', image: '/images/profile_bar/unlocked_balance_icon.png', color: '#ffea00' },
+        { type: 'gems', label: '250 Gems', emoji: '💎', color: '#00bfff' },
+      ] : [];
   const totalCards = revealedSeeds.length + bonusCards.length;
 
   const flipCard = (idx) => {
@@ -518,21 +626,83 @@ const PokemonPackRipDialog = ({ rollingInfo, onClose, onBack, onBuyAgain }) => {
         }}>
           <div
             ref={containerRef}
+            style={{ userSelect: 'none', touchAction: 'none', position: 'relative', display: 'inline-block' }}
             onPointerDown={handlePointerDown}
             onPointerMove={handlePointerMove}
             onPointerUp={handlePointerUp}
-            style={{ userSelect: 'none', touchAction: 'none', cursor: phase === 'idle' ? 'default' : 'grabbing' }}
           >
-            {phase === 'idle'
-              ? <PicoPackIdle />
-              : <img
-                  src={`/images/cardfront/card1open/open_1/open_1_${String(OPEN_FRAME_OFFSET + openFrame).padStart(5, '0')}.png`}
-                  draggable={false}
-                  style={{ height: '80vh', objectFit: 'contain', display: 'block', imageRendering: 'pixelated' }}
-                />
-            }
+            <style>{`
+              @keyframes swipeHintBob {
+                0%, 100% { opacity: 0.85; transform: translateX(-50%) translateY(0px); }
+                50%       { opacity: 1;    transform: translateX(-50%) translateY(-5px); }
+              }
+              @keyframes glowSweep {
+                0%   { left: -80px; }
+                100% { left: calc(100% + 80px); }
+              }
+            `}</style>
+            {(() => {
+              const cfg = PACK_CONFIGS[rollingInfo.id] || PACK_CONFIGS[2];
+              return phase === 'idle'
+                ? <PackIdle packId={rollingInfo.id} />
+                : <img
+                    src={`/images/cardfront/${cfg.openDir}/${cfg.openPrefix}_${String(OPEN_FRAME_OFFSET + openFrame).padStart(5, '0')}.png`}
+                    draggable={false}
+                    style={{ height: '80vh', objectFit: 'contain', display: 'block', imageRendering: 'pixelated' }}
+                  />;
+            })()}
+
+            {/* Swipe hint — only while idle */}
+            {phase === 'idle' && (
+              <>
+                <div style={{
+                  position: 'absolute', top: '-14px', left: '50%',
+                  transform: 'translateX(-50%)',
+                  whiteSpace: 'nowrap',
+                  fontFamily: 'Cartoonist', fontSize: '51px',
+                  color: '#fff',
+                  textShadow: '0 0 12px #ffea00, 0 0 24px #ffea00, 1px 1px 0 #000, -1px -1px 0 #000',
+                  pointerEvents: 'none',
+                  animation: 'swipeHintBob 1.6s ease-in-out infinite',
+                }}>
+                  ← SWIPE TO OPEN →
+                </div>
+
+                {/* Tear line across the pack */}
+                <div style={{
+                  position: 'absolute', top: 'calc(10% + 62.5px)', left: '8%', right: '8%',
+                  height: '3px',
+                  background: 'rgba(255,234,0,0.3)',
+                  boxShadow: '0 0 6px 2px rgba(255,234,0,0.25)',
+                  borderRadius: '2px',
+                  pointerEvents: 'none',
+                  overflow: 'hidden',
+                }}>
+                  <div style={{
+                    position: 'absolute', top: '-3px',
+                    width: '80px', height: '9px',
+                    background: 'linear-gradient(to right, transparent, rgba(255,234,0,0.9), white, rgba(255,234,0,0.9), transparent)',
+                    filter: 'blur(2px)',
+                    animation: 'glowSweep 1.6s ease-in-out infinite',
+                  }} />
+                </div>
+              </>
+            )}
           </div>
         </div>
+      )}
+
+      {/* Swipe trace canvas */}
+      {!dealt && (
+        <canvas
+          ref={canvasRef}
+          style={{
+            position: 'fixed', inset: 0,
+            width: '100vw', height: '100vh',
+            zIndex: 11,
+            pointerEvents: 'none',
+          }}
+        />
       )}
 
       {/* Screen flash */}

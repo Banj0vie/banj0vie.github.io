@@ -7,6 +7,7 @@ import { formatNumber } from "../../../utils/basic";
 import InventoryDialog from "../../../containers/Menu_Inventory";
 import SettingsDialog from "../../../containers/Menu_Settings";
 import Shop from "../../../containers/Shop";
+import AchievementsDialog from "../../../containers/AchievementsDialog";
 import { useSelector } from "react-redux";
 import { selectBalanceRefreshing } from "../../../solana/store/slices/balanceSlice";
 import { useProdMint } from "../../../hooks/useProdMint";
@@ -18,8 +19,10 @@ const ProfileBar = ({ isFarmMenu }) => {
   const [isInventoryDialog, setIsInventoryDialog] = useState(false);
   const [isSettingsDialog, setIsSettingsDialog] = useState(false);
   const [isShopOpen, setIsShopOpen] = useState(false);
+  const [isAchievementsOpen, setIsAchievementsOpen] = useState(false);
   const [shopInitialTab, setShopInitialTab] = useState(0);
   const [hasUnreadMail, setHasUnreadMail] = useState(false);
+  const [hasReadyQuests, setHasReadyQuests] = useState(false);
   const [gems, setGems] = useState(() => parseInt(localStorage.getItem('sandbox_gems') || '0', 10));
 
   const BG_GRADIENTS = {
@@ -59,6 +62,12 @@ const ProfileBar = ({ isFarmMenu }) => {
     window.addEventListener('mailUnreadChanged', handler);
     return () => window.removeEventListener('mailUnreadChanged', handler);
   }, []);
+
+  useEffect(() => {
+    const handler = (e) => setHasReadyQuests(e.detail);
+    window.addEventListener('mailReadyChanged', handler);
+    return () => window.removeEventListener('mailReadyChanged', handler);
+  }, []);
   const { prodMint, loading: prodMintLoading } = useProdMint();
   const gameToken = useSelector((state) => state.balance.gameToken);
   const stakedBalance = useSelector((state) => state.balance.stakedBalance);
@@ -91,6 +100,12 @@ const ProfileBar = ({ isFarmMenu }) => {
         <div className="profile-bar-content-top">
           <ProfileView username={userData?.name} />
           <ProfileButton
+            icon={<span style={{ fontSize: "22px", lineHeight: 1 }}>🏆</span>}
+            title="Achievements"
+            bg="/images/profile_bar/profile_button_bg.png"
+            onClick={() => setIsAchievementsOpen(true)}
+          />
+          <ProfileButton
             icon={<img alt="Settings" src="/images/profile_bar/btn_setting.png" />}
             title="Settings"
             bg="/images/profile_bar/profile_button_bg.png"
@@ -111,9 +126,10 @@ const ProfileBar = ({ isFarmMenu }) => {
                   src="/images/mail/realmail.png"
                   style={{ width: '32px', height: '32px', objectFit: 'contain', animation: hasUnreadMail ? 'mailShake 1.2s infinite ease-in-out' : 'none' }}
                 />
-                {hasUnreadMail && (
-                  <img src="/images/mail/!.png" alt="!" style={{ position: 'absolute', top: '-14px', right: '-14px', width: '20px', height: '20px', pointerEvents: 'none' }} draggable={false} />
-                )}
+                {hasUnreadMail
+                  ? <img src="/images/mail/!.png" alt="!" style={{ position: 'absolute', top: '-14px', right: '-14px', width: '20px', height: '20px', pointerEvents: 'none' }} draggable={false} />
+                  : hasReadyQuests && <div style={{ position: 'absolute', top: '-14px', right: '-14px', width: '20px', height: '20px', background: '#2e7d32', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', pointerEvents: 'none', boxShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>✅</div>
+                }
               </div>
             }
             title="Mail"
@@ -145,16 +161,6 @@ const ProfileBar = ({ isFarmMenu }) => {
           </div>
         </div>
         <div className="resource-badge" key={balanceKey} style={{ cursor: 'pointer' }}>
-          <div onClick={() => { setShopInitialTab(1); setIsShopOpen(true); }}>
-            <ProfileButton
-              icon={
-                <span style={{ fontSize: '22px', lineHeight: 1 }}>💎</span>
-              }
-              text={String(gems)}
-              title="Gems"
-              bg="/images/profile_bar/profile_badge_bg.png"
-            />
-          </div>
           <ProfileButton
             icon={<img alt="Honey Balance" src="/images/profile_bar/unlocked_balance_icon.png" />}
             text={isBalanceRefreshing ? "••••••" : honeyBalance}
@@ -162,6 +168,14 @@ const ProfileBar = ({ isFarmMenu }) => {
             className={isBalanceRefreshing ? "balance-loading" : ""}
             bg="/images/profile_bar/profile_badge_bg.png"
           />
+          <div onClick={() => { setShopInitialTab(1); setIsShopOpen(true); }}>
+            <ProfileButton
+              icon={<span style={{ fontSize: '22px', lineHeight: 1 }}>💎</span>}
+              text={String(gems)}
+              title="Gems"
+              bg="/images/profile_bar/profile_badge_bg.png"
+            />
+          </div>
         </div>
       </div>
       {isInventoryDialog && (
@@ -176,6 +190,9 @@ const ProfileBar = ({ isFarmMenu }) => {
       )}
       {isShopOpen && (
         <Shop onClose={() => setIsShopOpen(false)} initialTab={shopInitialTab} />
+      )}
+      {isAchievementsOpen && (
+        <AchievementsDialog onClose={() => setIsAchievementsOpen(false)} />
       )}
     </div>
   );

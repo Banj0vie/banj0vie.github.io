@@ -360,7 +360,8 @@ const CropItem = ({
         data.seedId &&
         data.seedId !== 0n &&
         !isPreview &&
-        portalContainer && (
+        portalContainer &&
+        parseInt(localStorage.getItem('sandbox_tutorial_step') || '0', 10) !== 3 && (
           <CropTooltip
             container={portalContainer}
             pos={tooltipPos}
@@ -560,7 +561,7 @@ const CropItem = ({
             }}
             style={{
               position: "fixed",
-              left: crowLanded ? `${crowScreenPos.x + 7}px` : undefined,
+              left: crowLanded ? `${crowScreenPos.x + 2}px` : undefined,
               top: crowLanded ? `${crowScreenPos.y + 27}px` : undefined,
               transform: "translate(-50%, -50%)",
               zIndex: 999999,
@@ -605,7 +606,7 @@ const CropItem = ({
               pointerEvents: "none",
               zIndex: 999998,
               animation: `dirtParticle${i} 0.9s ease-out infinite`,
-              animationDelay: `${i * 0.06}s`,
+              animationDelay: `${0.35 + i * 0.06}s`,
             }} />
           ))}
         </div>,

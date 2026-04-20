@@ -309,7 +309,7 @@ export const useItems = () => {
                 children: [
                   { id: ID_PRODUCE_ITEMS.POTATO, label: "Potato" },
                   { id: ID_PRODUCE_ITEMS.LETTUCE, label: "Lettuce" },
-                  { id: ID_PRODUCE_ITEMS.CABBAGE, label: "Cabbage" },
+                  { id: ID_PRODUCE_ITEMS.CABBAGE, label: "Celery" },
                   { id: ID_PRODUCE_ITEMS.ONION, label: "Onion" },
                   { id: ID_PRODUCE_ITEMS.RADISH, label: "Radish" },
                 ]

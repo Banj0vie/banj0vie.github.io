@@ -38,7 +38,8 @@ const WeatherOverlay = () => {
     };
   }, [simulatedDate]);
 
-  const weather = getWeatherForDay(simulatedDate);
+  const tutorialStep = parseInt(localStorage.getItem('sandbox_tutorial_step') || '0', 10);
+  const weather = tutorialStep < 32 ? '☀️' : getWeatherForDay(simulatedDate);
   const isLightning = weather === '⚡';
   const isRaining = weather === '⚡' || weather === '🌧️';
 

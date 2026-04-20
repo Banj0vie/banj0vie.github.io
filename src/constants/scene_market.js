@@ -28,35 +28,35 @@ export const MARKET_STUFFS = [
 
 export const MARKET_BEES = [
   {
-    image: "/images/bees/bee_npc.gif",
+    image: "/images/bees/basic.gif",
     x: 442,
     y: -10,
     flip: true,
     delay: 2,
   },
   {
-    image: "/images/bees/bee_queen.gif",
+    image: "/images/bees/queen.gif",
     x: 270,
     y: 150,
     flip: false,
     delay: 0,
   },
   {
-    image: "/images/bees/bee_2.png",
+    image: "/images/bees/farmer.gif",
     x: 283,
     y: 364,
     flip: false,
     delay: 4,
   },
   {
-    image: "/images/bees/bee_npc.gif",
+    image: "/images/bees/basic.gif",
     x: 400,
     y: 350,
     flip: false,
     delay: 8,
   },
   {
-    image: "/images/bees/bee_banker.gif",
+    image: "/images/bees/storebee.gif",
     x: 764,
     y: 185,
     flip: true,
@@ -68,7 +68,7 @@ export const MARKET_BEES = [
     y: 307,
     flip: false,
     delay: 6,
-  },  
+  },
 ];
 export const PRIZES = [
   [

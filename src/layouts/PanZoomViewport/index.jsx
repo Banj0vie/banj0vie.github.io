@@ -8,7 +8,6 @@ import AuthPage from "../AuthPage";
 import { useAppSelector } from "../../solana/store";
 import { selectSettings } from "../../solana/store/slices/uiSlice";
 import { defaultSettings } from "../../utils/settings";
-import BackgroundMusic from "../../components/audio/BackgroundMusic";
 import GlobalEventTicker from "../../components/GlobalEventTicker";
 
 if (typeof window !== 'undefined' && !window.__ls_patched_v2) {
@@ -240,7 +239,6 @@ const PanZoomViewport = ({
 
   return isWalletConnected() ? (
     <>
-      <BackgroundMusic />
       <GlobalEventTicker />
       <div className="panzoom-root">
 

@@ -111,11 +111,6 @@ const VendorDialog = ({ onClose, label = "VENDOR", header = "", headerOffset = 0
   // Memoized initial seed status to prevent unnecessary re-renders
   const initialSeedStatus = useMemo(
     () => ({
-      [ID_CROP_CATEGORIES.FEEBLE_SEED]: {
-        label: "Feeble Seeds",
-        status: SEED_PACK_STATUS.NORMAL,
-        count: 0,
-      },
       [ID_CROP_CATEGORIES.PICO_SEED]: {
         label: "Pico Seeds",
         status: SEED_PACK_STATUS.NORMAL,
@@ -140,7 +135,6 @@ const VendorDialog = ({ onClose, label = "VENDOR", header = "", headerOffset = 0
   // Memoized tier mapping to prevent recreation on every render
   const tierMap = useMemo(
     () => ({
-      [ID_CROP_CATEGORIES.FEEBLE_SEED]: 1,
       [ID_CROP_CATEGORIES.PICO_SEED]: 2,
       [ID_CROP_CATEGORIES.BASIC_SEED]: 3,
       [ID_CROP_CATEGORIES.PREMIUM_SEED]: 4,
@@ -150,7 +144,6 @@ const VendorDialog = ({ onClose, label = "VENDOR", header = "", headerOffset = 0
 
   const tierToCategory = useMemo(
     () => ({
-      1: ID_CROP_CATEGORIES.FEEBLE_SEED,
       2: ID_CROP_CATEGORIES.PICO_SEED,
       3: ID_CROP_CATEGORIES.BASIC_SEED,
       4: ID_CROP_CATEGORIES.PREMIUM_SEED,

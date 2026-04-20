@@ -22,7 +22,10 @@ const Market = () => {
   const { refetch } = useItems();
   const [tutorialStep, setTutorialStep] = useState(() => parseInt(localStorage.getItem('sandbox_tutorial_step') || '0', 10));
   const [showShop, setShowShop] = useState(false);
-  const [tutMarketPage, setTutMarketPage] = useState(() => localStorage.getItem('sandbox_tut_market') === 'true' ? 11 : 0);
+  const [tutMarketPage, setTutMarketPage] = useState(() => {
+    if (localStorage.getItem('sandbox_tut_market') !== 'true') return 0;
+    return parseInt(localStorage.getItem('sandbox_tut_market_page') || '11', 10);
+  });
 
   useEffect(() => {
     if (tutorialStep === 10) {
@@ -127,6 +130,31 @@ const Market = () => {
     },
   ];
   const bees = MARKET_BEES;
+
+  // Synchronous spotlight: compute screen position from fixed scale/center math
+  // panzoom-layer uses transform-origin: 0 0, initialScale=1.3, viewport 960x480
+  const SPOT_STEP_MAP = { 11: 'DEX', 12: 'VENDOR', 13: 'MARKET', 14: 'QUEEN', 15: 'LEADERBOARD', 16: 'BANKER' };
+  const SPOT_PAGE_MAP = { 12: 'BANKER', 13: 'VENDOR', 14: 'MARKET', 15: 'QUEEN' };
+  const _spotLabel = SPOT_STEP_MAP[tutorialStep] || SPOT_PAGE_MAP[tutMarketPage];
+  const _spotHs = _spotLabel ? MARKET_HOTSPOTS.find(h => h.label === _spotLabel) : null;
+  const _tx = window.innerWidth / 2 - 960 * 1.3 / 2;
+  const _ty = window.innerHeight / 2 - 480 * 1.3 / 2;
+  const _isbanker = _spotLabel === 'BANKER';
+  const _isvendor = _spotLabel === 'VENDOR';
+  const _ismarket = _spotLabel === 'MARKET';
+  const _isqueen = _spotLabel === 'QUEEN';
+  const _spotX = _tx + _spotHs?.x * 1.3 + (_isbanker ? 130 : _isvendor ? 120 : _ismarket ? 85 : _isqueen ? 100 : 0);
+  const _spotY = _ty + _spotHs?.y * 1.3 + (_isbanker ? 130 : _isvendor ? 130 : _ismarket ? 110 : _isqueen ? 200 : 0);
+  const spotlightOverlay = _spotHs ? (
+    <div style={{
+      position: 'fixed',
+      top: 0, left: 0, right: 0, bottom: 0,
+      zIndex: 99999,
+      pointerEvents: 'none',
+      background: `radial-gradient(ellipse 280px 240px at ${_spotX}px ${_spotY}px, transparent 0%, rgba(0,0,0,0.82) 100%)`,
+    }} />
+  ) : null;
+
   return (
     <>
       <WeatherOverlay />
@@ -152,6 +180,8 @@ const Market = () => {
       
       <AdminPanel />
 
+      {spotlightOverlay}
+
       {tutorialStep >= 11 && tutorialStep <= 17 && (
         <>
           <style>{`
@@ -169,7 +199,7 @@ const Market = () => {
           `}</style>
           <div style={{ position: 'fixed', right: '0px', bottom: '0px', zIndex: 100000 }}>
             <div style={{ position: 'relative', width: '666px' }}>
-              <img src="/images/tutorial/sirbeetextbox.png" alt="Tutorial" style={{ width: '666px', objectFit: 'contain' }} />
+              <img src="/images/tutorial/temptut.png" alt="Tutorial" style={{ width: '490px', objectFit: 'contain' }} />
               <div style={{ position: 'absolute', top: 'calc(10% + 45px)', left: '22%', right: '10%', bottom: '22%', display: 'flex', alignItems: 'flex-start' }}>
                 {tutorialStep === 11 && (
                   <p style={{ fontFamily: 'Cartoonist', fontSize: '11px', color: '#3b1f0a', lineHeight: '1.5', margin: 0 }}>
@@ -244,7 +274,7 @@ const Market = () => {
         </>
       )}
 
-      {/* New market tutorial flow: pages 11–15 with images + labels, page 16 with dock pulse */}
+      {/* Market tutorial flow: pages 11–15 with tutp11–tutp15 images, page 16 with dock pulse */}
       {tutMarketPage >= 11 && tutMarketPage <= 15 && (
         <>
           <style>{`
@@ -253,12 +283,13 @@ const Market = () => {
             .tut-arrow:active { filter: brightness(0.85); transform: translateY(-50%) scale(0.95); }
             a[href*="/farm"], a[href*="/house"], a[href*="/valley"], a[href*="/market"], a[href*="/tavern"] { pointer-events: none !important; }
           `}</style>
-          <div style={{ position: 'fixed', right: '20px', bottom: '20px', zIndex: 100000 }}>
-            <div style={{ position: 'relative', width: '400px' }}>
+          <div style={{ position: 'fixed', right: tutMarketPage === 12 ? '670px' : tutMarketPage === 14 ? '370px' : tutMarketPage === 15 ? '290px' : '20px', bottom: tutMarketPage === 12 ? '320px' : tutMarketPage === 14 ? '30px' : tutMarketPage === 15 ? '420px' : '20px', zIndex: 100000 }}>
+            <div style={{ position: 'relative', width: '490px' }}>
+              <div style={{ position: 'absolute', top: '-28px', right: '4px', fontFamily: 'Cartoonist', fontSize: '16px', color: '#fff', textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000', pointerEvents: 'none', userSelect: 'none' }}>{tutMarketPage - 10} / 5</div>
               <img
                 src={`/images/tutorial/tutp${tutMarketPage}.png`}
                 alt="Tutorial"
-                style={{ width: '400px', objectFit: 'contain', display: 'block' }}
+                style={{ width: '490px', objectFit: 'contain', display: 'block' }}
               />
               <div
                 className="tut-arrow"

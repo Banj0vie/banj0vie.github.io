@@ -133,7 +133,7 @@ export const handleContractError = (error, context = '') => {
     
     // Insufficient balance/items
     if (revertMessage.includes('Insufficient') || revertMessage.includes('insufficient')) {
-      if (revertMessage.includes('potato') || revertMessage.includes('lettuce') || revertMessage.includes('cabbage') ||
+      if (revertMessage.includes('potato') || revertMessage.includes('lettuce') || revertMessage.includes('celery') ||
           revertMessage.includes('radish') || revertMessage.includes('onion') || revertMessage.includes('grapes') ||
           revertMessage.includes('berry') || revertMessage.includes('cauliflower') || revertMessage.includes('dragonfruit') ||
           revertMessage.includes('lavender') || revertMessage.includes('lychee') || revertMessage.includes('wheat') ||
