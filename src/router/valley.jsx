@@ -8,6 +8,7 @@ const Valley = () => {
   const { width, height } = VALLEY_VIEWPORT;
   const hotspots = VALLEY_HOTSPOTS;
   const [tutorialStep, setTutorialStep] = useState(() => parseInt(localStorage.getItem('sandbox_tutorial_step') || '0', 10));
+  const [valTutPage, setValTutPage] = useState(() => parseInt(localStorage.getItem('sandbox_dock_tut_page') || '0', 10));
 
   useEffect(() => {
     const stepHandler = () => setTutorialStep(parseInt(localStorage.getItem('sandbox_tutorial_step') || '0', 10));
@@ -35,7 +36,23 @@ const Valley = () => {
       />
       <AdminPanel />
 
-      {(tutorialStep === 25 || tutorialStep === 26) && (
+      {valTutPage === 23 && (
+        <div style={{ position: 'fixed', right: '20px', bottom: '70px', zIndex: 100001 }}>
+          <div style={{ position: 'relative', width: '490px' }}>
+            <img src="/images/tutorial/tutp23.png" alt="Tutorial" style={{ width: '490px', objectFit: 'contain', display: 'block' }} />
+            <div className="tut-arrow" style={{ width: '120px', height: '120px', top: 'calc(50% + 55px)' }} onClick={() => {
+              localStorage.removeItem('sandbox_dock_tut_page');
+              localStorage.setItem('sandbox_tutorial_step', '32');
+              window.dispatchEvent(new CustomEvent('tutorialStepChanged'));
+              window.location.href = '/farm';
+            }}>
+              <img src="/images/tutorial/returntofarm.png" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {(tutorialStep === 25 || tutorialStep === 26) && valTutPage === 0 && (
         <>
           <style>{`
             a[href*="/farm"], a[href*="/house"], a[href*="/valley"], a[href*="/market"], a[href*="/tavern"] { pointer-events: none !important; }
@@ -58,18 +75,8 @@ const Valley = () => {
                 )}
               </div>
               {tutorialStep === 25 && (
-                <div style={{ position: 'absolute', bottom: '13%', left: '22%', right: '5%' }}>
-                  <div
-                    style={{ position: 'relative', textAlign: 'center', cursor: 'pointer', transition: 'transform 0.1s, filter 0.1s' }}
-                    onMouseEnter={e => { e.currentTarget.style.filter = 'brightness(1.2)'; e.currentTarget.style.transform = 'scale(1.03)'; }}
-                    onMouseLeave={e => { e.currentTarget.style.filter = 'brightness(1)'; e.currentTarget.style.transform = 'scale(1)'; }}
-                    onMouseDown={e => { e.currentTarget.style.transform = 'scale(0.96)'; e.currentTarget.style.filter = 'brightness(0.85)'; }}
-                    onMouseUp={e => { e.currentTarget.style.transform = 'scale(1.03)'; e.currentTarget.style.filter = 'brightness(1.2)'; }}
-                    onClick={advanceTutorial}
-                  >
-                    <img src="/images/tutorial/tutbluebar.png" alt="" style={{ width: '100%', display: 'block' }} draggable={false} />
-                    <span style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', fontFamily: 'Cartoonist', fontSize: '14px', color: '#fff', textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000', whiteSpace: 'nowrap', pointerEvents: 'none' }}>NEXT!</span>
-                  </div>
+                <div className="tut-arrow" onClick={advanceTutorial}>
+                  <img src="/images/tutorial/next.png" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                 </div>
               )}
             </div>

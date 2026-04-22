@@ -6,13 +6,13 @@ export const MARKET_VIEWPORT = {
 };
 
 export const MARKET_HOTSPOTS = [
-  { id: ID_MARKET_HOTSPOTS.VENDOR, label: 'VENDOR', x: 571, y: 265, delay: 0, disableHoverSound: true },
-  { id: ID_MARKET_HOTSPOTS.DEX, label: 'DEX', x: 377, y: 222, delay: 0.4, disableHoverSound: true },
-  { id: ID_MARKET_HOTSPOTS.BANKER, label: 'BANKER', x: 637, y: 79, delay: 0.6, disableHoverSound: true },
+  { id: ID_MARKET_HOTSPOTS.VENDOR, label: 'VENDOR', x: 651, y: 275, delay: 0, disableHoverSound: true },
+  { id: ID_MARKET_HOTSPOTS.DEX, label: '', labelImg: '/images/label/stats.png', x: 422, y: 252, delay: 0.4, disableHoverSound: true },
+  { id: ID_MARKET_HOTSPOTS.BANKER, label: 'BANKER', x: 682, y: 124, delay: 0.6, disableHoverSound: true },
   // { id: ID_MARKET_HOTSPOTS.HELPER, label: 'HELPER', x: 360, y: 330, delay: 0.8 },
-  { id: ID_MARKET_HOTSPOTS.MARKET, label: 'MARKET', x: 148, y: 283, delay: 0.2, disableHoverSound: true },
-  { id: ID_MARKET_HOTSPOTS.LEADERBOARD, label: 'LEADERBOARD', x: 487, y: 135, delay: 0.4, disableHoverSound: true },
-  { id: ID_MARKET_HOTSPOTS.SAGE, label: 'QUEEN', x: 204, y: -10, delay: 0.6, disableHoverSound: true },
+  { id: ID_MARKET_HOTSPOTS.MARKET, label: 'MARKET', x: 193, y: 288, delay: 0.2, disableHoverSound: true },
+  { id: ID_MARKET_HOTSPOTS.LEADERBOARD, label: 'LEADERBOARD', x: 532, y: 105, delay: 0.4, disableHoverSound: true },
+  { id: ID_MARKET_HOTSPOTS.SAGE, label: 'QUEEN', x: 239, y: 135, delay: 0.6, disableHoverSound: true },
 ];
 
 export const MARKET_STUFFS = [
@@ -28,42 +28,35 @@ export const MARKET_STUFFS = [
 
 export const MARKET_BEES = [
   {
-    image: "/images/bees/basic.gif",
-    x: 442,
-    y: -10,
-    flip: true,
-    delay: 2,
-  },
-  {
-    image: "/images/bees/queen.gif",
-    x: 270,
+    image: "/images/bees/queenbee.gif",
+    x: 245,
     y: 150,
     flip: false,
     delay: 0,
   },
   {
-    image: "/images/bees/farmer.gif",
+    image: "/images/bees/farmerbee.gif",
     x: 283,
     y: 364,
     flip: false,
     delay: 4,
   },
   {
-    image: "/images/bees/basic.gif",
+    image: "/images/bees/bee.gif",
     x: 400,
     y: 350,
     flip: false,
     delay: 8,
   },
   {
-    image: "/images/bees/storebee.gif",
+    image: "/images/bees/clerkbee.gif",
     x: 764,
     y: 185,
     flip: true,
     delay: 6,
   },
   {
-    image: "/images/bees/bee_vendor.gif",
+    image: "/images/bees/vendorbee.gif",
     x: 755,
     y: 307,
     flip: false,

@@ -6,7 +6,7 @@ export const TAVERN_VIEWPORT = {
 };
 
 export const TAVERN_HOTSPOTS = [
-    { id: ID_TAVERN_HOTSPOTS.POTION, label: 'POTION SELLER', x: 700, y: 78, delay: 0 },
+    { id: ID_TAVERN_HOTSPOTS.POTION, label: 'POTION SELLER', x: 655, y: 113, delay: 0 },
 ];
 
 export const TAVERN_STUFFS = [
@@ -46,7 +46,7 @@ export const TAVERN_STUFFS = [
 
 export const TAVERN_BEES = [
     {
-        image: "/images/bees/basic.gif",
+        image: "/images/bees/bee.gif",
         x: 117,
         y: 285,
         flip: true,
@@ -54,15 +54,15 @@ export const TAVERN_BEES = [
         zIndex: 0
     },
     {
-        image: "/images/bees/basic.gif",
-        x: 538,
-        y: 338,
+        image: "/images/bees/bee.gif",
+        x: 566,
+        y: 353,
         flip: false,
         delay: Math.random() * (-10),
         zIndex: 10
     },
     {
-        image: "/images/bees/cook.gif",
+        image: "/images/bees/tavernbee.gif",
         x: 424,
         y: 113,
         flip: false,
@@ -70,65 +70,65 @@ export const TAVERN_BEES = [
         zIndex: 0
     },
     {
-        image: "/images/bees/cook.gif",
-        x: 694,
-        y: 117,
+        image: "/images/bees/tavernbee.gif",
+        x: 704,
+        y: 147,
         flip: false,
         delay: Math.random() * (-10),
         zIndex: 0
     },
     {
-        image: "/images/bees/farmer.gif",
-        x: 361,
-        y: 269,
+        image: "/images/bees/farmerbee.gif",
+        x: 381,
+        y: 299,
         flip: false,
         delay: Math.random() * (-10),
         zIndex: 10
     },
     {
-        image: "/images/bees/fisherbee.gif",
-        x: 574,
-        y: 253,
+        image: "/images/bees/fishingbee.gif",
+        x: 599,
+        y: 278,
         flip: false,
         delay: Math.random() * 10,
         zIndex: 4
     },
     {
-        image: "/images/bees/basic.gif",
-        x: 621,
-        y: 338,
+        image: "/images/bees/bee.gif",
+        x: 631,
+        y: 353,
         flip: true,
         delay: Math.random() * (-10),
         zIndex: 10
     },
     {
-        image: "/images/bees/lumberjack.gif",
-        x: 739,
-        y: 205,
+        image: "/images/bees/bee.gif",
+        x: 729,
+        y: 210,
         flip: true,
         delay: Math.random() * (-10),
         zIndex: 10
     },
     {
-        image: "/images/bees/basic.gif",
-        x: 821,
+        image: "/images/bees/bee.gif",
+        x: 811,
         y: 285,
         flip: true,
         delay: Math.random() * (-10),
         zIndex: 0
     },
     {
-        image: "/images/bees/basic.gif",
-        x: 809,
-        y: 374,
+        image: "/images/bees/bee.gif",
+        x: 869,
+        y: 359,
         flip: true,
         delay: Math.random() * 10,
         zIndex: 10
     },
     {
-        image: "/images/bees/storebee.gif",
-        x: 715,
-        y: 374,
+        image: "/images/bees/clerkbee.gif",
+        x: 730,
+        y: 364,
         flip: false,
         delay: Math.random() * (-10),
         zIndex: 10

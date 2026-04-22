@@ -11,15 +11,17 @@
 }
 
 .mission-board-panel {
-  background: #2b1a0e;
-  border: 3px solid #c8922a;
-  border-radius: 16px;
-  padding: 24px;
-  width: 820px;
+  background-image: none;
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 32px 40px 28px;
+  width: 860px;
   max-width: 95vw;
   max-height: 90vh;
   overflow-y: auto;
-  box-shadow: 0 8px 40px rgba(0,0,0,0.7);
   display: flex;
   flex-direction: column;
   gap: 20px;

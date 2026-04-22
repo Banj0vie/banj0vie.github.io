@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { unlockPfp, claimPfp, trackGemSpend } from "../utils/pfpUnlocks";
 import PanZoomViewport from "../layouts/PanZoomViewport";
 import { FARM_BEES, FARM_HOTSPOTS, FARM_VIEWPORT, FARM_POSITIONS } from "../constants/scene_farm";
 import { ID_FARM_HOTSPOTS } from "../constants/app_ids";
@@ -101,8 +102,8 @@ export const getQuestData = () => [
       "Send me proof and I'll hook you up with something nice."
     ],
     rewards: [
-      { id: 'honey', count: 650, name: "HNY", image: "/images/profile_bar/unlocked_balance_icon.png" },
-      { id: 'gems', count: 20, name: "Gems", image: "/images/profile_bar/unlocked_balance_icon.png" },
+      { id: 'honey', count: 650, name: "HNY", image: "/images/profile_bar/hny.png" },
+      { id: 'gems', count: 20, name: "Gems" },
     ],
     reqs: [
       { id: ID_PRODUCE_ITEMS?.POTATO, count: 2, name: "Potatoes", pos: 24 }
@@ -125,7 +126,7 @@ export const getQuestData = () => [
       { id: 'pico_pack', seeds: [getRaritySeedId(ID_SEEDS.ONION, 1), getRaritySeedId(ID_SEEDS.ONION, 1)], count: 1, name: "Pico Seeds Pack", image: "/images/cardfront/card1idle/idle_1/idle_1_00000.png" },
     ],
     reqs: [],
-    unlockCondition: (step, completed) => completed.includes("q1_mayor_welcome")
+    unlockCondition: (step, completed) => completed.includes("q1b_potionmaster_harvest")
   },
 
   {
@@ -140,8 +141,8 @@ export const getQuestData = () => [
       "Yarr, the sea respects those who tend their land too."
     ],
     rewards: [
-      { id: 'honey', count: 650, name: "HNY", image: "/images/profile_bar/unlocked_balance_icon.png" },
-      { id: 'gems', count: 20, name: "Gems", image: "/images/profile_bar/unlocked_balance_icon.png" },
+      { id: 'honey', count: 650, name: "HNY", image: "/images/profile_bar/hny.png" },
+      { id: 'gems', count: 20, name: "Gems" },
     ],
     reqs: [
       { id: ID_PRODUCE_ITEMS?.ONION, count: 2, name: "Onions", pos: 27 }
@@ -164,7 +165,7 @@ export const getQuestData = () => [
       { id: 'pico_pack', seeds: [getRaritySeedId(ID_SEEDS.CELERY, 1), getRaritySeedId(ID_SEEDS.CELERY, 1)], count: 1, name: "Pico Seeds Pack", image: "/images/cardfront/card1idle/idle_1/idle_1_00000.png" },
     ],
     reqs: [],
-    unlockCondition: (step, completed) => completed.includes("q1_potionmaster_welcome")
+    unlockCondition: (step, completed) => completed.includes("q1b_dewey_harvest")
   },
 
   {
@@ -179,8 +180,8 @@ export const getQuestData = () => [
       "Produce said celery and the township will compensate you accordingly."
     ],
     rewards: [
-      { id: 'honey', count: 650, name: "HNY", image: "/images/profile_bar/unlocked_balance_icon.png" },
-      { id: 'gems', count: 20, name: "Gems", image: "/images/profile_bar/unlocked_balance_icon.png" },
+      { id: 'honey', count: 650, name: "HNY", image: "/images/profile_bar/hny.png" },
+      { id: 'gems', count: 20, name: "Gems" },
     ],
     reqs: [
       { id: ID_PRODUCE_ITEMS?.CELERY, count: 2, name: "Celery" }
@@ -203,7 +204,7 @@ export const getQuestData = () => [
       { id: 'pico_pack', seeds: [getRaritySeedId(ID_SEEDS.RADISH, 1), getRaritySeedId(ID_SEEDS.RADISH, 1)], count: 1, name: "Pico Seeds Pack", image: "/images/cardfront/card1idle/idle_1/idle_1_00000.png" },
     ],
     reqs: [],
-    unlockCondition: (step, completed) => completed.includes("q1_beejamin_welcome")
+    unlockCondition: (step, completed) => completed.includes("q1b_beejamin_harvest")
   },
 
   {
@@ -218,8 +219,8 @@ export const getQuestData = () => [
       "Bring them to me — scientifically! — and I shall reward you handsomely."
     ],
     rewards: [
-      { id: 'honey', count: 650, name: "HNY", image: "/images/profile_bar/unlocked_balance_icon.png" },
-      { id: 'gems', count: 20, name: "Gems", image: "/images/profile_bar/unlocked_balance_icon.png" },
+      { id: 'honey', count: 650, name: "HNY", image: "/images/profile_bar/hny.png" },
+      { id: 'gems', count: 20, name: "Gems" },
     ],
     reqs: [
       { id: ID_PRODUCE_ITEMS?.RADISH, count: 2, name: "Radishes", pos: 28 }
@@ -257,8 +258,8 @@ export const getQuestData = () => [
       "When you've harvested some, send them along — I'd love to see how your garden is coming. And of course, I'll make sure you're well rewarded, dear."
     ],
     rewards: [
-      { id: 'honey', count: 650, name: "HNY", image: "/images/profile_bar/unlocked_balance_icon.png" },
-      { id: 'gems', count: 20, name: "Gems", image: "/images/profile_bar/unlocked_balance_icon.png" },
+      { id: 'honey', count: 650, name: "HNY", image: "/images/profile_bar/hny.png" },
+      { id: 'gems', count: 20, name: "Gems" },
     ],
     reqs: [
       { id: ID_PRODUCE_ITEMS?.LETTUCE, count: 2, name: "Lettuce", pos: 26 }
@@ -279,13 +280,29 @@ export const getQuestData = () => [
     ],
     rewards: [],
     reqs: [],
-    unlockCondition: (step, completed) =>
-      completed.includes("q1b_pabee_first_crop") &&
-      completed.includes("q1b_beejamin_harvest") &&
-      completed.includes("q1b_dewey_harvest") &&
-      completed.includes("q1b_mayor_harvest") &&
-      completed.includes("q1b_potionmaster_harvest") &&
-      completed.includes("q1b_queen_harvest")
+    unlockCondition: (step, completed) => completed.includes("q1b_beejamin_harvest")
+  },
+
+  {
+    id: "q_beta_gift",
+    type: "main",
+    sender: "The Dev",
+    subject: "Beta Gift 🎁",
+    mailImage: "/images/mail/devletter.png",
+    body: [
+      "Hey,",
+      "You've completed all the welcome quests — that means you're one of our earliest testers and we genuinely appreciate you being here.",
+      "The game is still being built, and your feedback matters more than you know. Thank you for exploring, breaking things, and helping us make this better.",
+      "As a small token of appreciation, we've included a special profile picture just for beta testers. Claim it below — you've earned it!"
+    ],
+    rewards: [
+      { id: 'betapfp_unlock', count: 1, name: "Beta Tester PFP", image: "/images/pfp/betapfp.png" }
+    ],
+    reqs: [],
+    unlockCondition: (step, completed) => {
+      const WAVE1_QUESTS = ['q1_pabee_intro','q1_beejamin_welcome','q1_dewey_welcome','q1_mayor_welcome','q1_potionmaster_welcome','q1_queen_welcome','q1_end_papabee','q1b_mayor_harvest'];
+      return WAVE1_QUESTS.every(id => completed.includes(id));
+    }
   },
 
   // Wave 2: Unlocking the World (60-120 min)
@@ -304,7 +321,7 @@ export const getQuestData = () => [
     reqs: [
       { id: 'gold', count: 1500, name: "Gold", image: "/images/items/gold.png" }
     ],
-    unlockCondition: (step, completed) => completed.includes("q2b_missionboard_challenge")
+    unlockCondition: (step, completed) => completed.includes("q2_missionboard_intro")
   },
 
   {
@@ -312,19 +329,30 @@ export const getQuestData = () => [
     type: "main",
     sender: "Fisherman Finn",
     subject: "Ahoy, Farmer!",
+    mailImage: "/images/mail/maildewey.png",
     body: [
       "Well I'll be! Someone finally fixed that dock!",
       "The name's Finn. I've been fishing these waters for 30 years and I know every current and every cove.",
-      "Here, take this — I've been saving it. Start with the basics, there's plenty of fish out there waiting for you!"
+      "Before I share my secrets with you, prove yourself — head down to the pond and catch me a fish. Come back when you've got one!"
     ],
     rewards: [
-      { id: 'honey', count: 400, name: "HNY", image: "/images/profile_bar/unlocked_balance_icon.png" },
-      { id: 'gems', count: 10, name: "Gems" },
-      { id: ID_BAIT_ITEMS?.BAIT_1 || 30001, count: 8, name: "Bait I", image: "/images/items/seeds.png" },
-      { id: ID_BAIT_ITEMS?.BAIT_2 || 30002, count: 3, name: "Bait II", image: "/images/items/seeds.png" }
+      { id: 'honey', count: 400, name: "HNY", image: "/images/profile_bar/hny.png" },
+      { id: 'gems', count: 25, name: "Gems" }
     ],
-    reqs: [],
-    unlockCondition: (step, completed) => completed.includes("q2_unlock_dock") && (localStorage.getItem('sandbox_dock_repaired') === 'true' || localStorage.getItem('sandbox_dock_unlocked') === 'true')
+    reqs: [
+      {
+        id: 'tracked_fish_q2b',
+        count: 1,
+        name: "Any Fish",
+        image: "/images/fish/Normal Ocean Fish (2).png",
+        fn: (sandboxLoot) => {
+          const fishIds = Object.values(ID_FISH_ITEMS).filter(id => typeof id === 'number');
+          return fishIds.reduce((total, id) => total + (Number(sandboxLoot[id]) || 0), 0);
+        }
+      }
+    ],
+    unlockCondition: (step, completed) =>
+      completed.includes("q2_unlock_dock") && (localStorage.getItem('sandbox_dock_repaired') === 'true' || localStorage.getItem('sandbox_dock_unlocked') === 'true')
   },
 
   {
@@ -336,17 +364,27 @@ export const getQuestData = () => [
       "Nephew.",
       "The local Tavern has fallen into ruin. It's an absolute disgrace to our family name.",
       "I need you to fund the repairs so the Potion Master can resume his brewing.",
-      "Bring 500 Gold and 20 Potatoes to the Tavern. Do not dawdle."
+      "Bring 1,000 Gold, 50 Potatoes, and 10 Fish to the Tavern. Do not dawdle."
     ],
     rewards: [
-      { id: 'honey', count: 800, name: "HNY", image: "/images/profile_bar/unlocked_balance_icon.png" },
+      { id: 'honey', count: 800, name: "HNY", image: "/images/profile_bar/hny.png" },
       { id: 'gems', count: 10, name: "Gems" },
       { id: ID_POTION_ITEMS?.POTION_GROWTH_ELIXIR || 132104, count: 2, name: "Growth Elixir", image: ALL_ITEMS[ID_POTION_ITEMS?.POTION_GROWTH_ELIXIR]?.image || "/images/items/potion1.png" },
       { id: ID_BAIT_ITEMS?.BAIT_2 || 30002, count: 5, name: "Bait II", image: "/images/items/seeds.png" }
     ],
     reqs: [
-      { id: 'gold', count: 500, name: "Gold", image: "/images/items/gold.png" },
-      { id: ID_PRODUCE_ITEMS?.POTATO || 131586, count: 20, name: "Potatoes", image: ALL_ITEMS[ID_PRODUCE_ITEMS?.POTATO]?.image || "/images/items/potato.png" }
+      { id: 'gold', count: 1000, name: "Gold", image: "/images/items/gold.png" },
+      { id: ID_PRODUCE_ITEMS?.POTATO || 131586, count: 50, name: "Potatoes", image: ALL_ITEMS[ID_PRODUCE_ITEMS?.POTATO]?.image || "/images/items/potato.png" },
+      {
+        id: 'tracked_fish_tavern',
+        count: 10,
+        name: "Fish",
+        image: "/images/fish/Normal Ocean Fish (2).png",
+        fn: (sandboxLoot) => {
+          const fishIds = Object.values(ID_FISH_ITEMS).filter(id => typeof id === 'number');
+          return fishIds.reduce((total, id) => total + (Number(sandboxLoot[id]) || 0), 0);
+        }
+      }
     ],
     unlockCondition: (step, completed) => completed.includes("q2b_finn_welcome")
   },
@@ -365,7 +403,7 @@ export const getQuestData = () => [
       "Catch them in the forest bushes using a Bug Net and I'll share a prototype potion with you."
     ],
     rewards: [
-      { id: 'honey', count: 400, name: "HNY", image: "/images/profile_bar/unlocked_balance_icon.png" },
+      { id: 'honey', count: 400, name: "HNY", image: "/images/profile_bar/hny.png" },
       { id: 'gems', count: 40, name: "Gems" },
       { id: ID_POTION_ITEMS?.POTION_GROWTH_ELIXIR || 132104, count: 2, name: "Growth Elixir", image: ALL_ITEMS[ID_POTION_ITEMS?.POTION_GROWTH_ELIXIR]?.image || "/images/items/potion1.png" }
     ],
@@ -387,7 +425,7 @@ export const getQuestData = () => [
       "Give it a try next time you plant something!"
     ],
     rewards: [
-      { id: 'honey', count: 250, name: "HNY", image: "/images/profile_bar/unlocked_balance_icon.png" },
+      { id: 'honey', count: 250, name: "HNY", image: "/images/profile_bar/hny.png" },
       { id: 'gems', count: 35, name: "Gems" },
       { id: ID_BAIT_ITEMS?.BAIT_2 || 30002, count: 3, name: "Bait II", image: "/images/items/seeds.png" }
     ],
@@ -406,7 +444,7 @@ export const getQuestData = () => [
       "Please accept this premium bait as a token of our gratitude. It should make fishing a breeze!"
     ],
     rewards: [
-      { id: 'honey', count: 200, name: "HNY", image: "/images/profile_bar/unlocked_balance_icon.png" },
+      { id: 'honey', count: 200, name: "HNY", image: "/images/profile_bar/hny.png" },
       { id: 'gems', count: 25, name: "Gems" },
       { id: ID_BAIT_ITEMS?.BAIT_1 || 30001, count: 3, name: "Bait I", image: "/images/items/seeds.png" }
     ],
@@ -418,6 +456,7 @@ export const getQuestData = () => [
     id: "q5_first_catch",
     type: "fishing",
     sender: "Fisherman Finn",
+    mailImage: "/images/mail/maildewey.png",
     subject: "The Basics of Angling",
     body: [
       "Ahoy there, Farmer!",
@@ -425,7 +464,7 @@ export const getQuestData = () => [
       "Why don't you try out that bait the Mayor gave you? Cast a line off the dock and bring me 3 Fish. Let's see what you've got!"
     ],
     rewards: [
-      { id: 'honey', count: 200, name: "HNY", image: "/images/profile_bar/unlocked_balance_icon.png" },
+      { id: 'honey', count: 200, name: "HNY", image: "/images/profile_bar/hny.png" },
       { id: 'gems', count: 15, name: "Gems" },
       { id: ID_BAIT_ITEMS?.BAIT_1 || 30001, count: 3, name: "Bait I", image: "/images/items/seeds.png" },
       { id: 'honey', count: 150, name: "Honey", image: "/images/items/honey.png" }
@@ -461,7 +500,7 @@ export const getQuestData = () => [
       "Can you head to the pond and catch 5 more Fish for us? I'll make it worth your while!"
     ],
     rewards: [
-      { id: 'honey', count: 200, name: "HNY", image: "/images/profile_bar/unlocked_balance_icon.png" },
+      { id: 'honey', count: 200, name: "HNY", image: "/images/profile_bar/hny.png" },
       { id: 'gems', count: 10, name: "Gems" },
       { id: ID_CHEST_ITEMS?.CHEST_BRONZE || 20001, count: 1, name: "Bronze Chest", image: "/images/items/chest.png" },
       { id: 'honey', count: 300, name: "Honey", image: "/images/items/honey.png" }
@@ -490,6 +529,7 @@ export const getQuestData = () => [
     id: "q7_a_bigger_catch",
     type: "fishing",
     sender: "Fisherman Finn",
+    mailImage: "/images/mail/maildewey.png",
     subject: "A Bigger Catch",
     body: [
       "Not bad, kid! You've got a real knack for angling.",
@@ -497,7 +537,7 @@ export const getQuestData = () => [
       "Gather some materials so we can build you a Rowboat. Bring me 30 Wood Logs, 20 Sticks, and 10 Iron Ore!"
     ],
     rewards: [
-      { id: 'honey', count: 300, name: "HNY", image: "/images/profile_bar/unlocked_balance_icon.png" },
+      { id: 'honey', count: 300, name: "HNY", image: "/images/profile_bar/hny.png" },
       { id: ID_BAIT_ITEMS?.BAIT_2 || 30002, count: 5, name: "Bait II", image: "/images/items/seeds.png" },
       { id: 'honey', count: 500, name: "Honey", image: "/images/items/honey.png" }
     ],
@@ -520,7 +560,7 @@ export const getQuestData = () => [
       "Grow 10 Potatoes and bring them to me. I'll give you some seeds to keep you going!"
     ],
     rewards: [
-      { id: 'honey', count: 250, name: "HNY", image: "/images/profile_bar/unlocked_balance_icon.png" },
+      { id: 'honey', count: 250, name: "HNY", image: "/images/profile_bar/hny.png" },
       { id: ID_SEEDS?.CARROT || 131848, count: 5, name: "Carrot Seeds", image: "/images/items/seeds.png" },
       { id: 'honey', count: 200, name: "Honey", image: "/images/items/honey.png" }
     ],
@@ -541,7 +581,7 @@ export const getQuestData = () => [
       "I'll trade you some gold and a couple of chests for them."
     ],
     rewards: [
-      { id: 'honey', count: 350, name: "HNY", image: "/images/profile_bar/unlocked_balance_icon.png" },
+      { id: 'honey', count: 350, name: "HNY", image: "/images/profile_bar/hny.png" },
       { id: ID_CHEST_ITEMS?.CHEST_BRONZE || 20001, count: 2, name: "Bronze Chests", image: "/images/items/chest.png" }
     ],
     reqs: [
@@ -555,13 +595,14 @@ export const getQuestData = () => [
     id: "q10_crab_mentality",
     type: "fishing",
     sender: "Fisherman Finn",
+    mailImage: "/images/mail/maildewey.png",
     subject: "Crab Mentality",
     body: [
       "Hook and line is fine, but if you want passive income, you need Crab Pots.",
       "Craft 3 Crab Pots and set them up. Bring me 5 Crabs to prove they work!"
     ],
     rewards: [
-      { id: 'honey', count: 450, name: "HNY", image: "/images/profile_bar/unlocked_balance_icon.png" },
+      { id: 'honey', count: 450, name: "HNY", image: "/images/profile_bar/hny.png" },
       { id: ID_CHEST_ITEMS?.CHEST_BRONZE || 20001, count: 1, name: "Bronze Chest", image: "/images/items/chest.png" }
     ],
     reqs: [
@@ -581,7 +622,7 @@ export const getQuestData = () => [
       "They only surface when it's raining. Take your Rowboat out on the next rainy day and catch one!"
     ],
     rewards: [
-      { id: 'honey', count: 150, name: "HNY", image: "/images/profile_bar/unlocked_balance_icon.png" },
+      { id: 'honey', count: 150, name: "HNY", image: "/images/profile_bar/hny.png" },
       { id: ID_POTION_ITEMS?.POTION_GROWTH_ELIXIR || 132104, count: 2, name: "Growth Elixir", image: "/images/items/potion1.png" },
       { id: 9998, count: 1, name: "Water Sprinkler", image: "/images/items/watersprinkler.png" }
     ],
@@ -601,7 +642,7 @@ export const getQuestData = () => [
       "Build a Sailboat so you can catch the real prizes."
     ],
     rewards: [
-      { id: 'honey', count: 100, name: "HNY", image: "/images/profile_bar/unlocked_balance_icon.png" },
+      { id: 'honey', count: 100, name: "HNY", image: "/images/profile_bar/hny.png" },
       { id: ID_BAIT_ITEMS?.BAIT_3 || 30003, count: 10, name: "Bait III", image: "/images/items/seeds.png" }
     ],
     reqs: [
@@ -614,13 +655,14 @@ export const getQuestData = () => [
     id: "q13_storm_chaser",
     type: "fishing",
     sender: "Fisherman Finn",
+    mailImage: "/images/mail/maildewey.png",
     subject: "Storm Chaser",
     body: [
       "You're crazy if you go out there during a lightning storm... but if you do, the legendary Spark Eel is said to ride the waves.",
       "You'll need a Tesla Tower on your boat to survive!"
     ],
     rewards: [
-      { id: 'honey', count: 100, name: "HNY", image: "/images/profile_bar/unlocked_balance_icon.png" },
+      { id: 'honey', count: 100, name: "HNY", image: "/images/profile_bar/hny.png" },
       { id: 9954, count: 1, name: "Magic Ring", image: "/images/items/seeds.png" },
       { id: ID_CHEST_ITEMS?.CHEST_GOLD || 20003, count: 1, name: "Gold Chest", image: "/images/items/chest.png" }
     ],
@@ -640,7 +682,7 @@ export const getQuestData = () => [
       "Forging Steel Plates from Iron and Coal will let you build the ultimate fishing vessel."
     ],
     rewards: [
-      { id: 'honey', count: 80, name: "HNY", image: "/images/profile_bar/unlocked_balance_icon.png" },
+      { id: 'honey', count: 80, name: "HNY", image: "/images/profile_bar/hny.png" },
       { id: 9962, count: 1, name: "Engine", image: "/images/crafting/engine.png" }
     ],
     reqs: [
@@ -653,13 +695,14 @@ export const getQuestData = () => [
     id: "q15_trawler",
     type: "fishing",
     sender: "Fisherman Finn",
+    mailImage: "/images/mail/maildewey.png",
     subject: "Industrial Fishing",
     body: [
       "With that Engine, you can finally build the Trawler.",
       "It's massive, loud, and can reach the deepest parts of the ocean."
     ],
     rewards: [
-      { id: 'honey', count: 1080, name: "HNY", image: "/images/profile_bar/unlocked_balance_icon.png" }
+      { id: 'honey', count: 1080, name: "HNY", image: "/images/profile_bar/hny.png" }
     ],
     reqs: [
       { id: 9963, count: 1, name: "Trawler", image: "/images/items/trawler.png" }
@@ -677,7 +720,7 @@ export const getQuestData = () => [
       "Take the Trawler out and catch the Kraken. Be warned, it will put up the fight of a lifetime."
     ],
     rewards: [
-      { id: 'honey', count: 50, name: "HNY", image: "/images/profile_bar/unlocked_balance_icon.png" },
+      { id: 'honey', count: 50, name: "HNY", image: "/images/profile_bar/hny.png" },
       { id: 9961, count: 5, name: "Red Gem", image: "/images/items/seeds.png" }
     ],
     reqs: [
@@ -697,7 +740,7 @@ export const getQuestData = () => [
       "Bring me 5 Ladybugs and 1 Bug Net so I know you're prepared!"
     ],
     rewards: [
-      { id: 'honey', count: 150, name: "HNY", image: "/images/profile_bar/unlocked_balance_icon.png" },
+      { id: 'honey', count: 150, name: "HNY", image: "/images/profile_bar/hny.png" },
       { id: ID_POTION_ITEMS?.POTION_GROWTH_ELIXIR || 132104, count: 1, name: "Growth Elixir", image: ALL_ITEMS[ID_POTION_ITEMS?.POTION_GROWTH_ELIXIR]?.image || "/images/items/potion1.png" }
     ],
     reqs: [
@@ -718,7 +761,7 @@ export const getQuestData = () => [
       "I'll make it worth your while!"
     ],
     rewards: [
-      { id: 'honey', count: 300, name: "HNY", image: "/images/profile_bar/unlocked_balance_icon.png" },
+      { id: 'honey', count: 300, name: "HNY", image: "/images/profile_bar/hny.png" },
       { id: 'gems', count: 15, name: "Gems" },
     ],
     reqs: [
@@ -739,7 +782,7 @@ export const getQuestData = () => [
       "Can you bring us some lettuce and celery? We'd really appreciate it!"
     ],
     rewards: [
-      { id: 'honey', count: 250, name: "HNY", image: "/images/profile_bar/unlocked_balance_icon.png" },
+      { id: 'honey', count: 250, name: "HNY", image: "/images/profile_bar/hny.png" },
       { id: 'gems', count: 15, name: "Gems" },
     ],
     reqs: [
@@ -758,43 +801,150 @@ export const getQuestData = () => [
     body: [
       "Now that you're settling in, I wanted to make you aware of a key town resource: the Valley Mission Board.",
       "Local residents post tasks there regularly — harvests they need, fish to be caught, all sorts of things. Complete them and you'll be compensated well.",
-      "Consider it your first step toward becoming a true pillar of this community. The board is always full — get to it!"
-    ],
-    rewards: [],
-    reqs: [],
-    unlockCondition: (step, completed) => completed.includes("q1_end_papabee")
-  },
-
-  {
-    id: "q2b_missionboard_challenge",
-    type: "main",
-    sender: "Mayor Prezibee",
-    subject: "Proving Your Worth",
-    mailImage: "/images/mail/mailmayor.png",
-    body: [
-      "I've been watching the mission board closely.",
-      "To formally recognize your commitment to Harvest Valley, I'd like to see you complete five tasks from the board.",
-      "It won't go unrewarded — the valley looks after those who look after it."
+      "To formally recognize your commitment to Harvest Valley, complete five tasks from the board and I'll make sure you're well rewarded. The valley looks after those who look after it."
     ],
     rewards: [
-      { id: 'honey', count: 1500, name: "HNY", image: "/images/profile_bar/unlocked_balance_icon.png" },
+      { id: 'honey', count: 1500, name: "HNY", image: "/images/profile_bar/hny.png" },
       { id: 'gems', count: 100, name: "Gems" },
     ],
     reqs: [
       {
-        id: 'farming_board_5',
+        id: 'mission_board_5',
         count: 5,
         name: "Mission Board Tasks",
         image: null,
         fn: () => {
-          const completed = JSON.parse(localStorage.getItem('sandbox_completed_quests') || '[]');
-          const allQuests = getQuestData();
-          const farmingIds = allQuests.filter(q => q.type === 'farming').map(q => q.id);
-          return completed.filter(id => farmingIds.includes(id)).length;
+          try {
+            const state = JSON.parse(localStorage.getItem('sandbox_mission_board_state') || '{}');
+            return state.totalCompleted || 0;
+          } catch { return 0; }
         }
       }
     ],
-    unlockCondition: (step, completed) => completed.includes("q2_missionboard_intro")
+    unlockCondition: (step, completed) =>
+      ["q1_pabee_intro","q1_beejamin_welcome","q1_dewey_welcome","q1_mayor_welcome","q1_potionmaster_welcome","q1_queen_welcome","q1_end_papabee"]
+        .every(id => completed.includes(id))
+  },
+
+  // PFP Unlock Letters from Pabee
+  {
+    id: "pfp_farmerpfp_letter",
+    type: "main",
+    sender: "Pabee",
+    subject: "You're a Real Farmer Now",
+    mailImage: "/images/mail/mailpapabee.png",
+    pfpImage: "/images/pfp/famerpfp.png",
+    pfpLabel: "Farmer",
+    pfpHow: "Completed your first farming steps",
+    body: [
+      "Hey son, word got around that you've been getting the hang of things out there.",
+      "I'm proud of you — when I left that farm, I wasn't sure it'd survive a week without me. But here you are, doing great.",
+      "Keep at it. The land rewards patience. I figured you earned a little something for officially becoming a farmer."
+    ],
+    rewards: [], reqs: [],
+    unlockCondition: () => JSON.parse(localStorage.getItem('sandbox_unlocked_pfps') || '[]').includes('farmerpfp')
+  },
+  {
+    id: "pfp_crowattackpfp_letter",
+    type: "main",
+    sender: "Pabee",
+    subject: "About Those Crows...",
+    mailImage: "/images/mail/mailpapabee.png",
+    pfpImage: "/images/pfp/crowattackpfp.png",
+    pfpLabel: "Crow Attack",
+    pfpHow: "Had a crop destroyed by a crow",
+    body: [
+      "Hey son, heard you're dealing with crows... sucks. I had a whole patch of corn taken out once by a single crow — nasty creatures, bold as anything.",
+      "I heard they're ordering some scarecrows to come and at least help with the problem. I think you'll be able to buy them at the store eventually. I don't know, just do your best to keep an eye out.",
+      "Anyway, I figured you earned something for surviving the ordeal. Don't let it get you down — every farmer loses a crop sooner or later."
+    ],
+    rewards: [], reqs: [],
+    unlockCondition: () => JSON.parse(localStorage.getItem('sandbox_unlocked_pfps') || '[]').includes('crowattackpfp')
+  },
+  {
+    id: "pfp_flyattackpfp_letter",
+    type: "main",
+    sender: "Pabee",
+    subject: "Bug Season, Huh?",
+    mailImage: "/images/mail/mailpapabee.png",
+    pfpImage: "/images/pfp/flyattackpfp.png",
+    pfpLabel: "Fly Attack",
+    pfpHow: "Had crops attacked by bugs 10 times",
+    body: [
+      "Son, I heard the bugs have been at it again. Ten times?! That's rough, even for a seasoned farmer.",
+      "I'll be honest, back in my day we just learned to live with 'em. But keep squashing them — every bug you kill is a crop saved.",
+      "You're tougher than those little pests, I know that much. Here's something to remember the battle by."
+    ],
+    rewards: [], reqs: [],
+    unlockCondition: () => JSON.parse(localStorage.getItem('sandbox_unlocked_pfps') || '[]').includes('flyattackpfp')
+  },
+  {
+    id: "pfp_potatopfp_letter",
+    type: "main",
+    sender: "Pabee",
+    subject: "The Potato King",
+    mailImage: "/images/mail/mailpapabee.png",
+    pfpImage: "/images/pfp/potatopfp.png",
+    pfpLabel: "Potato",
+    pfpHow: "Harvested 10 potatoes",
+    body: [
+      "Ten potatoes, son! You know, my grandfather always said 'whoever masters the potato masters the farm.' I don't know if that's true but it sounds nice.",
+      "Potatoes keep better than anything else in that soil — you picked a good crop to master. There's a reason they fed half the world.",
+      "Keep it up and maybe one day they'll name a dish after you."
+    ],
+    rewards: [], reqs: [],
+    unlockCondition: () => JSON.parse(localStorage.getItem('sandbox_unlocked_pfps') || '[]').includes('potatopfp')
+  },
+  {
+    id: "pfp_spendingfirstgem_letter",
+    type: "main",
+    sender: "Pabee",
+    subject: "Easy on the Gems, Son",
+    mailImage: "/images/mail/mailpapabee.png",
+    pfpImage: "/images/pfp/spendingfirstgem.png",
+    pfpLabel: "Gem Spender",
+    pfpHow: "Spent 1000 gems on the farm",
+    body: [
+      "Hey, I heard you've been spending gems. Nothing wrong with investing in the farm — I always said you gotta spend it to make it.",
+      "Just make sure you're getting value out of it. The valley's got a lot to offer if you know where to look.",
+      "Take care of your wallet and your farm will take care of you. Here's a little badge for the commitment."
+    ],
+    rewards: [], reqs: [],
+    unlockCondition: () => JSON.parse(localStorage.getItem('sandbox_unlocked_pfps') || '[]').includes('spendingfirstgem')
+  },
+  {
+    id: "pfp_rodpfp_letter",
+    type: "main",
+    sender: "Pabee",
+    subject: "The Dock Is Fixed!",
+    mailImage: "/images/mail/mailpapabee.png",
+    pfpImage: "/images/pfp/rodpfp.png",
+    pfpLabel: "Angler",
+    pfpHow: "Repaired the old dock",
+    body: [
+      "Son! The old dock is finally fixed! I was there when your grandfather built it, back before the great storm took it out.",
+      "Dewey's been trying to get it repaired for years — glad it finally happened. Now you can get out on the water proper.",
+      "There's good fishing to be had out there if you know the spots. Dewey might have some tips for you. Welcome to the angler's life."
+    ],
+    rewards: [], reqs: [],
+    unlockCondition: () => JSON.parse(localStorage.getItem('sandbox_unlocked_pfps') || '[]').includes('rodpfp')
+  },
+  {
+    id: "pfp_banjopfp_letter",
+    type: "main",
+    sender: "Pabee",
+    subject: "Found the Secret, Did Ya?",
+    mailImage: "/images/mail/mailpapabee.png",
+    pfpImage: "/images/pfp/banjopfp.png",
+    pfpLabel: "Banjo",
+    pfpHow: "Found a hidden secret",
+    body: [
+      "Ha! So you found it. I hid that code years ago just to see if anyone was paying attention.",
+      "Your mother never did find it. This one's between us — don't go spreading it around. Some things are better as secrets.",
+      "You've got a good eye for details, son. Use it well."
+    ],
+    rewards: [], reqs: [],
+    unlockCondition: () => JSON.parse(localStorage.getItem('sandbox_unlocked_pfps') || '[]').includes('banjopfp')
   },
 
 ];
@@ -2735,6 +2885,10 @@ export const RegionalQuestBoard = ({ onClose, title, questType, tutorialStep, re
                         backgroundPositionY: `-${(ALL_ITEMS[rew.id].pos * 60).toFixed(1)}px`,
                         backgroundRepeat: 'no-repeat',
                       }} />
+                    ) : rew.id === 'gems' ? (
+                      <img src="/images/profile_bar/diamond.png" alt="Gems" style={{ width: '36px', height: '36px', objectFit: 'contain' }} />
+                    ) : rew.id === 'honey' ? (
+                      <img src="/images/profile_bar/hny.png" alt="HNY" style={{ width: '42px', height: '42px', objectFit: 'contain' }} />
                     ) : (
                       <img src={ALL_ITEMS[rew.id]?.image || rew.image} alt={rew.name} style={{ width: '80%', height: '80%', objectFit: 'contain' }} onError={(e) => { e.target.onerror = null; }} />
                     )}
@@ -2775,6 +2929,28 @@ export const RegionalQuestBoard = ({ onClose, title, questType, tutorialStep, re
                     </div>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {activeQuest.id === 'q_beta_gift' && !completedQuests.includes(activeQuest.id) && (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', marginBottom: '16px', padding: '14px', backgroundColor: 'rgba(90,64,42,0.1)', border: '2px solid #8c6b4a', borderRadius: '10px' }}>
+                <img
+                  src="/images/pfp/betapfp.png"
+                  alt="Beta Tester PFP"
+                  style={{ width: '80px', height: '80px', objectFit: 'contain', borderRadius: '50%', border: '3px solid #c8821a', boxShadow: '0 0 14px rgba(200,130,26,0.5)', animation: 'mapFloat 2.5s ease-in-out infinite' }}
+                />
+                <span style={{ fontFamily: 'monospace', fontSize: '12px', color: '#5a402a', fontWeight: 'bold' }}>Beta Tester Profile Picture</span>
+              </div>
+            )}
+            {activeQuest.pfpImage && (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', marginBottom: '16px', padding: '14px', backgroundColor: 'rgba(90,64,42,0.1)', border: '2px solid #c8821a', borderRadius: '10px' }}>
+                <img
+                  src={activeQuest.pfpImage}
+                  alt={activeQuest.pfpLabel}
+                  style={{ width: '80px', height: '80px', objectFit: 'contain', borderRadius: '50%', border: '3px solid #c8821a', boxShadow: '0 0 14px rgba(200,130,26,0.5)', animation: 'mapFloat 2.5s ease-in-out infinite' }}
+                />
+                <span style={{ fontFamily: 'monospace', fontSize: '13px', color: '#5a402a', fontWeight: 'bold' }}>🏆 New Profile Picture Unlocked: {activeQuest.pfpLabel}</span>
+                <span style={{ fontFamily: 'monospace', fontSize: '11px', color: '#8c6b4a', fontStyle: 'italic' }}>{activeQuest.pfpHow}</span>
               </div>
             )}
 
@@ -2840,6 +3016,7 @@ export const MailboxDialog = ({ onClose, tutorialStep, refetch, onTutorialAdvanc
   const [discardedQuests, setDiscardedQuests] = useState(() => JSON.parse(localStorage.getItem('sandbox_discarded_quests') || '[]'));
   const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
   const [dockTimeLeft, setDockTimeLeft] = useState(null);
+  const [pendingLevelUp, setPendingLevelUp] = useState(null);
 
   useEffect(() => {
     const tick = () => {
@@ -2852,6 +3029,7 @@ export const MailboxDialog = ({ onClose, tutorialStep, refetch, onTutorialAdvanc
       if (remaining === 0) {
         localStorage.setItem('sandbox_dock_repaired', 'true');
         localStorage.setItem('sandbox_dock_unlocked', 'true');
+        unlockPfp('rodpfp');
         window.dispatchEvent(new CustomEvent('dockRepaired'));
       }
     };
@@ -2860,13 +3038,28 @@ export const MailboxDialog = ({ onClose, tutorialStep, refetch, onTutorialAdvanc
     return () => clearInterval(id);
   }, []);
 
+  useEffect(() => {
+    const handler = () => {
+      const discarded = JSON.parse(localStorage.getItem('sandbox_discarded_quests') || '[]');
+      if (!discarded.includes('q1_end_papabee')) {
+        const next = [...discarded, 'q1_end_papabee'];
+        setDiscardedQuests(next);
+        localStorage.setItem('sandbox_discarded_quests', JSON.stringify(next));
+      }
+    };
+    window.addEventListener('plotsUnlocked', handler);
+    return () => window.removeEventListener('plotsUnlocked', handler);
+  }, []);
+
   const handleSkipDockBuild = () => {
     const gems = parseInt(localStorage.getItem('sandbox_gems') || '0', 10);
     if (gems < DOCK_SKIP_GEMS) { window.dispatchEvent(new CustomEvent('showNotification', { detail: { msg: `Need ${DOCK_SKIP_GEMS} gems to skip!`, type: 'error' } })); return; }
     localStorage.setItem('sandbox_gems', String(gems - DOCK_SKIP_GEMS));
     window.dispatchEvent(new CustomEvent('sandboxGemsChanged'));
+    trackGemSpend(DOCK_SKIP_GEMS);
     localStorage.setItem('sandbox_dock_repaired', 'true');
     localStorage.setItem('sandbox_dock_unlocked', 'true');
+    unlockPfp('rodpfp');
     window.dispatchEvent(new CustomEvent('dockRepaired'));
     setDockTimeLeft(0);
   };
@@ -2978,6 +3171,8 @@ export const MailboxDialog = ({ onClose, tutorialStep, refetch, onTutorialAdvanc
         window.dispatchEvent(new CustomEvent('sandboxGemsChanged'));
       } else if (reward.id === 'pico_pack') {
         // Pack animation handles seed delivery via charPackOpen event
+      } else if (reward.id === 'betapfp_unlock') {
+        // Handled in post-completion hook below
       } else {
         sandboxLoot[reward.id] = (sandboxLoot[reward.id] || 0) + reward.count;
       }
@@ -2990,10 +3185,19 @@ export const MailboxDialog = ({ onClose, tutorialStep, refetch, onTutorialAdvanc
     setCompletedQuests(nextCompleted);
     localStorage.setItem('sandbox_completed_quests', JSON.stringify(nextCompleted));
 
-    // Auto-delete letter after completion
-    const nextDiscarded = [...discardedQuests, quest.id];
-    setDiscardedQuests(nextDiscarded);
-    localStorage.setItem('sandbox_discarded_quests', JSON.stringify(nextDiscarded));
+    // Claim pfp reward when completing any pfp letter
+    if (quest.id === 'q_beta_gift') claimPfp('betapfp');
+    if (quest.id.startsWith('pfp_') && quest.id.endsWith('_letter')) {
+      const pfpId = quest.id.replace(/^pfp_/, '').replace(/_letter$/, '');
+      claimPfp(pfpId);
+    }
+
+    // Auto-delete letter after completion (except q1_end_papabee — stays until first plot unlock)
+    if (quest.id !== 'q1_end_papabee') {
+      const nextDiscarded = [...discardedQuests, quest.id];
+      setDiscardedQuests(nextDiscarded);
+      localStorage.setItem('sandbox_discarded_quests', JSON.stringify(nextDiscarded));
+    }
 
     if (quest.id === "q2_rebuild_tavern") {
       localStorage.setItem('quest_q2_rebuild_tavern_completed', 'true');
@@ -3027,9 +3231,6 @@ export const MailboxDialog = ({ onClose, tutorialStep, refetch, onTutorialAdvanc
         if (newLevel > oldLevel) {
             didLevelUp = true;
             levelUpDetail = { skill: xpSkill, level: newLevel };
-            if (!hasPicoPack) {
-                window.dispatchEvent(new CustomEvent('levelUp', { detail: levelUpDetail }));
-            }
         }
         setTimeout(() => { window.dispatchEvent(new CustomEvent('showNotification', { detail: { msg: `+500 ${xpSkill} XP!`, type: "info" } })); }, 1000);
     }
@@ -3044,6 +3245,7 @@ export const MailboxDialog = ({ onClose, tutorialStep, refetch, onTutorialAdvanc
         window.dispatchEvent(new CustomEvent('charPackOpen', { detail: { seeds: packReward.seeds, onClosed: didLevelUp ? levelUpDetail : null } }));
       }, 100);
     } else {
+      if (didLevelUp) setPendingLevelUp(levelUpDetail);
       setAnimState(3); // Show rewards
     }
   };
@@ -3083,6 +3285,10 @@ export const MailboxDialog = ({ onClose, tutorialStep, refetch, onTutorialAdvanc
                         backgroundPositionY: `-${(ALL_ITEMS[rew.id].pos * 60).toFixed(1)}px`,
                         backgroundRepeat: 'no-repeat',
                       }} />
+                    ) : rew.id === 'gems' ? (
+                      <img src="/images/profile_bar/diamond.png" alt="Gems" style={{ width: '36px', height: '36px', objectFit: 'contain' }} />
+                    ) : rew.id === 'honey' ? (
+                      <img src="/images/profile_bar/hny.png" alt="HNY" style={{ width: '42px', height: '42px', objectFit: 'contain' }} />
                     ) : (
                       <img src={ALL_ITEMS[rew.id]?.image || rew.image} alt={rew.name} style={{ width: '80%', height: '80%', objectFit: 'contain' }} onError={(e) => { e.target.onerror = null; }} />
                     )}
@@ -3107,6 +3313,10 @@ export const MailboxDialog = ({ onClose, tutorialStep, refetch, onTutorialAdvanc
                     window.dispatchEvent(new CustomEvent('charPackOpen', { detail: { seeds: packReward.seeds } }));
                   }, 100);
                 } else {
+                  if (pendingLevelUp) {
+                    window.dispatchEvent(new CustomEvent('levelUp', { detail: pendingLevelUp }));
+                    setPendingLevelUp(null);
+                  }
                   setAnimState(0);
                 }
               }} />
@@ -3200,6 +3410,29 @@ export const MailboxDialog = ({ onClose, tutorialStep, refetch, onTutorialAdvanc
               </div>
             )}
 
+            {activeQuest.id === 'q_beta_gift' && !completedQuests.includes(activeQuest.id) && (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', marginBottom: '16px', padding: '16px', backgroundColor: 'rgba(90,64,42,0.12)', border: '2px solid #8c6b4a', borderRadius: '10px' }}>
+                <img
+                  src="/images/pfp/betapfp.png"
+                  alt="Beta Tester PFP"
+                  style={{ width: '90px', height: '90px', objectFit: 'contain', borderRadius: '50%', border: '3px solid #c8821a', boxShadow: '0 0 16px rgba(200,130,26,0.5)', animation: 'mapFloat 2.5s ease-in-out infinite' }}
+                />
+                <span style={{ fontFamily: 'monospace', fontSize: '13px', color: '#5a402a', fontWeight: 'bold' }}>Beta Tester Profile Picture</span>
+              </div>
+            )}
+
+            {activeQuest.pfpImage && !completedQuests.includes(activeQuest.id) && (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', marginBottom: '16px', padding: '16px', backgroundColor: 'rgba(90,64,42,0.12)', border: '2px solid #c8821a', borderRadius: '10px' }}>
+                <img
+                  src={activeQuest.pfpImage}
+                  alt={activeQuest.pfpLabel}
+                  style={{ width: '90px', height: '90px', objectFit: 'contain', borderRadius: '50%', border: '3px solid #c8821a', boxShadow: '0 0 16px rgba(200,130,26,0.5)', animation: 'mapFloat 2.5s ease-in-out infinite' }}
+                />
+                <span style={{ fontFamily: 'monospace', fontSize: '13px', color: '#5a402a', fontWeight: 'bold' }}>🏆 New Profile Picture Unlocked: {activeQuest.pfpLabel}</span>
+                <span style={{ fontFamily: 'monospace', fontSize: '11px', color: '#8c6b4a', fontStyle: 'italic' }}>{activeQuest.pfpHow}</span>
+              </div>
+            )}
+
             <div style={{ display: 'flex', justifyContent: 'center', gap: '15px' }}>
               {completedQuests.includes(activeQuest.id) ? (
                 <>
@@ -3221,12 +3454,17 @@ export const MailboxDialog = ({ onClose, tutorialStep, refetch, onTutorialAdvanc
                   ) : (
                     <BaseButton label={activeQuest.rewards.length === 0 ? "Mark as Read" : "Claim Gifts"} onClick={handleCompleteQuest} />
                   )}
-                  {activeQuest.id !== 'q2_rebuild_tavern' && activeQuest.rewards.length === 0 && (
+                  {activeQuest.id !== 'q2_rebuild_tavern' && activeQuest.rewards.length === 0 && activeQuest.reqs.length === 0 && (
                     <BaseButton label="Fold Letter" onClick={() => {
                       if (activeQuest.reqs.length === 0) {
-                        const nextDiscarded = [...discardedQuests, activeQuest.id];
-                        setDiscardedQuests(nextDiscarded);
-                        localStorage.setItem('sandbox_discarded_quests', JSON.stringify(nextDiscarded));
+                        if (activeQuest.id !== 'q1_end_papabee') {
+                          const nextDiscarded = [...discardedQuests, activeQuest.id];
+                          setDiscardedQuests(nextDiscarded);
+                          localStorage.setItem('sandbox_discarded_quests', JSON.stringify(nextDiscarded));
+                        }
+                        const nextCompleted = [...completedQuests, activeQuest.id];
+                        setCompletedQuests(nextCompleted);
+                        localStorage.setItem('sandbox_completed_quests', JSON.stringify(nextCompleted));
                       }
                       setAnimState(0);
                     }} />
@@ -3281,8 +3519,8 @@ export const MailboxDialog = ({ onClose, tutorialStep, refetch, onTutorialAdvanc
               >
                 <img src={quest.mailImage || "/images/mail/mailpapabee.png"} alt="" style={{ width: '88%', display: 'block', borderRadius: '10px', margin: '0 auto' }} draggable={false} />
                 {isReady
-                  ? <div style={{ position: 'absolute', top: '-11px', right: '14px', width: '28px', height: '28px', background: '#2e7d32', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', boxShadow: '0 2px 6px rgba(0,0,0,0.5)' }}>✅</div>
-                  : !isRead && <img src="/images/mail/!.png" alt="!" style={{ position: 'absolute', top: '-11px', right: '14px', width: '28px', height: '28px' }} draggable={false} />
+                  ? <img src="/images/farming/checkmark.png" alt="✓" style={{ position: 'absolute', top: '-11px', right: '14px', width: '28px', height: '28px', filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.7))' }} draggable={false} />
+                  : !isRead && <img src="/images/mail/!.png" alt="!" className="badge-pulse" style={{ position: 'absolute', top: '-11px', right: '14px', width: '28px', height: '28px' }} draggable={false} />
                 }
                 <div style={{ position: 'absolute', top: 0, left: 0, right: '23px', bottom: '20px', display: 'flex', alignItems: 'center', justifyContent: 'flex-start', paddingLeft: 'calc(30% - 10px)' }}>
                   <span style={{ fontFamily: 'Cartoonist', fontSize: '14px', color: '#FFFFFF', textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000' }}>{quest.subject}</span>
@@ -3369,6 +3607,13 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
   const farmingLevel = getLevelFromXp(farmingXp);
   const farmingProgress = ((farmingXp - Math.pow(farmingLevel - 1, 2) * 150) / (Math.pow(farmingLevel, 2) * 150 - Math.pow(farmingLevel - 1, 2) * 150)) * 100;
 
+  const [levelUpPopup, setLevelUpPopup] = useState(null); // { skill, level } — pack dialog
+  const [levelUpClaimPopup, setLevelUpClaimPopup] = useState(null); // { skill, level } — claim screen
+  const [isMailboxOpenForLevelUp, setIsMailboxOpenForLevelUp] = useState(false);
+  const pendingLevelUpQueueRef = useRef([]);
+  const levelUpDelayTimerRef = useRef(null);
+  const levelUpBlockingRef = useRef(false); // synced to derived blocking state
+
   useEffect(() => {
       const handleLsUpdate = (e) => {
           if (e.detail.key === 'sandbox_farming_xp') setFarmingXp(parseInt(e.detail.value, 10));
@@ -3384,9 +3629,6 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
       const packSeeds = [
         getRaritySeedId(ID_SEEDS.CARROT, 1),
         getRaritySeedId(ID_SEEDS.CARROT, 1),
-        getRaritySeedId(ID_SEEDS.CARROT, 2),
-        getRaritySeedId(ID_SEEDS.POTATO, 1),
-        getRaritySeedId(ID_SEEDS.TOMATO, 1),
       ];
       for (const seedId of packSeeds) {
         loot[seedId] = (loot[seedId] || 0) + 1;
@@ -3399,9 +3641,9 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
       localStorage.setItem('sandbox_honey', newHoney.toString());
       window.dispatchEvent(new CustomEvent('sandboxHoneyChanged', { detail: newHoney.toString() }));
 
-      // Add 250 gems (tutorial intro gift)
+      // Add 750 gems (enough to skip all 12 welcome crops at 50 gems each and still have 250 left)
       const currentGems = parseInt(localStorage.getItem('sandbox_gems') || '0', 10);
-      const newGems = currentGems + 250;
+      const newGems = currentGems + 750;
       localStorage.setItem('sandbox_gems', newGems.toString());
       window.dispatchEvent(new CustomEvent('sandboxGemsChanged'));
 
@@ -3420,7 +3662,7 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
         loot[seedId] = (loot[seedId] || 0) + 1;
       }
       localStorage.setItem('sandbox_loot', JSON.stringify(loot));
-      setCharPackInfo({ seeds, tier: 2, pendingLevelUp: onClosed || null });
+      setCharPackInfo({ seeds, tier: 'pico_pack', pendingLevelUp: onClosed || null });
     };
     window.addEventListener('charPackOpen', handler);
     return () => window.removeEventListener('charPackOpen', handler);
@@ -3466,6 +3708,7 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
   const plantConfirmAudioRef = useRef(null);
   const harvestConfirmAudioRef = useRef(null);
   const tutPostWaterRef = useRef(false); // tracks when tut bug/crow sequence is active
+  const tutBugKilledRef = useRef(false); // tracks when tut bug has been killed (waiting for crow)
   const tutWaterPlotRef = useRef(null);  // plot index used in tutorial sequence
   const bugsRef = useRef({}); // Tracks bugs currently on the farm
   const crowsRef = useRef({}); // Tracks crows currently on the farm
@@ -3558,6 +3801,58 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
       setIsSeeding(false);
     }
   }, [isGlobalDialogOpen]);
+
+  // --- Level up queue: all blocking-dialog states are in scope here ---
+  useEffect(() => {
+    const handleOpen = () => setIsMailboxOpenForLevelUp(true);
+    const handleClose = () => setIsMailboxOpenForLevelUp(false);
+    window.addEventListener('openMailbox', handleOpen);
+    window.addEventListener('closeMailbox', handleClose);
+    return () => {
+      window.removeEventListener('openMailbox', handleOpen);
+      window.removeEventListener('closeMailbox', handleClose);
+    };
+  }, []);
+
+  useEffect(() => {
+    const blocking = isGlobalDialogOpen || isMailboxOpenForLevelUp || showMissionBoard || showShop
+      || !!charPackInfo || showFarmCustomize || showFestivals
+      || showTamagotchiDialog || showBowlFishDialog || isSelectCropDialog
+      || !!levelUpPopup || !!levelUpClaimPopup || showPabeePack;
+    const wasBlocking = levelUpBlockingRef.current;
+    levelUpBlockingRef.current = blocking;
+    if (wasBlocking && !blocking && pendingLevelUpQueueRef.current.length > 0) {
+      clearTimeout(levelUpDelayTimerRef.current);
+      levelUpDelayTimerRef.current = setTimeout(() => {
+        if (!levelUpBlockingRef.current) {
+          const next = pendingLevelUpQueueRef.current.shift();
+          if (next) setLevelUpClaimPopup(next);
+        }
+      }, 2500);
+    }
+  }, [isGlobalDialogOpen, isMailboxOpenForLevelUp, showMissionBoard, showShop,
+      charPackInfo, showFarmCustomize, showFestivals,
+      showTamagotchiDialog, showBowlFishDialog, isSelectCropDialog,
+      levelUpPopup, levelUpClaimPopup, showPabeePack]);
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (!levelUpBlockingRef.current) {
+        clearTimeout(levelUpDelayTimerRef.current);
+        levelUpDelayTimerRef.current = setTimeout(() => {
+          if (!levelUpBlockingRef.current) {
+            setLevelUpClaimPopup(e.detail);
+          } else {
+            pendingLevelUpQueueRef.current.push(e.detail);
+          }
+        }, 2500);
+      } else {
+        pendingLevelUpQueueRef.current.push(e.detail);
+      }
+    };
+    window.addEventListener('levelUp', handler);
+    return () => window.removeEventListener('levelUp', handler);
+  }, []);
 
   useEffect(() => {
     window.dispatchEvent(new CustomEvent('petDialogOpen', { detail: showTamagotchiDialog || showBowlFishDialog }));
@@ -3685,7 +3980,7 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
     return () => window.removeEventListener('workerBeeLevelChanged', handleBeeLevelChange);
   }, []);
 
-  const handleSkipGrowth = () => {
+  const handleSkipGrowth = async () => {
     const currentGems = parseInt(localStorage.getItem('sandbox_gems') || '0', 10);
     if (currentGems < 50) {
       show("You don't have enough Gems!", "error");
@@ -3693,32 +3988,16 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
       return;
     }
 
+    const target = skipGrowTarget;
     const newGems = currentGems - 50;
     localStorage.setItem('sandbox_gems', newGems.toString());
     window.dispatchEvent(new CustomEvent('sandboxGemsChanged', { detail: newGems.toString() }));
-    
-    const skipped = JSON.parse(localStorage.getItem('sandbox_skipped_crops') || '{}');
-    skipped[skipGrowTarget] = true;
-    localStorage.setItem('sandbox_skipped_crops', JSON.stringify(skipped));
-    
-    const newWaterState = { ...waterStateRef.current };
-    if (!newWaterState[skipGrowTarget]) {
-      newWaterState[skipGrowTarget] = { needsInitial: false, needsMid: false, pausedMs: 0 };
-    } else {
-      newWaterState[skipGrowTarget].needsInitial = false;
-      newWaterState[skipGrowTarget].needsMid = false;
-    }
-    newWaterState[skipGrowTarget].contractPlantedAt = 1; // instantly ready
-    newWaterState[skipGrowTarget].pausedMs = 0;
-    
-    waterStateRef.current = newWaterState;
-    localStorage.setItem('sandbox_water_state', JSON.stringify(newWaterState));
-    
-    setPreviewUpdateKey(prev => prev + 1); // trigger re-render
-    
-    show("Growth skipped! Crop is ready to harvest.", "success");
+    trackGemSpend(50);
+
     setSkipGrowTarget(null);
     if (tutorialStep === 3 && tutPage === 10) setTutorialGrowSkipped(true);
+
+    await handleInstantHarvest(target);
   };
 
   // Plot Preparation State (0: Red X, 1: Hole, 2: Hole+Fish, 3: Dirt Pile)
@@ -4184,7 +4463,20 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
                 let pausedMs = (wState && !isNaN(wState.pausedMs)) ? wState.pausedMs : 0;
                 item.plantedAt = item.contractPlantedAt + pausedMs;
                 item.growthElixirApplied = timeDifference > 0;
-                
+
+                // Preserve needsWater from water state to prevent flicker on reload
+                if (wState) {
+                  const hasPest = bugsRef.current[crop.plotNumber] !== undefined || crowsRef.current[crop.plotNumber] !== undefined;
+                  if (wState.needsInitial) {
+                    item.needsWater = true;
+                  } else if (wState.needsMid) {
+                    const halfTime = (growthTime * 1000) / 2;
+                    item.needsWater = (Date.now() - (item.contractPlantedAt + pausedMs)) >= halfTime || hasPest;
+                  } else {
+                    item.needsWater = hasPest;
+                  }
+                }
+
                 item.growthTime = growthTime;
                 const adjustedEndTime = Math.floor(item.plantedAt / 1000) + growthTime;
                 const isReady = adjustedEndTime <= nowSec;
@@ -4391,6 +4683,7 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
     const onSkipTutorial = () => {
       setTutorialStep(32);
       localStorage.setItem('sandbox_tutorial_step', '32');
+      unlockPfp('farmerpfp');
       setIsDigging(false);
       setIsDirting(false);
       setIsSeeding(false);
@@ -4845,6 +5138,7 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
       const { plotIndex } = event.detail;
       if (destroyCrop) {
         await destroyCrop(plotIndex);
+        unlockPfp('crowattackpfp');
         show(`Oh no! A bug ate your crop at plot ${plotIndex + 1}!`, "error");
         await loadCropsFromContract();
         setPreviewUpdateKey(prev => prev + 1);
@@ -4873,8 +5167,7 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
       show("Bug squashed!", "success");
 
       if (tutPostWaterRef.current) {
-        tutPostWaterRef.current = false;
-        setTutPageSync(10);
+        tutBugKilledRef.current = true;
         setTimeout(() => {
           crowsRef.current[plotIndex] = 9999; // long countdown so it never harms crops
           setCropArray(prev => {
@@ -4909,6 +5202,11 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
       });
       show("Crow scared away!", "success");
 
+      if (tutPostWaterRef.current && tutBugKilledRef.current) {
+        tutPostWaterRef.current = false;
+        tutBugKilledRef.current = false;
+        setTutPageSync(10);
+      }
     };
 
     window.addEventListener('triggerDestroyCrop', handleTriggerDestroy);
@@ -5206,6 +5504,9 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
                     bugsRef.current[i] = 60; // 60 seconds to click
                     item.bugCountdown = 60;
                     hasChanges = true;
+                    const prevSpawns = parseInt(localStorage.getItem('sandbox_total_bug_spawns') || '0', 10) + 1;
+                    localStorage.setItem('sandbox_total_bug_spawns', String(prevSpawns));
+                    if (prevSpawns >= 10) unlockPfp('flyattackpfp');
                   }
                 }
               }
@@ -5707,12 +6008,15 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
       // Track total crops and specific crop harvests for soil unlocks
       {
         const DRAGON_FRUIT_SEED_ID = (4 << 8) | 11;
+        const POTATO_SEED_ID = ID_PRODUCE_ITEMS.POTATO;
         let dragonfruitCount = 0;
+        let potatoCount = 0;
         for (let i = 0; i < cropArray.getLength(); i++) {
           const item = cropArray.getItem(i);
           if (item && item.seedId && readySlots.includes(i)) {
             const baseId = item.seedId & 0xFFF;
             if (baseId === DRAGON_FRUIT_SEED_ID) dragonfruitCount++;
+            if ((item.seedId & 0xFFF) === (POTATO_SEED_ID & 0xFFF) || Number(item.seedId) === POTATO_SEED_ID) potatoCount++;
           }
         }
         const prevTotal = parseInt(localStorage.getItem('sandbox_total_crops') || '0', 10);
@@ -5720,6 +6024,12 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
         if (dragonfruitCount > 0) {
           const prevDragon = parseInt(localStorage.getItem('sandbox_dragonfruit_harvested') || '0', 10);
           localStorage.setItem('sandbox_dragonfruit_harvested', (prevDragon + dragonfruitCount).toString());
+        }
+        if (potatoCount > 0) {
+          const prevPotato = parseInt(localStorage.getItem('sandbox_potato_harvested') || '0', 10);
+          const newPotato = prevPotato + potatoCount;
+          localStorage.setItem('sandbox_potato_harvested', String(newPotato));
+          if (newPotato >= 10) unlockPfp('potatopfp');
         }
         window.dispatchEvent(new CustomEvent('soilProgressChanged'));
       }
@@ -6387,7 +6697,9 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
           const plotIdx = tutWaterPlotRef.current !== null ? tutWaterPlotRef.current : index;
           setSelectedTool(null);
           setIsWatering(false);
+          setTutPageSync(9);
           tutPostWaterRef.current = true;
+          tutBugKilledRef.current = false;
           setTimeout(() => {
             bugsRef.current[plotIdx] = 60;
             setCropArray(prev => {
@@ -6708,8 +7020,8 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
         {/* XP Progress Bar */}
         <div style={{ position: 'relative', height: '20px', marginTop: '2px' }}>
           <img src="/images/level/progress bar.png" alt="" style={{ width: '100%', height: '100%', objectFit: 'fill', display: 'block' }} />
-          <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', width: `${Math.min(farmingProgress, 100)}%`, transition: 'width 0.5s ease' }}>
-            <img src="/images/level/yellowbar.png" alt="" style={{ width: '100%', height: '100%', objectFit: 'fill', display: 'block' }} />
+          <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', width: `${Math.min(farmingProgress, 100)}%`, transition: 'width 0.5s ease', display: 'flex', alignItems: 'center', marginLeft: '8px' }}>
+            <img src="/images/level/yellowbar.png" alt="" style={{ width: '100%', height: '60%', objectFit: 'fill', display: 'block' }} />
           </div>
         </div>
       </div>
@@ -6733,16 +7045,18 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
 
       <PanZoomViewport
         backgroundSrc="/images/backgrounds/realfarm.png"
-        hotspots={tutorialStep >= 32 ? hotspots.filter(h => h.id !== ID_FARM_HOTSPOTS.FARMER || completedQuests.includes('q2_missionboard_intro')) : []}
+        hotspots={tutorialStep >= 32 ? hotspots.filter(h => h.id !== ID_FARM_HOTSPOTS.FARMER || completedQuests.includes('q2_missionboard_intro') || JSON.parse(localStorage.getItem('sandbox_read_quests') || '[]').includes('q2_missionboard_intro')) : []}
         width={width}
         height={height}
         dialogs={dialogs}
         hideMenu={isFarmMenu}
         bees={bees}
-        initialScale={1.0}
-        backgroundOffsetX={40}
-        backgroundOffsetY={-40}
+        initialScale={1.5}
+        initialOffsetX={-22}
+        backgroundOffsetX={7.5}
+        backgroundOffsetY={-64.5}
         disablePanZoom
+        hotspotScale={0.75}
         onHotspotClick={(hotspotId) => {
           setSelectedTool(null);
           setIsWatering(false);
@@ -6753,70 +7067,7 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
           if (hotspotId === ID_FARM_HOTSPOTS.FARMER) { setShowMissionBoard(true); return true; }
           return false;
         }}
-        onBeeClick={() => setShowFarmCustomize(true)}
       >
-        {/* Shovel only on tutp5 with yellow highlight */}
-        {tutorialStep === 3 && tutPage === 5 && (
-        <img
-          src="/images/farming/realshovel.png"
-          alt="Shovel"
-          draggable={false}
-          onClick={() => { toggleTool('shovel'); const next = selectedTool !== 'shovel'; setIsDigging(next); setIsHoeing(false); setIsWatering(false); setIsDirting(false); setIsSeeding(false); setIsPlanting(false); }}
-          style={{
-            position: 'absolute',
-            top: '650px',
-            left: '555px',
-            width: '30px',
-            zIndex: 6,
-            cursor: 'pointer',
-            filter: selectedTool === 'shovel' ? 'drop-shadow(0px 0px 10px yellow) drop-shadow(0px 0px 20px yellow)' : 'none',
-            transform: selectedTool === 'shovel' ? 'translateY(-15px)' : 'none',
-            transition: 'transform 0.4s ease, filter 0.2s ease',
-            animation: selectedTool === 'shovel' ? 'mapFloat 2s ease-in-out infinite' : 'none',
-          }}
-        />
-        )}
-        {/* Seeds only on tutp7 with yellow highlight */}
-        {tutorialStep === 3 && tutPage === 7 && (
-        <img
-          src="/images/farming/realseeds.png"
-          alt="Seeds"
-          draggable={false}
-          onClick={() => { toggleTool('seeds'); const next = selectedTool !== 'seeds'; setIsSeeding(next); setIsDirting(false); setIsHoeing(false); setIsWatering(false); setIsDigging(false); setIsPlanting(false); }}
-          style={{
-            position: 'absolute',
-            top: '637px',
-            left: '709px',
-            width: '43px',
-            zIndex: 6,
-            cursor: 'pointer',
-            filter: selectedTool === 'seeds' ? 'drop-shadow(0px 0px 10px yellow) drop-shadow(0px 0px 20px yellow)' : 'none',
-            transform: selectedTool === 'seeds' ? 'translateY(-15px)' : 'none',
-            transition: 'transform 0.4s ease, filter 0.2s ease',
-            animation: selectedTool === 'seeds' ? 'mapFloat 2s ease-in-out infinite' : 'none',
-          }}
-        />
-        )}
-        {/* Watercan only on tutp8 (same image as tutp7) with yellow highlight */}
-        {tutorialStep === 3 && tutPage === 8 && (
-        <img
-          src="/images/farming/realbucket.png"
-          alt="Watering Can"
-          draggable={false}
-          onClick={() => { toggleTool('bucket'); const next = selectedTool !== 'bucket'; setIsWatering(next); setIsHoeing(false); setIsDigging(false); setIsDirting(false); setIsSeeding(false); setIsPlanting(false); }}
-          style={{
-            position: 'absolute',
-            top: '638px',
-            left: '785px',
-            width: '63px',
-            zIndex: 6,
-            cursor: 'pointer',
-            filter: selectedTool === 'bucket' ? 'drop-shadow(0px 0px 10px yellow) drop-shadow(0px 0px 20px yellow)' : 'none',
-            transform: selectedTool === 'bucket' ? 'translateY(-15px)' : 'none',
-            transition: 'transform 0.4s ease, filter 0.2s ease',
-            animation: selectedTool === 'bucket' ? 'mapFloat 2s ease-in-out infinite' : 'none',
-          }}
-        />
         )}
         {/* Soil only on tutp6 with yellow highlight */}
         {tutorialStep === 3 && tutPage === 6 && (
@@ -6839,149 +7090,10 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
           }}
         />
         )}
-        {(tutorialStep >= 32 || (tutorialStep === 3 && tutPage >= 4)) && (<>
-        {/* Belt Top */}
-        <img src="/images/farming/realbelttop.png" alt="Belt Top" style={{ position: 'absolute', top: '655px', left: '542px', width: '376px', pointerEvents: 'none', zIndex: 7 }} draggable={false} />
-        {/* Belt Bottom */}
-        <img src="/images/farming/realbeltbottom.png" alt="Belt Bottom" style={{ position: 'absolute', top: '630px', left: '450px', width: '560px', pointerEvents: 'none', zIndex: 5 }} draggable={false} />
-        </>)}
-        {/* Farm Tool Items - visible from step 32 or during bug/crow tutorial phase */}
-        {(tutorialStep >= 32 || (tutorialStep === 3 && tutPage >= 9)) && (<>
-        <img
-          src="/images/farming/realfork.png"
-          alt="Fork"
-          draggable={false}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.filter = 'drop-shadow(0px 0px 6px rgba(255,255,255,0.8))';
-            e.currentTarget.style.transform = 'scale(1.15)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.filter = selectedTool === 'fork' ? 'drop-shadow(0px 0px 6px rgba(255,255,255,0.8))' : 'none';
-            e.currentTarget.style.transform = selectedTool === 'fork' ? 'translateY(-15px)' : 'none';
-          }}
-          onClick={() => { toggleTool('fork'); const next = selectedTool !== 'fork'; setIsHoeing(next); setIsWatering(false); setIsDigging(false); setIsDirting(false); setIsSeeding(false); setIsPlanting(false); }}
-          style={{
-            position: 'absolute',
-            top: '648px',
-            left: '874px',
-            width: '28px',
-            zIndex: 6,
-            cursor: 'pointer',
-            transform: selectedTool === 'fork' ? 'translateY(-15px)' : 'none',
-            filter: selectedTool === 'fork' ? 'drop-shadow(0px 0px 6px rgba(255,255,255,0.8))' : 'none',
-            transition: 'transform 0.4s ease, filter 0.2s ease',
-            animation: selectedTool === 'fork' ? 'mapFloat 2s ease-in-out infinite' : 'none',
-          }}
-        />
-        <img
-          src="/images/farming/realsoil.png"
-          alt="Soil"
-          draggable={false}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.filter = 'drop-shadow(0px 0px 6px rgba(255,255,255,0.8))';
-            e.currentTarget.style.transform = 'scale(1.15)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.filter = selectedTool === 'soil' ? 'drop-shadow(0px 0px 6px rgba(255,255,255,0.8))' : 'none';
-            e.currentTarget.style.transform = selectedTool === 'soil' ? 'translateY(-15px)' : 'none';
-          }}
-          onClick={() => { toggleTool('soil'); const next = selectedTool !== 'soil'; setIsDirting(next); setIsHoeing(false); setIsWatering(false); setIsDigging(false); setIsSeeding(false); setIsPlanting(false); }}
-          style={{
-            position: 'absolute',
-            top: '638px',
-            left: '618px',
-            width: '52px',
-            zIndex: 6,
-            cursor: 'pointer',
-            transform: selectedTool === 'soil' ? 'translateY(-15px)' : 'none',
-            filter: selectedTool === 'soil' ? 'drop-shadow(0px 0px 6px rgba(255,255,255,0.8))' : 'none',
-            transition: 'transform 0.4s ease, filter 0.2s ease',
-            animation: selectedTool === 'soil' ? 'mapFloat 2s ease-in-out infinite' : 'none',
-          }}
-        />
-        <img
-          src="/images/farming/realseeds.png"
-          alt="Seeds"
-          draggable={false}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.filter = 'drop-shadow(0px 0px 6px rgba(255,255,255,0.8))';
-            e.currentTarget.style.transform = 'scale(1.15)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.filter = selectedTool === 'seeds' ? 'drop-shadow(0px 0px 6px rgba(255,255,255,0.8))' : 'none';
-            e.currentTarget.style.transform = selectedTool === 'seeds' ? 'translateY(-15px)' : 'none';
-          }}
-          onClick={() => { toggleTool('seeds'); const next = selectedTool !== 'seeds'; setIsSeeding(next); setIsDirting(false); setIsHoeing(false); setIsWatering(false); setIsDigging(false); setIsPlanting(false); }}
-          style={{
-            position: 'absolute',
-            top: '637px',
-            left: '709px',
-            width: '43px',
-            zIndex: 6,
-            cursor: 'pointer',
-            transform: selectedTool === 'seeds' ? 'translateY(-15px)' : 'none',
-            filter: selectedTool === 'seeds' ? 'drop-shadow(0px 0px 6px rgba(255,255,255,0.8))' : 'none',
-            transition: 'transform 0.4s ease, filter 0.2s ease',
-            animation: selectedTool === 'seeds' ? 'mapFloat 2s ease-in-out infinite' : 'none',
-          }}
-        />
-        <img
-          src="/images/farming/realbucket.png"
-          alt="Bucket"
-          draggable={false}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.filter = 'drop-shadow(0px 0px 6px rgba(255,255,255,0.8))';
-            e.currentTarget.style.transform = 'scale(1.15)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.filter = selectedTool === 'bucket' ? 'drop-shadow(0px 0px 6px rgba(255,255,255,0.8))' : 'none';
-            e.currentTarget.style.transform = selectedTool === 'bucket' ? 'translateY(-15px)' : 'none';
-          }}
-          onClick={() => { toggleTool('bucket'); const next = selectedTool !== 'bucket'; setIsWatering(next); setIsHoeing(false); setIsDigging(false); setIsDirting(false); setIsSeeding(false); setIsPlanting(false); }}
-          style={{
-            position: 'absolute',
-            top: '638px',
-            left: '785px',
-            width: '63px',
-            zIndex: 6,
-            cursor: 'pointer',
-            transform: selectedTool === 'bucket' ? 'translateY(-15px)' : 'none',
-            filter: selectedTool === 'bucket' ? 'drop-shadow(0px 0px 6px rgba(255,255,255,0.8))' : 'none',
-            transition: 'transform 0.4s ease, filter 0.2s ease',
-            animation: selectedTool === 'bucket' ? 'mapFloat 2s ease-in-out infinite' : 'none',
-          }}
-        />
-        <img
-          src="/images/farming/realshovel.png"
-          alt="Shovel"
-          draggable={false}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.filter = 'drop-shadow(0px 0px 6px rgba(255,255,255,0.8))';
-            e.currentTarget.style.transform = 'scale(1.15)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.filter = selectedTool === 'shovel' ? 'drop-shadow(0px 0px 6px rgba(255,255,255,0.8))' : 'none';
-            e.currentTarget.style.transform = selectedTool === 'shovel' ? 'translateY(-15px)' : 'none';
-          }}
-          onClick={() => { toggleTool('shovel'); const next = selectedTool !== 'shovel'; setIsDigging(next); setIsHoeing(false); setIsWatering(false); setIsDirting(false); setIsSeeding(false); setIsPlanting(false); }}
-          style={{
-            position: 'absolute',
-            top: '650px',
-            left: '555px',
-            width: '30px',
-            zIndex: 6,
-            cursor: 'pointer',
-            transform: selectedTool === 'shovel' ? 'translateY(-15px)' : 'none',
-            filter: selectedTool === 'shovel' ? 'drop-shadow(0px 0px 6px rgba(255,255,255,0.8))' : 'none',
-            transition: 'transform 0.4s ease, filter 0.2s ease',
-            animation: selectedTool === 'shovel' ? 'mapFloat 2s ease-in-out infinite' : 'none',
-          }}
-        />
-        </>)}
         {/* Well */}
-        <img src="/images/land/well.png" alt="Well" style={{ position: 'absolute', top: '410px', left: '250px', width: '190px', pointerEvents: 'none', zIndex: 10 }} draggable={false} />
+        <img src="/images/land/well.png" alt="Well" style={{ position: 'absolute', top: '385px', left: '230px', width: '190px', pointerEvents: 'none', zIndex: 10 }} draggable={false} />
         {/* Mine */}
-        <img src="/images/land/mine.png" alt="Mine" style={{ position: 'absolute', top: '417px', left: '1023.5px', width: '235px', pointerEvents: 'none', zIndex: 10 }} draggable={false} />
+        <img src="/images/land/mine.png" alt="Mine" style={{ position: 'absolute', top: '407px', left: '1007.5px', width: '215px', pointerEvents: 'none', zIndex: 10 }} draggable={false} />
         {false && <img
           src="/images/label/mineslabel.png"
           alt="Mine Label"
@@ -7008,7 +7120,7 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
             e.currentTarget.style.transform = 'scale(0.9)';
             setTimeout(() => { navigate('/mine'); }, 150);
           }}
-          style={{ position: 'absolute', top: '377px', left: '1145px', width: '78px', zIndex: 11, cursor: mineLockTime > 0 ? 'not-allowed' : 'pointer', animation: 'mapFloat 2.6s ease-in-out infinite', transition: 'filter 0.2s ease', opacity: mineLockTime > 0 ? 0.6 : 1 }}
+          style={{ position: 'absolute', top: '367px', left: '1129px', width: '78px', zIndex: 11, cursor: mineLockTime > 0 ? 'not-allowed' : 'pointer', animation: 'mapFloat 2.6s ease-in-out infinite', transition: 'filter 0.2s ease', opacity: mineLockTime > 0 ? 0.6 : 1 }}
         />}
 
         <FarmInterface
@@ -7532,117 +7644,22 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
     />
   )}
 
-  {tutorialStep === 3 && tutPage === 5 && !isSelectCropDialog && (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 99999, pointerEvents: 'none' }}>
-      <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <radialGradient id="sg1" cx="50%" cy="50%" r="50%">
-            <stop offset="60%" stopColor="black" stopOpacity="1"/>
-            <stop offset="100%" stopColor="black" stopOpacity="0"/>
-          </radialGradient>
-          <radialGradient id="sg2" cx="50%" cy="50%" r="50%">
-            <stop offset="60%" stopColor="black" stopOpacity="1"/>
-            <stop offset="100%" stopColor="black" stopOpacity="0"/>
-          </radialGradient>
-          <mask id="tut-mask-5">
-            <rect width="100%" height="100%" fill="white"/>
-            <ellipse cx="622" cy="735" rx="75" ry="60" fill="url(#sg1)"/>
-            <ellipse cx="538" cy="446" rx="65" ry="55" fill="url(#sg2)"/>
-          </mask>
-        </defs>
-        <rect width="100%" height="100%" fill="rgba(0,0,0,0.82)" mask="url(#tut-mask-5)"/>
-      </svg>
-    </div>
-  )}
-
-  {tutorialStep === 3 && tutPage === 6 && !isSelectCropDialog && (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 99999, pointerEvents: 'none' }}>
-      <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <radialGradient id="sg1f" cx="50%" cy="50%" r="50%">
-            <stop offset="60%" stopColor="black" stopOpacity="1"/>
-            <stop offset="100%" stopColor="black" stopOpacity="0"/>
-          </radialGradient>
-          <radialGradient id="sg2f" cx="50%" cy="50%" r="50%">
-            <stop offset="60%" stopColor="black" stopOpacity="1"/>
-            <stop offset="100%" stopColor="black" stopOpacity="0"/>
-          </radialGradient>
-          <mask id="tut-mask-6">
-            <rect width="100%" height="100%" fill="white"/>
-            <ellipse cx="696" cy="740" rx="75" ry="60" fill="url(#sg1f)"/>
-            <ellipse cx="538" cy="446" rx="65" ry="55" fill="url(#sg2f)"/>
-          </mask>
-        </defs>
-        <rect width="100%" height="100%" fill="rgba(0,0,0,0.82)" mask="url(#tut-mask-6)"/>
-      </svg>
-    </div>
-  )}
-
-  {tutorialStep === 3 && tutPage === 7 && !isSelectCropDialog && (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 99999, pointerEvents: 'none' }}>
-      <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <radialGradient id="sg1b" cx="50%" cy="50%" r="50%">
-            <stop offset="60%" stopColor="black" stopOpacity="1"/>
-            <stop offset="100%" stopColor="black" stopOpacity="0"/>
-          </radialGradient>
-          <radialGradient id="sg2b" cx="50%" cy="50%" r="50%">
-            <stop offset="60%" stopColor="black" stopOpacity="1"/>
-            <stop offset="100%" stopColor="black" stopOpacity="0"/>
-          </radialGradient>
-          <mask id="tut-mask-7">
-            <rect width="100%" height="100%" fill="white"/>
-            <ellipse cx="782" cy="740" rx="75" ry="60" fill="url(#sg1b)"/>
-            <ellipse cx="538" cy="446" rx="65" ry="55" fill="url(#sg2b)"/>
-          </mask>
-        </defs>
-        <rect width="100%" height="100%" fill="rgba(0,0,0,0.82)" mask="url(#tut-mask-7)"/>
-      </svg>
-    </div>
-  )}
-
-  {tutorialStep === 3 && tutPage === 8 && !isSelectCropDialog && (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 99999, pointerEvents: 'none' }}>
-      <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <radialGradient id="sg1c" cx="50%" cy="50%" r="50%">
-            <stop offset="60%" stopColor="black" stopOpacity="1"/>
-            <stop offset="100%" stopColor="black" stopOpacity="0"/>
-          </radialGradient>
-          <radialGradient id="sg2c" cx="50%" cy="50%" r="50%">
-            <stop offset="60%" stopColor="black" stopOpacity="1"/>
-            <stop offset="100%" stopColor="black" stopOpacity="0"/>
-          </radialGradient>
-          <mask id="tut-mask-8">
-            <rect width="100%" height="100%" fill="white"/>
-            <ellipse cx="867" cy="740" rx="75" ry="60" fill="url(#sg1c)"/>
-            <ellipse cx="538" cy="416" rx="80" ry="68" fill="url(#sg2c)"/>
-          </mask>
-        </defs>
-        <rect width="100%" height="100%" fill="rgba(0,0,0,0.82)" mask="url(#tut-mask-8)"/>
-      </svg>
-    </div>
-  )}
-
   <style>{`
     .tutorial-img { transition: transform 0.08s, filter 0.08s; cursor: pointer; }
     .tutorial-img:active { transform: scale(0.96); filter: brightness(0.8); }
-    .tut-arrow { position: absolute; right: -22px; top: 50%; transform: translateY(-50%); width: 44px; height: 44px; background: #f5c842; border: 3px solid #a67c00; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 22px; box-shadow: 0 3px 10px rgba(0,0,0,0.4); transition: transform 0.1s, filter 0.1s; user-select: none; }
-    .tut-arrow:hover { filter: brightness(1.2); transform: translateY(-50%) scale(1.1); }
-    .tut-arrow:active { filter: brightness(0.85); transform: translateY(-50%) scale(0.95); }
   `}</style>
 
   {tutorialStep === 3 && (
-    <div style={{ position: 'fixed', right: '20px', bottom: '20px', zIndex: 100000 }}>
+    <div style={{ position: 'fixed', right: tutPage === 4 ? '520px' : '20px', bottom: tutPage === 4 ? '260px' : '20px', zIndex: 100000 }}>
       <div style={{ position: 'relative', width: '490px' }}>
         <img
-          src={tutPage === 1 ? '/images/tutorial/tutmessagep1.png' : tutPage === 2 ? '/images/tutorial/tutmessagep2.png' : tutPage === 3 ? '/images/tutorial/tutmessagep3.png' : tutPage === 4 ? '/images/tutorial/tutp4.png' : tutPage === 5 ? '/images/tutorial/tutp5.png' : tutPage === 6 ? '/images/tutorial/tutp6.png' : tutPage === 10 ? '/images/tutorial/tutpart8.png' : tutPage === 11 ? '/images/tutorial/tutp9.png' : tutPage === 12 ? '/images/tutorial/tutp10.png' : '/images/tutorial/tutp7.png'}
+          src={tutPage === 1 ? '/images/tutorial/tutmessagep1.png' : tutPage === 2 ? '/images/tutorial/tutmessagep2.png' : tutPage === 3 ? '/images/tutorial/tutmessagep3.png' : tutPage === 4 ? '/images/tutorial/tutp4.png' : tutPage === 5 ? '/images/tutorial/tutp5.png' : tutPage === 6 ? '/images/tutorial/tutp6.png' : tutPage === 8 ? '/images/tutorial/tutp7and5.png' : tutPage === 9 ? '/images/tutorial/bugandcrow.png' : tutPage === 10 ? '/images/tutorial/tutpart8.png' : tutPage === 11 ? '/images/tutorial/tutp9.png' : tutPage === 12 ? '/images/tutorial/tutp10.png' : '/images/tutorial/tutp7.png'}
           alt="Tutorial"
           className="tutorial-img"
           style={{ width: '490px', objectFit: 'contain', display: 'block' }}
         />
-        {tutPage !== 5 && tutPage !== 6 && tutPage !== 7 && tutPage !== 8 && tutPage !== 9 && tutPage !== 11 && tutPage !== 12 && (
-          <div className="tut-arrow" onClick={() => {
+        {tutPage !== 5 && tutPage !== 6 && tutPage !== 7 && tutPage !== 8 && tutPage !== 9 && tutPage !== 12 && (
+          <div className="tut-arrow" style={tutPage === 4 ? { top: 'calc(50% + 55px)' } : tutPage === 11 ? { top: 'auto', bottom: '-30px', transform: 'none' } : {}} onClick={() => {
             if (tutPage === 1) {
               setTutPageSync(2);
             } else if (tutPage === 2) {
@@ -7657,9 +7674,10 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
               setTutPageSync(1);
               setTutorialStep(32);
               localStorage.setItem('sandbox_tutorial_step', '32');
+              unlockPfp('farmerpfp');
               window.dispatchEvent(new CustomEvent('tutorialStepChanged'));
             }
-          }}>▶</div>
+          }}><img src="/images/tutorial/next.png" style={{ width: '100%', height: '100%', objectFit: 'contain' }} /></div>
         )}
       </div>
     </div>
@@ -7674,7 +7692,7 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
     <style>{`
       a[href*="/house"], a[href*="/valley"], a[href*="/tavern"] { pointer-events: none !important; }
       a[href*="/market"] { pointer-events: auto !important; animation: marketIconPulse 1.2s ease-in-out infinite !important; transform-origin: center; position: relative; z-index: 100001; }
-      @keyframes marketIconPulse { 0%, 100% { transform: scale(1.15); filter: drop-shadow(0 0 8px rgba(255,215,0,0.9)); } 50% { transform: scale(0.95); filter: drop-shadow(0 0 2px rgba(255,215,0,0.3)); } }
+      @keyframes marketIconPulse { 0%, 100% { filter: drop-shadow(0 0 8px #ffe033) drop-shadow(0 0 18px #ffb800); } 50% { filter: drop-shadow(0 0 18px #ffe033) drop-shadow(0 0 36px #ffb800) brightness(1.2); } }
     `}</style>
   )}
 
@@ -7689,7 +7707,7 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
       `}</style>
       <div style={{ position: 'relative', width: '490px', pointerEvents: 'auto' }}>
         <img src="/images/tutorial/tutmessagep1.png" alt="Tutorial" className="tutorial-img" style={{ width: '490px', objectFit: 'contain' }} />
-        <div className="tut-arrow" onClick={() => { setTutorialStep(26); localStorage.setItem('sandbox_tutorial_step', '26'); window.dispatchEvent(new CustomEvent('tutorialStepChanged')); }}>▶</div>
+        <div className="tut-arrow" onClick={() => { setTutorialStep(26); localStorage.setItem('sandbox_tutorial_step', '26'); window.dispatchEvent(new CustomEvent('tutorialStepChanged')); }}><img src="/images/tutorial/next.png" style={{ width: '100%', height: '100%', objectFit: 'contain' }} /></div>
       </div>
     </div>
   )}
@@ -7706,7 +7724,7 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
       <div style={{ position: 'fixed', right: '20px', bottom: '20px', zIndex: 100000 }}>
         <div style={{ position: 'relative', width: '490px' }}>
           <img src="/images/tutorial/tutmessagep1.png" alt="Tutorial" style={{ width: '490px', objectFit: 'contain' }} />
-          <div className="tut-arrow" onClick={() => { setTutorialStep(27); localStorage.setItem('sandbox_tutorial_step', '27'); window.dispatchEvent(new CustomEvent('tutorialStepChanged')); }}>▶</div>
+          <div className="tut-arrow" onClick={() => { setTutorialStep(27); localStorage.setItem('sandbox_tutorial_step', '27'); window.dispatchEvent(new CustomEvent('tutorialStepChanged')); }}><img src="/images/tutorial/next.png" style={{ width: '100%', height: '100%', objectFit: 'contain' }} /></div>
         </div>
       </div>
     </>
@@ -7723,7 +7741,7 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
       `}</style>
       <div style={{ position: 'relative', width: '490px' }}>
         <img src="/images/tutorial/tutmessagep1.png" alt="Tutorial" style={{ width: '490px', objectFit: 'contain' }} />
-        <div className="tut-arrow" onClick={() => { setTutorialStep(28); localStorage.setItem('sandbox_tutorial_step', '28'); window.dispatchEvent(new CustomEvent('tutorialStepChanged')); }}>▶</div>
+        <div className="tut-arrow" onClick={() => { setTutorialStep(28); localStorage.setItem('sandbox_tutorial_step', '28'); window.dispatchEvent(new CustomEvent('tutorialStepChanged')); }}><img src="/images/tutorial/next.png" style={{ width: '100%', height: '100%', objectFit: 'contain' }} /></div>
       </div>
     </div>
   )}
@@ -7733,7 +7751,7 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
       <style>{`a[href*="/house"], a[href*="/valley"], a[href*="/market"], a[href*="/tavern"] { pointer-events: none !important; }`}</style>
       <div style={{ position: 'relative', width: '490px' }}>
         <img src="/images/tutorial/tutmessagep1.png" alt="Tutorial" style={{ width: '490px', objectFit: 'contain' }} />
-        <div className="tut-arrow" onClick={() => { setTutorialStep(29); localStorage.setItem('sandbox_tutorial_step', '29'); window.dispatchEvent(new CustomEvent('tutorialStepChanged')); }}>▶</div>
+        <div className="tut-arrow" onClick={() => { setTutorialStep(29); localStorage.setItem('sandbox_tutorial_step', '29'); window.dispatchEvent(new CustomEvent('tutorialStepChanged')); }}><img src="/images/tutorial/next.png" style={{ width: '100%', height: '100%', objectFit: 'contain' }} /></div>
       </div>
     </div>
   )}
@@ -7749,7 +7767,7 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
       `}</style>
       <div style={{ position: 'relative', width: '490px' }}>
         <img src="/images/tutorial/tutmessagep1.png" alt="Tutorial" style={{ width: '490px', objectFit: 'contain' }} />
-        <div className="tut-arrow" onClick={() => { setTutorialStep(30); localStorage.setItem('sandbox_tutorial_step', '30'); window.dispatchEvent(new CustomEvent('tutorialStepChanged')); }}>▶</div>
+        <div className="tut-arrow" onClick={() => { setTutorialStep(30); localStorage.setItem('sandbox_tutorial_step', '30'); window.dispatchEvent(new CustomEvent('tutorialStepChanged')); }}><img src="/images/tutorial/next.png" style={{ width: '100%', height: '100%', objectFit: 'contain' }} /></div>
       </div>
     </div>
   )}
@@ -7759,7 +7777,7 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
       <style>{`a[href*="/house"], a[href*="/valley"], a[href*="/market"], a[href*="/tavern"] { pointer-events: none !important; }`}</style>
       <div style={{ position: 'relative', width: '490px' }}>
         <img src="/images/tutorial/tutmessagep1.png" alt="Tutorial" style={{ width: '490px', objectFit: 'contain' }} />
-        <div className="tut-arrow" onClick={() => { setTutorialStep(31); localStorage.setItem('sandbox_tutorial_step', '31'); window.dispatchEvent(new CustomEvent('tutorialStepChanged')); }}>▶</div>
+        <div className="tut-arrow" onClick={() => { setTutorialStep(31); localStorage.setItem('sandbox_tutorial_step', '31'); window.dispatchEvent(new CustomEvent('tutorialStepChanged')); }}><img src="/images/tutorial/next.png" style={{ width: '100%', height: '100%', objectFit: 'contain' }} /></div>
       </div>
     </div>
   )}
@@ -7768,9 +7786,65 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
     <div style={{ position: 'fixed', right: '20px', bottom: '20px', zIndex: 100000 }}>
       <div style={{ position: 'relative', width: '490px' }}>
         <img src="/images/tutorial/tutmessagep1.png" alt="Tutorial" style={{ width: '490px', objectFit: 'contain' }} />
-        <div className="tut-arrow" onClick={() => { setTutorialStep(32); localStorage.setItem('sandbox_tutorial_step', '32'); window.dispatchEvent(new CustomEvent('tutorialStepChanged')); }}>▶</div>
+        <div className="tut-arrow" onClick={() => { setTutorialStep(32); localStorage.setItem('sandbox_tutorial_step', '32'); window.dispatchEvent(new CustomEvent('tutorialStepChanged')); }}><img src="/images/tutorial/next.png" style={{ width: '100%', height: '100%', objectFit: 'contain' }} /></div>
       </div>
     </div>
+  )}
+
+  {/* Level Up Claim Screen */}
+  {levelUpClaimPopup && !levelUpPopup && (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 999997, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.6)' }}>
+      <style>{`
+        @keyframes lvlBgOpen { from { transform: scale(0.55); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        @keyframes lvlLabelIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+      `}</style>
+      <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+        <img
+          src="/images/level/levelupbackground.png"
+          alt="Level Up"
+          style={{ width: '520px', maxWidth: '90vw', objectFit: 'contain', display: 'block', animation: 'lvlBgOpen 0.9s cubic-bezier(0.22,1,0.36,1) forwards' }}
+          draggable={false}
+        />
+        <div style={{ position: 'absolute', bottom: 'calc(14% + 140px)', display: 'flex', flexDirection: 'column', alignItems: 'center', opacity: 0, animation: 'lvlLabelIn 0.35s ease-out 0.9s forwards' }}>
+          <div style={{ color: '#fff', fontSize: '16px', fontWeight: 'bold', textShadow: '1px 1px 3px #000, -1px -1px 3px #000', letterSpacing: '1px', textTransform: 'uppercase' }}>
+            {levelUpClaimPopup.skill} Level {levelUpClaimPopup.level}
+          </div>
+        </div>
+        <div style={{ position: 'absolute', bottom: 'calc(14% + 50px)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', opacity: 0, animation: 'lvlLabelIn 0.35s ease-out 0.9s forwards' }}>
+          <img
+            src="/images/level/claimbutton.png"
+            alt="Claim"
+            draggable={false}
+            style={{ width: '160px', cursor: 'pointer', transition: 'transform 0.1s, filter 0.1s', filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.6))' }}
+            onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.08)'; e.currentTarget.style.filter = 'drop-shadow(0 6px 12px rgba(255,220,50,0.7))'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.filter = 'drop-shadow(0 4px 8px rgba(0,0,0,0.6))'; }}
+            onClick={() => {
+              const detail = levelUpClaimPopup;
+              setLevelUpClaimPopup(null);
+              setLevelUpPopup(detail);
+            }}
+          />
+        </div>
+      </div>
+    </div>
+  )}
+
+  {/* Level Up Pack */}
+  {levelUpPopup && (
+    <PokemonPackRipDialog
+      rollingInfo={{
+        id: 'LEVEL_UP',
+        skill: levelUpPopup.skill,
+        level: levelUpPopup.level,
+        count: 2,
+        isReveal: true,
+        isComplete: true,
+        isFallback: false,
+        revealedSeeds: [],
+      }}
+      onClose={() => setLevelUpPopup(null)}
+      onBack={() => setLevelUpPopup(null)}
+    />
   )}
 
   {/* Tutorial Gem Skip Popup (tutp9 step) */}
@@ -7794,6 +7868,7 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
             if (currentGems < 50) { show("Not enough gems!", "error"); return; }
             localStorage.setItem('sandbox_gems', String(currentGems - 50));
             window.dispatchEvent(new CustomEvent('sandboxGemsChanged'));
+            trackGemSpend(50);
             setTutGemPopupOpen(false);
           }}
           style={{ display: 'inline-block', background: 'linear-gradient(135deg, #f5c842, #e0a800)', border: '3px solid #a67c00', borderRadius: '12px', padding: '12px 32px', fontFamily: 'Cartoonist', fontSize: '18px', color: '#3a2010', cursor: 'pointer', userSelect: 'none' }}
@@ -7850,16 +7925,13 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
         <PokemonPackRipDialog
           rollingInfo={{
             id: 'pabee_pack',
-            count: 5,
+            count: 4,
             isReveal: true,
             isComplete: true,
             isFallback: false,
             revealedSeeds: [
               getRaritySeedId(ID_SEEDS.CARROT, 1),
               getRaritySeedId(ID_SEEDS.CARROT, 1),
-              getRaritySeedId(ID_SEEDS.CARROT, 2),
-              getRaritySeedId(ID_SEEDS.POTATO, 1),
-              getRaritySeedId(ID_SEEDS.TOMATO, 1),
             ],
           }}
           onClose={() => {
@@ -7907,6 +7979,49 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
         <React.Suspense fallback={null}>
           <FestivalsDialog onClose={() => setShowFestivals(false)} />
         </React.Suspense>
+      )}
+
+      {/* Fixed Tool Belt — stays on screen regardless of zoom/pan */}
+      {(tutorialStep >= 32 || (tutorialStep === 3 && tutPage >= 4)) && (
+        <div style={{ position: 'fixed', bottom: '-7px', left: '50%', transform: 'translateX(-50%) scale(0.85)', transformOrigin: 'bottom center', width: '896px', height: '144px', zIndex: 500, pointerEvents: 'none' }}>
+          <img src="/images/farming/realbeltbottom.png" alt="" draggable={false} style={{ position: 'absolute', bottom: 0, left: 0, width: '896px', pointerEvents: 'none', zIndex: 1 }} />
+          {(tutorialStep >= 32 || (tutorialStep === 3 && tutPage >= 5)) && (
+            <img src="/images/farming/realshovel.png" alt="Shovel" draggable={false}
+              onClick={() => { toggleTool('shovel'); const next = selectedTool !== 'shovel'; setIsDigging(next); setIsHoeing(false); setIsWatering(false); setIsDirting(false); setIsSeeding(false); setIsPlanting(false); }}
+              onMouseEnter={e => { e.currentTarget.style.filter = 'drop-shadow(0px 0px 6px rgba(255,255,255,0.8))'; e.currentTarget.style.transform = selectedTool === 'shovel' ? 'scale(1.15) translateY(-24px)' : 'scale(1.15)'; }}
+              onMouseLeave={e => { e.currentTarget.style.filter = selectedTool === 'shovel' ? 'drop-shadow(0px 0px 6px gold) drop-shadow(0px 0px 14px rgba(255,210,0,0.8))' : (tutorialStep === 3 && tutPage === 5) ? 'drop-shadow(0px 0px 8px white) drop-shadow(0px 0px 16px white)' : 'none'; e.currentTarget.style.transform = selectedTool === 'shovel' ? 'translateY(-24px)' : 'none'; }}
+              style={{ position: 'absolute', bottom: '43px', left: '167px', width: '48px', cursor: 'pointer', pointerEvents: 'auto', zIndex: 2, transform: selectedTool === 'shovel' ? 'translateY(-24px)' : 'none', filter: selectedTool === 'shovel' ? 'drop-shadow(0px 0px 6px gold) drop-shadow(0px 0px 14px rgba(255,210,0,0.8))' : (tutorialStep === 3 && tutPage === 5) ? 'drop-shadow(0px 0px 8px white) drop-shadow(0px 0px 16px white)' : 'none', transition: 'transform 0.4s ease, filter 0.2s ease', animation: (tutorialStep === 3 && tutPage === 5) || selectedTool === 'shovel' ? 'mapFloat 2s ease-in-out infinite' : 'none' }} />
+          )}
+          {(tutorialStep >= 32 || (tutorialStep === 3 && tutPage >= 6)) && (
+            <img src="/images/farming/realsoil.png" alt="Soil" draggable={false}
+              onClick={() => { toggleTool('soil'); const next = selectedTool !== 'soil'; setIsDirting(next); setIsHoeing(false); setIsWatering(false); setIsDigging(false); setIsSeeding(false); setIsPlanting(false); }}
+              onMouseEnter={e => { e.currentTarget.style.filter = 'drop-shadow(0px 0px 6px rgba(255,255,255,0.8))'; e.currentTarget.style.transform = selectedTool === 'soil' ? 'scale(1.15) translateY(-24px)' : 'scale(1.15)'; }}
+              onMouseLeave={e => { e.currentTarget.style.filter = selectedTool === 'soil' ? 'drop-shadow(0px 0px 6px gold) drop-shadow(0px 0px 14px rgba(255,210,0,0.8))' : (tutorialStep === 3 && tutPage === 6) ? 'drop-shadow(0px 0px 8px white) drop-shadow(0px 0px 16px white)' : 'none'; e.currentTarget.style.transform = selectedTool === 'soil' ? 'translateY(-24px)' : 'none'; }}
+              style={{ position: 'absolute', bottom: '59px', left: '268px', width: '83px', cursor: 'pointer', pointerEvents: 'auto', zIndex: 2, transform: selectedTool === 'soil' ? 'translateY(-24px)' : 'none', filter: selectedTool === 'soil' ? 'drop-shadow(0px 0px 6px gold) drop-shadow(0px 0px 14px rgba(255,210,0,0.8))' : (tutorialStep === 3 && tutPage === 6) ? 'drop-shadow(0px 0px 8px white) drop-shadow(0px 0px 16px white)' : 'none', transition: 'transform 0.4s ease, filter 0.2s ease', animation: (tutorialStep === 3 && tutPage === 6) || selectedTool === 'soil' ? 'mapFloat 2s ease-in-out infinite' : 'none' }} />
+          )}
+          {(tutorialStep >= 32 || (tutorialStep === 3 && tutPage >= 7)) && (
+            <img src="/images/farming/realseeds.png" alt="Seeds" draggable={false}
+              onClick={() => { toggleTool('seeds'); const next = selectedTool !== 'seeds'; setIsSeeding(next); setIsDirting(false); setIsHoeing(false); setIsWatering(false); setIsDigging(false); setIsPlanting(false); }}
+              onMouseEnter={e => { e.currentTarget.style.filter = 'drop-shadow(0px 0px 6px rgba(255,255,255,0.8))'; e.currentTarget.style.transform = selectedTool === 'seeds' ? 'scale(1.15) translateY(-24px)' : 'scale(1.15)'; }}
+              onMouseLeave={e => { e.currentTarget.style.filter = selectedTool === 'seeds' ? 'drop-shadow(0px 0px 6px gold) drop-shadow(0px 0px 14px rgba(255,210,0,0.8))' : (tutorialStep === 3 && tutPage === 7) ? 'drop-shadow(0px 0px 8px white) drop-shadow(0px 0px 16px white)' : 'none'; e.currentTarget.style.transform = selectedTool === 'seeds' ? 'translateY(-24px)' : 'none'; }}
+              style={{ position: 'absolute', bottom: '61px', left: '413px', width: '69px', cursor: 'pointer', pointerEvents: 'auto', zIndex: 2, transform: selectedTool === 'seeds' ? 'translateY(-24px)' : 'none', filter: selectedTool === 'seeds' ? 'drop-shadow(0px 0px 6px gold) drop-shadow(0px 0px 14px rgba(255,210,0,0.8))' : (tutorialStep === 3 && tutPage === 7) ? 'drop-shadow(0px 0px 8px white) drop-shadow(0px 0px 16px white)' : 'none', transition: 'transform 0.4s ease, filter 0.2s ease', animation: (tutorialStep === 3 && tutPage === 7) || selectedTool === 'seeds' ? 'mapFloat 2s ease-in-out infinite' : 'none' }} />
+          )}
+          {(tutorialStep >= 32 || (tutorialStep === 3 && tutPage >= 8)) && (
+            <img src="/images/farming/realbucket.png" alt="Bucket" draggable={false}
+              onClick={() => { toggleTool('bucket'); const next = selectedTool !== 'bucket'; setIsWatering(next); setIsHoeing(false); setIsDigging(false); setIsDirting(false); setIsSeeding(false); setIsPlanting(false); }}
+              onMouseEnter={e => { e.currentTarget.style.filter = 'drop-shadow(0px 0px 6px rgba(255,255,255,0.8))'; e.currentTarget.style.transform = selectedTool === 'bucket' ? 'scale(1.15) translateY(-24px)' : 'scale(1.15)'; }}
+              onMouseLeave={e => { e.currentTarget.style.filter = selectedTool === 'bucket' ? 'drop-shadow(0px 0px 6px gold) drop-shadow(0px 0px 14px rgba(255,210,0,0.8))' : (tutorialStep === 3 && tutPage === 8) ? 'drop-shadow(0px 0px 8px white) drop-shadow(0px 0px 16px white)' : 'none'; e.currentTarget.style.transform = selectedTool === 'bucket' ? 'translateY(-24px)' : 'none'; }}
+              style={{ position: 'absolute', bottom: '59px', left: '535px', width: '101px', cursor: 'pointer', pointerEvents: 'auto', zIndex: 2, transform: selectedTool === 'bucket' ? 'translateY(-24px)' : 'none', filter: selectedTool === 'bucket' ? 'drop-shadow(0px 0px 6px gold) drop-shadow(0px 0px 14px rgba(255,210,0,0.8))' : (tutorialStep === 3 && tutPage === 8) ? 'drop-shadow(0px 0px 8px white) drop-shadow(0px 0px 16px white)' : 'none', transition: 'transform 0.4s ease, filter 0.2s ease', animation: (tutorialStep === 3 && tutPage === 8) || selectedTool === 'bucket' ? 'mapFloat 2s ease-in-out infinite' : 'none' }} />
+          )}
+          {(tutorialStep >= 32 || (tutorialStep === 3 && tutPage >= 9)) && (
+            <img src="/images/farming/realfork.png" alt="Fork" draggable={false}
+              onClick={() => { toggleTool('fork'); const next = selectedTool !== 'fork'; setIsHoeing(next); setIsWatering(false); setIsDigging(false); setIsDirting(false); setIsSeeding(false); setIsPlanting(false); }}
+              onMouseEnter={e => { e.currentTarget.style.filter = 'drop-shadow(0px 0px 6px rgba(255,255,255,0.8))'; e.currentTarget.style.transform = selectedTool === 'fork' ? 'scale(1.15) translateY(-24px)' : 'scale(1.15)'; }}
+              onMouseLeave={e => { e.currentTarget.style.filter = selectedTool === 'fork' ? 'drop-shadow(0px 0px 6px gold) drop-shadow(0px 0px 14px rgba(255,210,0,0.8))' : 'none'; e.currentTarget.style.transform = selectedTool === 'fork' ? 'translateY(-24px)' : 'none'; }}
+              style={{ position: 'absolute', bottom: '43px', left: '677px', width: '45px', cursor: 'pointer', pointerEvents: 'auto', zIndex: 2, transform: selectedTool === 'fork' ? 'translateY(-24px)' : 'none', filter: selectedTool === 'fork' ? 'drop-shadow(0px 0px 6px gold) drop-shadow(0px 0px 14px rgba(255,210,0,0.8))' : 'none', transition: 'transform 0.4s ease, filter 0.2s ease', animation: selectedTool === 'fork' ? 'mapFloat 2s ease-in-out infinite' : 'none' }} />
+          )}
+          <img src="/images/farming/realbelttop.png" alt="" draggable={false} style={{ position: 'absolute', bottom: '27px', left: '146px', width: '602px', pointerEvents: 'none', zIndex: 3 }} />
+        </div>
       )}
     </div>
   );

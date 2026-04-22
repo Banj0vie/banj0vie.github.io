@@ -97,9 +97,13 @@
   display: block;
   user-select: none;
   pointer-events: none;
-  width: 100px;
+  width: 62px;
   height: auto;
   animation: bee_float 6s ease-in-out infinite;
+}
+
+.img-bee[src*="queenbee"] {
+  width: 72px;
 }
 
 @keyframes bee_float {

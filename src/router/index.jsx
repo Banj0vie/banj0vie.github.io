@@ -39,12 +39,13 @@ const AdminPanel = () => {
   const [tutPage, setTutPage] = useState(() => parseInt(localStorage.getItem('sandbox_tut_page') || '1', 10));
   const [tutMarketPage, setTutMarketPage] = useState(() => parseInt(localStorage.getItem('sandbox_tut_market_page') || '0', 10));
   const [completedQuests, setCompletedQuests] = useState(() => JSON.parse(localStorage.getItem('sandbox_completed_quests') || '[]'));
-  const [levelUpData, setLevelUpData] = useState(null);
   
   const [showMailboxDialog, setShowMailboxDialog] = useState(false);
   const [mailboxImageError, setMailboxImageError] = useState(false);
   const [readQuests, setReadQuests] = useState(() => JSON.parse(localStorage.getItem('sandbox_read_quests') || '[]'));
   const [hasUnreadMail, setHasUnreadMail] = useState(false);
+  const [hasReadyQuests, setHasReadyQuests] = useState(false);
+  const [showTavernPopup, setShowTavernPopup] = useState(false);
   const [seenWeightContest, setSeenWeightContest] = useState(() => localStorage.getItem('seen_weight_contest_today') === new Date().toDateString());
   const [seenCrafting, setSeenCrafting] = useState(() => localStorage.getItem('seen_crafting_step_' + tutorialStep) === 'true');
   const [seenCalendar, setSeenCalendar] = useState(() => localStorage.getItem('seen_calendar_today') === new Date().toDateString());
@@ -83,15 +84,28 @@ const AdminPanel = () => {
     const handleSeedOpen = (e) => setIsSeedOpen(e.detail);
     const handleOpenMailbox = () => setShowMailboxDialog(true);
     const handleCloseMailbox = () => setShowMailboxDialog(false);
+    const handlePackOpened = () => {
+      setShowMailboxDialog(false);
+      setShowCraftingDialog(false);
+      setShowCalendar(false);
+      setShowWeightContest(false);
+    };
+    const handleCharPackOpen = () => {
+      setShowMailboxDialog(false);
+    };
     window.addEventListener('petDialogOpen', handlePetOpen);
     window.addEventListener('seedDialogOpen', handleSeedOpen);
     window.addEventListener('openMailbox', handleOpenMailbox);
     window.addEventListener('closeMailbox', handleCloseMailbox);
+    window.addEventListener('packOpened', handlePackOpened);
+    window.addEventListener('charPackOpen', handleCharPackOpen);
     return () => {
       window.removeEventListener('petDialogOpen', handlePetOpen);
       window.removeEventListener('seedDialogOpen', handleSeedOpen);
       window.removeEventListener('openMailbox', handleOpenMailbox);
       window.removeEventListener('closeMailbox', handleCloseMailbox);
+      window.removeEventListener('packOpened', handlePackOpened);
+      window.removeEventListener('charPackOpen', handleCharPackOpen);
     };
   }, []);
 
@@ -104,6 +118,10 @@ const AdminPanel = () => {
   useEffect(() => {
     window.dispatchEvent(new CustomEvent('mailUnreadChanged', { detail: hasUnreadMail }));
   }, [hasUnreadMail]);
+
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('mailReadyChanged', { detail: hasReadyQuests }));
+  }, [hasReadyQuests]);
 
   const [targetProduceId, setTargetProduceId] = useState(() => {
     const saved = localStorage.getItem('weight_contest_produce');
@@ -187,11 +205,14 @@ const AdminPanel = () => {
     window.addEventListener('toggleDebugLabels', handleSync);
     window.addEventListener('dockRepaired', handleSync);
     window.addEventListener('tavernUnlocked', handleSync);
+    const handleTavernNav = () => setShowTavernPopup(true);
+    window.addEventListener('tavernNavClicked', handleTavernNav);
     window.addEventListener('tutorialStepChanged', handleSync);
     window.addEventListener('tutPageChanged', handleSync);
     window.addEventListener('tutMarketPageChanged', handleSync);
     window.addEventListener('seenDockPrompt', handleSync);
     window.addEventListener('questsRead', handleSync);
+    window.addEventListener('pfpUnlocked', handleSync);
 
     import('./farm').then(m => {
       const allQuests = m.getQuestData();
@@ -213,8 +234,6 @@ const AdminPanel = () => {
     });
 
     const handleLevelUp = (e) => {
-      setLevelUpData(e.detail);
-      setTimeout(() => setLevelUpData(null), 5000);
       import('./farm').then(m => {
         const allQuests = m.getQuestData();
         const step = parseInt(localStorage.getItem('sandbox_tutorial_step') || '0', 10);
@@ -274,6 +293,24 @@ const AdminPanel = () => {
         const seenFarmArray = (localStorage.getItem('seen_farming_missions_ids') || '').split(',').filter(Boolean);
         const hasNewFarm = availFarm.some(q => !seenFarmArray.includes(q.id));
         setHasNewFarmingMissions(hasNewFarm);
+
+        const checkReqs = (reqs) => {
+          if (!reqs || reqs.length === 0) return false;
+          const loot = JSON.parse(localStorage.getItem('sandbox_loot') || '{}');
+          const produce = JSON.parse(localStorage.getItem('sandbox_produce') || '{}');
+          for (const req of reqs) {
+            if (req.fn) { const v = req.fn(loot, produce); if ((typeof v === 'number' ? v : v ? 1 : 0) < req.count) return false; continue; }
+            if (req.id === 'gold') { if (parseInt(localStorage.getItem('sandbox_gold') || '0', 10) < req.count) return false; continue; }
+            const ids = Array.isArray(req.id) ? req.id : [req.id];
+            let count = 0;
+            for (const id of ids) { count += Array.isArray(produce[id]) ? produce[id].length : (Number(produce[id]) || 0) + (Number(loot[id]) || 0); }
+            if (count < req.count) return false;
+          }
+          return true;
+        };
+        const comp = JSON.parse(localStorage.getItem('sandbox_completed_quests') || '[]');
+        const ready = availableQuests.some(q => q.reqs && q.reqs.length > 0 && !comp.includes(q.id) && checkReqs(q.reqs));
+        setHasReadyQuests(ready);
       });
     }, 1000);
 
@@ -284,6 +321,7 @@ const AdminPanel = () => {
       window.removeEventListener('toggleDebugLabels', handleSync);
       window.removeEventListener('dockRepaired', handleSync);
       window.removeEventListener('tavernUnlocked', handleSync);
+      window.removeEventListener('tavernNavClicked', handleTavernNav);
       window.removeEventListener('tutorialStepChanged', handleSync);
       window.removeEventListener('tutPageChanged', handleSync);
       window.removeEventListener('tutMarketPageChanged', handleSync);
@@ -293,6 +331,7 @@ const AdminPanel = () => {
       window.removeEventListener('levelUp', handleLevelUp);
       window.removeEventListener('seenDockPrompt', handleSync);
       window.removeEventListener('questsRead', handleSync);
+      window.removeEventListener('pfpUnlocked', handleSync);
     };
   }, [location.pathname]);
 
@@ -673,6 +712,15 @@ const AdminPanel = () => {
       return;
     }
 
+    if (cmd === 'plots') {
+      const allPlots = Array.from({ length: 30 }, (_, i) => i);
+      localStorage.setItem('sandbox_unlocked_plots', JSON.stringify(allPlots));
+      window.dispatchEvent(new CustomEvent('plotsUnlocked', { detail: allPlots }));
+      show("Executed: all 30 plots unlocked", "success");
+      setConsoleInput('');
+      return;
+    }
+
     if (cmd === 'pfp all') {
       const allPfpIds = ['default','redpfp','orangepfp','yellowpfp','greenpfp','bluepfp','purplepfp','pinkpfp','benpotato','goldcarrot','goldpotato'];
       localStorage.setItem('sandbox_unlocked_pfps', JSON.stringify(allPfpIds));
@@ -1003,7 +1051,7 @@ const AdminPanel = () => {
         a[href*="/farm"] { order: 1; }
         a[href*="/market"] { order: 2; ${tutorialStep < 10 && !(tutorialStep === 3 && tutPage >= 12) ? 'display: none !important;' : ''} }
         a[href*="/house"] { order: 3; ${tutorialStep < 17 && tutMarketPage < 16 ? 'display: none !important;' : ''} }
-        a[href*="/tavern" i] { order: 4; ${tutorialStep < 24 || (tutorialStep > 24 && tutorialStep < 32) ? 'display: none !important;' : ''} }
+        a[href*="/tavern" i] { order: 4; ${tutorialStep < 24 ? 'display: none !important;' : ''} }
         a[href*="/valley"] { order: 5; ${tutorialStep < 25 ? 'display: none !important;' : ''} }
 
         @keyframes pulse-dot { 0% { transform: scale(1); } 50% { transform: scale(1.3); } 100% { transform: scale(1); } }
@@ -1152,45 +1200,10 @@ const AdminPanel = () => {
         )}
       </React.Suspense>
 
-      {levelUpData && (
-        <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', zIndex: 1000000, display: 'flex', justifyContent: 'center', alignItems: 'center', pointerEvents: 'none', overflow: 'hidden' }}>
-          <div style={{ backgroundColor: 'rgba(31, 22, 16, 0.9)', border: '4px solid #ffea00', borderRadius: '16px', padding: '40px', textAlign: 'center', animation: 'levelUpPop 0.5s ease-out forwards', boxShadow: '0 0 50px #ffea00' }}>
-            <h1 style={{ color: '#ffea00', fontSize: '48px', margin: '0 0 10px 0', textShadow: '0 4px 10px rgba(0,0,0,0.8)' }}>LEVEL UP! 🎉</h1>
-            <p style={{ color: '#00ff41', fontSize: '32px', margin: 0, fontWeight: 'bold' }}>{levelUpData.skill} Level {levelUpData.level}</p>
-          </div>
-          <style>{`
-            @keyframes levelUpPop {
-              0% { transform: scale(0.5); opacity: 0; }
-              70% { transform: scale(1.1); opacity: 1; }
-              100% { transform: scale(1); opacity: 1; }
-            }
-            .confetti {
-              position: absolute;
-              width: 15px;
-              height: 15px;
-              animation: fall linear forwards;
-            }
-            @keyframes fall {
-              to { transform: translateY(100vh) rotate(720deg); }
-            }
-          `}</style>
-          {Array.from({ length: 80 }).map((_, i) => {
-            const colors = ['#ffea00', '#00ff41', '#00bfff', '#ff4444', '#ff00ff', '#ffffff'];
-            const color = colors[Math.floor(Math.random() * colors.length)];
-            const left = Math.random() * 100 + 'vw';
-            const animDuration = Math.random() * 2 + 2 + 's';
-            const animDelay = Math.random() * 0.5 + 's';
-            return (
-              <div key={i} className="confetti" style={{ left, top: '-20px', backgroundColor: color, animationDuration: animDuration, animationDelay: animDelay }} />
-            );
-          })}
-        </div>
-      )}
 
       {(() => {
         const needsToFish = hasNewFishingMissions;
-        const needsToFarm = hasNewFarmingMissions;
-        return (((!isDockRepaired && !seenDockPrompt) || needsToFish) || (!isTavernUnlocked && tutorialStep >= 32) || needsToFarm) ? (
+        return (((!isDockRepaired && !seenDockPrompt) || needsToFish) || (!isTavernUnlocked && tutorialStep >= 32)) ? (
         <style>{`
           @keyframes quest-pulse {
             0%, 100% { transform: scale(1); }
@@ -1289,35 +1302,6 @@ const AdminPanel = () => {
           }
           ` : ''}
 
-          ${needsToFarm ? `
-          /* Farm Quest Indicator */
-          a[href*="/farm" i] {
-            position: relative;
-            overflow: visible !important;
-          }
-          a[href*="/farm" i]::after {
-            content: "!";
-            position: absolute;
-            top: -5px;
-            right: -5px;
-            background: #00ff41;
-            color: black;
-            border-radius: 50%;
-            width: 22px;
-            height: 22px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            font-family: monospace;
-            font-size: 16px;
-            z-index: 100000;
-            border: 2px solid black;
-            animation: quest-pulse 1s infinite;
-            pointer-events: none;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.5);
-          }
-          ` : ''}
         `}</style>
         ) : null;
       })()}
@@ -1414,7 +1398,263 @@ const AdminPanel = () => {
         </div>
       )}
 
+      {showTavernPopup && (
+        <TavernClosedPopup
+          completedQuests={completedQuests}
+          onClose={() => setShowTavernPopup(false)}
+          onUnlock={() => {
+            setIsTavernUnlocked(true);
+            setShowTavernPopup(false);
+          }}
+        />
+      )}
+
     </>
+  );
+};
+
+const TAVERN_BUILD_MS = 5 * 60 * 60 * 1000;
+const TAVERN_SKIP_GEMS = 500;
+
+const TavernClosedPopup = ({ completedQuests, onClose, onUnlock }) => {
+  const hasRebuildQuest = completedQuests.includes('q2b_finn_welcome');
+
+  const TAVERN_REQS = [
+    { id: 'gold', count: 1000, name: "Gold", image: "/images/items/gold.png" },
+    { id: ID_PRODUCE_ITEMS.POTATO, count: 50, name: "Potatoes", image: "/images/items/potato.png" },
+    { id: 'fish', count: 10, name: "Fish", image: "/images/fish/Normal Ocean Fish (2).png" },
+  ];
+
+  const getTimeLeft = () => {
+    const start = parseInt(localStorage.getItem('sandbox_tavern_build_start') || '0', 10);
+    if (!start) return 0;
+    return Math.max(0, TAVERN_BUILD_MS - (Date.now() - start));
+  };
+
+  const isBuilding = !!localStorage.getItem('sandbox_tavern_build_start');
+  const [timeLeft, setTimeLeft] = React.useState(getTimeLeft);
+  const [counts, setCounts] = React.useState(() => {
+    const loot = JSON.parse(localStorage.getItem('sandbox_loot') || '{}');
+    const produce = JSON.parse(localStorage.getItem('sandbox_produce') || '{}');
+    return TAVERN_REQS.map(req => {
+      if (req.id === 'gold') return { ...req, current: parseInt(localStorage.getItem('sandbox_gold') || '0', 10) };
+      if (req.id === 'fish') {
+        const fishIds = Object.values(ID_FISH_ITEMS).filter(id => typeof id === 'number');
+        const total = fishIds.reduce((sum, id) => sum + (Number(loot[id]) || 0), 0);
+        return { ...req, current: total };
+      }
+      let count = 0;
+      if (Array.isArray(produce[req.id])) count += produce[req.id].length;
+      else count += (Number(produce[req.id]) || 0) + (Number(loot[req.id]) || 0);
+      return { ...req, current: count };
+    });
+  });
+
+  React.useEffect(() => {
+    const refreshCounts = () => {
+      const loot = JSON.parse(localStorage.getItem('sandbox_loot') || '{}');
+      const produce = JSON.parse(localStorage.getItem('sandbox_produce') || '{}');
+      setCounts(TAVERN_REQS.map(req => {
+        if (req.id === 'gold') return { ...req, current: parseInt(localStorage.getItem('sandbox_gold') || '0', 10) };
+        if (req.id === 'fish') {
+          const fishIds = Object.values(ID_FISH_ITEMS).filter(id => typeof id === 'number');
+          return { ...req, current: fishIds.reduce((sum, id) => sum + (Number(loot[id]) || 0), 0) };
+        }
+        let count = 0;
+        if (Array.isArray(produce[req.id])) count += produce[req.id].length;
+        else count += (Number(produce[req.id]) || 0) + (Number(loot[req.id]) || 0);
+        return { ...req, current: count };
+      }));
+    };
+    window.addEventListener('ls-update', refreshCounts);
+    window.addEventListener('sandboxGoldChanged', refreshCounts);
+    return () => {
+      window.removeEventListener('ls-update', refreshCounts);
+      window.removeEventListener('sandboxGoldChanged', refreshCounts);
+    };
+  }, []);
+
+  React.useEffect(() => {
+    if (!isBuilding) return;
+    const tick = setInterval(() => {
+      const left = getTimeLeft();
+      setTimeLeft(left);
+      if (left === 0) {
+        clearInterval(tick);
+        completeTavernBuild();
+      }
+    }, 1000);
+    return () => clearInterval(tick);
+  }, [isBuilding]);
+
+  const completeTavernBuild = () => {
+    localStorage.removeItem('sandbox_tavern_build_start');
+    localStorage.setItem('quest_q2_rebuild_tavern_completed', 'true');
+    const completed = JSON.parse(localStorage.getItem('sandbox_completed_quests') || '[]');
+    if (!completed.includes('q2_rebuild_tavern')) {
+      completed.push('q2_rebuild_tavern');
+      localStorage.setItem('sandbox_completed_quests', JSON.stringify(completed));
+    }
+    const honey = parseInt(localStorage.getItem('sandbox_honey') || '0', 10);
+    localStorage.setItem('sandbox_honey', String(honey + 800));
+    window.dispatchEvent(new CustomEvent('sandboxHoneyChanged', { detail: String(honey + 800) }));
+    const gems = parseInt(localStorage.getItem('sandbox_gems') || '0', 10);
+    localStorage.setItem('sandbox_gems', String(gems + 10));
+    window.dispatchEvent(new CustomEvent('sandboxGemsChanged'));
+    window.dispatchEvent(new CustomEvent('tavernUnlocked'));
+    window.dispatchEvent(new CustomEvent('questCompleted', { detail: 'q2_rebuild_tavern' }));
+    onUnlock();
+  };
+
+  const canSubmit = hasRebuildQuest && counts.every(r => r.current >= r.count);
+
+  const handleSubmit = () => {
+    if (!canSubmit) return;
+    const loot = JSON.parse(localStorage.getItem('sandbox_loot') || '{}');
+    const produce = JSON.parse(localStorage.getItem('sandbox_produce') || '{}');
+
+    // Deduct gold
+    const g = parseInt(localStorage.getItem('sandbox_gold') || '0', 10);
+    localStorage.setItem('sandbox_gold', String(Math.max(0, g - 1000)));
+    window.dispatchEvent(new CustomEvent('sandboxGoldChanged', { detail: String(Math.max(0, g - 1000)) }));
+
+    // Deduct potatoes
+    let remaining = 50;
+    const potatoId = ID_PRODUCE_ITEMS.POTATO;
+    if (Array.isArray(produce[potatoId])) {
+      while (remaining > 0 && produce[potatoId].length > 0) { produce[potatoId].pop(); remaining--; }
+    } else {
+      const fromProduce = Math.min(Number(produce[potatoId]) || 0, remaining);
+      produce[potatoId] = (Number(produce[potatoId]) || 0) - fromProduce;
+      remaining -= fromProduce;
+      if (remaining > 0 && loot[potatoId]) loot[potatoId] = Math.max(0, (Number(loot[potatoId]) || 0) - remaining);
+    }
+
+    // Deduct 10 fish from loot
+    const fishIds = Object.values(ID_FISH_ITEMS).filter(id => typeof id === 'number');
+    let fishRemaining = 10;
+    for (const fid of fishIds) {
+      if (fishRemaining <= 0) break;
+      const have = Number(loot[fid]) || 0;
+      const deduct = Math.min(have, fishRemaining);
+      loot[fid] = have - deduct;
+      fishRemaining -= deduct;
+    }
+
+    localStorage.setItem('sandbox_loot', JSON.stringify(loot));
+    localStorage.setItem('sandbox_produce', JSON.stringify(produce));
+    localStorage.setItem('sandbox_tavern_build_start', String(Date.now()));
+    setTimeLeft(TAVERN_BUILD_MS);
+  };
+
+  const handleSkip = () => {
+    const gems = parseInt(localStorage.getItem('sandbox_gems') || '0', 10);
+    if (gems < TAVERN_SKIP_GEMS) {
+      window.dispatchEvent(new CustomEvent('showNotification', { detail: { msg: `Need ${TAVERN_SKIP_GEMS} 💎 to skip!`, type: 'error' } }));
+      return;
+    }
+    localStorage.setItem('sandbox_gems', String(gems - TAVERN_SKIP_GEMS));
+    window.dispatchEvent(new CustomEvent('sandboxGemsChanged'));
+    completeTavernBuild();
+  };
+
+  const formatTime = (ms) => {
+    if (ms <= 0) return '00:00:00';
+    const totalSec = Math.floor(ms / 1000);
+    const h = Math.floor(totalSec / 3600);
+    const m = Math.floor((totalSec % 3600) / 60);
+    const s = totalSec % 60;
+    return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  };
+
+  return (
+    <div
+      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.82)', zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+      onClick={onClose}
+    >
+      <style>{`@keyframes tavernPopupFade { from{opacity:0;transform:scale(0.94)} to{opacity:1;transform:scale(1)} }`}</style>
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{ fontFamily: 'GROBOLD, Cartoonist, sans-serif', textAlign: 'center', background: 'rgba(18,9,3,0.97)', border: '2px solid #5a402a', borderRadius: '16px', padding: '36px 48px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', maxWidth: '400px', width: '90vw', animation: 'tavernPopupFade 0.3s ease-out forwards' }}
+      >
+        <div style={{ fontSize: '42px' }}>🍺</div>
+        <div style={{ fontSize: '24px', color: '#f5d87a', textShadow: '2px 2px 0 #000' }}>
+          {isBuilding ? 'Tavern Under Repair' : hasRebuildQuest ? 'Rebuild the Tavern' : 'Tavern is Closed'}
+        </div>
+
+        {isBuilding ? (
+          <>
+            <div style={{ fontSize: '13px', color: '#c8a46a', lineHeight: 1.5 }}>
+              The workers are busy restoring the tavern. Check back soon!
+            </div>
+            <div style={{ fontSize: '32px', color: '#f5d87a', fontFamily: 'monospace', letterSpacing: '2px', padding: '8px 20px', background: 'rgba(0,0,0,0.4)', borderRadius: '8px', border: '1px solid #3a2810' }}>
+              {formatTime(timeLeft)}
+            </div>
+            <div style={{ display: 'flex', gap: '10px', marginTop: '4px' }}>
+              <div onClick={onClose} style={{ fontSize: '14px', color: '#ccc', background: 'rgba(255,255,255,0.1)', padding: '8px 20px', borderRadius: '8px', cursor: 'pointer', border: '1px solid rgba(255,255,255,0.15)' }}>
+                Close
+              </div>
+              <div
+                onClick={handleSkip}
+                style={{ fontSize: '14px', color: '#fff', background: 'linear-gradient(135deg, #5a3db8, #7b5ce0)', padding: '8px 22px', borderRadius: '8px', cursor: 'pointer', border: '2px solid rgba(255,255,255,0.2)', boxShadow: '0 4px 0 #2e1a7a', display: 'flex', alignItems: 'center', gap: '6px' }}
+                onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.06)'; }}
+                onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}
+              >
+                Skip <img src="/images/profile_bar/diamond.png" alt="gem" style={{ width: '16px', height: '16px', objectFit: 'contain' }} /> {TAVERN_SKIP_GEMS}
+              </div>
+            </div>
+          </>
+        ) : !hasRebuildQuest ? (
+          <>
+            <div style={{ fontSize: '13px', color: '#aaa', lineHeight: 1.6, maxWidth: '280px' }}>
+              The local tavern has fallen into ruin and its doors are shut. Help out around town and you may be able to restore it to its former glory.
+            </div>
+            <div onClick={onClose} style={{ marginTop: '6px', fontSize: '14px', color: '#ccc', background: 'rgba(255,255,255,0.1)', padding: '8px 28px', borderRadius: '8px', cursor: 'pointer', border: '1px solid rgba(255,255,255,0.15)' }}>
+              Close
+            </div>
+          </>
+        ) : (
+          <>
+            <div style={{ fontSize: '13px', color: '#c8a46a', lineHeight: 1.5 }}>
+              Submit the materials below to begin restoring the Tavern!
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%', background: 'rgba(0,0,0,0.35)', borderRadius: '10px', padding: '14px 18px', border: '1px solid #3a2810' }}>
+              {counts.map(req => {
+                const done = req.current >= req.count;
+                const display = Math.min(req.current, req.count);
+                return (
+                  <div key={req.id} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <img src={req.image} alt={req.name} style={{ width: '28px', height: '28px', objectFit: 'contain', flexShrink: 0 }} onError={e => { e.target.src = '/images/items/gold.png'; }} />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
+                        <span style={{ fontSize: '12px', color: done ? '#7dff7d' : '#ccc' }}>{req.name}</span>
+                        <span style={{ fontSize: '12px', color: done ? '#7dff7d' : '#f5d87a' }}>{display}/{req.count}</span>
+                      </div>
+                      <div style={{ height: '6px', background: '#1a1008', borderRadius: '3px', overflow: 'hidden' }}>
+                        <div style={{ height: '100%', width: `${Math.min(100, (req.current / req.count) * 100)}%`, background: done ? '#27ae60' : '#c8821a', borderRadius: '3px', transition: 'width 0.3s' }} />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div style={{ display: 'flex', gap: '10px', marginTop: '4px' }}>
+              <div onClick={onClose} style={{ fontSize: '14px', color: '#ccc', background: 'rgba(255,255,255,0.1)', padding: '8px 20px', borderRadius: '8px', cursor: 'pointer', border: '1px solid rgba(255,255,255,0.15)' }}>
+                Close
+              </div>
+              <div
+                onClick={canSubmit ? handleSubmit : undefined}
+                style={{ fontSize: '14px', color: canSubmit ? '#fff' : '#666', background: canSubmit ? 'linear-gradient(135deg, #c8821a, #f5a623)' : 'rgba(80,60,40,0.5)', padding: '8px 22px', borderRadius: '8px', cursor: canSubmit ? 'pointer' : 'not-allowed', border: `2px solid ${canSubmit ? 'rgba(255,255,255,0.2)' : 'rgba(80,60,40,0.3)'}`, boxShadow: canSubmit ? '0 4px 0 #7a4a08' : 'none', transition: 'transform 0.1s' }}
+                onMouseEnter={e => { if (canSubmit) e.currentTarget.style.transform = 'scale(1.06)'; }}
+                onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}
+              >
+                Submit
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
   );
 };
 

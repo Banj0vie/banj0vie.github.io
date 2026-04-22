@@ -46,6 +46,7 @@ const CropTooltip = ({
       left: typeof p.x === "number" ? `${p.x}px` : p.x,
       top: typeof p.y === "number" ? `${p.y}px` : p.y,
       transform: "translate(0,0)",
+      zIndex: 10000,
     };
     const s = computeViewportScale(el);
     if (s && s !== 1) {
@@ -70,6 +71,7 @@ const CropTooltip = ({
           left: typeof p.x === "number" ? `${p.x}px` : p.x,
           top: typeof p.y === "number" ? `${p.y}px` : p.y,
           transform: "translate(0,0)",
+          zIndex: 10000,
         };
         if (!el) return base;
         const cs = window.getComputedStyle(el);
@@ -88,6 +90,7 @@ const CropTooltip = ({
           left: typeof pos.x === "number" ? `${pos.x}px` : pos.x,
           top: typeof pos.y === "number" ? `${pos.y}px` : pos.y,
           transform: "translate(0,0)",
+          zIndex: 10000,
         };
       }
     };

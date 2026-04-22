@@ -26,7 +26,7 @@ export function formatNumber(value) {
   } else if (num >= 1_000_000) {
     return format(num / 1_000_000) + "M";
   } else if (num >= 1_000) {
-    return format(num / 1_000) + "K";
+    return num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   } else {
     return format(num);
   }

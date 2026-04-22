@@ -99,12 +99,16 @@ const ProfileBar = ({ isFarmMenu }) => {
       <div className="profile-bar-content">
         <div className="profile-bar-content-top">
           <ProfileView username={userData?.name} />
+          {/* ACHIEVEMENTS BUTTON - hidden for now, re-enable when ready
           <ProfileButton
             icon={<span style={{ fontSize: "22px", lineHeight: 1 }}>🏆</span>}
             title="Achievements"
             bg="/images/profile_bar/profile_button_bg.png"
             onClick={() => setIsAchievementsOpen(true)}
           />
+          AchievementsDialog is imported from src/containers/AchievementsDialog/
+          State: isAchievementsOpen / setIsAchievementsOpen (already declared in this file)
+          */}
           <ProfileButton
             icon={<img alt="Settings" src="/images/profile_bar/btn_setting.png" />}
             title="Settings"
@@ -127,8 +131,8 @@ const ProfileBar = ({ isFarmMenu }) => {
                   style={{ width: '32px', height: '32px', objectFit: 'contain', animation: hasUnreadMail ? 'mailShake 1.2s infinite ease-in-out' : 'none' }}
                 />
                 {hasUnreadMail
-                  ? <img src="/images/mail/!.png" alt="!" style={{ position: 'absolute', top: '-14px', right: '-14px', width: '20px', height: '20px', pointerEvents: 'none' }} draggable={false} />
-                  : hasReadyQuests && <div style={{ position: 'absolute', top: '-14px', right: '-14px', width: '20px', height: '20px', background: '#2e7d32', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', pointerEvents: 'none', boxShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>✅</div>
+                  ? <img src="/images/mail/!.png" alt="!" className="badge-pulse" style={{ position: 'absolute', top: '-14px', right: '-14px', width: '20px', height: '20px', pointerEvents: 'none' }} draggable={false} />
+                  : hasReadyQuests && <img src="/images/farming/checkmark.png" alt="✓" style={{ position: 'absolute', top: '-14px', right: '-14px', width: '20px', height: '20px', pointerEvents: 'none', filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.7))' }} draggable={false} />
                 }
               </div>
             }
@@ -162,7 +166,7 @@ const ProfileBar = ({ isFarmMenu }) => {
         </div>
         <div className="resource-badge" key={balanceKey} style={{ cursor: 'pointer' }}>
           <ProfileButton
-            icon={<img alt="Honey Balance" src="/images/profile_bar/unlocked_balance_icon.png" />}
+            icon={<img alt="Honey Balance" src="/images/profile_bar/hny.png" />}
             text={isBalanceRefreshing ? "••••••" : honeyBalance}
             title="Honey Balance"
             className={isBalanceRefreshing ? "balance-loading" : ""}
@@ -170,8 +174,8 @@ const ProfileBar = ({ isFarmMenu }) => {
           />
           <div onClick={() => { setShopInitialTab(1); setIsShopOpen(true); }}>
             <ProfileButton
-              icon={<span style={{ fontSize: '22px', lineHeight: 1 }}>💎</span>}
-              text={String(gems)}
+              icon={<img src="/images/profile_bar/diamond.png" alt="Gems" style={{ width: '22px', height: '22px', objectFit: 'contain' }} />}
+              text={Number(gems).toLocaleString('en-US')}
               title="Gems"
               bg="/images/profile_bar/profile_badge_bg.png"
             />

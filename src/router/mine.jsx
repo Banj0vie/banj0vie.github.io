@@ -435,6 +435,8 @@ const Mine = () => {
         width={width}
         height={height}
         initialScale={1.3}
+        initialOffsetX={-85}
+        backgroundOffsetY={-15}
         disablePanZoom
       >
       {mineRocks.filter(r => !clearedRocks.includes(r.id)).map((rock) => {

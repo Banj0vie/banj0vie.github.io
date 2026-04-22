@@ -22,6 +22,7 @@ const Market = () => {
   const { refetch } = useItems();
   const [tutorialStep, setTutorialStep] = useState(() => parseInt(localStorage.getItem('sandbox_tutorial_step') || '0', 10));
   const [showShop, setShowShop] = useState(false);
+  const [showLockedPopup, setShowLockedPopup] = useState(false);
   const [tutMarketPage, setTutMarketPage] = useState(() => {
     if (localStorage.getItem('sandbox_tut_market') !== 'true') return 0;
     return parseInt(localStorage.getItem('sandbox_tut_market_page') || '11', 10);
@@ -46,12 +47,12 @@ const Market = () => {
     window.dispatchEvent(new CustomEvent('tutMarketPageChanged'));
   }, [tutMarketPage]);
 
-  // When tutMarketPage 16: clicking the dock ends the tutorial
+  // When tutMarketPage 16: clicking the house icon starts the house tutorial
   useEffect(() => {
     if (tutMarketPage !== 16) return;
     const handler = (e) => {
       if (e.target.closest('a[href*="/house"]')) {
-        localStorage.setItem('sandbox_tutorial_step', '32');
+        localStorage.setItem('sandbox_tutorial_step', '17');
         localStorage.removeItem('sandbox_tut_market');
         setTutMarketPage(0);
         window.dispatchEvent(new CustomEvent('tutorialStepChanged'));
@@ -129,7 +130,11 @@ const Market = () => {
       headerOffset: 10,
     },
   ];
-  const bees = MARKET_BEES;
+  const TUT_PAGE_BEE_MAP = { 11: null, 12: 3, 13: 4, 14: 1, 15: 0 };
+  const activeBeeIdx = TUT_PAGE_BEE_MAP[tutMarketPage];
+  const bees = (tutMarketPage >= 11 && tutMarketPage <= 15)
+    ? (activeBeeIdx != null ? [MARKET_BEES[activeBeeIdx]] : MARKET_BEES)
+    : MARKET_BEES;
 
   // Synchronous spotlight: compute screen position from fixed scale/center math
   // panzoom-layer uses transform-origin: 0 0, initialScale=1.3, viewport 960x480
@@ -137,26 +142,18 @@ const Market = () => {
   const SPOT_PAGE_MAP = { 12: 'BANKER', 13: 'VENDOR', 14: 'MARKET', 15: 'QUEEN' };
   const _spotLabel = SPOT_STEP_MAP[tutorialStep] || SPOT_PAGE_MAP[tutMarketPage];
   const _spotHs = _spotLabel ? MARKET_HOTSPOTS.find(h => h.label === _spotLabel) : null;
-  const _tx = window.innerWidth / 2 - 960 * 1.3 / 2;
-  const _ty = window.innerHeight / 2 - 480 * 1.3 / 2;
+  const _tx = window.innerWidth / 2 - 960 * 1.7 / 2;
+  const _ty = window.innerHeight / 2 - 480 * 1.7 / 2;
   const _isbanker = _spotLabel === 'BANKER';
   const _isvendor = _spotLabel === 'VENDOR';
   const _ismarket = _spotLabel === 'MARKET';
   const _isqueen = _spotLabel === 'QUEEN';
-  const _spotX = _tx + _spotHs?.x * 1.3 + (_isbanker ? 130 : _isvendor ? 120 : _ismarket ? 85 : _isqueen ? 100 : 0);
-  const _spotY = _ty + _spotHs?.y * 1.3 + (_isbanker ? 130 : _isvendor ? 130 : _ismarket ? 110 : _isqueen ? 200 : 0);
-  const spotlightOverlay = _spotHs ? (
-    <div style={{
-      position: 'fixed',
-      top: 0, left: 0, right: 0, bottom: 0,
-      zIndex: 99999,
-      pointerEvents: 'none',
-      background: `radial-gradient(ellipse 280px 240px at ${_spotX}px ${_spotY}px, transparent 0%, rgba(0,0,0,0.82) 100%)`,
-    }} />
-  ) : null;
+  const _spotX = _tx + _spotHs?.x * 1.7 + (_isbanker ? 130 : _isvendor ? 120 : _ismarket ? 85 : _isqueen ? 100 : 0);
+  const _spotY = _ty + _spotHs?.y * 1.7 + (_isbanker ? 130 : _isvendor ? 130 : _ismarket ? 110 : _isqueen ? 200 : 0);
 
   return (
     <>
+      <style>{`.map-btn { animation-duration: 6s !important; }`}</style>
       <WeatherOverlay />
       <PanZoomViewport
         backgroundSrc="/images/backgrounds/market.webp"
@@ -166,21 +163,46 @@ const Market = () => {
         height={height}
         stuffs={MARKET_STUFFS}
         bees={bees}
-        initialScale={1.3}
+        initialScale={1.7}
+        initialOffsetX={-77}
+        backgroundOffsetX={44}
+        backgroundOffsetY={-41}
         disablePanZoom
+        hotspotScale={0.75}
         onHotspotClick={(id) => {
-          if (id === ID_MARKET_HOTSPOTS.BANKER) {
-            setShowShop(true);
+          const LOCKED_IDS = [ID_MARKET_HOTSPOTS.SAGE, ID_MARKET_HOTSPOTS.LEADERBOARD, ID_MARKET_HOTSPOTS.BANKER, ID_MARKET_HOTSPOTS.DEX];
+          if (LOCKED_IDS.includes(id)) {
+            setShowLockedPopup(true);
             return true;
           }
           return false;
         }}
       />
       {showShop && <Shop onClose={() => setShowShop(false)} />}
-      
-      <AdminPanel />
 
-      {spotlightOverlay}
+      {showLockedPopup && (
+        <div
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.78)', zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          onClick={() => setShowLockedPopup(false)}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{ fontFamily: 'GROBOLD, Cartoonist, sans-serif', textAlign: 'center', background: 'rgba(20,10,5,0.97)', border: '2px solid #5a402a', borderRadius: '16px', padding: '40px 60px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '14px' }}
+          >
+            <div style={{ fontSize: '48px' }}>🔒</div>
+            <div style={{ fontSize: '26px', color: '#f5d87a', textShadow: '2px 2px 0 #000' }}>Coming Soon</div>
+            <div style={{ fontSize: '14px', color: '#aaa', maxWidth: '260px', lineHeight: 1.5 }}>This feature is not yet available. Check back soon!</div>
+            <div
+              onClick={() => setShowLockedPopup(false)}
+              style={{ marginTop: '6px', fontFamily: 'GROBOLD, Cartoonist, sans-serif', fontSize: '14px', color: '#ccc', background: 'rgba(255,255,255,0.1)', padding: '8px 28px', borderRadius: '8px', cursor: 'pointer', border: '1px solid rgba(255,255,255,0.15)' }}
+            >
+              Close
+            </div>
+          </div>
+        </div>
+      )}
+
+      <AdminPanel />
 
       {tutorialStep >= 11 && tutorialStep <= 17 && (
         <>
@@ -278,9 +300,6 @@ const Market = () => {
       {tutMarketPage >= 11 && tutMarketPage <= 15 && (
         <>
           <style>{`
-            .tut-arrow { position: absolute; right: -22px; top: 50%; transform: translateY(-50%); width: 44px; height: 44px; background: #f5c842; border: 3px solid #a67c00; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 22px; box-shadow: 0 3px 10px rgba(0,0,0,0.4); transition: transform 0.1s, filter 0.1s; user-select: none; }
-            .tut-arrow:hover { filter: brightness(1.2); transform: translateY(-50%) scale(1.1); }
-            .tut-arrow:active { filter: brightness(0.85); transform: translateY(-50%) scale(0.95); }
             a[href*="/farm"], a[href*="/house"], a[href*="/valley"], a[href*="/market"], a[href*="/tavern"] { pointer-events: none !important; }
           `}</style>
           <div style={{ position: 'fixed', right: tutMarketPage === 12 ? '670px' : tutMarketPage === 14 ? '370px' : tutMarketPage === 15 ? '290px' : '20px', bottom: tutMarketPage === 12 ? '320px' : tutMarketPage === 14 ? '30px' : tutMarketPage === 15 ? '420px' : '20px', zIndex: 100000 }}>
@@ -293,8 +312,9 @@ const Market = () => {
               />
               <div
                 className="tut-arrow"
+                style={tutMarketPage === 12 ? { top: 'calc(50% + 40px)', right: '15px' } : { top: 'calc(50% + 50px)' }}
                 onClick={() => setTutMarketPage(prev => prev + 1)}
-              >▶</div>
+              ><img src="/images/tutorial/next.png" style={{ width: '100%', height: '100%', objectFit: 'contain' }} /></div>
             </div>
           </div>
         </>

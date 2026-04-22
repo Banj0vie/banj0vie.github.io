@@ -479,7 +479,7 @@ const Tavern = () => {
     }
   ];
 
-  if (!isTavernUnlocked && tutorialStep >= 32) {
+  if (!isTavernUnlocked) {
     const TAVERN_REQS = [
       { id: 9993, name: "Wood Logs", count: 50, image: "/images/forest/wood.png" },
       { id: 9994, name: "Stones", count: 50, image: "/images/forest/rock.png" },
@@ -606,6 +606,7 @@ const Tavern = () => {
 
   return (
     <>
+      <style>{`.map-btn { animation-duration: 6s !important; }`}</style>
       <WeatherOverlay />
       <PanZoomViewport
         backgroundSrc="/images/backgrounds/tavern.webp"
@@ -615,8 +616,11 @@ const Tavern = () => {
         height={height}
         stuffs={TAVERN_STUFFS}
         bees={TAVERN_BEES}
-        initialScale={1.3}
+        initialScale={1.53}
+        backgroundOffsetX={-1}
+        backgroundOffsetY={-50}
         disablePanZoom
+        hotspotScale={0.75}
       />
       
       {/* KITCHEN BUTTON - hidden */}
@@ -649,18 +653,8 @@ const Tavern = () => {
                 )}
               </div>
               {tutorialStep === 24 && (
-                <div style={{ position: 'absolute', bottom: '13%', left: '22%', right: '5%' }}>
-                  <div
-                    style={{ position: 'relative', textAlign: 'center', cursor: 'pointer', transition: 'transform 0.1s, filter 0.1s' }}
-                    onMouseEnter={e => { e.currentTarget.style.filter = 'brightness(1.2)'; e.currentTarget.style.transform = 'scale(1.03)'; }}
-                    onMouseLeave={e => { e.currentTarget.style.filter = 'brightness(1)'; e.currentTarget.style.transform = 'scale(1)'; }}
-                    onMouseDown={e => { e.currentTarget.style.transform = 'scale(0.96)'; e.currentTarget.style.filter = 'brightness(0.85)'; }}
-                    onMouseUp={e => { e.currentTarget.style.transform = 'scale(1.03)'; e.currentTarget.style.filter = 'brightness(1.2)'; }}
-                    onClick={advanceTutorial}
-                  >
-                    <img src="/images/tutorial/tutbluebar.png" alt="" style={{ width: '100%', display: 'block' }} draggable={false} />
-                    <span style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', fontFamily: 'Cartoonist', fontSize: '14px', color: '#fff', textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000', whiteSpace: 'nowrap', pointerEvents: 'none' }}>NEXT!</span>
-                  </div>
+                <div className="tut-arrow" onClick={advanceTutorial}>
+                  <img src="/images/tutorial/next.png" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                 </div>
               )}
             </div>

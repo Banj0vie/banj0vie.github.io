@@ -228,48 +228,50 @@ const OPEN_FRAME_OFFSET = 13;
 const DRAG_PX_FULL = 600;
 
 const PACK_CONFIGS = {
-  2:        { idleDir: 'card1idle/idle_1',         idlePrefix: 'idle_1',       openDir: 'card1open/open_1',         openPrefix: 'open_1',       alt: 'Pico Seeds Pack' },
-  3:        { idleDir: 'basicseedidle/idle_2',     idlePrefix: 'idle_2',       openDir: 'basicseedopen/open_2',     openPrefix: 'open_2',       alt: 'Basic Seeds Pack' },
-  4:        { idleDir: 'premseedidle/idle_3',      idlePrefix: 'idle_3',       openDir: 'premseedopen/open_3',      openPrefix: 'open_3',       alt: 'Premium Seeds Pack' },
-  LEVEL_UP: { idleDir: 'levelupidle/Idle_levelUP', idlePrefix: 'Idle_LevelUP', openDir: 'levelupopen/Open_LevelUP', openPrefix: 'Open_LevelUP', alt: 'Level Up!' },
+  pico_pack: { idleDir: 'card1idle/idle_1',         idlePrefix: 'idle_1',                idleFrames: 11, openDir: 'card1open/open_1',           openPrefix: 'open_1',                openFrames: 15, openFrameOffset: 13, sep: '_', alt: 'Pico Seeds Pack' },
+  2:         { idleDir: 'card1idle/chest_wood',      idlePrefix: 'New_idle_chest_wood_',  idleFrames: 21, openDir: 'card1open/open_chest_wood',  openPrefix: 'NEW_open_chest_wood_',  openFrames: 27, openFrameOffset: 21, sep: '', alt: 'Seeds Pack' },
+  3:         { idleDir: 'basicseedidle/idle_2',      idlePrefix: 'idle_2',                openDir: 'basicseedopen/open_2',       openPrefix: 'open_2',                sep: '_', alt: 'Basic Seeds Pack' },
+  4:         { idleDir: 'premseedidle/idle_3',       idlePrefix: 'idle_3',                openDir: 'premseedopen/open_3',        openPrefix: 'open_3',                sep: '_', alt: 'Premium Seeds Pack' },
+  LEVEL_UP:  { idleDir: 'levelupidle/Idle_levelUP', idlePrefix: 'Idle_LevelUP',          idleFrames: 11, openDir: 'levelupopen/Open_LevelUP',   openPrefix: 'Open_LevelUP',          openFrames: 15, openFrameOffset: 13, sep: '_', alt: 'Level Up!' },
 };
 
 // Customize rewards per skill and level here
 // Gems: 250 + (level-1)*50, Gold: 250 + (level-1)*200
 export const LEVEL_UP_REWARDS = {
   Farming:  (level) => [
-    { label: `${250 + (level - 1) * 200} Gold`, image: '/images/profile_bar/unlocked_balance_icon.png', color: '#ffea00' },
-    { label: `${250 + (level - 1) * 50} Gems`,  emoji: '💎',                                            color: '#00bfff' },
+    { label: `${250 + (level - 1) * 200} Gold`, image: '/images/profile_bar/hny.png', color: '#ffea00' },
+    { label: `${250 + (level - 1) * 50} Gems`,  image: '/images/profile_bar/diamond.png',               color: '#00bfff' },
   ],
   Mining:   (level) => [
-    { label: `${250 + (level - 1) * 200} Gold`, image: '/images/profile_bar/unlocked_balance_icon.png', color: '#ffea00' },
-    { label: `${250 + (level - 1) * 50} Gems`,  emoji: '💎',                                            color: '#00bfff' },
+    { label: `${250 + (level - 1) * 200} Gold`, image: '/images/profile_bar/hny.png', color: '#ffea00' },
+    { label: `${250 + (level - 1) * 50} Gems`,  image: '/images/profile_bar/diamond.png',               color: '#00bfff' },
   ],
   Foraging: (level) => [
-    { label: `${250 + (level - 1) * 200} Gold`, image: '/images/profile_bar/unlocked_balance_icon.png', color: '#ffea00' },
-    { label: `${250 + (level - 1) * 50} Gems`,  emoji: '💎',                                            color: '#00bfff' },
+    { label: `${250 + (level - 1) * 200} Gold`, image: '/images/profile_bar/hny.png', color: '#ffea00' },
+    { label: `${250 + (level - 1) * 50} Gems`,  image: '/images/profile_bar/diamond.png',               color: '#00bfff' },
   ],
   Fishing:  (level) => [
-    { label: `${250 + (level - 1) * 200} Gold`, image: '/images/profile_bar/unlocked_balance_icon.png', color: '#ffea00' },
-    { label: `${250 + (level - 1) * 50} Gems`,  emoji: '💎',                                            color: '#00bfff' },
+    { label: `${250 + (level - 1) * 200} Gold`, image: '/images/profile_bar/hny.png', color: '#ffea00' },
+    { label: `${250 + (level - 1) * 50} Gems`,  image: '/images/profile_bar/diamond.png',               color: '#00bfff' },
   ],
   Crafting: (level) => [
-    { label: `${250 + (level - 1) * 200} Gold`, image: '/images/profile_bar/unlocked_balance_icon.png', color: '#ffea00' },
-    { label: `${250 + (level - 1) * 50} Gems`,  emoji: '💎',                                            color: '#00bfff' },
+    { label: `${250 + (level - 1) * 200} Gold`, image: '/images/profile_bar/hny.png', color: '#ffea00' },
+    { label: `${250 + (level - 1) * 50} Gems`,  image: '/images/profile_bar/diamond.png',               color: '#00bfff' },
   ],
 };
 
 const PackIdle = ({ packId }) => {
   const [frame, setFrame] = useState(0);
   const cfg = PACK_CONFIGS[packId] || PACK_CONFIGS[2];
+  const totalIdleFrames = cfg.idleFrames ?? PACK_IDLE_FRAMES;
   useEffect(() => {
-    const interval = setInterval(() => setFrame(f => (f + 1) % PACK_IDLE_FRAMES), 1000 / PACK_IDLE_FPS);
+    const interval = setInterval(() => setFrame(f => (f + 1) % totalIdleFrames), 1000 / PACK_IDLE_FPS);
     return () => clearInterval(interval);
-  }, []);
+  }, [totalIdleFrames]);
   const frameStr = String(frame).padStart(5, '0');
   return (
     <img
-      src={`/images/cardfront/${cfg.idleDir}/${cfg.idlePrefix}_${frameStr}.png`}
+      src={`/images/cardfront/${cfg.idleDir}/${cfg.idlePrefix}${cfg.sep ?? '_'}${frameStr}.png`}
       alt={cfg.alt}
       draggable={false}
       style={{ height: '80vh', objectFit: 'contain', display: 'block', imageRendering: 'pixelated' }}
@@ -306,6 +308,13 @@ const PokemonPackRipDialog = ({ rollingInfo, onClose, onBack, onBuyAgain }) => {
 
   const syncPhase = (p) => { phaseRef.current = p; setPhase(p); };
   const syncFrame = (f) => { openFrameRef.current = f; setOpenFrame(f); };
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('packOpened'));
+  }, []);
+
+  const cfg = PACK_CONFIGS[rollingInfo.id] || PACK_CONFIGS[2];
+  const packOpenFrames = cfg.openFrames ?? OPEN_FRAMES;
+  const packOpenFrameOffset = cfg.openFrameOffset ?? OPEN_FRAME_OFFSET;
 
   // Dispense sandbox rewards once on mount
   const rewardGiven = useRef(false);
@@ -433,7 +442,7 @@ const PokemonPackRipDialog = ({ rollingInfo, onClose, onBack, onBuyAgain }) => {
   const handlePointerMove = (e) => {
     if (phaseRef.current !== 'opening') return;
     const dx = Math.max(0, e.clientX - startXRef.current);
-    const frame = Math.min(OPEN_FRAMES - 1, Math.floor((dx / DRAG_PX_FULL) * OPEN_FRAMES));
+    const frame = Math.min(packOpenFrames - 1, Math.floor((dx / DRAG_PX_FULL) * packOpenFrames));
     syncFrame(frame);
     pathPointsRef.current.push({ x: e.clientX, y: e.clientY });
     drawTraceLine(pathPointsRef.current);
@@ -441,7 +450,7 @@ const PokemonPackRipDialog = ({ rollingInfo, onClose, onBack, onBuyAgain }) => {
 
   const handlePointerUp = () => {
     if (phaseRef.current !== 'opening') return;
-    if (openFrameRef.current >= OPEN_FRAMES - 1) {
+    if (openFrameRef.current >= packOpenFrames - 1) {
       syncPhase('complete');
       clearCanvas();
       const packsOpened = parseInt(localStorage.getItem('sandbox_packs_opened') || '0', 10);
@@ -480,8 +489,8 @@ const PokemonPackRipDialog = ({ rollingInfo, onClose, onBack, onBuyAgain }) => {
   const bonusCards = isLevelUp
     ? (LEVEL_UP_REWARDS[rollingInfo.skill]?.(rollingInfo.level) || []).map((r, i) => ({ ...r, type: `reward_${i}` }))
     : rollingInfo.id === 'pabee_pack' ? [
-        { type: 'gold', label: '1000 HONEY', image: '/images/profile_bar/unlocked_balance_icon.png', color: '#ffea00' },
-        { type: 'gems', label: '250 Gems', emoji: '💎', color: '#00bfff' },
+        { type: 'gold', label: '1000 HONEY', image: '/images/profile_bar/hny.png', color: '#ffea00' },
+        { type: 'gems', label: '250 Gems', image: '/images/profile_bar/diamond.png', color: '#00bfff' },
       ] : [];
   const totalCards = revealedSeeds.length + bonusCards.length;
 
@@ -642,11 +651,10 @@ const PokemonPackRipDialog = ({ rollingInfo, onClose, onBack, onBuyAgain }) => {
               }
             `}</style>
             {(() => {
-              const cfg = PACK_CONFIGS[rollingInfo.id] || PACK_CONFIGS[2];
               return phase === 'idle'
                 ? <PackIdle packId={rollingInfo.id} />
                 : <img
-                    src={`/images/cardfront/${cfg.openDir}/${cfg.openPrefix}_${String(OPEN_FRAME_OFFSET + openFrame).padStart(5, '0')}.png`}
+                    src={`/images/cardfront/${cfg.openDir}/${cfg.openPrefix}${cfg.sep ?? '_'}${String(packOpenFrameOffset + openFrame).padStart(5, '0')}.png`}
                     draggable={false}
                     style={{ height: '80vh', objectFit: 'contain', display: 'block', imageRendering: 'pixelated' }}
                   />;

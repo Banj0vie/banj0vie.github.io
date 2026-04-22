@@ -5,17 +5,20 @@ import { useEquipmentRegistry } from "../../hooks/useContracts";
 import { useSolanaWallet } from "../../hooks/useSolanaWallet";
 
 const PFP_OPTIONS = [
-  { id: 'default',    src: '/images/pfp/defultpfp.png',  label: 'Default',       unlockType: 'always' },
-  { id: 'redpfp',    src: '/images/pfp/redpfp.png',     label: 'Red',           unlockType: 'total_crops', threshold: 10 },
-  { id: 'orangepfp', src: '/images/pfp/orangepfp.png',  label: 'Orange',        unlockType: 'total_crops', threshold: 25 },
-  { id: 'yellowpfp', src: '/images/pfp/yellowpfp.png',  label: 'Yellow',        unlockType: 'total_crops', threshold: 50 },
-  { id: 'greenpfp',  src: '/images/pfp/greenpfp.png',   label: 'Green',         unlockType: 'total_crops', threshold: 100 },
-  { id: 'bluepfp',   src: '/images/pfp/bluepfp.png',    label: 'Blue',          unlockType: 'total_crops', threshold: 200 },
-  { id: 'purplepfp', src: '/images/pfp/purplepfp.png',  label: 'Purple',        unlockType: 'total_crops', threshold: 350 },
-  { id: 'pinkpfp',   src: '/images/pfp/pinkpfp.png',    label: 'Pink',          unlockType: 'special' },
-  { id: 'benpotato',  src: '/images/pfp/benpotato.jpg',  label: 'Ben Potato',   unlockType: 'special', objectFit: 'cover' },
-  { id: 'goldcarrot', src: '/images/pfp/goldcarrot.jpg', label: 'Gold Carrot',  unlockType: 'special', objectFit: 'cover' },
-  { id: 'goldpotato', src: '/images/pfp/goldpotato.jpg', label: 'Gold Potato',  unlockType: 'special', objectFit: 'cover' },
+  { id: 'default',         src: '/images/pfp/defultpfp.png',         label: 'Default',      unlockType: 'always' },
+  { id: 'redpfp',          src: '/images/pfp/redpfp.png',            label: 'Red',          unlockType: 'total_crops', threshold: 10 },
+  { id: 'benpotato',       src: '/images/pfp/benpotato.jpg',         label: 'Ben Potato',   unlockType: 'special', objectFit: 'cover' },
+  { id: 'goldcarrot',      src: '/images/pfp/goldcarrot.jpg',        label: 'Gold Carrot',  unlockType: 'special', objectFit: 'cover' },
+  { id: 'goldpotato',      src: '/images/pfp/goldpotato.jpg',        label: 'Gold Potato',  unlockType: 'special', objectFit: 'cover' },
+  { id: 'crowattackpfp',   src: '/images/pfp/crowattackpfp.png',     label: 'Crow Attack',  unlockType: 'special' },
+  { id: 'flyattackpfp',    src: '/images/pfp/flyattackpfp.png',      label: 'Fly Attack',   unlockType: 'special' },
+  { id: 'potatopfp',       src: '/images/pfp/potatopfp.png',         label: 'Potato',       unlockType: 'special' },
+  { id: 'farmerpfp',       src: '/images/pfp/famerpfp.png',          label: 'Farmer',       unlockType: 'special' },
+  { id: 'spendingfirstgem', src: '/images/pfp/spendingfirstgem.png', label: 'Gem Spender',  unlockType: 'special' },
+  { id: 'rodpfp',           src: '/images/pfp/rodpfp.png',            label: 'Angler',       unlockType: 'special' },
+  // Hidden until unlocked (easter eggs / secret achievements)
+  { id: 'betapfp',         src: '/images/pfp/betapfp.png',           label: 'Beta Tester',  unlockType: 'special', hidden: true },
+  { id: 'banjopfp',        src: '/images/pfp/banjopfp.png',          label: 'Banjo',        unlockType: 'special', hidden: true },
 ];
 
 const BACKGROUND_OPTIONS = [
@@ -38,7 +41,7 @@ const DEFAULT_PFP_SRC = '/images/pfp/defultpfp.png';
 const DEFAULT_BG_ID = 'bg_default';
 
 const getUnlockedPfps = () => {
-  try { return JSON.parse(localStorage.getItem('sandbox_unlocked_pfps') || '[]'); }
+  try { return JSON.parse(localStorage.getItem('sandbox_claimed_pfps') || '[]'); }
   catch { return []; }
 };
 
@@ -58,6 +61,9 @@ const AvatarDialog = ({ onClose }) => {
   const [tab, setTab] = useState(0);
   const [totalCrops, setTotalCrops] = useState(() => parseInt(localStorage.getItem('sandbox_total_crops') || '0', 10));
   const [unlockedPfps, setUnlockedPfps] = useState(getUnlockedPfps);
+  const [unseenPfps, setUnseenPfps] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('sandbox_unseen_pfps') || '[]'); } catch { return []; }
+  });
   const [username] = useState(() => localStorage.getItem('sandbox_username') || 'Farmer');
 
   // Active (saved) state
@@ -87,9 +93,18 @@ const AvatarDialog = ({ onClose }) => {
   }, []);
 
   useEffect(() => {
-    const handler = () => setUnlockedPfps(getUnlockedPfps());
+    const handler = (e) => {
+      setUnlockedPfps(getUnlockedPfps());
+      try { setUnseenPfps(JSON.parse(localStorage.getItem('sandbox_unseen_pfps') || '[]')); } catch {}
+    };
+    window.addEventListener('pfpUnlocked', handler);
     window.addEventListener('pfpUnlocksUpdated', handler);
-    return () => window.removeEventListener('pfpUnlocksUpdated', handler);
+    window.addEventListener('pfpEarned', handler);
+    return () => {
+      window.removeEventListener('pfpUnlocked', handler);
+      window.removeEventListener('pfpUnlocksUpdated', handler);
+      window.removeEventListener('pfpEarned', handler);
+    };
   }, []);
 
   const handleEquip = () => {
@@ -168,24 +183,37 @@ const AvatarDialog = ({ onClose }) => {
 
           {/* Right grid */}
           <div style={{ flex: 1, maxHeight: '300px', overflowY: 'auto', display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px', padding: '2px' }}>
-            {tab === 0 && PFP_OPTIONS.map(pfp => {
+            {tab === 0 && PFP_OPTIONS.filter(pfp => !pfp.hidden || isUnlocked(pfp, totalCrops, unlockedPfps)).map(pfp => {
               const unlocked = isUnlocked(pfp, totalCrops, unlockedPfps);
               const isSelected = previewPfpSrc === pfp.src;
+              const isNew = unlocked && unseenPfps.includes(pfp.id);
               return (
                 <div
                   key={pfp.id}
-                  onClick={() => unlocked && setPreviewPfpSrc(pfp.src)}
+                  onClick={() => {
+                    if (!unlocked) return;
+                    setPreviewPfpSrc(pfp.src);
+                    if (isNew) {
+                      const next = unseenPfps.filter(id => id !== pfp.id);
+                      setUnseenPfps(next);
+                      localStorage.setItem('sandbox_unseen_pfps', JSON.stringify(next));
+                    }
+                  }}
                   title={unlocked ? pfp.label : '???'}
                   style={{
                     cursor: unlocked ? 'pointer' : 'not-allowed',
                     borderRadius: '10px', padding: '6px',
-                    border: `2px solid ${isSelected ? '#ffea00' : 'rgba(255,255,255,0.1)'}`,
+                    border: `2px solid ${isSelected ? '#ffea00' : isNew ? '#ff4444' : 'rgba(255,255,255,0.1)'}`,
                     background: isSelected ? 'rgba(255,234,0,0.1)' : 'rgba(255,255,255,0.04)',
                     display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px',
                     transition: 'all 0.15s',
-                    boxShadow: isSelected ? '0 0 8px rgba(255,234,0,0.3)' : 'none',
+                    boxShadow: isSelected ? '0 0 8px rgba(255,234,0,0.3)' : isNew ? '0 0 8px rgba(255,68,68,0.4)' : 'none',
+                    position: 'relative',
                   }}
                 >
+                  {isNew && (
+                    <img src="/images/mail/!.png" alt="!" className="badge-pulse" style={{ position: 'absolute', top: '-8px', right: '-8px', width: '18px', height: '18px', zIndex: 2, pointerEvents: 'none' }} draggable={false} />
+                  )}
                   <div style={{ position: 'relative' }}>
                     <img src={pfp.src} alt={pfp.label} style={{ width: '62px', height: '62px', objectFit: pfp.objectFit || 'contain', borderRadius: '8px', filter: unlocked ? 'none' : 'grayscale(100%) brightness(0.5)' }} />
                     {!unlocked && <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>🔒</div>}

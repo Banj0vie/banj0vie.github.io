@@ -29,6 +29,7 @@ import PageTransition from "./components/PageTransition";
 import wallets from "./config/solanaWallet";
 import store from "./solana/store";
 import { BG_COLORS } from "./constants/background_colors";
+import BackgroundMusic from "./components/audio/BackgroundMusic";
 
 // Import wallet adapter CSS
 import '@solana/wallet-adapter-react-ui/styles.css';
@@ -209,6 +210,7 @@ const App = () => {
                 
 
                 
+                <BackgroundMusic />
                 <AppContent />
                 {/* <PageTransition /> */}
               </Router>

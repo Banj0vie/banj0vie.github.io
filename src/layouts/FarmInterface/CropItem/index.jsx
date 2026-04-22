@@ -42,12 +42,95 @@ const CropItem = ({
   const [showDebug, setShowDebug] = useState(() => localStorage.getItem('show_debug_labels') !== 'false');
   const [plotPrep, setPlotPrep] = useState(() => JSON.parse(localStorage.getItem('sandbox_plot_prep') || '{}'));
   const [soilColor, setSoilColor] = useState(() => localStorage.getItem('sandbox_active_soil_color') || null);
+  const [digPhase, setDigPhase] = useState('none');
+  const [waterPhase, setWaterPhase] = useState('none');
+  const [checkmarkPhase, setCheckmarkPhase] = useState('none');
+  const prevNeedsWaterRef = useRef(data.needsWater);
+  const prevGrowStatusRef = useRef(data.growStatus);
+  const waterTimerRef = useRef(null);
+  const waterDebounceRef = useRef(null);
+  const checkmarkTimerRef = useRef(null);
+  const prevStatusRef = useRef(() => {
+    const stored = JSON.parse(localStorage.getItem('sandbox_plot_prep') || '{}');
+    return stored[index]?.status ?? 0;
+  });
+  const prevAnimStatusRef = useRef(null);
+  const digTimersRef = useRef([]);
 
   useEffect(() => {
-    const handlePrepUpdate = (e) => setPlotPrep(e.detail);
-    window.addEventListener('plotPrepUpdated', handlePrepUpdate);
-    return () => window.removeEventListener('plotPrepUpdated', handlePrepUpdate);
+    const init = JSON.parse(localStorage.getItem('sandbox_plot_prep') || '{}');
+    prevStatusRef.current = init[index]?.status ?? 0;
+  }, [index]);
+
+  useEffect(() => {
+    if (prevNeedsWaterRef.current === true && data.needsWater === false) {
+      // Debounce: only animate if needsWater stays false for 80ms (ignores crop-placement flickers)
+      clearTimeout(waterDebounceRef.current);
+      waterDebounceRef.current = setTimeout(() => {
+        clearTimeout(waterTimerRef.current);
+        setWaterPhase('shrink');
+        waterTimerRef.current = setTimeout(() => setWaterPhase('none'), 220);
+      }, 80);
+    } else if (data.needsWater === true) {
+      clearTimeout(waterDebounceRef.current);
+    }
+
+    const wasHarvesting = prevGrowStatusRef.current === 2 && data.growStatus !== 2;
+    if (wasHarvesting) {
+      clearTimeout(checkmarkTimerRef.current);
+      setCheckmarkPhase('shrink');
+      checkmarkTimerRef.current = setTimeout(() => setCheckmarkPhase('none'), 220);
+    }
+
+    prevNeedsWaterRef.current = data.needsWater;
+    prevGrowStatusRef.current = data.growStatus;
+  }, [data.needsWater, data.growStatus]);
+
+  useEffect(() => {
+    return () => {
+      clearTimeout(waterTimerRef.current);
+      clearTimeout(waterDebounceRef.current);
+      clearTimeout(checkmarkTimerRef.current);
+    };
   }, []);
+
+  useEffect(() => {
+    const handlePrepUpdate = (e) => {
+      const newPrep = e.detail;
+      const prevStatus = typeof prevStatusRef.current === 'function' ? prevStatusRef.current() : prevStatusRef.current;
+      const newStatus = newPrep[index]?.status ?? 0;
+
+      if (prevStatus === 0 && newStatus === 1) {
+        digTimersRef.current.forEach(clearTimeout);
+        digTimersRef.current = [];
+        setDigPhase('x-shrink');
+        digTimersRef.current.push(setTimeout(() => setDigPhase('hole-appear'), 180));
+        digTimersRef.current.push(setTimeout(() => setDigPhase('none'), 500));
+      } else if ((prevStatus === 1 || prevStatus === 2) && newStatus === 3) {
+        digTimersRef.current.forEach(clearTimeout);
+        digTimersRef.current = [];
+        prevAnimStatusRef.current = prevStatus;
+        setDigPhase('hole-shrink');
+        digTimersRef.current.push(setTimeout(() => setDigPhase('dirt-appear'), 180));
+        digTimersRef.current.push(setTimeout(() => setDigPhase('none'), 500));
+      } else if (prevStatus === 3 && newStatus === 0) {
+        // Crop harvested → wait for checkmark to scale down, then X scales in
+        digTimersRef.current.forEach(clearTimeout);
+        digTimersRef.current = [];
+        setDigPhase('x-hidden');
+        digTimersRef.current.push(setTimeout(() => setDigPhase('x-appear'), 220));
+        digTimersRef.current.push(setTimeout(() => setDigPhase('none'), 440));
+      }
+
+      prevStatusRef.current = newStatus;
+      setPlotPrep(newPrep);
+    };
+    window.addEventListener('plotPrepUpdated', handlePrepUpdate);
+    return () => {
+      window.removeEventListener('plotPrepUpdated', handlePrepUpdate);
+      digTimersRef.current.forEach(clearTimeout);
+    };
+  }, [index]);
 
   useEffect(() => {
     const handler = (e) => setShowDebug(e.detail);
@@ -174,7 +257,7 @@ const CropItem = ({
         }
         el = el.parentElement;
       }
-      setPortalContainer(found || document.body);
+      setPortalContainer(document.body);
     }
     handleMouseMove(e);
   };
@@ -279,8 +362,8 @@ const CropItem = ({
           data.seedId && ALL_ITEMS[data.seedId]
             ? 0 - ALL_ITEMS[data.seedId].pos * ONE_SEED_HEIGHT
             : 0,
-        backgroundImage: isPrepStage ? 'none' : undefined,
-        backgroundColor: isPrepStage ? 'transparent' : undefined,
+        backgroundImage: isPrepStage || digPhase === 'hole-shrink' ? 'none' : undefined,
+        backgroundColor: isPrepStage || digPhase === 'hole-shrink' ? 'transparent' : undefined,
       }}
     >
       {/* Soil color overlay */}
@@ -315,16 +398,54 @@ const CropItem = ({
       )}
 
       {/* Prep Stage Overlays */}
-      {!isDisabled && isPrepStage && (
+      {!isDisabled && (isPrepStage || digPhase === 'x-hidden' || digPhase === 'x-appear') && (
         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', justifyContent: 'center', alignItems: 'center', pointerEvents: 'none' }}>
-          {prep.status === 0 && (
-            <img src={isHovered ? '/images/farming/xhover.png' : '/images/farming/x.png'} alt="X" style={{ width: '115px', height: '115px', objectFit: 'contain', marginTop: '115px', marginLeft: '-34px' }} />
+          <style>{`
+            @keyframes xShrink  { from { transform: scale(1); opacity: 1; } to { transform: scale(0); opacity: 0; } }
+            @keyframes xAppear  { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+            @keyframes holeShrink { from { transform: scale(1); opacity: 1; } to { transform: scale(0); opacity: 0; } }
+            @keyframes dirtFadeIn { from { opacity: 0; } to { opacity: 1; } }
+          `}</style>
+          {(prep.status === 0 || digPhase === 'x-shrink' || digPhase === 'x-appear') && digPhase !== 'x-hidden' && (
+            <img
+              src={isHovered && prep.status === 0 ? '/images/farming/xhover.png' : '/images/farming/x.png'}
+              alt="X"
+              style={{
+                width: '115px', height: '115px', objectFit: 'contain', marginTop: '115px', marginLeft: '-34px',
+                animation: digPhase === 'x-shrink' ? 'xShrink 0.18s ease-in forwards'
+                         : digPhase === 'x-appear' ? 'xAppear 0.2s ease-out forwards'
+                         : 'none',
+              }}
+            />
           )}
-          {prep.status === 1 && (
-            <img src="/images/farming/hole.png" alt="Hole" style={{ width: '220px', height: '220px', objectFit: 'contain', marginTop: '115px', marginLeft: '-48px' }} />
+          {prep.status === 1 && digPhase !== 'x-shrink' && (
+            <img
+              src="/images/farming/hole.png"
+              alt="Hole"
+              style={{ width: '220px', height: '220px', objectFit: 'contain', marginTop: '115px', marginLeft: '-48px' }}
+            />
           )}
           {prep.status === 2 && (
             <div style={{ position: 'relative', width: '40px', height: '15px', backgroundColor: '#1a1008', borderRadius: '50%', border: '2px solid #000', boxShadow: 'inset 0 5px 10px rgba(0,0,0,0.8)', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+              <img src={ALL_ITEMS[prep.fishId]?.image} alt="fish" style={{ width: '35px', height: '35px', position: 'absolute', top: '-15px', transform: 'rotate(-20deg)', filter: 'drop-shadow(0 2px 2px rgba(0,0,0,0.5))' }} />
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Dirt fade-in overlay after hole shrinks */}
+      {digPhase === 'dirt-appear' && (
+        <div style={{ position: 'absolute', inset: 0, animation: 'dirtFadeIn 0.25s ease-out forwards', pointerEvents: 'none', zIndex: 1 }} />
+      )}
+
+      {/* Hole/fish shrink overlay when transitioning to dirt */}
+      {digPhase === 'hole-shrink' && (
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', justifyContent: 'center', alignItems: 'center', pointerEvents: 'none' }}>
+          {prevAnimStatusRef.current === 1 && (
+            <img src="/images/farming/hole.png" alt="Hole" style={{ width: '220px', height: '220px', objectFit: 'contain', marginTop: '115px', marginLeft: '-48px', animation: 'holeShrink 0.18s ease-in forwards' }} />
+          )}
+          {prevAnimStatusRef.current === 2 && (
+            <div style={{ position: 'relative', width: '40px', height: '15px', backgroundColor: '#1a1008', borderRadius: '50%', border: '2px solid #000', boxShadow: 'inset 0 5px 10px rgba(0,0,0,0.8)', display: 'flex', justifyContent: 'center', alignItems: 'center', animation: 'holeShrink 0.18s ease-in forwards' }}>
               <img src={ALL_ITEMS[prep.fishId]?.image} alt="fish" style={{ width: '35px', height: '35px', position: 'absolute', top: '-15px', transform: 'rotate(-20deg)', filter: 'drop-shadow(0 2px 2px rgba(0,0,0,0.5))' }} />
             </div>
           )}
@@ -587,8 +708,8 @@ const CropItem = ({
               src={crowLanded ? "/images/badanimals/crowpeck.gif" : "/images/badanimals/crowfly.gif"}
               alt="crow"
               style={{
-                width: crowLanded ? "65px" : "55px",
-                height: crowLanded ? "65px" : "55px",
+                width: crowLanded ? "85px" : "70px",
+                height: crowLanded ? "85px" : "70px",
                 filter: "drop-shadow(0px 0px 5px rgba(255,0,0,0.8))",
                 transform: (!crowLanded && index >= 15) ? "scaleX(-1)" : "none"
               }}
@@ -614,23 +735,56 @@ const CropItem = ({
       )}
 
       {/* Status Indicator */}
-      {(data.needsWater || data.growStatus === 2) && (
+      <style>{`
+        @keyframes statusBounce { 0%, 100% { transform: translateX(-50%) translateY(0); } 50% { transform: translateX(-50%) translateY(-10px); } }
+        @keyframes indicatorShrink { from { transform: scale(1); opacity: 1; } to { transform: scale(0); opacity: 0; } }
+      `}</style>
+      {(data.needsWater || waterPhase === 'shrink') && (
         <div style={{
           position: "absolute",
-          top: (data.growStatus === 2 && !data.needsWater) ? "60px" : "-25px",
-          left: (data.growStatus === 2 && !data.needsWater) ? "60%" : "50%",
+          top: "-25px",
+          left: "50%",
           transform: "translateX(-50%)",
           zIndex: 9999,
           pointerEvents: "none",
-          animation: "statusBounce 1.5s infinite"
+          animation: waterPhase === 'shrink' ? 'none' : 'statusBounce 1.5s infinite',
         }}>
-          <style>{`@keyframes statusBounce { 0%, 100% { transform: translateX(-50%) translateY(0); } 50% { transform: translateX(-50%) translateY(-10px); } }`}</style>
-          {data.needsWater
-            ? ((data.bugCountdown > 0 || data.crowCountdown > 0)
-              ? <span style={{ fontSize: '28px', filter: 'drop-shadow(0px 2px 2px black)' }}>❗</span>
-              : <img src="/images/icons/needwater.png" alt="Needs Water" style={{ width: '28px', height: '28px', filter: 'drop-shadow(0px 2px 2px black)' }} />)
-            : <img src="/images/icons/checkmark.png" alt="Ready" style={{ width: '28px', height: '28px', filter: 'drop-shadow(0px 2px 2px black)' }} />
+          {(data.bugCountdown > 0 || data.crowCountdown > 0)
+            ? <img src="/images/mail/!.png" alt="!" className="badge-pulse" style={{ width: '28px', height: '28px', filter: 'drop-shadow(0px 2px 2px black)', position: 'relative', left: '23px', top: '65px' }} />
+            : <img
+                src="/images/farming/waterneeded.png"
+                alt="Needs Water"
+                style={{
+                  width: '38px', height: '38px',
+                  filter: 'drop-shadow(0px 2px 2px black)',
+                  position: 'relative', left: '25px', top: '38px',
+                  transformOrigin: '50% 50%',
+                  animation: waterPhase === 'shrink' ? 'indicatorShrink 0.2s ease-in forwards' : 'none',
+                }}
+              />
           }
+        </div>
+      )}
+      {(data.growStatus === 2 || checkmarkPhase === 'shrink') && !data.needsWater && waterPhase !== 'shrink' && (
+        <div style={{
+          position: "absolute",
+          top: "60px",
+          left: "60%",
+          transform: "translateX(-50%)",
+          zIndex: 9999,
+          pointerEvents: "none",
+          animation: checkmarkPhase === 'shrink' ? 'none' : 'statusBounce 1.5s infinite',
+        }}>
+          <img
+            src="/images/farming/checkmark.png"
+            alt="Ready"
+            style={{
+              width: '28px', height: '28px',
+              filter: 'drop-shadow(0px 2px 2px black)',
+              transformOrigin: '50% 50%',
+              animation: checkmarkPhase === 'shrink' ? 'indicatorShrink 0.2s ease-in forwards' : 'none',
+            }}
+          />
         </div>
       )}
     </div>

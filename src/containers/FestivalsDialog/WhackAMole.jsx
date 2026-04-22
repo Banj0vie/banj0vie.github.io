@@ -151,7 +151,7 @@ export default function WhackAMole() {
             padding: "10px 8px", textAlign: "center",
           }}>
             <div style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", marginBottom: 4 }}>{t.label}</div>
-            <div style={{ fontSize: 12, color: "#90caf9" }}>💎 {t.gems}</div>
+            <div style={{ fontSize: 12, color: "#90caf9" }}><img src="/images/profile_bar/diamond.png" alt="" style={{ width: '12px', height: '12px', objectFit: 'contain', verticalAlign: 'middle', marginRight: '2px' }} />{t.gems}</div>
             <div style={{ fontSize: 12, color: "#ffd54f" }}>🪙 {t.gold}</div>
           </div>
         ))}
@@ -242,7 +242,7 @@ export default function WhackAMole() {
         padding: "16px 32px", display: "flex", gap: 24, alignItems: "center",
       }}>
         <div style={{ textAlign: "center" }}>
-          <div style={{ fontSize: 28 }}>💎</div>
+          <div style={{ fontSize: 28 }}><img src="/images/profile_bar/diamond.png" alt="Gems" style={{ width: '28px', height: '28px', objectFit: 'contain' }} /></div>
           <div style={{ fontSize: 20, fontWeight: 700, color: "#90caf9" }}>{reward.gems}</div>
         </div>
         <div style={{ textAlign: "center" }}>

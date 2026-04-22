@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import { trackGemSpend } from "../../utils/pfpUnlocks";
 import { useNavigate } from "react-router-dom";
 import "./style.css";
 import TooltipButton from "../../components/buttons/TooltipButton";
@@ -39,11 +40,13 @@ const PanZoomViewport = ({
   isBig = false,
   stuffs = [],
   initialScale = 1,
+  initialOffsetX = 0,
   disablePanZoom = false,
   backgroundOffsetX = 0,
   backgroundOffsetY = 0,
   onHotspotClick = null,
   onBeeClick = null,
+  hotspotScale = 1,
 }) => {
   const containerRef = useRef(null);
   const navigate = useNavigate();
@@ -54,10 +57,10 @@ const PanZoomViewport = ({
   // Center the layer in the viewport accounting for initial scale
   const computeInitialTx = useCallback(() => {
     if (typeof width === "number") {
-      return (window?.innerWidth || 0) / 2 - (width * initialScale) / 2;
+      return (window?.innerWidth || 0) / 2 - (width * initialScale) / 2 + initialOffsetX;
     }
     return 0;
-  }, [width, initialScale]);
+  }, [width, initialScale, initialOffsetX]);
   const computeInitialTy = useCallback(() => {
     if (typeof height === "number") {
       return (window?.innerHeight || 0) / 2 - (height * initialScale) / 2;
@@ -126,11 +129,53 @@ const PanZoomViewport = ({
     return () => el.removeEventListener('wheel', handleWheel);
   }, [handleWheel]);
   
-  const [isDockLocked, setIsDockLocked] = useState(false);
+  const [isDockLocked, setIsDockLocked] = useState(() => localStorage.getItem('sandbox_dock_repaired') !== 'true');
   const [showDockLockModal, setShowDockLockModal] = useState(false);
+  const [showUnderConstructionModal, setShowUnderConstructionModal] = useState(false);
   const [seenDockPrompt, setSeenDockPrompt] = useState(
     () => localStorage.getItem('seen_dock_repair_prompt') === 'true'
   );
+
+  const DOCK_BUILD_MS = 2 * 60 * 60 * 1000;
+  const getDockTimeLeft = () => {
+    const start = parseInt(localStorage.getItem('sandbox_dock_build_start') || '0', 10);
+    if (!start || localStorage.getItem('sandbox_dock_repaired') === 'true') return 0;
+    return Math.max(0, DOCK_BUILD_MS - (Date.now() - start));
+  };
+  const [dockBuildTimeLeft, setDockBuildTimeLeft] = useState(() => getDockTimeLeft());
+
+  useEffect(() => {
+    const tick = setInterval(() => {
+      const left = getDockTimeLeft();
+      setDockBuildTimeLeft(left);
+      if (left === 0 && localStorage.getItem('sandbox_dock_build_start') && localStorage.getItem('sandbox_dock_repaired') !== 'true') {
+        localStorage.setItem('sandbox_dock_repaired', 'true');
+        localStorage.setItem('sandbox_dock_unlocked', 'true');
+        window.dispatchEvent(new CustomEvent('dockRepaired'));
+      }
+    }, 1000);
+    return () => clearInterval(tick);
+  }, []);
+
+  useEffect(() => {
+    const handler = () => {
+      setIsDockLocked(false);
+      setDockBuildTimeLeft(0);
+      setShowDockLockModal(false);
+      setShowUnderConstructionModal(false);
+    };
+    window.addEventListener('dockRepaired', handler);
+    return () => window.removeEventListener('dockRepaired', handler);
+  }, []);
+
+  const formatDockTime = (ms) => {
+    if (ms <= 0) return null;
+    const totalSec = Math.ceil(ms / 1000);
+    const h = Math.floor(totalSec / 3600);
+    const m = Math.floor((totalSec % 3600) / 60);
+    const s = totalSec % 60;
+    return h > 0 ? `${h}h ${m}m ${s}s` : `${m}m ${s}s`;
+  };
 
   const [menuKey, setMenuKey] = useState(0);
 
@@ -283,7 +328,7 @@ const PanZoomViewport = ({
                   src={b.image}
                   alt="Bee"
                   className="img-bee"
-                  style={{ animationDelay: `${b.delay}s`, pointerEvents: onBeeClick ? 'none' : undefined }}
+                  style={{ animationDelay: `${b.delay}s`, pointerEvents: onBeeClick ? 'none' : undefined, ...(b.width ? { width: b.width } : {}) }}
                 />
               </div>
             ))}
@@ -297,12 +342,25 @@ const PanZoomViewport = ({
               />
             ))}
             {hotspots.map((h) => (
+              <div key={h.id} style={{ position: 'absolute', left: h.x, top: h.y, transform: `scale(${hotspotScale})`, transformOrigin: 'center top' }}>
+              {(h.id === 'angler' || h.id === 'ID_HOUSE_HOTSPOTS_ANGLER') && dockBuildTimeLeft > 0 && (
+                <div style={{
+                  position: 'absolute', bottom: '100%', left: '50%', transform: 'translateX(-50%)',
+                  marginBottom: '6px', whiteSpace: 'nowrap', pointerEvents: 'none', zIndex: 10,
+                  background: 'rgba(20,10,5,0.85)', border: '1px solid #c8821a',
+                  borderRadius: '6px', padding: '3px 10px',
+                  fontFamily: 'GROBOLD, Cartoonist, sans-serif', fontSize: '13px',
+                  color: '#f5d87a', textShadow: '1px 1px 0 #000',
+                }}>
+                  🚧 {formatDockTime(dockBuildTimeLeft)}
+                </div>
+              )}
               <TooltipButton
-                key={h.id}
                 data-hotspot="true"
               className={`map-btn ${isBig ? "map-big-btn" : ""} ${isDockLocked && !seenDockPrompt && (h.id === "ID_HOUSE_HOTSPOTS_ANGLER" || h.id === "angler") ? "quest-active-hotspot" : ""}`}
                 label={h.label}
-                style={{ left: h.x, top: h.y, animationDelay: `${h.delay}s` }}
+                labelImg={h.labelImg}
+                style={{ position: 'relative', animationDelay: `${h.delay}s` }}
                 disableHoverSound={!!h.disableHoverSound}
                 onMouseEnter={() => {
                   if (h.id === "ID_HOUSE_HOTSPOTS_ANGLER") {
@@ -316,22 +374,26 @@ const PanZoomViewport = ({
                 }}
                 onClick={() => {
                   if (h.disabled) return;
+                  if (onHotspotClick && onHotspotClick(h.id)) return;
                   if (h.id === "ID_HOUSE_HOTSPOTS_ANGLER" || h.id === "angler") {
                     console.log("angler click");
                     playAnglerClickSound();
-                    
+
                     // If the dock hasn't been repaired yet, prompt the user for planks
+                    if (dockBuildTimeLeft > 0) {
+                      setShowUnderConstructionModal(true);
+                      return;
+                    }
                     if (isDockLocked) {
                       setShowDockLockModal(true);
-                    if (!seenDockPrompt) {
-                      localStorage.setItem('seen_dock_repair_prompt', 'true');
-                      setSeenDockPrompt(true);
-                      window.dispatchEvent(new CustomEvent('seenDockPrompt'));
-                    }
+                      if (!seenDockPrompt) {
+                        localStorage.setItem('seen_dock_repair_prompt', 'true');
+                        setSeenDockPrompt(true);
+                        window.dispatchEvent(new CustomEvent('seenDockPrompt'));
+                      }
                       return;
                     }
                   }
-                  if (onHotspotClick && onHotspotClick(h.id)) return;
                   if (h.link) {
                     // Navigate based on link content
                     navigate(h.link);
@@ -342,6 +404,7 @@ const PanZoomViewport = ({
                   }
                 }}
               />
+              </div>
             ))}
             <div className="panzoom-children">{children}</div>
           </div>
@@ -381,37 +444,70 @@ const PanZoomViewport = ({
             color: 'white',
             fontFamily: 'monospace'
           }}>
-            <h2 style={{ margin: '0 0 12px 0', color: '#ff9c9c' }}>Dock Locked</h2>
-            <p style={{ marginBottom: '20px', lineHeight: '1.5' }}>
-              The dock is in disrepair. Complete the Mayor's quest to unlock it, or contribute 500 Gold directly to fund the repairs.
+            <h2 style={{ margin: '0 0 16px 0', color: '#ff9c9c', fontFamily: 'Cartoonist, GROBOLD, monospace' }}>Dock is Closed</h2>
+            <button
+              onClick={() => setShowDockLockModal(false)}
+              style={{ padding: '10px 24px', background: '#444', border: 'none', borderRadius: '6px', color: '#fff', cursor: 'pointer', fontFamily: 'monospace' }}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+      {showUnderConstructionModal && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
+          backgroundColor: 'rgba(0,0,0,0.7)', display: 'flex',
+          justifyContent: 'center', alignItems: 'center', zIndex: 99999,
+        }} onClick={() => setShowUnderConstructionModal(false)}>
+          <div onClick={e => e.stopPropagation()} style={{
+            background: 'linear-gradient(135deg, #1a1005, #2e1d08)',
+            border: '2px solid #c8821a', padding: '32px 36px', borderRadius: '14px',
+            maxWidth: '380px', textAlign: 'center', color: 'white',
+            fontFamily: 'GROBOLD, Cartoonist, monospace',
+          }}>
+            <div style={{ fontSize: '48px', marginBottom: '12px' }}>🚧</div>
+            <h2 style={{ margin: '0 0 10px 0', color: '#f5d87a', fontSize: '22px', letterSpacing: '1px' }}>
+              Under Construction
+            </h2>
+            <p style={{ marginBottom: '8px', color: '#d4b483', lineHeight: 1.5, fontSize: '15px' }}>
+              The dock is being repaired. Come back when it's done!
             </p>
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '12px' }}>
+            {dockBuildTimeLeft > 0 && (
+              <p style={{ margin: '0 0 22px 0', color: '#f5d87a', fontSize: '20px', fontWeight: 'bold' }}>
+                {formatDockTime(dockBuildTimeLeft)} remaining
+              </p>
+            )}
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
               <button
-                onClick={() => {
-                  const currentGold = parseInt(localStorage.getItem('sandbox_gold') || '0', 10);
-                  if (currentGold >= 500) {
-                    const newGold = currentGold - 500;
-                    localStorage.setItem('sandbox_gold', String(newGold));
-                    window.dispatchEvent(new CustomEvent('sandboxGoldChanged', { detail: String(newGold) }));
-                    localStorage.setItem('sandbox_dock_unlocked', 'true');
+                onClick={() => setShowUnderConstructionModal(false)}
+                style={{ padding: '10px 24px', background: '#c8821a', border: 'none', borderRadius: '8px', color: '#fff', fontWeight: 'bold', cursor: 'pointer', fontSize: '15px', fontFamily: 'inherit' }}
+              >
+                OK
+              </button>
+              {dockBuildTimeLeft > 0 && (
+                <button
+                  onClick={() => {
+                    const SKIP_COST = 100;
+                    const currentGems = parseInt(localStorage.getItem('sandbox_gems') || '0', 10);
+                    if (currentGems < SKIP_COST) {
+                      alert(`Not enough gems! You need ${SKIP_COST} 💎 to skip construction.`);
+                      return;
+                    }
+                    const newGems = currentGems - SKIP_COST;
+                    localStorage.setItem('sandbox_gems', String(newGems));
+                    window.dispatchEvent(new CustomEvent('sandboxGemsChanged'));
+                    trackGemSpend(SKIP_COST);
                     localStorage.setItem('sandbox_dock_repaired', 'true');
-                    setIsDockLocked(false);
-                    setShowDockLockModal(false);
+                    localStorage.setItem('sandbox_dock_unlocked', 'true');
                     window.dispatchEvent(new CustomEvent('dockRepaired'));
-                  } else {
-                    alert(`You need 500 Gold to repair the dock. You have ${currentGold} Gold.`);
-                  }
-                }}
-                style={{ padding: '10px 16px', background: '#f5d87a', border: 'none', borderRadius: '6px', color: '#000', fontWeight: 'bold', cursor: 'pointer', fontFamily: 'monospace' }}
-              >
-                🪙 Pay 500 Gold
-              </button>
-              <button
-                onClick={() => setShowDockLockModal(false)}
-                style={{ padding: '10px 16px', background: '#444', border: 'none', borderRadius: '6px', color: '#fff', cursor: 'pointer', fontFamily: 'monospace' }}
-              >
-                Close
-              </button>
+                    setShowUnderConstructionModal(false);
+                  }}
+                  style={{ padding: '10px 24px', background: '#5a3db8', border: 'none', borderRadius: '8px', color: '#fff', fontWeight: 'bold', cursor: 'pointer', fontSize: '15px', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: '6px' }}
+                >
+                  Skip <img src="/images/profile_bar/diamond.png" alt="gem" style={{ width: '16px', height: '16px', objectFit: 'contain', verticalAlign: 'middle' }} /> 100
+                </button>
+              )}
             </div>
           </div>
         </div>

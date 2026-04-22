@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import './style.css';
 
-const TooltipButton = ({ label, style, className = '', onClick, "data-hotspot": dataHotspot, frameSrc, onMouseEnter, onMouseLeave, disableHoverSound = false }) => {
+const TooltipButton = ({ label, labelImg, style, className = '', onClick, "data-hotspot": dataHotspot, frameSrc, onMouseEnter, onMouseLeave, disableHoverSound = false }) => {
   const combinedClass = `tooltip-btn ${className}`.trim();
   const backgroundImage = frameSrc || '/images/backgrounds/tooltip_bg.png';
   const hoverAudioRef = useRef(null);
@@ -52,7 +52,7 @@ const TooltipButton = ({ label, style, className = '', onClick, "data-hotspot": 
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      {label && <span>{label}</span>}
+      {labelImg ? <img src={labelImg} alt={label} style={{ maxWidth: '130%', maxHeight: '130%', objectFit: 'contain', pointerEvents: 'none' }} /> : label && <span>{label}</span>}
     </div>
   );
 };

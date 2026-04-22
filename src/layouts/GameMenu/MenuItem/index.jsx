@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './style.css';
 
-const MenuItem = ({ path, icon, label, labelIcon, iconScale, isActive, highlight }) => {
+const MenuItem = ({ path, icon, label, labelIcon, iconScale, isActive, highlight, onClickOverride }) => {
   const clickAudioRef = useRef(null);
   const navigate = useNavigate();
 
@@ -17,6 +17,7 @@ const MenuItem = ({ path, icon, label, labelIcon, iconScale, isActive, highlight
     e.preventDefault();
     const audio = clickAudioRef.current;
     if (audio) { audio.currentTime = 0; audio.play().catch(() => {}); }
+    if (onClickOverride) { onClickOverride(); return; }
     navigate(path);
   };
 

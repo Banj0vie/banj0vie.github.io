@@ -81,23 +81,59 @@ const House = () => {
   }, []);
 
   const [tutorialStep, setTutorialStep] = useState(() => parseInt(localStorage.getItem('sandbox_tutorial_step') || '0', 10));
+  const [dockTutPage, setDockTutPage] = useState(0);
+  const [showTavernClosed, setShowTavernClosed] = useState(false);
+
+  useEffect(() => {
+    if (dockTutPage !== 21) return;
+    const handler = (e) => {
+      const link = e.target.closest('a[href*="/tavern"]');
+      if (!link) return;
+      e.preventDefault();
+      e.stopPropagation();
+      setShowTavernClosed(true);
+      setDockTutPage(22);
+    };
+    document.addEventListener('click', handler, true);
+    return () => document.removeEventListener('click', handler, true);
+  }, [dockTutPage]);
+
+  useEffect(() => {
+    const onSkip = () => {
+      setTutorialStep(32);
+      setDockTutPage(0);
+      localStorage.setItem('sandbox_tutorial_step', '32');
+      window.dispatchEvent(new CustomEvent('tutorialStepChanged'));
+    };
+    window.addEventListener('skipTutorial', onSkip);
+    return () => window.removeEventListener('skipTutorial', onSkip);
+  }, []);
 
   useEffect(() => {
     if (tutorialStep === 17 || tutorialStep === 19) {
       setTutorialStep(20);
       localStorage.setItem('sandbox_tutorial_step', '20');
     }
+    if (tutorialStep === 20) {
+      setDockTutPage(16);
+    }
   }, [tutorialStep]);
 
   const advanceTutorial = () => {
     const nextStep = tutorialStep + 1;
+    setDockTutPage(0);
     setTutorialStep(nextStep);
     localStorage.setItem('sandbox_tutorial_step', nextStep.toString());
+    window.dispatchEvent(new CustomEvent('tutorialStepChanged'));
   };
+
 
   const getActiveHotspots = () => {
     if (tutorialStep >= 32) return hotspots;
     const makeDummy = (arr) => arr.map(h => ({ ...h, id: h.id + '_dummy' }));
+    if (tutorialStep === 20 && dockTutPage === 20) return makeDummy(hotspots.filter(h => h.id === ID_HOUSE_HOTSPOTS.ANGLER || h.id === ID_HOUSE_HOTSPOTS.REFERRALS));
+    if (tutorialStep === 20 && dockTutPage === 19) return makeDummy(hotspots.filter(h => h.id === ID_HOUSE_HOTSPOTS.ANGLER || h.id === ID_HOUSE_HOTSPOTS.GARDNER));
+    if (tutorialStep === 20 && dockTutPage === 18) return makeDummy(hotspots.filter(h => h.id === ID_HOUSE_HOTSPOTS.ANGLER || h.id === ID_HOUSE_HOTSPOTS.GOLD_CHEST));
     if (tutorialStep === 20) return makeDummy(hotspots.filter(h => h.id === ID_HOUSE_HOTSPOTS.ANGLER));
     if (tutorialStep === 21) return makeDummy(hotspots.filter(h => h.id === ID_HOUSE_HOTSPOTS.GOLD_CHEST));
     if (tutorialStep === 22) return makeDummy(hotspots.filter(h => h.id === ID_HOUSE_HOTSPOTS.GARDNER));
@@ -232,7 +268,7 @@ const House = () => {
     {
       id: ID_HOUSE_HOTSPOTS.REFERRALS,
       component: ReferralDialog,
-      label: "REFERRAL",
+      label: "",
     },
     {
       id: ID_HOUSE_HOTSPOTS.GOLD_CHEST,
@@ -311,46 +347,33 @@ const House = () => {
         width={width}
         height={height}
         bees={bees}
-        initialScale={1.3}
+        initialScale={1.55}
+        initialOffsetX={10}
+        backgroundOffsetY={-73}
         disablePanZoom
+        hotspotScale={0.75}
+        onHotspotClick={(id) => {
+          if (tutorialStep === 20) {
+            setDockTutPage(16);
+            return true;
+          }
+          return false;
+        }}
       >
-        {/* Fishing Board UI Overlay inside viewport */}
-        {(tutorialStep >= 32 || localStorage.getItem('sandbox_dock_repaired') === 'true' || localStorage.getItem('sandbox_dock_unlocked') === 'true') && (
-          <div
-            onPointerDown={(e) => {
-              e.stopPropagation();
-              e.preventDefault();
-              setShowFishingBoard(true);
-            const allSeen = Array.from(new Set([...seenFishingIds, ...activeFishingIds]));
-            localStorage.setItem('seen_fishing_missions_ids', allSeen.join(','));
-            window.dispatchEvent(new CustomEvent('questsRead'));
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'scale(1.1)';
-              e.currentTarget.style.filter = 'drop-shadow(0px 0px 8px rgba(0, 191, 255, 0.8))';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'scale(1)';
-              e.currentTarget.style.filter = 'drop-shadow(0px 4px 6px rgba(0,0,0,0.5))';
-            }}
-            style={{ position: 'absolute', left: '10px', top: '240px', zIndex: 100000, cursor: 'pointer', transition: 'all 0.2s ease', filter: 'drop-shadow(0px 4px 6px rgba(0,0,0,0.5))', display: 'flex', flexDirection: 'column', alignItems: 'center', overflow: 'visible' }}
-          >
-            {hasNewFishingMissions && <div style={{position:'absolute', top:'-5px', right:'-5px', width:'20px', height:'20px', backgroundColor:'#ff4444', borderRadius:'50%', border:'2px solid white', zIndex:11, display:'flex', justifyContent:'center', alignItems:'center', color:'white', fontWeight:'bold', fontSize:'12px', fontFamily:'monospace', animation:'pulse-dot 1s infinite'}}>!</div>}
-            <div style={{ fontSize: '40px', backgroundColor: 'rgba(0, 191, 255, 0.3)', padding: '5px 10px', borderRadius: '8px', border: '2px solid #00bfff' }}>📋</div>
-            <div style={{ backgroundColor: 'rgba(0,0,0,0.7)', color: '#00bfff', padding: '2px 5px', borderRadius: '4px', fontSize: '10px', marginTop: '5px', fontFamily: 'monospace', textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000' }}>FISHING MISSIONS</div>
-          </div>
-        )}
       </PanZoomViewport>
       <AdminPanel />
       
-      {tutorialStep >= 20 && tutorialStep <= 24 && (
+      {tutorialStep >= 20 && tutorialStep <= 24 && dockTutPage === 0 && (
         <>
           <style>{`
             a[href*="/farm"], a[href*="/house"], a[href*="/valley"], a[href*="/market"], a[href*="/tavern"] { pointer-events: none !important; }
+            a[href*="/valley"], a[href*="/tavern"] { display: none !important; }
+            .tooltip-btn span { visibility: hidden !important; }
+            .tooltip-btn { background-image: none !important; }
             div[title], button[title], .hotspot, .map-btn { pointer-events: none !important; }
             @keyframes houseHighlightBox { 0%, 100% { box-shadow: 0 0 20px 5px #00ff41; background-color: rgba(0, 255, 65, 0.2); } 50% { box-shadow: 0 0 5px 2px #00ff41; background-color: transparent; } }
             @keyframes mapIconHighlight { 0%, 100% { transform: scale(1.1); } 50% { transform: scale(1); } }
-            ${tutorialStep === 20 ? `div[title*="POND" i], div[title*="ANGLER" i] { animation: houseHighlightBox 1.5s infinite !important; border-radius: 12px; }` : ''}
+            ${tutorialStep === 20 ? `div[title*="POND" i], div[title*="ANGLER" i], div[title*="DOCK" i] { pointer-events: auto !important; cursor: pointer !important; }` : ''}
             ${tutorialStep === 21 ? `div[title*="CHEST" i] { animation: houseHighlightBox 1.5s infinite !important; border-radius: 12px; }` : ''}
             ${tutorialStep === 22 ? `div[title*="GARDNER" i] { animation: houseHighlightBox 1.5s infinite !important; border-radius: 12px; }` : ''}
             ${tutorialStep === 23 ? `div[title*="REFERRAL" i] { animation: houseHighlightBox 1.5s infinite !important; border-radius: 12px; }` : ''}
@@ -387,25 +410,117 @@ const House = () => {
                 )}
               </div>
               {tutorialStep >= 20 && tutorialStep <= 23 && (
-                <div style={{ position: 'absolute', bottom: '13%', left: '22%', right: '5%' }}>
-                  <div
-                    style={{ position: 'relative', textAlign: 'center', cursor: 'pointer', transition: 'transform 0.1s, filter 0.1s' }}
-                    onMouseEnter={e => { e.currentTarget.style.filter = 'brightness(1.2)'; e.currentTarget.style.transform = 'scale(1.03)'; }}
-                    onMouseLeave={e => { e.currentTarget.style.filter = 'brightness(1)'; e.currentTarget.style.transform = 'scale(1)'; }}
-                    onMouseDown={e => { e.currentTarget.style.transform = 'scale(0.96)'; e.currentTarget.style.filter = 'brightness(0.85)'; }}
-                    onMouseUp={e => { e.currentTarget.style.transform = 'scale(1.03)'; e.currentTarget.style.filter = 'brightness(1.2)'; }}
-                    onClick={advanceTutorial}
-                  >
-                    <img src="/images/tutorial/tutbluebar.png" alt="" style={{ width: '100%', display: 'block' }} draggable={false} />
-                    <span style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', fontFamily: 'Cartoonist', fontSize: '14px', color: '#fff', textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000', whiteSpace: 'nowrap', pointerEvents: 'none' }}>NEXT!</span>
-                  </div>
+                <div className="tut-arrow" onClick={advanceTutorial}>
+                  <img src="/images/tutorial/next.png" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                 </div>
               )}
             </div>
           </div>
         </>
       )}
-      
+
+      {dockTutPage >= 16 && dockTutPage <= 22 && (
+        <style>{`
+          a[href*="/valley"] { display: none !important; }
+          ${dockTutPage !== 21 ? `a[href*="/tavern"] { display: none !important; }` : ''}
+          ${dockTutPage === 16 ? `.tooltip-btn span { visibility: hidden !important; } .tooltip-btn { background-image: none !important; }` : ''}
+          ${dockTutPage === 18 ? `.tooltip-btn span { visibility: hidden !important; } .tooltip-btn { background-image: none !important; } .tooltip-btn[title*="CHEST" i] span { visibility: visible !important; } .tooltip-btn[title*="CHEST" i] { background-image: url('/images/backgrounds/tooltip_bg.png') !important; }` : ''}
+          ${dockTutPage === 19 ? `.tooltip-btn span { visibility: hidden !important; } .tooltip-btn { background-image: none !important; } .tooltip-btn[title*="GARDEN" i] span { visibility: visible !important; } .tooltip-btn[title*="GARDEN" i] { background-image: url('/images/backgrounds/tooltip_bg.png') !important; }` : ''}
+          ${dockTutPage === 20 ? `.tooltip-btn span { visibility: hidden !important; } .tooltip-btn { background-image: none !important; } .tooltip-btn[title*="REFERRAL" i] span { visibility: visible !important; } .tooltip-btn[title*="REFERRAL" i] { background-image: url('/images/backgrounds/tooltip_bg.png') !important; }` : ''}
+          ${dockTutPage === 21 ? `@keyframes tavernIconPulse { 0%, 100% { filter: drop-shadow(0 0 8px #ffe033) drop-shadow(0 0 18px #ffb800); } 50% { filter: drop-shadow(0 0 18px #ffe033) drop-shadow(0 0 36px #ffb800) brightness(1.2); } } a[href*="/tavern"] { animation: tavernIconPulse 1.5s infinite !important; pointer-events: auto !important; z-index: 100002 !important; position: relative !important; display: flex !important; }` : ''}
+          ${dockTutPage === 22 ? `.tooltip-btn span { visibility: hidden !important; } .tooltip-btn { background-image: none !important; } a[href*="/tavern"] { display: flex !important; pointer-events: none !important; }` : ''}
+        `}</style>
+      )}
+
+      {dockTutPage === 16 && (
+        <div style={{ position: 'fixed', right: '20px', bottom: '20px', zIndex: 100001 }}>
+          <div style={{ position: 'relative', width: '490px' }}>
+            <img src="/images/tutorial/tutp16.png" alt="Tutorial" style={{ width: '490px', objectFit: 'contain', display: 'block' }} />
+            <div className="tut-arrow" onClick={() => setDockTutPage(17)}>
+              <img src="/images/tutorial/next.png" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {dockTutPage === 17 && (
+        <div style={{ position: 'fixed', right: '420px', bottom: '420px', zIndex: 100001 }}>
+          <div style={{ position: 'relative', width: '490px' }}>
+            <img src="/images/tutorial/tutp17.png" alt="Tutorial" style={{ width: '490px', objectFit: 'contain', display: 'block' }} />
+            <div className="tut-arrow" style={{ top: 'calc(50% + 55px)' }} onClick={() => setDockTutPage(18)}>
+              <img src="/images/tutorial/next.png" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {dockTutPage === 18 && (
+        <div style={{ position: 'fixed', right: '420px', bottom: '370px', zIndex: 100001 }}>
+          <div style={{ position: 'relative', width: '490px' }}>
+            <img src="/images/tutorial/tutp18.png" alt="Tutorial" style={{ width: '490px', objectFit: 'contain', display: 'block' }} />
+            <div className="tut-arrow" onClick={() => setDockTutPage(19)}>
+              <img src="/images/tutorial/next.png" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {dockTutPage === 19 && (
+        <div style={{ position: 'fixed', right: '520px', bottom: '370px', zIndex: 100001 }}>
+          <div style={{ position: 'relative', width: '490px' }}>
+            <img src="/images/tutorial/tutp19.png" alt="Tutorial" style={{ width: '490px', objectFit: 'contain', display: 'block' }} />
+            <div className="tut-arrow" style={{ top: 'calc(50% + 80px)' }} onClick={() => setDockTutPage(20)}>
+              <img src="/images/tutorial/next.png" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {dockTutPage === 20 && (
+        <div style={{ position: 'fixed', right: '120px', bottom: '170px', zIndex: 100001 }}>
+          <div style={{ position: 'relative', width: '490px' }}>
+            <img src="/images/tutorial/tutp20.png" alt="Tutorial" style={{ width: '490px', objectFit: 'contain', display: 'block' }} />
+            <div className="tut-arrow" style={{ top: 'calc(50% + 60px)' }} onClick={() => setDockTutPage(21)}>
+              <img src="/images/tutorial/next.png" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {dockTutPage === 21 && (
+        <div style={{ position: 'fixed', right: '120px', bottom: '170px', zIndex: 100001 }}>
+          <div style={{ position: 'relative', width: '490px' }}>
+            <img src="/images/tutorial/tutp21.png" alt="Tutorial" style={{ width: '490px', objectFit: 'contain', display: 'block' }} />
+          </div>
+        </div>
+      )}
+
+      {showTavernClosed && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 100003, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.5)' }} onClick={() => setShowTavernClosed(false)}>
+          <div style={{ background: '#2c1a0e', border: '4px solid #a67c52', borderRadius: '16px', padding: '40px 60px', textAlign: 'center' }} onClick={e => e.stopPropagation()}>
+            <p style={{ fontFamily: 'Cartoonist', fontSize: '28px', color: '#ffe033', margin: '0 0 20px 0' }}>Tavern is Closed</p>
+            <button onClick={() => setShowTavernClosed(false)} style={{ fontFamily: 'Cartoonist', fontSize: '16px', backgroundColor: '#a67c52', color: '#fff', border: 'none', borderRadius: '8px', padding: '10px 30px', cursor: 'pointer' }}>Close</button>
+          </div>
+        </div>
+      )}
+
+      {dockTutPage === 22 && (
+        <div style={{ position: 'fixed', right: '120px', bottom: '170px', zIndex: 100001 }}>
+          <div style={{ position: 'relative', width: '490px' }}>
+            <img src="/images/tutorial/tutp22.png" alt="Tutorial" style={{ width: '490px', objectFit: 'contain', display: 'block' }} />
+            <div className="tut-arrow" onClick={() => {
+              setTutorialStep(25);
+              localStorage.setItem('sandbox_tutorial_step', '25');
+              localStorage.setItem('sandbox_dock_tut_page', '23');
+              window.dispatchEvent(new CustomEvent('tutorialStepChanged'));
+              window.location.href = '/valley';
+            }}>
+              <img src="/images/tutorial/next.png" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Stardew Valley Fishing Minigame Overlay */}
       {fishingMinigame && (
         <div 

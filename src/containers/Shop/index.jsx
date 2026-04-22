@@ -77,7 +77,7 @@ const Shop = ({ onClose, initialTab = 0 }) => {
           <span className="shop-title">Shop</span>
           <div className="shop-balances">
             <span className="shop-balance-pill gold">🪙 {gold} Gold</span>
-            <span className="shop-balance-pill gem">💎 {gems} Gems</span>
+            <span className="shop-balance-pill gem"><img src="/images/profile_bar/diamond.png" alt="" style={{ width: '16px', height: '16px', objectFit: 'contain', verticalAlign: 'middle', marginRight: '4px' }} />{gems} Gems</span>
           </div>
           <button className="shop-close" onClick={onClose}>✕</button>
         </div>
@@ -85,7 +85,7 @@ const Shop = ({ onClose, initialTab = 0 }) => {
         <div className="shop-tabs">
           {TABS.map((t, i) => (
             <button key={i} className={`shop-tab ${tab === i ? 'active' : ''}`} onClick={() => setTab(i)}>
-              {i === 0 ? '🪙' : '💎'} {t}
+              {i === 0 ? '🪙' : <img src="/images/profile_bar/diamond.png" alt="" style={{ width: '14px', height: '14px', objectFit: 'contain', verticalAlign: 'middle' }} />} {t}
             </button>
           ))}
         </div>
@@ -114,12 +114,12 @@ const Shop = ({ onClose, initialTab = 0 }) => {
           </div>
         ) : (
           <div className="gem-shop">
-            <div className="gem-shop-subtitle">Support the game and get 💎 Gems!</div>
+            <div className="gem-shop-subtitle">Support the game and get <img src="/images/profile_bar/diamond.png" alt="" style={{ width: '16px', height: '16px', objectFit: 'contain', verticalAlign: 'middle' }} /> Gems!</div>
             <div className="gem-pack-grid">
               {GEM_PACKS.map(pack => (
                 <div key={pack.id} className={`gem-pack ${pack.popular ? 'gem-pack-popular' : ''}`}>
                   {pack.popular && <div className="gem-pack-popular-label">BEST VALUE</div>}
-                  <div className="gem-pack-icon">💎</div>
+                  <div className="gem-pack-icon"><img src="/images/profile_bar/diamond.png" alt="Gems" style={{ width: '48px', height: '48px', objectFit: 'contain' }} /></div>
                   <div className="gem-pack-amount">{pack.gems.toLocaleString()}</div>
                   {pack.bonus && <div className="gem-pack-bonus">{pack.bonus}</div>}
                   <div className="gem-pack-price">{pack.price}</div>

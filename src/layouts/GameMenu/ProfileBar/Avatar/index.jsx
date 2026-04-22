@@ -6,6 +6,15 @@ const Avatar = ({ src, alt = "avatar" }) => {
   const [isAvatarDialog, setIsAvatarDialog] = useState(false);
   const [avatarImage, setAvatarImage] = useState(null);
   const [loading, setLoading] = useState(true);
+  const checkHasNewPfp = () => {
+    try {
+      const unseen = JSON.parse(localStorage.getItem('sandbox_unseen_pfps') || '[]');
+      const unlocked = JSON.parse(localStorage.getItem('sandbox_unlocked_pfps') || '[]');
+      const claimed = JSON.parse(localStorage.getItem('sandbox_claimed_pfps') || '[]');
+      return unseen.length > 0 || unlocked.some(id => !claimed.includes(id));
+    } catch { return false; }
+  };
+  const [hasNewPfp, setHasNewPfp] = useState(checkHasNewPfp);
   const clickAudioRef = useRef(null);
 
 
@@ -46,11 +55,16 @@ const Avatar = ({ src, alt = "avatar" }) => {
 
     const handler = () => fetchAvatarImage();
     const pfpHandler = (e) => setAvatarImage(e.detail);
+    const newPfpHandler = () => setHasNewPfp(checkHasNewPfp());
     window.addEventListener('avatarsUpdated', handler);
     window.addEventListener('pfpUpdated', pfpHandler);
+    window.addEventListener('pfpUnlocked', newPfpHandler);
+    window.addEventListener('pfpEarned', newPfpHandler);
     return () => {
       window.removeEventListener('avatarsUpdated', handler);
       window.removeEventListener('pfpUpdated', pfpHandler);
+      window.removeEventListener('pfpUnlocked', newPfpHandler);
+      window.removeEventListener('pfpEarned', newPfpHandler);
     };
   }, []);
 
@@ -65,7 +79,7 @@ const Avatar = ({ src, alt = "avatar" }) => {
   const resolvedSrc = src || avatarImage || fallbackSrc;
 
   return (
-    <div className="avatar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <div className="avatar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
       {loading ? (
         <div className="loading-placeholder">
           <div className="loading-spinner"></div>
@@ -89,7 +103,18 @@ const Avatar = ({ src, alt = "avatar" }) => {
           }}
         />
       )}
-      {isAvatarDialog && <AvatarDialog onClose={() => setIsAvatarDialog(false)}></AvatarDialog>}
+      {hasNewPfp && (
+        <>
+          <style>{`@keyframes pfpBadgePulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.35)} }`}</style>
+          <img
+            src="/images/mail/!.png"
+            alt="!"
+            draggable={false}
+            style={{ position: 'absolute', top: '-11px', right: '-11px', width: '29px', height: '29px', pointerEvents: 'none', zIndex: 10, animation: 'pfpBadgePulse 1.1s ease-in-out infinite' }}
+          />
+        </>
+      )}
+      {isAvatarDialog && <AvatarDialog onClose={() => { setIsAvatarDialog(false); setHasNewPfp(checkHasNewPfp()); }} />}
     </div>
   );
 };

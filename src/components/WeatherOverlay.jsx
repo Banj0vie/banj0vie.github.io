@@ -55,13 +55,13 @@ const WeatherOverlay = () => {
   return (
     <>
       {isRaining && (
-        <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', pointerEvents: 'none', zIndex: 9990, overflow: 'hidden' }}>
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', pointerEvents: 'none', zIndex: 500, overflow: 'hidden' }}>
           <style>{`
             .rain-drop { position: absolute; bottom: 100%; width: 2px; height: 100px; background: linear-gradient(to bottom, rgba(200,230,255,0), rgba(200,230,255,0.6)); animation: rain-fall linear infinite; }
             @keyframes rain-fall { 0% { transform: translateY(0) translateX(0); } 100% { transform: translateY(120vh) translateX(-10vh); } }
-            .lightning-flash { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: white; pointer-events: none; z-index: 9989; animation: flash 8s infinite; opacity: 0; }
+            .lightning-flash { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: white; pointer-events: none; z-index: 499; animation: flash 8s infinite; opacity: 0; }
             @keyframes flash { 0%, 95%, 98%, 100% { opacity: 0; } 96%, 99% { opacity: 0.6; } }
-            .rain-darken { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0, 20, 50, 0.25); pointer-events: none; z-index: 9988; }
+            .rain-darken { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0, 20, 50, 0.25); pointer-events: none; z-index: 498; }
           `}</style>
           <div className="rain-darken" />
           {isLightning && <div className="lightning-flash" />}

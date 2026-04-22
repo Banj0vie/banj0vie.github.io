@@ -316,7 +316,7 @@ function AchCard({ ach, onClaim }) {
                     background: "linear-gradient(180deg,#1565c0,#0d47a1)",
                     borderRadius: 12, padding: "2px 8px", fontSize: 11, fontWeight: 700,
                     display: "flex", alignItems: "center", gap: 4,
-                  }}>💎 {activeTier.gems}</span>
+                  }}><img src="/images/profile_bar/diamond.png" alt="" style={{ width: '13px', height: '13px', objectFit: 'contain', verticalAlign: 'middle' }} /> {activeTier.gems}</span>
                 </button>
               ) : (
                 <div style={{
@@ -324,7 +324,7 @@ function AchCard({ ach, onClaim }) {
                   padding: "3px 10px", fontSize: 11, fontWeight: 700,
                   color: "rgba(255,255,255,0.6)", display: "flex", alignItems: "center", gap: 4,
                 }}>
-                  💎 {activeTier.gems}
+                  <img src="/images/profile_bar/diamond.png" alt="" style={{ width: '13px', height: '13px', objectFit: 'contain', verticalAlign: 'middle' }} /> {activeTier.gems}
                 </div>
               )}
             </>
