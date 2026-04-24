@@ -18,7 +18,6 @@ const PFP_OPTIONS = [
   { id: 'rodpfp',           src: '/images/pfp/rodpfp.png',            label: 'Angler',       unlockType: 'special' },
   // Hidden until unlocked (easter eggs / secret achievements)
   { id: 'betapfp',         src: '/images/pfp/betapfp.png',           label: 'Beta Tester',  unlockType: 'special', hidden: true },
-  { id: 'banjopfp',        src: '/images/pfp/banjopfp.png',          label: 'Banjo',        unlockType: 'special', hidden: true },
 ];
 
 const BACKGROUND_OPTIONS = [

@@ -8,6 +8,19 @@ const PLOT_LEVEL_REQS =    [2,   4,    7,    10,    14,    18,    23,     28,   
 const STARTING_PLOTS = [6, 7, 8];
 const TOTAL_PLOTS = 30;
 
+// Exact order in which groups of 3 plots unlock after the starting set
+const PLOT_UNLOCK_ORDER = [
+   4,  3,  2,   // unlock 1
+  12, 11, 10,   // unlock 2
+  14, 13,  5,   // unlock 3
+   9,  1,  0,   // unlock 4
+  23, 22, 21,   // unlock 5
+  19, 18, 17,   // unlock 6
+  27, 26, 25,   // unlock 7
+  29, 28, 20,   // unlock 8
+  24, 16, 15,   // unlock 9
+];
+
 function formatGold(n) {
   if (n >= 1000000) return (n / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
   if (n >= 1000) return (n / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
@@ -55,8 +68,9 @@ const GardnerDialog = ({ onClose, label = "GARDENER", header = "/images/dialog/m
     const currentSet = new Set(current);
     const newPlots = [...current];
     let added = 0;
-    for (let i = 0; i < TOTAL_PLOTS && added < 3; i++) {
-      if (!currentSet.has(i)) { newPlots.push(i); added++; }
+    for (let i = 0; i < PLOT_UNLOCK_ORDER.length && added < 3; i++) {
+      const plotIdx = PLOT_UNLOCK_ORDER[i];
+      if (!currentSet.has(plotIdx)) { newPlots.push(plotIdx); currentSet.add(plotIdx); added++; }
     }
     newPlots.sort((a, b) => a - b);
 

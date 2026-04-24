@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef } from "react";
 import { useAppSelector } from "../../solana/store";
 import { selectSettings } from "../../solana/store/slices/uiSlice";
 import { clampVolume } from "../../utils/basic";
@@ -7,7 +7,6 @@ import { defaultSettings } from "../../utils/settings";
 const BackgroundMusic = () => {
   const settings = useAppSelector(selectSettings) || defaultSettings;
   const audioRef = useRef(null);
-  const [isUnlocked, setIsUnlocked] = useState(false);
 
   useEffect(() => {
     const audio = new Audio("/sounds/theme.wav");
@@ -15,15 +14,15 @@ const BackgroundMusic = () => {
     audio.preload = "auto";
     audioRef.current = audio;
 
-    return () => {
-      audio.pause();
-      audioRef.current = null;
+    // Try autoplay immediately; if blocked, retry on first user interaction
+    const tryPlay = () => {
+      audio.play().catch(() => {});
     };
-  }, []);
 
-  useEffect(() => {
+    tryPlay();
+
     const unlock = () => {
-      setIsUnlocked(true);
+      tryPlay();
       window.removeEventListener("pointerdown", unlock, true);
       window.removeEventListener("keydown", unlock, true);
       window.removeEventListener("touchstart", unlock, true);
@@ -34,6 +33,8 @@ const BackgroundMusic = () => {
     window.addEventListener("touchstart", unlock, true);
 
     return () => {
+      audio.pause();
+      audioRef.current = null;
       window.removeEventListener("pointerdown", unlock, true);
       window.removeEventListener("keydown", unlock, true);
       window.removeEventListener("touchstart", unlock, true);
@@ -42,9 +43,7 @@ const BackgroundMusic = () => {
 
   useEffect(() => {
     const audio = audioRef.current;
-    if (!audio) {
-      return;
-    }
+    if (!audio) return;
 
     const volumeSetting = parseFloat(settings?.musicVolume ?? defaultSettings.musicVolume) / 100;
     const volume = clampVolume(volumeSetting);
@@ -52,13 +51,10 @@ const BackgroundMusic = () => {
 
     if (volume <= 0) {
       audio.pause();
-      return;
-    }
-
-    if (isUnlocked) {
+    } else {
       audio.play().catch(() => {});
     }
-  }, [isUnlocked, settings?.musicVolume]);
+  }, [settings?.musicVolume]);
 
   return null;
 };

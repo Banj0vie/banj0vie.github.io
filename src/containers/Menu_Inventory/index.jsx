@@ -29,6 +29,9 @@ const InventoryDialog = ({ onClose }) => {
   const [chestResult, setChestResult] = useState(null);
   const [showChestDialog, setShowChestDialog] = useState(false);
   const [selectedProduce, setSelectedProduce] = useState(null);
+  const [trashItem, setTrashItem] = useState(null);
+  const [trashMode, setTrashMode] = useState(false);
+  const [trashHover, setTrashHover] = useState(false);
   const [bagCount, setBagCount] = useState(getInventoryBags);
   const [usedSlots, setUsedSlots] = useState(getProduceUsedSlots);
 
@@ -120,6 +123,29 @@ const InventoryDialog = ({ onClose }) => {
   const visibleItems = filterMap[filter] || allItems;
   const isUsableFilter = USABLE_FILTERS.has(filter);
 
+  const handleTrash = (item) => {
+    if (!item) return;
+    try {
+      const key = `sandbox_item_${item.id}`;
+      localStorage.removeItem(key);
+      // Also remove from seeds/produce sandbox storage
+      const seedsKey = 'sandbox_seeds';
+      const produceKey = 'sandbox_produce';
+      [seedsKey, produceKey].forEach(k => {
+        try {
+          const stored = JSON.parse(localStorage.getItem(k) || '[]');
+          const updated = stored.filter(i => String(i.id) !== String(item.id));
+          localStorage.setItem(k, JSON.stringify(updated));
+        } catch {}
+      });
+      window.dispatchEvent(new CustomEvent('sandboxGoldChanged'));
+      refetch();
+      show(`Discarded ${item.label || 'item'}`, 'info');
+    } catch {}
+    setTrashItem(null);
+    setTrashMode(false);
+  };
+
   return (
     <>
       <style>{`
@@ -184,7 +210,7 @@ const InventoryDialog = ({ onClose }) => {
           </div>
 
           {/* Item grid */}
-          <div style={{ minHeight: 300, maxHeight: 380, overflowY: 'auto', paddingRight: 4 }}>
+          <div style={{ position: 'relative', minHeight: 300, maxHeight: 380, overflowY: 'auto', paddingRight: 4, paddingBottom: 48 }}>
             {visibleItems.length === 0 ? (
               <div style={{ textAlign: 'center', color: '#555', fontSize: 12, paddingTop: 60 }}>
                 Nothing here yet
@@ -208,8 +234,17 @@ const InventoryDialog = ({ onClose }) => {
                 {visibleItems.map((item, i) => (
                   <div
                     key={i}
-                    style={{ cursor: (filter === ID_INVENTORY_MENUS.PRODUCE || filter === ID_INVENTORY_MENUS.FISHES || filter === 'ALL') ? 'pointer' : 'default' }}
+                    style={{
+                      cursor: trashMode ? 'crosshair' : 'pointer',
+                      outline: trashMode ? '1px dashed rgba(204,51,51,0.4)' : 'none',
+                      borderRadius: 6,
+                      transition: 'outline 0.1s',
+                    }}
                     onClick={() => {
+                      if (trashMode) {
+                        setTrashItem(item);
+                        return;
+                      }
                       if (item.category && (String(item.category).includes('CROP') || String(item.category).includes('PRODUCE') || String(item.category).includes('FISH')))
                         setSelectedProduce(item);
                     }}
@@ -221,7 +256,56 @@ const InventoryDialog = ({ onClose }) => {
             )}
           </div>
 
+          {/* Trash confirm overlay */}
+          {trashItem && (
+            <div style={{
+              position: 'fixed', inset: 0, zIndex: 99999,
+              background: 'rgba(0,0,0,0.7)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <div style={{
+                background: 'linear-gradient(135deg, #1a0a0a, #2a1010)',
+                border: '2px solid #cc3333',
+                borderRadius: 12, padding: '24px 32px',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16,
+                fontFamily: 'GROBOLD, Cartoonist, sans-serif',
+              }}>
+                <div style={{ fontSize: 40 }}>🗑️</div>
+                <div style={{ color: '#fff', fontSize: 14 }}>Discard <span style={{ color: '#f5d87a' }}>{trashItem.label || 'this item'}</span>?</div>
+                <div style={{ display: 'flex', gap: 12 }}>
+                  <button onClick={() => handleTrash(trashItem)} style={{ padding: '6px 20px', background: '#cc3333', border: 'none', borderRadius: 6, color: '#fff', cursor: 'pointer', fontFamily: 'inherit', fontSize: 12 }}>Discard</button>
+                  <button onClick={() => { setTrashItem(null); setTrashMode(false); }} style={{ padding: '6px 20px', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 6, color: '#aaa', cursor: 'pointer', fontFamily: 'inherit', fontSize: 12 }}>Cancel</button>
+                </div>
+              </div>
+            </div>
+          )}
+
         </div>
+
+        {/* Trash can — bottom right */}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 4 }}>
+          <div
+            onMouseEnter={() => setTrashHover(true)}
+            onMouseLeave={() => setTrashHover(false)}
+            onClick={() => setTrashMode(m => !m)}
+            style={{
+              width: 44, height: 44,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              borderRadius: 8,
+              background: trashMode ? 'rgba(204,51,51,0.35)' : trashHover ? 'rgba(204,51,51,0.2)' : 'rgba(255,255,255,0.06)',
+              border: `2px solid ${trashMode || trashHover ? '#cc3333' : 'rgba(255,255,255,0.12)'}`,
+              cursor: 'pointer',
+              transition: 'all 0.15s',
+              fontSize: 22,
+              userSelect: 'none',
+              boxShadow: trashMode ? '0 0 10px rgba(204,51,51,0.5)' : 'none',
+            }}
+            title={trashMode ? 'Click an item to delete it — click here to cancel' : 'Click to enter delete mode'}
+          >
+            🗑️
+          </div>
+        </div>
+
       </BaseDialog>
 
       {selectedProduce && (

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import "./style.css";
-import { unlockPfp, trackGemSpend } from "../../../../utils/pfpUnlocks";
+import { trackGemSpend } from "../../../../utils/pfpUnlocks";
 
 const RENAME_COST = 500;
 
@@ -51,8 +51,7 @@ const ProfileView = ({ username }) => {
     trackGemSpend(RENAME_COST);
     localStorage.setItem('sandbox_username', trimmed);
     setCustomName(trimmed);
-    if (trimmed.toUpperCase() === 'BANJO') unlockPfp('banjopfp');
-    setRenaming(false);
+setRenaming(false);
   };
 
   return (

@@ -149,7 +149,7 @@ export const GROWTH_RARE = 5 * 60; // 8 * 60 * 60;
 export const GROWTH_EPIC = 6 * 60; // 12 * 60 * 60;
 export const GROWTH_LEGENDARY = 7 * 60; // 24 * 60 * 60;
 
-export const picoSeedArray = [1, 2, 3, 4, 5];
+export const picoSeedArray = [1, 2, 3, 4, 5]; // Potato, Lettuce, Cabbage, Onion, Radish (no Turnip)
 export const basicSeedArray = [4, 7, 9, 11, 12];
 export const premiumSeedArray = [3, 6, 8, 10, 11];
 
@@ -175,7 +175,7 @@ export const getSubtype = (seedId) => {
 }
 
 // Per-pack growth times in seconds. Basic uses the shared GROWTH_* constants.
-const PICO_TIMES    = [1*60, 2*60, 3*60, 4*60,  5*60];  // Common → Legendary
+const PICO_TIMES    = [30, 60, 90, 120, 150];  // Common → Legendary (30s, 1m, 1.5m, 2m, 2.5m)
 const PREMIUM_TIMES = [8*60, 12*60, 18*60, 24*60, 35*60];
 
 export const getGrowthTime = (seedId) => {

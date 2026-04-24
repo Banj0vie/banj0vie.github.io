@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import { unlockPfp, claimPfp, trackGemSpend } from "../utils/pfpUnlocks";
+import { claimPfp, trackGemSpend } from "../utils/pfpUnlocks";
 import PanZoomViewport from "../layouts/PanZoomViewport";
 import { FARM_BEES, FARM_HOTSPOTS, FARM_VIEWPORT, FARM_POSITIONS } from "../constants/scene_farm";
 import { ID_FARM_HOTSPOTS } from "../constants/app_ids";
@@ -104,7 +104,7 @@ export const getQuestData = () => [
       "Send me proof and I'll hook you up with something nice."
     ],
     rewards: [
-      { id: 'honey', count: 850, name: "HNY", image: "/images/profile_bar/hny.png" },
+      { id: 'honey', count: 7500, name: "HNY", image: "/images/profile_bar/hny.png" },
       { id: 'gems', count: 25, name: "Gems" },
     ],
     reqs: [
@@ -143,7 +143,7 @@ export const getQuestData = () => [
       "Produce said celery and the township will compensate you accordingly."
     ],
     rewards: [
-      { id: 'honey', count: 900, name: "HNY", image: "/images/profile_bar/hny.png" },
+      { id: 'honey', count: 8000, name: "HNY", image: "/images/profile_bar/hny.png" },
       { id: 'gems', count: 30, name: "Gems" },
     ],
     reqs: [
@@ -182,7 +182,7 @@ export const getQuestData = () => [
       "Bring them to me — scientifically! — and I shall reward you handsomely."
     ],
     rewards: [
-      { id: 'honey', count: 850, name: "HNY", image: "/images/profile_bar/hny.png" },
+      { id: 'honey', count: 7500, name: "HNY", image: "/images/profile_bar/hny.png" },
       { id: 'gems', count: 25, name: "Gems" },
     ],
     reqs: [
@@ -221,7 +221,7 @@ export const getQuestData = () => [
       "When you've harvested some, send them along — I'd love to see how your garden is coming. And of course, I'll make sure you're well rewarded, dear."
     ],
     rewards: [
-      { id: 'honey', count: 650, name: "HNY", image: "/images/profile_bar/hny.png" },
+      { id: 'honey', count: 7000, name: "HNY", image: "/images/profile_bar/hny.png" },
       { id: 'gems', count: 20, name: "Gems" },
     ],
     reqs: [
@@ -632,23 +632,6 @@ export const getQuestData = () => [
     ],
     rewards: [], reqs: [],
     unlockCondition: () => JSON.parse(localStorage.getItem('sandbox_unlocked_pfps') || '[]').includes('rodpfp')
-  },
-  {
-    id: "pfp_banjopfp_letter",
-    type: "main",
-    sender: "Pabee",
-    subject: "Found the Secret, Did Ya?",
-    mailImage: "/images/mail/mailpapabee.png",
-    pfpImage: "/images/pfp/banjopfp.png",
-    pfpLabel: "Banjo",
-    pfpHow: "Found a hidden secret",
-    body: [
-      "Ha! So you found it. I hid that code years ago just to see if anyone was paying attention.",
-      "Your mother never did find it. This one's between us — don't go spreading it around. Some things are better as secrets.",
-      "You've got a good eye for details, son. Use it well."
-    ],
-    rewards: [], reqs: [],
-    unlockCondition: () => JSON.parse(localStorage.getItem('sandbox_unlocked_pfps') || '[]').includes('banjopfp')
   },
 
 ];
@@ -3305,8 +3288,6 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
   const farmingLevel = getLevelFromXp(farmingXp);
   const farmingProgress = ((farmingXp - Math.pow(farmingLevel - 1, 2) * 150) / (Math.pow(farmingLevel, 2) * 150 - Math.pow(farmingLevel - 1, 2) * 150)) * 100;
 
-  const [levelUpPopup, setLevelUpPopup] = useState(null); // { skill, level } — pack dialog
-  const [levelUpClaimPopup, setLevelUpClaimPopup] = useState(null); // { skill, level } — claim screen
   const [isMailboxOpenForLevelUp, setIsMailboxOpenForLevelUp] = useState(false);
   const pendingLevelUpQueueRef = useRef([]);
   const levelUpDelayTimerRef = useRef(null);
@@ -3516,7 +3497,7 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
     const blocking = isGlobalDialogOpen || isMailboxOpenForLevelUp || showMissionBoard || showShop
       || !!charPackInfo || showFarmCustomize || showFestivals
       || showTamagotchiDialog || showBowlFishDialog || isSelectCropDialog
-      || !!levelUpPopup || !!levelUpClaimPopup || showPabeePack;
+      || showPabeePack;
     const wasBlocking = levelUpBlockingRef.current;
     levelUpBlockingRef.current = blocking;
     if (wasBlocking && !blocking && pendingLevelUpQueueRef.current.length > 0) {
@@ -3524,14 +3505,25 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
       levelUpDelayTimerRef.current = setTimeout(() => {
         if (!levelUpBlockingRef.current) {
           const next = pendingLevelUpQueueRef.current.shift();
-          if (next) setLevelUpClaimPopup(next);
+          if (next) fireNextLevelUpPack(next);
         }
       }, 2500);
     }
   }, [isGlobalDialogOpen, isMailboxOpenForLevelUp, showMissionBoard, showShop,
       charPackInfo, showFarmCustomize, showFestivals,
       showTamagotchiDialog, showBowlFishDialog, isSelectCropDialog,
-      levelUpPopup, levelUpClaimPopup, showPabeePack]);
+      showPabeePack]);
+
+  const fireNextLevelUpPack = useCallback(() => {
+    const LEVEL_UP_SEED_POOL = [
+      ID_SEEDS.CARROT, ID_SEEDS.TOMATO, ID_SEEDS.CORN,
+      ID_SEEDS.CELERY, ID_SEEDS.POTATO, ID_SEEDS.ONION,
+      ID_SEEDS.RADISH, ID_SEEDS.LETTUCE,
+    ];
+    const shuffled = [...LEVEL_UP_SEED_POOL].sort(() => Math.random() - 0.5);
+    const seeds = shuffled.slice(0, 3).map(id => getRaritySeedId(id, 1));
+    window.dispatchEvent(new CustomEvent('charPackOpen', { detail: { seeds } }));
+  }, []);
 
   useEffect(() => {
     const handler = (e) => {
@@ -3539,7 +3531,7 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
         clearTimeout(levelUpDelayTimerRef.current);
         levelUpDelayTimerRef.current = setTimeout(() => {
           if (!levelUpBlockingRef.current) {
-            setLevelUpClaimPopup(e.detail);
+            fireNextLevelUpPack();
           } else {
             pendingLevelUpQueueRef.current.push(e.detail);
           }
@@ -3550,7 +3542,7 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
     };
     window.addEventListener('levelUp', handler);
     return () => window.removeEventListener('levelUp', handler);
-  }, []);
+  }, [fireNextLevelUpPack]);
 
   useEffect(() => {
     window.dispatchEvent(new CustomEvent('petDialogOpen', { detail: showTamagotchiDialog || showBowlFishDialog }));
@@ -5049,6 +5041,8 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
                   item.crowCountdown = undefined;
               }
               delete currentWaterState[idx];
+              // Revert plot to hole state so the empty dirt shows correctly
+              window.dispatchEvent(new CustomEvent('crowAteAtPlot', { detail: { plotIndex: idx } }));
             });
             localStorage.setItem('sandbox_water_state', JSON.stringify(currentWaterState));
           }
@@ -7515,61 +7509,6 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
     </div>
   )}
 
-  {/* Level Up Claim Screen */}
-  {levelUpClaimPopup && !levelUpPopup && (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 999997, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.6)' }}>
-      <style>{`
-        @keyframes lvlBgOpen { from { transform: scale(0.55); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-        @keyframes lvlLabelIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-      `}</style>
-      <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', animation: 'lvlBgOpen 0.9s cubic-bezier(0.22,1,0.36,1) forwards' }}>
-        <img
-          src="/images/level/levelupbackground.png"
-          alt="Level Up"
-          style={{ width: '520px', maxWidth: '90vw', objectFit: 'contain', display: 'block' }}
-          draggable={false}
-        />
-        <div style={{ position: 'absolute', bottom: 'calc(14% + 140px)', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <div style={{ color: '#fff', fontSize: '16px', fontWeight: 'bold', textShadow: '1px 1px 3px #000, -1px -1px 3px #000', letterSpacing: '1px', textTransform: 'uppercase' }}>
-            Farming Level {levelUpClaimPopup.level}
-          </div>
-        </div>
-        <div style={{ position: 'absolute', bottom: 'calc(14% + 50px)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
-          <img
-            src="/images/level/claimbutton.png"
-            alt="Claim"
-            draggable={false}
-            style={{ width: '160px', cursor: 'pointer', transition: 'transform 0.1s, filter 0.1s', filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.6))' }}
-            onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.08)'; e.currentTarget.style.filter = 'drop-shadow(0 6px 12px rgba(255,220,50,0.7))'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.filter = 'drop-shadow(0 4px 8px rgba(0,0,0,0.6))'; }}
-            onClick={() => {
-              const detail = levelUpClaimPopup;
-              setLevelUpClaimPopup(null);
-              setLevelUpPopup(detail);
-            }}
-          />
-        </div>
-      </div>
-    </div>
-  )}
-
-  {/* Level Up Pack */}
-  {levelUpPopup && (
-    <PokemonPackRipDialog
-      rollingInfo={{
-        id: 'LEVEL_UP',
-        skill: levelUpPopup.skill,
-        level: levelUpPopup.level,
-        count: 2,
-        isReveal: true,
-        isComplete: true,
-        isFallback: false,
-        revealedSeeds: [],
-      }}
-      onClose={() => setLevelUpPopup(null)}
-      onBack={() => setLevelUpPopup(null)}
-    />
-  )}
 
   {/* Tutorial Gem Skip Popup (tutp9 step) */}
   {tutGemPopupOpen && tutorialStep === 3 && tutPage === 11 && (
@@ -7747,12 +7686,8 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
               onMouseLeave={e => { e.currentTarget.style.filter = selectedTool === 'bucket' ? 'drop-shadow(0px 0px 6px gold) drop-shadow(0px 0px 14px rgba(255,210,0,0.8))' : 'none'; e.currentTarget.style.transform = selectedTool === 'bucket' ? 'translateY(-24px)' : 'none'; }}
               style={{ position: 'absolute', bottom: '59px', left: '535px', width: '101px', cursor: 'pointer', pointerEvents: 'auto', zIndex: 2, transform: selectedTool === 'bucket' ? 'translateY(-24px)' : 'none', filter: selectedTool === 'bucket' ? 'drop-shadow(0px 0px 6px gold) drop-shadow(0px 0px 14px rgba(255,210,0,0.8))' : 'none', transition: 'transform 0.4s ease, filter 0.2s ease', animation: (tutorialStep === 3 && tutPage === 8) || selectedTool === 'bucket' ? 'mapFloat 2s ease-in-out infinite' : 'none' }} />
           )}
-          {(tutorialStep >= 32 || (tutorialStep === 3 && tutPage >= 9)) && (
-            <img src="/images/farming/realfork.png" alt="Fork" draggable={false}
-              onClick={() => { toggleTool('fork'); const next = selectedTool !== 'fork'; setIsHoeing(next); setIsWatering(false); setIsDigging(false); setIsDirting(false); setIsSeeding(false); setIsPlanting(false); }}
-              onMouseEnter={e => { e.currentTarget.style.filter = 'drop-shadow(0px 0px 6px rgba(255,255,255,0.8))'; e.currentTarget.style.transform = selectedTool === 'fork' ? 'scale(1.15) translateY(-24px)' : 'scale(1.15)'; }}
-              onMouseLeave={e => { e.currentTarget.style.filter = selectedTool === 'fork' ? 'drop-shadow(0px 0px 6px gold) drop-shadow(0px 0px 14px rgba(255,210,0,0.8))' : 'none'; e.currentTarget.style.transform = selectedTool === 'fork' ? 'translateY(-24px)' : 'none'; }}
-              style={{ position: 'absolute', bottom: '43px', left: '677px', width: '45px', cursor: 'pointer', pointerEvents: 'auto', zIndex: 2, transform: selectedTool === 'fork' ? 'translateY(-24px)' : 'none', filter: selectedTool === 'fork' ? 'drop-shadow(0px 0px 6px gold) drop-shadow(0px 0px 14px rgba(255,210,0,0.8))' : 'none', transition: 'transform 0.4s ease, filter 0.2s ease', animation: selectedTool === 'fork' ? 'mapFloat 2s ease-in-out infinite' : 'none' }} />
+          {false && (
+            <img src="/images/farming/realfork.png" alt="Fork" draggable={false} />
           )}
           <img src="/images/farming/realbelttop.png" alt="" draggable={false} style={{ position: 'absolute', bottom: '27px', left: '146px', width: '602px', pointerEvents: 'none', zIndex: 3 }} />
         </div>

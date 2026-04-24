@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import "./style.css";
-import BaseButton from "../../components/buttons/BaseButton";
-import { ID_PRODUCE_ITEMS, ID_FISH_ITEMS, ID_CHEST_ITEMS, ID_SEEDS, getRaritySeedId } from "../../constants/app_ids";
+import { ID_PRODUCE_ITEMS, ID_FISH_ITEMS, ID_SEEDS, getRaritySeedId } from "../../constants/app_ids";
 
 const BRONZE_SEED_POOL = [
   ID_SEEDS.CARROT, ID_SEEDS.TOMATO, ID_SEEDS.CORN,
@@ -17,11 +16,6 @@ const SKIP_COOLDOWN_MS = 15 * 60 * 1000; // 15 minutes
 const MISSIONS_PER_TIER = 10;
 const MAX_TIER = 3;
 
-const TIER_CHEST = {
-  1: { id: ID_CHEST_ITEMS.CHEST_BRONZE, name: "Bronze Chest" },
-  2: { id: ID_CHEST_ITEMS.CHEST_SILVER, name: "Silver Chest" },
-  3: { id: ID_CHEST_ITEMS.CHEST_GOLD,   name: "Gold Chest"   },
-};
 
 const M = (f) => `/images/Missionboard/missions/${f}`;
 const MISSION_IMAGES = {
@@ -60,65 +54,67 @@ const SLOT_TOPS = [
   'calc(53% + 140px)',
 ];
 
-// ── Tier 1: Easy pico crops only (1-2 items) — rewards ~150-250 gold ──────────
+// ── Tier 1: Easy pico crops only (1-2 items) — rewards ~350-650 gold ──────────
 const TIER1_POOL = [
-  { id: "t1_carrot_1",   title: "Carrot Grab",      desc: "Turn in 1 Carrot.",    itemId: ID_PRODUCE_ITEMS.CARROT,  amount: 1, reward: 150, rewardLabel: "150 Gold", type: "pico" },
-  { id: "t1_carrot_2",   title: "Carrot Delivery",  desc: "Turn in 2 Carrots.",   itemId: ID_PRODUCE_ITEMS.CARROT,  amount: 2, reward: 280, rewardLabel: "280 Gold", type: "pico" },
-  { id: "t1_potato_1",   title: "Potato Pick",      desc: "Turn in 1 Potato.",    itemId: ID_PRODUCE_ITEMS.POTATO,  amount: 1, reward: 150, rewardLabel: "150 Gold", type: "pico" },
-  { id: "t1_potato_2",   title: "Potato Supply",    desc: "Turn in 2 Potatoes.",  itemId: ID_PRODUCE_ITEMS.POTATO,  amount: 2, reward: 280, rewardLabel: "280 Gold", type: "pico" },
-  { id: "t1_tomato_1",   title: "Tomato Toss",      desc: "Turn in 1 Tomato.",    itemId: ID_PRODUCE_ITEMS.TOMATO,  amount: 1, reward: 160, rewardLabel: "160 Gold", type: "pico" },
-  { id: "t1_tomato_2",   title: "Tomato Haul",      desc: "Turn in 2 Tomatoes.",  itemId: ID_PRODUCE_ITEMS.TOMATO,  amount: 2, reward: 280, rewardLabel: "280 Gold", type: "pico" },
-  { id: "t1_corn_1",     title: "Corn Cob",         desc: "Turn in 1 Corn.",      itemId: ID_PRODUCE_ITEMS.CORN,    amount: 1, reward: 160, rewardLabel: "160 Gold", type: "pico" },
-  { id: "t1_corn_2",     title: "Corn Run",         desc: "Turn in 2 Corn.",      itemId: ID_PRODUCE_ITEMS.CORN,    amount: 2, reward: 280, rewardLabel: "280 Gold", type: "pico" },
-  { id: "t1_lettuce_1",  title: "Lettuce Leaf",     desc: "Turn in 1 Lettuce.",   itemId: ID_PRODUCE_ITEMS.LETTUCE, amount: 1, reward: 150, rewardLabel: "150 Gold", type: "pico" },
-  { id: "t1_lettuce_2",  title: "Lettuce Load",     desc: "Turn in 2 Lettuce.",   itemId: ID_PRODUCE_ITEMS.LETTUCE, amount: 2, reward: 280, rewardLabel: "280 Gold", type: "pico" },
-  { id: "t1_onion_1",    title: "Onion Errand",     desc: "Turn in 1 Onion.",     itemId: ID_PRODUCE_ITEMS.ONION,   amount: 1, reward: 150, rewardLabel: "150 Gold", type: "pico" },
-  { id: "t1_onion_2",    title: "Onion Order",      desc: "Turn in 2 Onions.",    itemId: ID_PRODUCE_ITEMS.ONION,   amount: 2, reward: 280, rewardLabel: "280 Gold", type: "pico" },
-  { id: "t1_radish_1",   title: "Radish Run",       desc: "Turn in 1 Radish.",    itemId: ID_PRODUCE_ITEMS.RADISH,  amount: 1, reward: 150, rewardLabel: "150 Gold", type: "pico" },
-  { id: "t1_radish_2",   title: "Radish Batch",     desc: "Turn in 2 Radishes.",  itemId: ID_PRODUCE_ITEMS.RADISH,  amount: 2, reward: 280, rewardLabel: "280 Gold", type: "pico" },
-  { id: "t1_celery_1",   title: "Celery Snap",      desc: "Turn in 1 Celery.",    itemId: ID_PRODUCE_ITEMS.CELERY,  amount: 1, reward: 150, rewardLabel: "150 Gold", type: "pico" },
-  { id: "t1_celery_2",   title: "Celery Stash",     desc: "Turn in 2 Celery.",    itemId: ID_PRODUCE_ITEMS.CELERY,  amount: 2, reward: 280, rewardLabel: "280 Gold", type: "pico" },
+  { id: "t1_carrot_1",   title: "Carrot Grab",      desc: "Turn in 1 Carrot.",    itemId: ID_PRODUCE_ITEMS.CARROT,  amount: 1, reward: 350,  rewardLabel: "350 Gold",  type: "pico" },
+  { id: "t1_carrot_2",   title: "Carrot Delivery",  desc: "Turn in 2 Carrots.",   itemId: ID_PRODUCE_ITEMS.CARROT,  amount: 2, reward: 650,  rewardLabel: "650 Gold",  type: "pico" },
+  { id: "t1_potato_1",   title: "Potato Pick",      desc: "Turn in 1 Potato.",    itemId: ID_PRODUCE_ITEMS.POTATO,  amount: 1, reward: 350,  rewardLabel: "350 Gold",  type: "pico" },
+  { id: "t1_potato_2",   title: "Potato Supply",    desc: "Turn in 2 Potatoes.",  itemId: ID_PRODUCE_ITEMS.POTATO,  amount: 2, reward: 650,  rewardLabel: "650 Gold",  type: "pico" },
+  { id: "t1_tomato_1",   title: "Tomato Toss",      desc: "Turn in 1 Tomato.",    itemId: ID_PRODUCE_ITEMS.TOMATO,  amount: 1, reward: 375,  rewardLabel: "375 Gold",  type: "pico" },
+  { id: "t1_tomato_2",   title: "Tomato Haul",      desc: "Turn in 2 Tomatoes.",  itemId: ID_PRODUCE_ITEMS.TOMATO,  amount: 2, reward: 650,  rewardLabel: "650 Gold",  type: "pico" },
+  { id: "t1_corn_1",     title: "Corn Cob",         desc: "Turn in 1 Corn.",      itemId: ID_PRODUCE_ITEMS.CORN,    amount: 1, reward: 375,  rewardLabel: "375 Gold",  type: "pico" },
+  { id: "t1_corn_2",     title: "Corn Run",         desc: "Turn in 2 Corn.",      itemId: ID_PRODUCE_ITEMS.CORN,    amount: 2, reward: 650,  rewardLabel: "650 Gold",  type: "pico" },
+  { id: "t1_lettuce_1",  title: "Lettuce Leaf",     desc: "Turn in 1 Lettuce.",   itemId: ID_PRODUCE_ITEMS.LETTUCE, amount: 1, reward: 350,  rewardLabel: "350 Gold",  type: "pico" },
+  { id: "t1_lettuce_2",  title: "Lettuce Load",     desc: "Turn in 2 Lettuce.",   itemId: ID_PRODUCE_ITEMS.LETTUCE, amount: 2, reward: 650,  rewardLabel: "650 Gold",  type: "pico" },
+  { id: "t1_onion_1",    title: "Onion Errand",     desc: "Turn in 1 Onion.",     itemId: ID_PRODUCE_ITEMS.ONION,   amount: 1, reward: 350,  rewardLabel: "350 Gold",  type: "pico" },
+  { id: "t1_onion_2",    title: "Onion Order",      desc: "Turn in 2 Onions.",    itemId: ID_PRODUCE_ITEMS.ONION,   amount: 2, reward: 650,  rewardLabel: "650 Gold",  type: "pico" },
+  { id: "t1_radish_1",   title: "Radish Run",       desc: "Turn in 1 Radish.",    itemId: ID_PRODUCE_ITEMS.RADISH,  amount: 1, reward: 350,  rewardLabel: "350 Gold",  type: "pico" },
+  { id: "t1_radish_2",   title: "Radish Batch",     desc: "Turn in 2 Radishes.",  itemId: ID_PRODUCE_ITEMS.RADISH,  amount: 2, reward: 650,  rewardLabel: "650 Gold",  type: "pico" },
+  { id: "t1_celery_1",   title: "Celery Snap",      desc: "Turn in 1 Celery.",    itemId: ID_PRODUCE_ITEMS.CELERY,  amount: 1, reward: 350,  rewardLabel: "350 Gold",  type: "pico" },
+  { id: "t1_celery_2",   title: "Celery Stash",     desc: "Turn in 2 Celery.",    itemId: ID_PRODUCE_ITEMS.CELERY,  amount: 2, reward: 650,  rewardLabel: "650 Gold",  type: "pico" },
 ];
 
-// ── Tier 2: Easy fish + pico crops (2) + basic crops — rewards ~300-500 gold ──
+// ── Tier 2: Easy fish + pico crops (2) + basic crops — rewards ~1500-4500 gold ──
+// Basic seed pack = 3500 HNY / 5 seeds = 700/seed; reward targets 2-3× seed cost
 const TIER2_POOL = [
-  // pico overlaps
-  { id: "t2_carrot_2",   title: "Carrot Delivery",  desc: "Turn in 2 Carrots.",      itemId: ID_PRODUCE_ITEMS.CARROT,   amount: 2, reward: 300, rewardLabel: "300 Gold", type: "pico" },
-  { id: "t2_potato_2",   title: "Potato Supply",    desc: "Turn in 2 Potatoes.",     itemId: ID_PRODUCE_ITEMS.POTATO,   amount: 2, reward: 300, rewardLabel: "300 Gold", type: "pico" },
-  { id: "t2_tomato_2",   title: "Tomato Haul",      desc: "Turn in 2 Tomatoes.",     itemId: ID_PRODUCE_ITEMS.TOMATO,   amount: 2, reward: 320, rewardLabel: "320 Gold", type: "pico" },
-  // basic crops
-  { id: "t2_lettuce_3",  title: "Lettuce Load",     desc: "Turn in 3 Lettuce.",      itemId: ID_PRODUCE_ITEMS.LETTUCE,  amount: 3, reward: 380, rewardLabel: "380 Gold", type: "crop" },
-  { id: "t2_onion_3",    title: "Onion Order",      desc: "Turn in 3 Onions.",       itemId: ID_PRODUCE_ITEMS.ONION,    amount: 3, reward: 380, rewardLabel: "380 Gold", type: "crop" },
-  { id: "t2_celery_3",   title: "Celery Stash",     desc: "Turn in 3 Celery.",       itemId: ID_PRODUCE_ITEMS.CELERY,   amount: 3, reward: 380, rewardLabel: "380 Gold", type: "crop" },
-  { id: "t2_corn_3",     title: "Corn Surplus",     desc: "Turn in 3 Corn.",         itemId: ID_PRODUCE_ITEMS.CORN,     amount: 3, reward: 400, rewardLabel: "400 Gold", type: "crop" },
-  { id: "t2_wheat_3",    title: "Wheat Harvest",    desc: "Turn in 3 Wheat.",        itemId: ID_PRODUCE_ITEMS.WHEAT,    amount: 3, reward: 420, rewardLabel: "420 Gold", type: "crop" },
-  { id: "t2_pepper_2",   title: "Spice Trade",      desc: "Turn in 2 Peppers.",      itemId: ID_PRODUCE_ITEMS.PEPPER,   amount: 2, reward: 400, rewardLabel: "400 Gold", type: "crop" },
-  { id: "t2_broccoli_2", title: "Broccoli Batch",   desc: "Turn in 2 Broccoli.",     itemId: ID_PRODUCE_ITEMS.BROCCOLI, amount: 2, reward: 400, rewardLabel: "400 Gold", type: "crop" },
-  // easy fish
-  { id: "t2_anchovy_2",  title: "Anchovy Catch",    desc: "Turn in 2 Anchovies.",    itemId: ID_FISH_ITEMS.ANCHOVY,     amount: 2, reward: 350, rewardLabel: "350 Gold", type: "fish" },
-  { id: "t2_sardine_2",  title: "Sardine Haul",     desc: "Turn in 2 Sardines.",     itemId: ID_FISH_ITEMS.SARDINE,     amount: 2, reward: 350, rewardLabel: "350 Gold", type: "fish" },
-  { id: "t2_herring_2",  title: "Herring Run",      desc: "Turn in 2 Herring.",      itemId: ID_FISH_ITEMS.HERRING,     amount: 2, reward: 420, rewardLabel: "420 Gold", type: "fish" },
-  { id: "t2_trout_1",    title: "Trout Trade",      desc: "Turn in 1 Small Trout.",  itemId: ID_FISH_ITEMS.SMALL_TROUT, amount: 1, reward: 450, rewardLabel: "450 Gold", type: "fish" },
+  // pico overlaps (150/seed, 2 items = 300 cost → ~2.5× = 750)
+  { id: "t2_carrot_2",   title: "Carrot Delivery",  desc: "Turn in 2 Carrots.",      itemId: ID_PRODUCE_ITEMS.CARROT,   amount: 2, reward: 750,  rewardLabel: "750 Gold",  type: "pico" },
+  { id: "t2_potato_2",   title: "Potato Supply",    desc: "Turn in 2 Potatoes.",     itemId: ID_PRODUCE_ITEMS.POTATO,   amount: 2, reward: 750,  rewardLabel: "750 Gold",  type: "pico" },
+  { id: "t2_tomato_2",   title: "Tomato Haul",      desc: "Turn in 2 Tomatoes.",     itemId: ID_PRODUCE_ITEMS.TOMATO,   amount: 2, reward: 800,  rewardLabel: "800 Gold",  type: "pico" },
+  // basic crops (700/seed, 3 items = 2100 cost → ~2× = 4200)
+  { id: "t2_lettuce_3",  title: "Lettuce Load",     desc: "Turn in 3 Lettuce.",      itemId: ID_PRODUCE_ITEMS.LETTUCE,  amount: 3, reward: 4000, rewardLabel: "4000 Gold", type: "crop" },
+  { id: "t2_onion_3",    title: "Onion Order",      desc: "Turn in 3 Onions.",       itemId: ID_PRODUCE_ITEMS.ONION,    amount: 3, reward: 4000, rewardLabel: "4000 Gold", type: "crop" },
+  { id: "t2_celery_3",   title: "Celery Stash",     desc: "Turn in 3 Celery.",       itemId: ID_PRODUCE_ITEMS.CELERY,   amount: 3, reward: 4000, rewardLabel: "4000 Gold", type: "crop" },
+  { id: "t2_corn_3",     title: "Corn Surplus",     desc: "Turn in 3 Corn.",         itemId: ID_PRODUCE_ITEMS.CORN,     amount: 3, reward: 4200, rewardLabel: "4200 Gold", type: "crop" },
+  { id: "t2_wheat_3",    title: "Wheat Harvest",    desc: "Turn in 3 Wheat.",        itemId: ID_PRODUCE_ITEMS.WHEAT,    amount: 3, reward: 4500, rewardLabel: "4500 Gold", type: "crop" },
+  { id: "t2_pepper_2",   title: "Spice Trade",      desc: "Turn in 2 Peppers.",      itemId: ID_PRODUCE_ITEMS.PEPPER,   amount: 2, reward: 3500, rewardLabel: "3500 Gold", type: "crop" },
+  { id: "t2_broccoli_2", title: "Broccoli Batch",   desc: "Turn in 2 Broccoli.",     itemId: ID_PRODUCE_ITEMS.BROCCOLI, amount: 2, reward: 3500, rewardLabel: "3500 Gold", type: "crop" },
+  // easy fish (no seed cost, ~2000-3000 range)
+  { id: "t2_anchovy_2",  title: "Anchovy Catch",    desc: "Turn in 2 Anchovies.",    itemId: ID_FISH_ITEMS.ANCHOVY,     amount: 2, reward: 2000, rewardLabel: "2000 Gold", type: "fish" },
+  { id: "t2_sardine_2",  title: "Sardine Haul",     desc: "Turn in 2 Sardines.",     itemId: ID_FISH_ITEMS.SARDINE,     amount: 2, reward: 2000, rewardLabel: "2000 Gold", type: "fish" },
+  { id: "t2_herring_2",  title: "Herring Run",      desc: "Turn in 2 Herring.",      itemId: ID_FISH_ITEMS.HERRING,     amount: 2, reward: 2500, rewardLabel: "2500 Gold", type: "fish" },
+  { id: "t2_trout_1",    title: "Trout Trade",      desc: "Turn in 1 Small Trout.",  itemId: ID_FISH_ITEMS.SMALL_TROUT, amount: 1, reward: 2500, rewardLabel: "2500 Gold", type: "fish" },
 ];
 
-// ── Tier 3: Easy-medium fish + basic crops + premium — rewards ~600-1000 gold ─
+// ── Tier 3: Easy-medium fish + basic crops + premium — rewards ~5500-18000 gold ─
+// Premium seed pack = 15000 HNY / 5 seeds = 3000/seed; basic = 700/seed; ~2× seed cost min
 const TIER3_POOL = [
-  // basic crop overlaps
-  { id: "t3_wheat_4",    title: "Wheat Surplus",    desc: "Turn in 4 Wheat.",        itemId: ID_PRODUCE_ITEMS.WHEAT,      amount: 4, reward: 620,  rewardLabel: "620 Gold",  type: "crop" },
-  { id: "t3_corn_4",     title: "Corn Stockpile",   desc: "Turn in 4 Corn.",         itemId: ID_PRODUCE_ITEMS.CORN,       amount: 4, reward: 620,  rewardLabel: "620 Gold",  type: "crop" },
-  { id: "t3_pepper_3",   title: "Pepper Haul",      desc: "Turn in 3 Peppers.",      itemId: ID_PRODUCE_ITEMS.PEPPER,     amount: 3, reward: 650,  rewardLabel: "650 Gold",  type: "crop" },
-  // premium crops
-  { id: "t3_pumpkin_2",  title: "Pumpkin Patch",    desc: "Turn in 2 Pumpkins.",     itemId: ID_PRODUCE_ITEMS.PUMPKIN,    amount: 2, reward: 800,  rewardLabel: "800 Gold",  type: "premium" },
-  { id: "t3_pumpkin_3",  title: "Pumpkin Haul",     desc: "Turn in 3 Pumpkins.",     itemId: ID_PRODUCE_ITEMS.PUMPKIN,    amount: 3, reward: 1000, rewardLabel: "1000 Gold", type: "premium" },
-  { id: "t3_grapes_2",   title: "Grape Harvest",    desc: "Turn in 2 Grapes.",       itemId: ID_PRODUCE_ITEMS.GRAPES,     amount: 2, reward: 850,  rewardLabel: "850 Gold",  type: "premium" },
-  { id: "t3_grapes_3",   title: "Grape Surplus",    desc: "Turn in 3 Grapes.",       itemId: ID_PRODUCE_ITEMS.GRAPES,     amount: 3, reward: 1100, rewardLabel: "1100 Gold", type: "premium" },
-  { id: "t3_broccoli_4", title: "Broccoli Bounty",  desc: "Turn in 4 Broccoli.",     itemId: ID_PRODUCE_ITEMS.BROCCOLI,   amount: 4, reward: 720,  rewardLabel: "720 Gold",  type: "premium" },
-  { id: "t3_radish_4",   title: "Radish Bounty",    desc: "Turn in 4 Radishes.",     itemId: ID_PRODUCE_ITEMS.RADISH,     amount: 4, reward: 700,  rewardLabel: "700 Gold",  type: "premium" },
-  // easy-medium fish overlaps
-  { id: "t3_herring_3",  title: "Herring Haul",     desc: "Turn in 3 Herring.",      itemId: ID_FISH_ITEMS.HERRING,       amount: 3, reward: 680,  rewardLabel: "680 Gold",  type: "fish" },
-  { id: "t3_trout_2",    title: "Trout Catch",      desc: "Turn in 2 Small Trout.",  itemId: ID_FISH_ITEMS.SMALL_TROUT,   amount: 2, reward: 750,  rewardLabel: "750 Gold",  type: "fish" },
-  { id: "t3_perch_1",    title: "Perch Platter",    desc: "Turn in 1 Yellow Perch.", itemId: ID_FISH_ITEMS.YELLOW_PERCH,  amount: 1, reward: 700,  rewardLabel: "700 Gold",  type: "fish" },
-  { id: "t3_salmon_1",   title: "Salmon Supply",    desc: "Turn in 1 Salmon.",       itemId: ID_FISH_ITEMS.SALMON,        amount: 1, reward: 800,  rewardLabel: "800 Gold",  type: "fish" },
+  // basic crop overlaps (700/seed, 4 items = 2800 cost → 2× = 5600)
+  { id: "t3_wheat_4",    title: "Wheat Surplus",    desc: "Turn in 4 Wheat.",        itemId: ID_PRODUCE_ITEMS.WHEAT,      amount: 4, reward: 6000,  rewardLabel: "6000 Gold",  type: "crop" },
+  { id: "t3_corn_4",     title: "Corn Stockpile",   desc: "Turn in 4 Corn.",         itemId: ID_PRODUCE_ITEMS.CORN,       amount: 4, reward: 6000,  rewardLabel: "6000 Gold",  type: "crop" },
+  { id: "t3_pepper_3",   title: "Pepper Haul",      desc: "Turn in 3 Peppers.",      itemId: ID_PRODUCE_ITEMS.PEPPER,     amount: 3, reward: 5500,  rewardLabel: "5500 Gold",  type: "crop" },
+  // premium crops (3000/seed; 2 items = 6000 cost → 2× = 12000; 3 items = 9000 → 18000)
+  { id: "t3_pumpkin_2",  title: "Pumpkin Patch",    desc: "Turn in 2 Pumpkins.",     itemId: ID_PRODUCE_ITEMS.PUMPKIN,    amount: 2, reward: 12000, rewardLabel: "12000 Gold", type: "premium" },
+  { id: "t3_pumpkin_3",  title: "Pumpkin Haul",     desc: "Turn in 3 Pumpkins.",     itemId: ID_PRODUCE_ITEMS.PUMPKIN,    amount: 3, reward: 18000, rewardLabel: "18000 Gold", type: "premium" },
+  { id: "t3_grapes_2",   title: "Grape Harvest",    desc: "Turn in 2 Grapes.",       itemId: ID_PRODUCE_ITEMS.GRAPES,     amount: 2, reward: 12000, rewardLabel: "12000 Gold", type: "premium" },
+  { id: "t3_grapes_3",   title: "Grape Surplus",    desc: "Turn in 3 Grapes.",       itemId: ID_PRODUCE_ITEMS.GRAPES,     amount: 3, reward: 18000, rewardLabel: "18000 Gold", type: "premium" },
+  { id: "t3_broccoli_4", title: "Broccoli Bounty",  desc: "Turn in 4 Broccoli.",     itemId: ID_PRODUCE_ITEMS.BROCCOLI,   amount: 4, reward: 7500,  rewardLabel: "7500 Gold",  type: "premium" },
+  { id: "t3_radish_4",   title: "Radish Bounty",    desc: "Turn in 4 Radishes.",     itemId: ID_PRODUCE_ITEMS.RADISH,     amount: 4, reward: 7000,  rewardLabel: "7000 Gold",  type: "premium" },
+  // easy-medium fish (no seed cost, scaled to match basic/premium effort)
+  { id: "t3_herring_3",  title: "Herring Haul",     desc: "Turn in 3 Herring.",      itemId: ID_FISH_ITEMS.HERRING,       amount: 3, reward: 4500,  rewardLabel: "4500 Gold",  type: "fish" },
+  { id: "t3_trout_2",    title: "Trout Catch",      desc: "Turn in 2 Small Trout.",  itemId: ID_FISH_ITEMS.SMALL_TROUT,   amount: 2, reward: 5000,  rewardLabel: "5000 Gold",  type: "fish" },
+  { id: "t3_perch_1",    title: "Perch Platter",    desc: "Turn in 1 Yellow Perch.", itemId: ID_FISH_ITEMS.YELLOW_PERCH,  amount: 1, reward: 4000,  rewardLabel: "4000 Gold",  type: "fish" },
+  { id: "t3_salmon_1",   title: "Salmon Supply",    desc: "Turn in 1 Salmon.",       itemId: ID_FISH_ITEMS.SALMON,        amount: 1, reward: 5500,  rewardLabel: "5500 Gold",  type: "fish" },
 ];
 
 const TIER_POOLS = [TIER1_POOL, TIER2_POOL, TIER3_POOL];
@@ -169,99 +165,6 @@ const formatCountdown = (ms) => {
 
 const getTier = (totalCompleted) => Math.min(Math.floor(totalCompleted / MISSIONS_PER_TIER) + 1, MAX_TIER);
 
-// ── Bronze Chest Popup ─────────────────────────────────────────────────────────
-const ChestPopup = ({ chestName, seeds, onDone }) => {
-  const IDLE_COUNT = 21;
-  const OPEN_START = 21;
-  const OPEN_COUNT = 27;
-  const FPS = 12;
-
-  const [phase, setPhase] = useState('idle');
-  const [frame, setFrame] = useState(0);
-  const phaseRef = useRef('idle');
-  const frameRef = useRef(0);
-  const intervalRef = useRef(null);
-  const onDoneRef = useRef(onDone);
-  const seedsRef = useRef(seeds);
-  useEffect(() => { onDoneRef.current = onDone; }, [onDone]);
-  useEffect(() => { seedsRef.current = seeds; }, [seeds]);
-
-  useEffect(() => {
-    intervalRef.current = setInterval(() => {
-      if (phaseRef.current === 'idle') {
-        frameRef.current = (frameRef.current + 1) % IDLE_COUNT;
-        setFrame(frameRef.current);
-      } else if (phaseRef.current === 'opening') {
-        const next = frameRef.current + 1;
-        if (next >= OPEN_COUNT) {
-          clearInterval(intervalRef.current);
-          setTimeout(() => {
-            window.dispatchEvent(new CustomEvent('charPackOpen', { detail: { seeds: seedsRef.current } }));
-            onDoneRef.current();
-          }, 500);
-        } else {
-          frameRef.current = next;
-          setFrame(next);
-        }
-      }
-    }, Math.floor(1000 / FPS));
-    return () => clearInterval(intervalRef.current);
-  }, []);
-
-  const handleClick = () => {
-    if (phaseRef.current === 'idle') {
-      phaseRef.current = 'opening';
-      frameRef.current = 0;
-      setPhase('opening');
-      setFrame(0);
-    }
-  };
-
-  const src = phase === 'opening'
-    ? `/images/cardfront/card1open/open_chest_wood/NEW_open_chest_wood_${String(OPEN_START + frame).padStart(5, '0')}.png`
-    : `/images/cardfront/card1idle/chest_wood/New_idle_chest_wood_${String(frame).padStart(5, '0')}.png`;
-
-  return (
-    <div
-      onClick={handleClick}
-      style={{
-        position: 'fixed', inset: 0, zIndex: 999999,
-        background: 'rgba(0,0,0,0.82)',
-        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-        cursor: phase === 'idle' ? 'pointer' : 'default',
-      }}
-    >
-      <style>{`
-        @keyframes chestPulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
-      `}</style>
-      <div style={{ textAlign: 'center', userSelect: 'none' }}>
-        <div style={{
-          fontFamily: 'GROBOLD, Cartoonist, sans-serif', fontSize: '28px',
-          color: '#f5d87a', marginBottom: '18px',
-          textShadow: '2px 2px 0 #000, -1px 1px 0 #000, 1px -1px 0 #000',
-        }}>
-          {chestName} Earned!
-        </div>
-        <img
-          src={src}
-          alt="Chest"
-          draggable={false}
-          style={{ width: '280px', imageRendering: 'pixelated', display: 'block', margin: '0 auto' }}
-        />
-        {phase === 'idle' && (
-          <div style={{
-            marginTop: '20px',
-            fontFamily: 'GROBOLD, Cartoonist, sans-serif', fontSize: '17px', color: '#fff',
-            animation: 'chestPulse 1.4s ease-in-out infinite',
-            textShadow: '1px 1px 0 #000',
-          }}>
-            Tap to open!
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
 
 // ── Component ─────────────────────────────────────────────────────────────────
 const MissionBoard = ({ onClose }) => {
@@ -269,7 +172,6 @@ const MissionBoard = ({ onClose }) => {
   const [totalCompleted, setTotalCompleted] = useState(0);
   const [loot, setLoot] = useState({});
   const [gold, setGold] = useState(0);
-  const [chestPopup, setChestPopup] = useState(null);
   const [feedback, setFeedback] = useState({});
   const [skipTimers, setSkipTimers] = useState({});
   const [now, setNow] = useState(Date.now());
@@ -277,6 +179,8 @@ const MissionBoard = ({ onClose }) => {
   const [freshSlots, setFreshSlots] = useState(new Set());
   const tickRef = useRef(null);
   const totalCompletedRef = useRef(0);
+  const onCloseRef = useRef(onClose);
+  useEffect(() => { onCloseRef.current = onClose; }, [onClose]);
 
   useEffect(() => { totalCompletedRef.current = totalCompleted; }, [totalCompleted]);
 
@@ -397,10 +301,11 @@ const MissionBoard = ({ onClose }) => {
       const finalTierCompleted = prevTier === MAX_TIER && completedInTier === 0;
 
       if (tierJustCompleted || finalTierCompleted) {
-        const chest = TIER_CHEST[prevTier];
-        if (chest) {
-          setChestPopup({ name: chest.name, seeds: pickBronzeSeeds(3) });
-        }
+        const seeds = pickBronzeSeeds(3);
+        onCloseRef.current();
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent('charPackOpen', { detail: { seeds } }));
+        }, 300);
       }
 
       setMissions(prev => {
@@ -593,9 +498,6 @@ const MissionBoard = ({ onClose }) => {
           style={{ position: 'absolute', top: 'calc(2% + 60px)', right: 'calc(2% - 30px)', width: '11%', cursor: 'pointer', transition: 'transform 0.1s', userSelect: 'none' }}
         />
       </div>
-      {chestPopup && (
-        <ChestPopup chestName={chestPopup.name} seeds={chestPopup.seeds} onDone={() => { setChestPopup(null); onClose(); }} />
-      )}
     </div>
   );
 };

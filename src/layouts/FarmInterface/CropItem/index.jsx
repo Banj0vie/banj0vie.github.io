@@ -16,7 +16,7 @@ import { clampVolume } from "../../../utils/basic";
 // Module-level singleton so all CropItem instances share one fly audio
 let _flyAudio = null;
 let _flyFadeInterval = null;
-let _flyActiveBugCount = 0;
+const _flyActivePlots = new Set(); // track which plot indices have active bugs
 
 const getFlyAudio = () => {
   if (!_flyAudio) {
@@ -84,6 +84,7 @@ const CropItem = ({
   const crowAudioRef = useRef(null);
   const crowSpawnStopRef = useRef(null);
   const [crowScreenPos, setCrowScreenPos] = useState(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
   const [growthProgress, setGrowthProgress] = useState(0);
   const [tooltipVisible, setTooltipVisible] = useState(false);
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
@@ -94,6 +95,12 @@ const CropItem = ({
   const clickAudioRef = useRef(null);
   const settings = useAppSelector(selectSettings) || defaultSettings;
   const [showDebug, setShowDebug] = useState(() => localStorage.getItem('show_debug_labels') !== 'false');
+
+  useEffect(() => {
+    const handler = (e) => setDialogOpen(e.detail.open);
+    window.addEventListener('dialogOpenChanged', handler);
+    return () => window.removeEventListener('dialogOpenChanged', handler);
+  }, []);
   const [plotPrep, setPlotPrep] = useState(() => JSON.parse(localStorage.getItem('sandbox_plot_prep') || '{}'));
   const [soilColor, setSoilColor] = useState(() => localStorage.getItem('sandbox_active_soil_color') || null);
   const [digPhase, setDigPhase] = useState('none');
@@ -169,18 +176,16 @@ const CropItem = ({
       pestKillTimerRef.current = setTimeout(() => setPestJustKilled(false), 600);
     }
     if (bugSpawned) {
-      _flyActiveBugCount += 1;
-      if (_flyActiveBugCount === 1) startFlySound();
+      const wasEmpty = _flyActivePlots.size === 0;
+      _flyActivePlots.add(index);
+      if (wasEmpty) startFlySound();
       clearTimeout(bugsGatherTimerRef.current);
       setBugsGathering(true);
       bugsGatherTimerRef.current = setTimeout(() => setBugsGathering(false), 900);
     }
     if (bugKilled) {
-      if (!bugAudioHandledRef.current) {
-        // Bug expired naturally — click didn't handle audio
-        _flyActiveBugCount = Math.max(0, _flyActiveBugCount - 1);
-        if (_flyActiveBugCount === 0) stopFlySound();
-      }
+      _flyActivePlots.delete(index);
+      if (_flyActivePlots.size === 0) stopFlySound();
       bugAudioHandledRef.current = false; // reset for next bug spawn
     }
     prevBugCountdownRef.current = data.bugCountdown;
@@ -190,15 +195,16 @@ const CropItem = ({
   // Handle bug already active on mount
   useEffect(() => {
     if (data.bugCountdown > 0) {
-      _flyActiveBugCount += 1;
-      if (_flyActiveBugCount === 1) startFlySound();
+      const wasEmpty = _flyActivePlots.size === 0;
+      _flyActivePlots.add(index);
+      if (wasEmpty) startFlySound();
       setBugsGathering(true);
       bugsGatherTimerRef.current = setTimeout(() => setBugsGathering(false), 900);
     }
     return () => {
-      if (prevBugCountdownRef.current > 0 && !bugAudioHandledRef.current) {
-        _flyActiveBugCount = Math.max(0, _flyActiveBugCount - 1);
-        if (_flyActiveBugCount === 0) stopFlySound();
+      if (prevBugCountdownRef.current > 0) {
+        _flyActivePlots.delete(index);
+        if (_flyActivePlots.size === 0) stopFlySound();
       }
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -235,9 +241,20 @@ const CropItem = ({
       prevStatusRef.current = newStatus;
       setPlotPrep(newPrep);
     };
+    const handleCrowAte = (e) => {
+      if (e.detail.plotIndex !== index) return;
+      // Revert this plot back to a hole
+      const stored = JSON.parse(localStorage.getItem('sandbox_plot_prep') || '{}');
+      stored[index] = { ...(stored[index] || {}), status: 1 };
+      localStorage.setItem('sandbox_plot_prep', JSON.stringify(stored));
+      setPlotPrep({ ...stored });
+      prevStatusRef.current = 1;
+    };
     window.addEventListener('plotPrepUpdated', handlePrepUpdate);
+    window.addEventListener('crowAteAtPlot', handleCrowAte);
     return () => {
       window.removeEventListener('plotPrepUpdated', handlePrepUpdate);
+      window.removeEventListener('crowAteAtPlot', handleCrowAte);
       digTimersRef.current.forEach(clearTimeout);
     };
   }, [index]);
@@ -489,10 +506,13 @@ const CropItem = ({
 
   // Determine sprite frame based on growth progress for smoother, real-time stages
   const FRAMES_PER_SEED = 6; // total frames across X for one seed line
-  const stableProgress = lastProgressSeedIdRef.current === data.seedId ? (growthProgress || 0) : 0;
+  const seedJustChanged = lastProgressSeedIdRef.current !== data.seedId;
+  const stableProgress = seedJustChanged ? 0 : (growthProgress || 0);
   let frameIndex = 0;
   if (data.seedId && ALL_ITEMS[data.seedId]) {
-    if (data.growStatus === 2) {
+    if (seedJustChanged) {
+      frameIndex = 0; // seedId changed but effects haven't run yet — hold on sign
+    } else if (data.growStatus === 2) {
       frameIndex = FRAMES_PER_SEED - 1; // ready frame
     } else if (data.growStatus === -1 || data.growStatus === 0) {
       frameIndex = 0; // sign for newly planted and sprout stage
@@ -790,8 +810,8 @@ const CropItem = ({
               if (bugsFlyingAway) return;
               setBugsFlyingAway(true);
               bugAudioHandledRef.current = true;
-              _flyActiveBugCount = Math.max(0, _flyActiveBugCount - 1);
-              if (_flyActiveBugCount === 0) stopFlySound();
+              _flyActivePlots.delete(index);
+              if (_flyActivePlots.size === 0) stopFlySound();
               setTimeout(() => {
                 window.dispatchEvent(new CustomEvent('squashBug', { detail: { plotIndex: index } }));
                 localStorage.setItem('stat_bugs_smashed', (parseInt(localStorage.getItem('stat_bugs_smashed') || '0', 10) + 1).toString());
@@ -838,7 +858,7 @@ const CropItem = ({
       )}
 
       {/* Crow indicator and countdown - portalled to body to escape stacking contexts */}
-      {data.crowCountdown !== undefined && data.crowCountdown > 0 && crowScreenPos && createPortal(
+      {data.crowCountdown !== undefined && data.crowCountdown > 0 && crowScreenPos && !dialogOpen && createPortal(
         <div>
           <style>{`
             @keyframes crowFlyInFromLeft {
@@ -908,6 +928,12 @@ const CropItem = ({
               e.preventDefault();
               if (crowFlyingAway) return;
               setCrowFlyingAway(true);
+              // Stop dirt animation immediately
+              clearInterval(dirtTimerRef.current);
+              clearTimeout(dirtOffTimerRef.current);
+              clearTimeout(dirtFadeTimerRef.current);
+              setDirtFading(true);
+              setTimeout(() => { setDirtActive(false); setDirtFading(false); }, 800);
               // Play last 4s of crow sound on fly-away
               const audio = crowAudioRef.current;
               if (audio) {
@@ -951,7 +977,7 @@ const CropItem = ({
                 : "translate(-50%, -50%)",
               opacity: crowFlyingAway ? 0 : 1,
               transition: crowFlyingAway ? "transform 1.4s ease-in, opacity 1.4s ease-in 0.4s" : "none",
-              zIndex: 999999,
+              zIndex: 9000,
               cursor: crowFlyingAway ? "default" : "crosshair",
               display: "flex",
               flexDirection: "column",

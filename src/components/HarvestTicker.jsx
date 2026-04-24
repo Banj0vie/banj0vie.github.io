@@ -122,7 +122,7 @@ export default function HarvestTicker() {
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span style={{ fontSize: '14px', color: 'rgba(255,255,255,0.8)' }}>
-                Weight: <span style={{ color: '#f5d87a', fontWeight: 'bold' }}>{event.weight} kg</span>
+                Weight: <span style={{ color: '#f5d87a', fontWeight: 'bold' }}>{event.weight} g</span>
               </span>
               {event.rarityLabel && (
                 <span style={{

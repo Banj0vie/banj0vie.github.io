@@ -40,12 +40,17 @@ const LeaderboardDialog = ({ onClose }) => {
     setFarmPts(pts);
 
     // Heaviest potato — only count if harvested during current season
+    // Weights are in grams; valid potato range is 50–500g. Discard stale pre-scale data.
     let stored = JSON.parse(localStorage.getItem('sandbox_heaviest_potato') || 'null');
+    if (stored && (stored.weight > 500 || stored.weight < 1)) {
+      localStorage.removeItem('sandbox_heaviest_potato');
+      stored = null;
+    }
 
     // Migrate legacy sandbox_heaviest_crop if it was a Potato and no dedicated record exists yet
     if (!stored) {
       const legacy = JSON.parse(localStorage.getItem('sandbox_heaviest_crop') || 'null');
-      if (legacy && legacy.name === 'Potato') {
+      if (legacy && legacy.name === 'Potato' && legacy.weight <= 500 && legacy.weight >= 1) {
         stored = { weight: legacy.weight, harvestedAt: legacy.harvestedAt ?? SEASON_START_MS };
         localStorage.setItem('sandbox_heaviest_potato', JSON.stringify(stored));
       }
@@ -143,7 +148,7 @@ const LeaderboardDialog = ({ onClose }) => {
             {heaviestPotato ? '4' : '—'}&nbsp;&nbsp;You
           </span>
           <span style={{ fontSize: '1.8vmin', color: '#f5d87a', fontWeight: 'bold' }}>
-            {heaviestPotato ? `${heaviestPotato.weight} KG` : '— KG'} <PotatoImg />
+            {heaviestPotato ? `${heaviestPotato.weight} g` : '— g'} <PotatoImg />
           </span>
         </div>
 

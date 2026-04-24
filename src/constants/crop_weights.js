@@ -1,4 +1,5 @@
 import { ID_SEEDS } from './app_ids';
+import { getSubtype } from '../utils/basic';
 
 // Per-crop realistic weight ranges (kg). Key = base seedId (seedId & 0xFFF).
 export const CROP_WEIGHTS = {
@@ -83,15 +84,27 @@ export const getWeeklyFeaturedCrop = () => {
 };
 
 // Returns { weight, name, bracket (1-5), rarityLabel, rarityColor }
+// Rolls weight within the seed's own rarity bracket range.
+// A Rare seed always produces a Rare crop; the weight is random within that bracket.
 export const rollCropWeight = (seedId) => {
   const baseId = seedId & 0xFFF;
   const info = CROP_WEIGHTS[baseId];
+
+  // Determine the seed's rarity bracket (1–5) from its subtype
+  const subtype = getSubtype(Number(seedId));
+  const bracket = Math.min(5, Math.max(1, subtype || 1));
+
   if (!info) {
     const weight = Math.round(50 + Math.random() * 450);
-    return { weight, name: 'Crop', bracket: 1, rarityLabel: 'COMMON', rarityColor: WEIGHT_BRACKET_COLORS[0] };
+    return { weight, name: 'Crop', bracket, rarityLabel: WEIGHT_BRACKET_LABELS[bracket - 1], rarityColor: WEIGHT_BRACKET_COLORS[bracket - 1] };
   }
-  const w = Math.round(info.min + Math.random() * (info.max - info.min));
-  const bracket = getWeightBracket(seedId, w);
+
+  const range = info.max - info.min;
+  const bracketSize = range / 5;
+  const bracketMin = info.min + bracketSize * (bracket - 1);
+  const bracketMax = bracketMin + bracketSize;
+  const w = Math.round(bracketMin + Math.random() * (bracketMax - bracketMin));
+
   return {
     weight: w,
     name: info.name,

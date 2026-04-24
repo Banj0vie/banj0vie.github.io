@@ -56,6 +56,11 @@ const BaseDialog = ({ className = "", title, onClose, children, header = null, h
   }, [title]);
 
   useEffect(() => {
+    window.dispatchEvent(new CustomEvent('dialogOpenChanged', { detail: { open: true } }));
+    return () => window.dispatchEvent(new CustomEvent('dialogOpenChanged', { detail: { open: false } }));
+  }, []);
+
+  useEffect(() => {
     if (!clickAudioRef.current) {
       clickAudioRef.current = new Audio("/sounds/ButtonHover.wav");
       clickAudioRef.current.preload = "auto";
