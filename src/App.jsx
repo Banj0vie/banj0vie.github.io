@@ -21,11 +21,9 @@ import AnimalFarm from "./router/animal.jsx";
 import { ConnectionProvider, WalletProvider } from '@solana/wallet-adapter-react';
 import { WalletModalProvider } from '@solana/wallet-adapter-react-ui';
 import { FINAL_RPC_ENDPOINT } from './solana/constants/programId';
-import { getClusterDisplayName } from './solana/utils/clusterUtils';
 import Tavern from "./router/tavern.jsx";
 import Valley from "./router/valley.jsx";
 import ProfileBar from "./layouts/GameMenu/ProfileBar";
-import PageTransition from "./components/PageTransition";
 import wallets from "./config/solanaWallet";
 import store from "./solana/store";
 import { BG_COLORS } from "./constants/background_colors";
@@ -39,6 +37,16 @@ const AppContent = () => {
   const [isFarmMenu, setIsFarmMenu] = useState(false);
   useSolanaWallet(); // Initialize sandbox profile data
   const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [isRouteLoading, setIsRouteLoading] = useState(false);
+  const prevPathRef = React.useRef(location.pathname);
+
+  useEffect(() => {
+    if (prevPathRef.current === location.pathname) return;
+    prevPathRef.current = location.pathname;
+    setIsRouteLoading(true);
+    const t = setTimeout(() => setIsRouteLoading(false), 900);
+    return () => clearTimeout(t);
+  }, [location.pathname]);
 
   // Get background color based on current route
   const backgroundColor = useMemo(() => {
@@ -85,7 +93,19 @@ const AppContent = () => {
           position: "relative",
         }}
       >
-        
+        {isRouteLoading && (
+          <div style={{
+            position: 'fixed', inset: 0, zIndex: 99999,
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
+            background: 'rgba(0,0,0,0.45)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            flexDirection: 'column', gap: '14px',
+          }}>
+            <img src="/images/loading/loading.png" alt="" style={{ width: 120, height: 120, objectFit: 'contain', imageRendering: 'pixelated' }} />
+            <div style={{ fontFamily: 'GROBOLD, Cartoonist, sans-serif', fontSize: 22, color: '#fff', textShadow: '2px 2px 0 #000', letterSpacing: 2 }}>Loading...</div>
+          </div>
+        )}
           {/* Header */}
           <div className="game-menu">
             <ProfileBar isFarmMenu={isFarmMenu} />
@@ -185,7 +205,6 @@ const App = () => {
   }, []);
 
   const endpoint = useMemo(() => FINAL_RPC_ENDPOINT, []);
-  const clusterDisplayName = getClusterDisplayName();
 
   return (
     <Provider store={store}>
@@ -194,25 +213,12 @@ const App = () => {
           <WalletModalProvider>
             <NotificationProvider>
               <Router basename={process.env.PUBLIC_URL}>
-                
-                <div style={{
-                  position: 'fixed',
-                  right: '20px',
-                  backgroundColor: 'rgba(0, 0, 0, 0.7)',
-                  color: 'white',
-                  padding: '4px 8px',
-                  borderRadius: '4px',
-                  fontSize: '12px',
-                  zIndex: 9998
-                }}>
-                  Network: {clusterDisplayName}
-                </div>
+                <style>{`img { color: transparent; }`}</style>
                 
 
                 
                 <BackgroundMusic />
                 <AppContent />
-                {/* <PageTransition /> */}
               </Router>
             </NotificationProvider>
           </WalletModalProvider>

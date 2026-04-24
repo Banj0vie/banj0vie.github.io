@@ -27,6 +27,10 @@ const CropItem = ({
 }) => {
   const [highlighted, setHighlighted] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const [pestJustKilled, setPestJustKilled] = useState(false);
+  const pestKillTimerRef = useRef(null);
+  const prevBugCountdownRef = useRef(data.bugCountdown);
+  const prevCrowCountdownRef = useRef(data.crowCountdown);
   const [crowLanded, setCrowLanded] = useState(false);
   const crowLandedTimerRef = useRef(null);
   const [crowScreenPos, setCrowScreenPos] = useState(null);
@@ -91,8 +95,21 @@ const CropItem = ({
       clearTimeout(waterTimerRef.current);
       clearTimeout(waterDebounceRef.current);
       clearTimeout(checkmarkTimerRef.current);
+      clearTimeout(pestKillTimerRef.current);
     };
   }, []);
+
+  useEffect(() => {
+    const bugKilled = prevBugCountdownRef.current > 0 && !(data.bugCountdown > 0);
+    const crowKilled = prevCrowCountdownRef.current > 0 && !(data.crowCountdown > 0);
+    if (bugKilled || crowKilled) {
+      setPestJustKilled(true);
+      clearTimeout(pestKillTimerRef.current);
+      pestKillTimerRef.current = setTimeout(() => setPestJustKilled(false), 600);
+    }
+    prevBugCountdownRef.current = data.bugCountdown;
+    prevCrowCountdownRef.current = data.crowCountdown;
+  }, [data.bugCountdown, data.crowCountdown]);
 
   useEffect(() => {
     const handlePrepUpdate = (e) => {
@@ -167,6 +184,7 @@ const CropItem = ({
 
   // Update growth progress
   useEffect(() => {
+    setGrowthProgress(0);
     if (cropArray && data.seedId) {
       const progress = cropArray.getGrowthProgress(index);
       setGrowthProgress(progress);
@@ -749,19 +767,21 @@ const CropItem = ({
           pointerEvents: "none",
           animation: waterPhase === 'shrink' ? 'none' : 'statusBounce 1.5s infinite',
         }}>
-          {(data.bugCountdown > 0 || data.crowCountdown > 0)
+          {(data.bugCountdown > 0 || (data.crowCountdown > 0 && crowLanded))
             ? <img src="/images/mail/!.png" alt="!" className="badge-pulse" style={{ width: '28px', height: '28px', filter: 'drop-shadow(0px 2px 2px black)', position: 'relative', left: '23px', top: '65px' }} />
-            : <img
-                src="/images/farming/waterneeded.png"
-                alt="Needs Water"
-                style={{
-                  width: '38px', height: '38px',
-                  filter: 'drop-shadow(0px 2px 2px black)',
-                  position: 'relative', left: '25px', top: '38px',
-                  transformOrigin: '50% 50%',
-                  animation: waterPhase === 'shrink' ? 'indicatorShrink 0.2s ease-in forwards' : 'none',
-                }}
-              />
+            : (pestJustKilled || data.crowCountdown > 0)
+              ? null
+              : <img
+                  src="/images/farming/waterneeded.png"
+                  alt="Needs Water"
+                  style={{
+                    width: '38px', height: '38px',
+                    filter: 'drop-shadow(0px 2px 2px black)',
+                    position: 'relative', left: '25px', top: '38px',
+                    transformOrigin: '50% 50%',
+                    animation: waterPhase === 'shrink' ? 'indicatorShrink 0.2s ease-in forwards' : 'none',
+                  }}
+                />
           }
         </div>
       )}

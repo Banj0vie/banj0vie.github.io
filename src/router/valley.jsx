@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import PanZoomViewport from "../layouts/PanZoomViewport";
 import { VALLEY_HOTSPOTS, VALLEY_VIEWPORT } from "../constants/scene_valley";
 import AdminPanel from "./index";
 import WeatherOverlay from "../components/WeatherOverlay";
 
 const Valley = () => {
+  const navigate = useNavigate();
   const { width, height } = VALLEY_VIEWPORT;
   const hotspots = VALLEY_HOTSPOTS;
   const [tutorialStep, setTutorialStep] = useState(() => parseInt(localStorage.getItem('sandbox_tutorial_step') || '0', 10));
@@ -37,18 +39,21 @@ const Valley = () => {
       <AdminPanel />
 
       {valTutPage === 23 && (
-        <div style={{ position: 'fixed', right: '20px', bottom: '70px', zIndex: 100001 }}>
-          <div style={{ position: 'relative', width: '490px' }}>
-            <img src="/images/tutorial/tutp23.png" alt="Tutorial" style={{ width: '490px', objectFit: 'contain', display: 'block' }} />
-            <div className="tut-arrow" style={{ width: '120px', height: '120px', top: 'calc(50% + 55px)' }} onClick={() => {
+        <div style={{ position: 'fixed', left: '971px', bottom: '20px', zIndex: 100001 }}>
+          <img src="/images/tutorial/tutp23.png" alt="Tutorial" style={{ width: '490px', objectFit: 'contain', display: 'block', pointerEvents: 'none' }} />
+          <img
+            src="/images/tutorial/returntofarm.png"
+            alt="Return to Farm"
+            style={{ position: 'absolute', bottom: '-30px', left: 'calc(50% + 160px)', transform: 'translateX(-50%)', width: '120px', height: '120px', objectFit: 'contain', cursor: 'pointer', userSelect: 'none' }}
+            onClick={() => {
               localStorage.removeItem('sandbox_dock_tut_page');
-              localStorage.setItem('sandbox_tutorial_step', '32');
+              localStorage.removeItem('sandbox_tut_market');
+              localStorage.removeItem('sandbox_tut_market_page');
+              localStorage.setItem('sandbox_tutorial_step', '999');
               window.dispatchEvent(new CustomEvent('tutorialStepChanged'));
-              window.location.href = '/farm';
-            }}>
-              <img src="/images/tutorial/returntofarm.png" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-            </div>
-          </div>
+              navigate('/farm');
+            }}
+          />
         </div>
       )}
 

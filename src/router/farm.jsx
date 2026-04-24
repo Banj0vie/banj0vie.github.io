@@ -15,6 +15,8 @@ import { handleContractError } from "../utils/errorHandler";
 import { ID_POTION_ITEMS, ID_PRODUCE_ITEMS, ID_CHEST_ITEMS, ID_FISH_ITEMS, ID_SEEDS, ID_BAIT_ITEMS, ID_ITEM_CATEGORIES } from "../constants/app_ids";
 import { ALL_ITEMS, IMAGE_URL_CROP } from "../constants/item_data";
 import { clampVolume, getGrowthTime, getSubtype } from "../utils/basic";
+import { rollCropWeight, getWeeklyFeaturedCrop } from "../constants/crop_weights";
+import { canHarvestProduce } from "../utils/inventorySlots";
 import { ONE_SEED_HEIGHT, ONE_SEED_WIDTH } from "../constants/item_seed";
 import { useAppSelector } from "../solana/store";
 import { selectSettings } from "../solana/store/slices/uiSlice";
@@ -275,8 +277,8 @@ export const getQuestData = () => [
     mailImage: "/images/mail/mailpapabee.png",
     body: [
       "You're doing incredible, kid — better than I ever did in my first season.",
-      "Now, I know three plots feels limiting. Here's something I should've told you sooner: down by the docks, there's an old gardener who knows this land better than anyone.",
-      "Go introduce yourself. Tell her Pabee sent you. She'll know what to do about getting you some more room to grow."
+      "Now, I know getting started feels limiting. Here's something I should've told you sooner: the market in town has everything you need to level up — Basic seed packs, Premium packs, all of it.",
+      "Visit the vendor when you're ready. Better seeds mean better harvests, and bigger rewards. The valley rewards those who invest in their farm."
     ],
     rewards: [],
     reqs: [],
@@ -305,248 +307,150 @@ export const getQuestData = () => [
     }
   },
 
-  // Wave 2: Unlocking the World (60-120 min)
+  // Wave 2: Growing Up (60-120 min) — Basic seeds & bigger harvests
 
   {
-    id: "q2_unlock_dock",
+    id: "q2_basic_intro",
     type: "main",
     sender: "Mayor Prezibee",
-    subject: "The Old Dock",
+    subject: "Time to Level Up",
+    mailImage: "/images/mail/mailmayor.png",
     body: [
-      "I have a proposition for you.",
-      "The old town dock has been sitting in disrepair for years and the fishing community is suffering for it.",
-      "The repairs will cost 1,500 Gold — it's an investment, not a handout. Once construction begins it will take about 2 hours. But I assure you, the return will be worth every coin."
+      "Farmer,",
+      "I've been keeping an eye on your progress and I must say — you've handled those starter crops admirably.",
+      "The Harvest Market has Basic seed packs available now. I strongly recommend you invest in one. Better seeds mean better harvests, and the valley rewards those who push their limits."
     ],
-    rewards: [],
-    reqs: [
-      { id: 'gold', count: 1500, name: "Gold", image: "/images/items/gold.png" }
+    rewards: [
+      { id: 'honey', count: 400, name: "HNY", image: "/images/profile_bar/hny.png" },
     ],
+    reqs: [],
     unlockCondition: (step, completed) => completed.includes("q2_missionboard_intro")
   },
 
   {
-    id: "q2b_finn_welcome",
+    id: "q2b_wheat_harvest",
     type: "main",
-    sender: "Fisherman Finn",
-    subject: "Ahoy, Farmer!",
-    mailImage: "/images/mail/maildewey.png",
+    sender: "Farmer Bob",
+    subject: "First of the Basics",
     body: [
-      "Well I'll be! Someone finally fixed that dock!",
-      "The name's Finn. I've been fishing these waters for 30 years and I know every current and every cove.",
-      "Before I share my secrets with you, prove yourself — head down to the pond and catch me a fish. Come back when you've got one!"
+      "Howdy! Now that you've been at it for a while, it's time to get into the good stuff.",
+      "Basic seeds grow into proper farm staples — wheat, tomatoes, carrots, corn.",
+      "Bring me 3 bundles of Wheat and I'll set you up with a little something. You can grab Basic seeds at the market."
     ],
     rewards: [
-      { id: 'honey', count: 400, name: "HNY", image: "/images/profile_bar/hny.png" },
-      { id: 'gems', count: 25, name: "Gems" }
+      { id: 'honey', count: 500, name: "HNY", image: "/images/profile_bar/hny.png" },
+      { id: 'gems', count: 20, name: "Gems" },
     ],
     reqs: [
-      {
-        id: 'tracked_fish_q2b',
-        count: 1,
-        name: "Any Fish",
-        image: "/images/fish/Normal Ocean Fish (2).png",
-        fn: (sandboxLoot) => {
-          const fishIds = Object.values(ID_FISH_ITEMS).filter(id => typeof id === 'number');
-          return fishIds.reduce((total, id) => total + (Number(sandboxLoot[id]) || 0), 0);
-        }
-      }
+      { id: ID_PRODUCE_ITEMS?.WHEAT, count: 3, name: "Wheat" }
     ],
-    unlockCondition: (step, completed) =>
-      completed.includes("q2_unlock_dock") && (localStorage.getItem('sandbox_dock_repaired') === 'true' || localStorage.getItem('sandbox_dock_unlocked') === 'true')
+    unlockCondition: (step, completed) => step >= 32 && completed.includes("q2_basic_intro")
   },
 
   {
-    id: "q2_rebuild_tavern",
-    type: "main",
-    sender: "Great Uncle Sir Bee",
-    subject: "Rebuild the Tavern",
-    body: [
-      "Nephew.",
-      "The local Tavern has fallen into ruin. It's an absolute disgrace to our family name.",
-      "I need you to fund the repairs so the Potion Master can resume his brewing.",
-      "Bring 1,000 Gold, 50 Potatoes, and 10 Fish to the Tavern. Do not dawdle."
-    ],
-    rewards: [
-      { id: 'honey', count: 800, name: "HNY", image: "/images/profile_bar/hny.png" },
-      { id: 'gems', count: 10, name: "Gems" },
-      { id: ID_POTION_ITEMS?.POTION_GROWTH_ELIXIR || 132104, count: 2, name: "Growth Elixir", image: ALL_ITEMS[ID_POTION_ITEMS?.POTION_GROWTH_ELIXIR]?.image || "/images/items/potion1.png" },
-      { id: ID_BAIT_ITEMS?.BAIT_2 || 30002, count: 5, name: "Bait II", image: "/images/items/seeds.png" }
-    ],
-    reqs: [
-      { id: 'gold', count: 1000, name: "Gold", image: "/images/items/gold.png" },
-      { id: ID_PRODUCE_ITEMS?.POTATO || 131586, count: 50, name: "Potatoes", image: ALL_ITEMS[ID_PRODUCE_ITEMS?.POTATO]?.image || "/images/items/potato.png" },
-      {
-        id: 'tracked_fish_tavern',
-        count: 10,
-        name: "Fish",
-        image: "/images/fish/Normal Ocean Fish (2).png",
-        fn: (sandboxLoot) => {
-          const fishIds = Object.values(ID_FISH_ITEMS).filter(id => typeof id === 'number');
-          return fishIds.reduce((total, id) => total + (Number(sandboxLoot[id]) || 0), 0);
-        }
-      }
-    ],
-    unlockCondition: (step, completed) => completed.includes("q2b_finn_welcome")
-  },
-
-  // Wave 3: The Taper (120-180 min)
-
-  {
-    id: "q3_potion_master",
-    type: "main",
-    sender: "Potion Master",
-    subject: "Alchemical Needs",
-    body: [
-      "Ah, the new farmer! The Tavern is looking much better.",
-      "Your grandfather used to supply me with the rarest ingredients for my brews.",
-      "I am currently working on a highly volatile concoction and I desperately need 15 Ladybugs.",
-      "Catch them in the forest bushes using a Bug Net and I'll share a prototype potion with you."
-    ],
-    rewards: [
-      { id: 'honey', count: 400, name: "HNY", image: "/images/profile_bar/hny.png" },
-      { id: 'gems', count: 40, name: "Gems" },
-      { id: ID_POTION_ITEMS?.POTION_GROWTH_ELIXIR || 132104, count: 2, name: "Growth Elixir", image: ALL_ITEMS[ID_POTION_ITEMS?.POTION_GROWTH_ELIXIR]?.image || "/images/items/potion1.png" }
-    ],
-    reqs: [
-      { id: ID_POTION_ITEMS?.LADYBUG || 132101, count: 15, name: "Ladybugs", image: "/images/items/ladybug.png" }
-    ],
-    unlockCondition: (step, completed) => completed.includes("q2_rebuild_tavern")
-  },
-
-  {
-    id: "q3b_pabee_fish_fertilizer",
+    id: "q3_pabee_grow_tip",
     type: "main",
     sender: "Pabee",
-    subject: "A Secret Farming Trick",
+    subject: "A Few Farming Secrets",
+    mailImage: "/images/mail/mailpapabee.png",
     body: [
-      "Hey son! I see you're getting the hang of farming. You're level 5 now!",
-      "I wanted to share an old family secret with you.",
-      "Before you place dirt in a hole, try adding a fish first! It acts as an amazing fertilizer and will make your crops grow bigger and faster.",
-      "Give it a try next time you plant something!"
-    ],
-    rewards: [
-      { id: 'honey', count: 250, name: "HNY", image: "/images/profile_bar/hny.png" },
-      { id: 'gems', count: 35, name: "Gems" },
-      { id: ID_BAIT_ITEMS?.BAIT_2 || 30002, count: 3, name: "Bait II", image: "/images/items/seeds.png" }
-    ],
-    reqs: [],
-    unlockCondition: (step, completed) => completed.includes("q5_first_catch")
-  },
-
-  {
-    id: "q4_prezibee_dock",
-    type: "main",
-    sender: "Mayor Prezibee",
-    subject: "Town Appreciation",
-    body: [
-      "Dear Farmer,",
-      "On behalf of the entire valley, I want to thank you for repairing the town dock! The anglers are thrilled.",
-      "Please accept this premium bait as a token of our gratitude. It should make fishing a breeze!"
-    ],
-    rewards: [
-      { id: 'honey', count: 200, name: "HNY", image: "/images/profile_bar/hny.png" },
-      { id: 'gems', count: 25, name: "Gems" },
-      { id: ID_BAIT_ITEMS?.BAIT_1 || 30001, count: 3, name: "Bait I", image: "/images/items/seeds.png" }
-    ],
-    reqs: [],
-    unlockCondition: (step, completed) => localStorage.getItem('sandbox_dock_repaired') === 'true' || localStorage.getItem('sandbox_dock_unlocked') === 'true'
-  },
-
-  {
-    id: "q5_first_catch",
-    type: "fishing",
-    sender: "Fisherman Finn",
-    mailImage: "/images/mail/maildewey.png",
-    subject: "The Basics of Angling",
-    body: [
-      "Ahoy there, Farmer!",
-      "I heard you finally fixed up the old dock. Bout time!",
-      "Why don't you try out that bait the Mayor gave you? Cast a line off the dock and bring me 3 Fish. Let's see what you've got!"
-    ],
-    rewards: [
-      { id: 'honey', count: 200, name: "HNY", image: "/images/profile_bar/hny.png" },
-      { id: 'gems', count: 15, name: "Gems" },
-      { id: ID_BAIT_ITEMS?.BAIT_1 || 30001, count: 3, name: "Bait I", image: "/images/items/seeds.png" },
-      { id: 'honey', count: 150, name: "Honey", image: "/images/items/honey.png" }
-    ],
-    reqs: [
-      {
-        id: 'tracked_fish_q5', 
-        count: 3, 
-        name: "Any Fish", 
-        image: ALL_ITEMS[ID_FISH_ITEMS?.NORMAL_FISH || 10001]?.image || "/images/items/fish.png",
-        fn: () => {
-          const start = parseInt(localStorage.getItem('q5_start_catches') || '0', 10);
-          const current = parseInt(localStorage.getItem('sandbox_fishing_catches') || '0', 10);
-          return current - start;
-        }
-      }
-    ],
-    unlockCondition: (step, completed) => {
-      const unlocked = localStorage.getItem('sandbox_dock_repaired') === 'true' || localStorage.getItem('sandbox_dock_unlocked') === 'true';
-      if (unlocked && localStorage.getItem('q5_start_catches') === null) localStorage.setItem('q5_start_catches', localStorage.getItem('sandbox_fishing_catches') || '0');
-      return unlocked;
-    }
-  },
-
-  {
-    id: "q6_hungry_town",
-    type: "fishing",
-    sender: "Tavern Barkeep",
-    subject: "Fish Fry Friday!",
-    body: [
-      "Hey Farmer,",
-      "The town is craving a massive fish fry, but Finn is too busy untangling his nets.",
-      "Can you head to the pond and catch 5 more Fish for us? I'll make it worth your while!"
-    ],
-    rewards: [
-      { id: 'honey', count: 200, name: "HNY", image: "/images/profile_bar/hny.png" },
-      { id: 'gems', count: 10, name: "Gems" },
-      { id: ID_CHEST_ITEMS?.CHEST_BRONZE || 20001, count: 1, name: "Bronze Chest", image: "/images/items/chest.png" },
-      { id: 'honey', count: 300, name: "Honey", image: "/images/items/honey.png" }
-    ],
-    reqs: [
-      {
-        id: 'tracked_fish_q6', 
-        count: 5, 
-        name: "Any Fish", 
-        image: ALL_ITEMS[ID_FISH_ITEMS?.NORMAL_FISH || 10001]?.image || "/images/items/fish.png",
-        fn: () => {
-          const start = parseInt(localStorage.getItem('q6_start_catches') || '0', 10);
-          const current = parseInt(localStorage.getItem('sandbox_fishing_catches') || '0', 10);
-          return current - start;
-        }
-      }
-    ],
-    unlockCondition: (step, completed) => {
-      const unlocked = completed.includes("q5_first_catch");
-      if (unlocked && localStorage.getItem('q6_start_catches') === null) localStorage.setItem('q6_start_catches', localStorage.getItem('sandbox_fishing_catches') || '0');
-      return unlocked;
-    }
-  },
-
-  {
-    id: "q7_a_bigger_catch",
-    type: "fishing",
-    sender: "Fisherman Finn",
-    mailImage: "/images/mail/maildewey.png",
-    subject: "A Bigger Catch",
-    body: [
-      "Not bad, kid! You've got a real knack for angling.",
-      "But if you want to catch the really big ones, you can't just stand on the dock all day.",
-      "Gather some materials so we can build you a Rowboat. Bring me 30 Wood Logs, 20 Sticks, and 10 Iron Ore!"
+      "Hey son, just wanted to share a few things I've learned over the years.",
+      "Water your crops whenever you can — they grow faster and come out bigger. And the rarer the seed, the more valuable the harvest.",
+      "Also keep an eye on the weekly crop challenge at the Leaderboard in the market. Whoever grows the heaviest featured crop that week gets serious bragging rights.",
+      "Proud of you. Keep growing."
     ],
     rewards: [
       { id: 'honey', count: 300, name: "HNY", image: "/images/profile_bar/hny.png" },
-      { id: ID_BAIT_ITEMS?.BAIT_2 || 30002, count: 5, name: "Bait II", image: "/images/items/seeds.png" },
-      { id: 'honey', count: 500, name: "Honey", image: "/images/items/honey.png" }
+      { id: 'gems', count: 25, name: "Gems" },
+    ],
+    reqs: [],
+    unlockCondition: (step, completed) => completed.includes("q2b_wheat_harvest")
+  },
+
+  {
+    id: "q4_tavern_corn",
+    type: "main",
+    sender: "Tavern Barkeep",
+    subject: "Big Night at the Tavern",
+    body: [
+      "Farmer! Big news — we're hosting a harvest feast this weekend and we need supplies.",
+      "Can you bring us 5 Corn? Corn roasted over an open fire is the specialty of the house.",
+      "We'll make it worth your while, I promise."
+    ],
+    rewards: [
+      { id: 'honey', count: 400, name: "HNY", image: "/images/profile_bar/hny.png" },
+      { id: 'gems', count: 20, name: "Gems" },
+      { id: ID_CHEST_ITEMS?.CHEST_BRONZE || 20001, count: 1, name: "Bronze Chest", image: "/images/items/chest.png" }
     ],
     reqs: [
-      { id: 9993, count: 30, name: "Wood Logs", image: "/images/forest/wood.png" },
-      { id: 9995, count: 20, name: "Sticks", image: "/images/forest/wood.png" },
-      { id: 9996, count: 10, name: "Iron Ore", image: "/images/forest/rock.png" }
+      { id: ID_PRODUCE_ITEMS?.CORN, count: 5, name: "Corn" }
     ],
-    unlockCondition: (step, completed) => completed.includes("q6_hungry_town")
+    unlockCondition: (step, completed) => step >= 32 && completed.includes("q3_pabee_grow_tip")
+  },
+
+  {
+    id: "q5_pumpkin_king",
+    type: "main",
+    sender: "The Potion Master",
+    subject: "PUMPKIN EMERGENCY",
+    mailImage: "/images/mail/mailpotionmaster.png",
+    body: [
+      "FARMER! It is I, Zim! I require pumpkins with the UTMOST urgency!",
+      "My latest botanical formula requires pumpkin extract and I have run completely out. The science cannot wait!",
+      "Bring me 3 Pumpkins and I will reward you handsomely. The fate of knowledge depends on it!"
+    ],
+    rewards: [
+      { id: 'honey', count: 600, name: "HNY", image: "/images/profile_bar/hny.png" },
+      { id: 'gems', count: 30, name: "Gems" },
+    ],
+    reqs: [
+      { id: ID_PRODUCE_ITEMS?.PUMPKIN, count: 3, name: "Pumpkins" }
+    ],
+    unlockCondition: (step, completed) => step >= 32 && completed.includes("q4_tavern_corn")
+  },
+
+  {
+    id: "q6_beejamin_gains",
+    type: "main",
+    sender: "Beejamin",
+    subject: "GAINS SEASON",
+    mailImage: "/images/mail/mailbeejamin.png",
+    body: [
+      "FARMER! It's gains season and I need my vegetables!",
+      "Carrots for the eyes, tomatoes for the gains — I need BOTH.",
+      "Bring me 5 Carrots and 5 Tomatoes and I'll make sure you get something good. LET'S GOOO!"
+    ],
+    rewards: [
+      { id: 'honey', count: 600, name: "HNY", image: "/images/profile_bar/hny.png" },
+      { id: 'gems', count: 30, name: "Gems" },
+    ],
+    reqs: [
+      { id: ID_PRODUCE_ITEMS?.CARROT, count: 5, name: "Carrots", pos: 3 },
+      { id: ID_PRODUCE_ITEMS?.TOMATO, count: 5, name: "Tomatoes" }
+    ],
+    unlockCondition: (step, completed) => step >= 32 && completed.includes("q5_pumpkin_king")
+  },
+
+  {
+    id: "q7_queen_broccoli",
+    type: "main",
+    sender: "Queen Beeatrice",
+    subject: "A Royal Request",
+    mailImage: "/images/mail/mailqueen.png",
+    body: [
+      "My dear farmer,",
+      "You have grown so much since those first lettuce seeds I sent you. I am truly proud.",
+      "The royal garden committee is hosting its annual showcase and I would be honored to include your produce. Would you bring me 3 Broccoli? They are quite the showpiece vegetable.",
+      "I shall reward you generously, of course."
+    ],
+    rewards: [
+      { id: 'honey', count: 800, name: "HNY", image: "/images/profile_bar/hny.png" },
+      { id: 'gems', count: 40, name: "Gems" },
+    ],
+    reqs: [
+      { id: ID_PRODUCE_ITEMS?.BROCCOLI, count: 3, name: "Broccoli" }
+    ],
+    unlockCondition: (step, completed) => step >= 32 && completed.includes("q6_beejamin_gains")
   },
 
   {
@@ -587,165 +491,6 @@ export const getQuestData = () => [
     reqs: [
       { id: ID_PRODUCE_ITEMS?.CORN || 131590, count: 5, name: "Corn", image: ALL_ITEMS[ID_PRODUCE_ITEMS?.CORN]?.image || "/images/items/corn.png" },
       { id: ID_PRODUCE_ITEMS?.TOMATO || 131589, count: 5, name: "Tomatoes", image: ALL_ITEMS[ID_PRODUCE_ITEMS?.TOMATO]?.image || "/images/items/tomato.png" }
-    ],
-    unlockCondition: (step, completed) => completed.includes("q8_first_harvest")
-  },
-
-  {
-    id: "q10_crab_mentality",
-    type: "fishing",
-    sender: "Fisherman Finn",
-    mailImage: "/images/mail/maildewey.png",
-    subject: "Crab Mentality",
-    body: [
-      "Hook and line is fine, but if you want passive income, you need Crab Pots.",
-      "Craft 3 Crab Pots and set them up. Bring me 5 Crabs to prove they work!"
-    ],
-    rewards: [
-      { id: 'honey', count: 450, name: "HNY", image: "/images/profile_bar/hny.png" },
-      { id: ID_CHEST_ITEMS?.CHEST_BRONZE || 20001, count: 1, name: "Bronze Chest", image: "/images/items/chest.png" }
-    ],
-    reqs: [
-      { id: 9966, count: 3, name: "Crab Pots", image: "/images/items/crab_pot.png" },
-      { id: 10002, count: 5, name: "Crabs", image: "/images/items/fish.png" }
-    ],
-    unlockCondition: (step, completed) => completed.includes("q7_a_bigger_catch")
-  },
-
-  {
-    id: "q11_rainy_day",
-    type: "fishing",
-    sender: "Potion Master",
-    subject: "Rainy Day Blues",
-    body: [
-      "I need the scales of a Gloomfish for a new potion.",
-      "They only surface when it's raining. Take your Rowboat out on the next rainy day and catch one!"
-    ],
-    rewards: [
-      { id: 'honey', count: 150, name: "HNY", image: "/images/profile_bar/hny.png" },
-      { id: ID_POTION_ITEMS?.POTION_GROWTH_ELIXIR || 132104, count: 2, name: "Growth Elixir", image: "/images/items/potion1.png" },
-      { id: 9998, count: 1, name: "Water Sprinkler", image: "/images/items/watersprinkler.png" }
-    ],
-    reqs: [
-      { id: 10003, count: 1, name: "Gloomfish", image: "/images/items/fish.png" }
-    ],
-    unlockCondition: (step, completed) => completed.includes("q10_crab_mentality")
-  },
-
-  {
-    id: "q12_sailing",
-    type: "fishing",
-    sender: "Great Uncle Sir Bee",
-    subject: "Sailing the Open Seas",
-    body: [
-      "A Rowboat? How pedestrian. If you want to make this family proud, you need a vessel worthy of the open ocean.",
-      "Build a Sailboat so you can catch the real prizes."
-    ],
-    rewards: [
-      { id: 'honey', count: 100, name: "HNY", image: "/images/profile_bar/hny.png" },
-      { id: ID_BAIT_ITEMS?.BAIT_3 || 30003, count: 10, name: "Bait III", image: "/images/items/seeds.png" }
-    ],
-    reqs: [
-      { id: 9964, count: 1, name: "Sailboat", image: "/images/items/sailboat.png" }
-    ],
-    unlockCondition: (step, completed) => completed.includes("q11_rainy_day")
-  },
-
-  {
-    id: "q13_storm_chaser",
-    type: "fishing",
-    sender: "Fisherman Finn",
-    mailImage: "/images/mail/maildewey.png",
-    subject: "Storm Chaser",
-    body: [
-      "You're crazy if you go out there during a lightning storm... but if you do, the legendary Spark Eel is said to ride the waves.",
-      "You'll need a Tesla Tower on your boat to survive!"
-    ],
-    rewards: [
-      { id: 'honey', count: 100, name: "HNY", image: "/images/profile_bar/hny.png" },
-      { id: 9954, count: 1, name: "Magic Ring", image: "/images/items/seeds.png" },
-      { id: ID_CHEST_ITEMS?.CHEST_GOLD || 20003, count: 1, name: "Gold Chest", image: "/images/items/chest.png" }
-    ],
-    reqs: [
-      { id: 10004, count: 1, name: "Spark Eel", image: "/images/items/fish.png" }
-    ],
-    unlockCondition: (step, completed) => completed.includes("q12_sailing")
-  },
-
-  {
-    id: "q14_industrial",
-    type: "main",
-    sender: "Mayor Prezibee",
-    subject: "Industrial Revolution",
-    body: [
-      "The town is booming, and we need more resources.",
-      "Forging Steel Plates from Iron and Coal will let you build the ultimate fishing vessel."
-    ],
-    rewards: [
-      { id: 'honey', count: 80, name: "HNY", image: "/images/profile_bar/hny.png" },
-      { id: 9962, count: 1, name: "Engine", image: "/images/crafting/engine.png" }
-    ],
-    reqs: [
-      { id: 9967, count: 50, name: "Steel Plates", image: "/images/crafting/steel_plate.png" }
-    ],
-    unlockCondition: (step, completed) => completed.includes("q13_storm_chaser")
-  },
-
-  {
-    id: "q15_trawler",
-    type: "fishing",
-    sender: "Fisherman Finn",
-    mailImage: "/images/mail/maildewey.png",
-    subject: "Industrial Fishing",
-    body: [
-      "With that Engine, you can finally build the Trawler.",
-      "It's massive, loud, and can reach the deepest parts of the ocean."
-    ],
-    rewards: [
-      { id: 'honey', count: 1080, name: "HNY", image: "/images/profile_bar/hny.png" }
-    ],
-    reqs: [
-      { id: 9963, count: 1, name: "Trawler", image: "/images/items/trawler.png" }
-    ],
-    unlockCondition: (step, completed) => completed.includes("q14_industrial")
-  },
-
-  {
-    id: "q16_kraken",
-    type: "fishing",
-    sender: "Mayor Prezibee",
-    subject: "Monster of the Deep",
-    body: [
-      "Something has been sinking our trade ships in the Deep Ocean.",
-      "Take the Trawler out and catch the Kraken. Be warned, it will put up the fight of a lifetime."
-    ],
-    rewards: [
-      { id: 'honey', count: 50, name: "HNY", image: "/images/profile_bar/hny.png" },
-      { id: 9961, count: 5, name: "Red Gem", image: "/images/items/seeds.png" }
-    ],
-    reqs: [
-      { id: 10005, count: 1, name: "Kraken", image: "/images/items/fish.png" }
-    ],
-    unlockCondition: (step, completed) => completed.includes("q15_trawler")
-  },
-
-  {
-    id: "q9b_ladybug_basics",
-    type: "farming",
-    sender: "Farmer Bob",
-    subject: "Ladybug Basics",
-    body: [
-      "Looks like we have some pests starting to snoop around the crops!",
-      "You should craft a Bug Net and head over to the Forest. Search the bushes there to catch some Ladybugs.",
-      "Bring me 5 Ladybugs and 1 Bug Net so I know you're prepared!"
-    ],
-    rewards: [
-      { id: 'honey', count: 150, name: "HNY", image: "/images/profile_bar/hny.png" },
-      { id: ID_POTION_ITEMS?.POTION_GROWTH_ELIXIR || 132104, count: 1, name: "Growth Elixir", image: ALL_ITEMS[ID_POTION_ITEMS?.POTION_GROWTH_ELIXIR]?.image || "/images/items/potion1.png" }
-    ],
-    reqs: [
-      { id: ID_POTION_ITEMS?.LADYBUG || 132101, count: 5, name: "Ladybugs", image: "/images/items/ladybug.png" },
-      { id: 9971, count: 1, name: "Bug Net", image: "/images/items/bug_net.png" }
     ],
     unlockCondition: (step, completed) => completed.includes("q8_first_harvest")
   },
@@ -800,7 +545,7 @@ export const getQuestData = () => [
     mailImage: "/images/mail/mailmayor.png",
     body: [
       "Now that you're settling in, I wanted to make you aware of a key town resource: the Valley Mission Board.",
-      "Local residents post tasks there regularly — harvests they need, fish to be caught, all sorts of things. Complete them and you'll be compensated well.",
+      "Local residents post tasks there regularly — harvests they need, crops to be grown, all manner of farming requests. Complete them and you'll be compensated well.",
       "To formally recognize your commitment to Harvest Valley, complete five tasks from the board and I'll make sure you're well rewarded. The valley looks after those who look after it."
     ],
     rewards: [
@@ -3886,12 +3631,12 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
 
   useEffect(() => {
     if (tutorialStep === 1) {
-      const t1 = setTimeout(() => setSirBeePos('670px'), 100);
+      setSirBeePos('670px');
       const t2 = setTimeout(() => {
          setTutorialStep(2);
          localStorage.setItem('sandbox_tutorial_step', '2');
-      }, 2100);
-      return () => { clearTimeout(t1); clearTimeout(t2); };
+      }, 600);
+      return () => clearTimeout(t2);
     } else if (tutorialStep >= 2) {
       setSirBeePos('670px');
     }
@@ -3914,17 +3659,7 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
       // Deselect watercan tool
       setSelectedTool(null);
       setIsWatering(false);
-      // Freeze crop countdown — mark as ready so timer stops; popup blocks harvesting until paid
-      const skipped = JSON.parse(localStorage.getItem('sandbox_skipped_crops') || '{}');
-      skipped[plotIdx] = true;
-      localStorage.setItem('sandbox_skipped_crops', JSON.stringify(skipped));
-      setCropArray(prev => {
-        const newArr = new CropItemArrayClass(30);
-        newArr.copyFrom(prev);
-        const item = newArr.getItem(plotIdx);
-        if (item) { item.growStatus = 2; }
-        return newArr;
-      });
+      // growStatus visual update happens AFTER gems are paid (see gem popup onClick)
     }
   }, [tutPage, tutorialStep]);
 
@@ -3997,7 +3732,7 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
     setSkipGrowTarget(null);
     if (tutorialStep === 3 && tutPage === 10) setTutorialGrowSkipped(true);
 
-    await handleInstantHarvest(target);
+    await handleInstantHarvest(target, true);
   };
 
   // Plot Preparation State (0: Red X, 1: Hole, 2: Hole+Fish, 3: Dirt Pile)
@@ -6357,7 +6092,7 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
     }
   };
 
-  const handleInstantHarvest = async (index) => {
+  const handleInstantHarvest = async (index, skipPoints = false) => {
     try {
       playHarvestConfirmSound();
       show(`Harvesting crop...`, "info");
@@ -6369,6 +6104,15 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
           wasCarrot = true;
       }
 
+      // Block harvest if inventory is full
+      if (itemToHarvest?.seedId) {
+        const { canHarvest, reason } = canHarvestProduce(itemToHarvest.seedId);
+        if (!canHarvest) {
+          show(`🎒 ${reason}`, 'error');
+          return;
+        }
+      }
+
       const result = await harvestMany([index]);
 
       // Small delay to ensure blockchain state is updated
@@ -6377,6 +6121,8 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
       if (typeof refetchSeeds === "function") refetchSeeds();
 
       if (tutorialStep === 3 && tutPageRef.current === 11) {
+        localStorage.setItem('sandbox_tut_market', 'true');
+        localStorage.setItem('sandbox_tut_market_page', '11');
         setTutPageSync(12);
       }
 
@@ -6387,6 +6133,37 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
         // Award XP
         const totalHarvested = parseInt(localStorage.getItem('sandbox_total_harvested') || '0', 10);
         localStorage.setItem('sandbox_total_harvested', String(totalHarvested + 1));
+
+        // Leaderboard tracking (skipped crops don't count)
+        if (!skipPoints && itemToHarvest?.seedId) {
+          const baseSeedId = itemToHarvest.seedId & 0xFFF;
+          const seedCat = baseSeedId >> 8; // 1=feeble,2=pico,3=basic,4=premium
+          const subtype = getSubtype(itemToHarvest.seedId); // 1-5 grow tier within category
+          // pico: 500/600/700/800/900, basic: 2000-4000, premium: 10000-18000
+          const TIER_BASE  = { 1: 500,   2: 500,   3: 2000,  4: 10000 };
+          const TIER_STEP  = { 1: 100,   2: 100,   3: 500,   4: 2000  };
+          const base = TIER_BASE[seedCat] ?? 500;
+          const step = TIER_STEP[seedCat] ?? 100;
+          const pts = base + Math.max(0, subtype - 1) * step;
+          const tc = parseInt(localStorage.getItem('sandbox_total_crops') || '0', 10);
+          localStorage.setItem('sandbox_total_crops', (tc + 1).toString());
+          const fp = parseInt(localStorage.getItem('sandbox_farming_points') || '0', 10);
+          localStorage.setItem('sandbox_farming_points', (fp + pts).toString());
+
+          // Weight tracking — per-crop all-time heaviest + weekly featured crop
+          const { weight, name: cropName } = rollCropWeight(itemToHarvest.seedId);
+          const storedHeaviest = JSON.parse(localStorage.getItem('sandbox_heaviest_crop') || 'null');
+          if (!storedHeaviest || weight > storedHeaviest.weight) {
+            localStorage.setItem('sandbox_heaviest_crop', JSON.stringify({ weight, name: cropName }));
+          }
+          const featured = getWeeklyFeaturedCrop();
+          if ((itemToHarvest.seedId & 0xFFF) === featured.baseId) {
+            const stored = JSON.parse(localStorage.getItem('sandbox_weekly_heaviest_crop') || 'null');
+            if (!stored || stored.weekNum !== featured.weekNum || weight > stored.weight) {
+              localStorage.setItem('sandbox_weekly_heaviest_crop', JSON.stringify({ weight, name: cropName, weekNum: featured.weekNum }));
+            }
+          }
+        }
 
         const currentFarmingXp = parseInt(localStorage.getItem('sandbox_farming_xp') || '0', 10);
         const oldLevel = getLevelFromXp(currentFarmingXp);
@@ -7093,7 +6870,7 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
         {/* Well */}
         <img src="/images/land/well.png" alt="Well" style={{ position: 'absolute', top: '385px', left: '230px', width: '190px', pointerEvents: 'none', zIndex: 10 }} draggable={false} />
         {/* Mine */}
-        <img src="/images/land/mine.png" alt="Mine" style={{ position: 'absolute', top: '407px', left: '1007.5px', width: '215px', pointerEvents: 'none', zIndex: 10 }} draggable={false} />
+        <img src="/images/land/mine.png" alt="Mine" style={{ position: 'absolute', top: '409px', left: '1007.5px', width: '215px', pointerEvents: 'none', zIndex: 10 }} draggable={false} />
         {false && <img
           src="/images/label/mineslabel.png"
           alt="Mine Label"
@@ -7188,8 +6965,8 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
               src="/images/bees/sir.png"
               alt="Sir Bee"
               style={{
-                position: 'absolute', left: sirBeePos, top: '320px', width: '100px', zIndex: 20,
-                transition: tutorialStep === 1 ? 'left 2s ease-out' : 'none',
+                position: 'absolute', left: `calc(${sirBeePos} - 30px)`, top: '300px', width: '100px', zIndex: 20,
+                transition: 'none',
                 filter: tutorialStep === 2 ? 'drop-shadow(0 0 10px yellow)' : 'none',
                 cursor: tutorialStep === 2 ? 'pointer' : 'default',
                 animation: tutorialStep >= 2 ? 'mapFloat 2s ease-in-out infinite' : 'none',
@@ -7210,8 +6987,8 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
                 alt="!"
                 style={{
                   position: 'absolute',
-                  left: `calc(${sirBeePos} + 70px)`,
-                  top: '300px',
+                  left: `calc(${sirBeePos} + 40px)`,
+                  top: '280px',
                   width: '24px',
                   height: '24px',
                   zIndex: 21,
@@ -7658,7 +7435,7 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
           className="tutorial-img"
           style={{ width: '490px', objectFit: 'contain', display: 'block' }}
         />
-        {tutPage !== 5 && tutPage !== 6 && tutPage !== 7 && tutPage !== 8 && tutPage !== 9 && tutPage !== 12 && (
+        {tutPage !== 5 && tutPage !== 6 && tutPage !== 7 && tutPage !== 8 && tutPage !== 9 && tutPage !== 11 && tutPage !== 12 && (
           <div className="tut-arrow" style={tutPage === 4 ? { top: 'calc(50% + 55px)' } : tutPage === 11 ? { top: 'auto', bottom: '-30px', transform: 'none' } : {}} onClick={() => {
             if (tutPage === 1) {
               setTutPageSync(2);
@@ -7691,8 +7468,9 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
   {tutorialStep === 3 && tutPage === 12 && (
     <style>{`
       a[href*="/house"], a[href*="/valley"], a[href*="/tavern"] { pointer-events: none !important; }
-      a[href*="/market"] { pointer-events: auto !important; animation: marketIconPulse 1.2s ease-in-out infinite !important; transform-origin: center; position: relative; z-index: 100001; }
-      @keyframes marketIconPulse { 0%, 100% { filter: drop-shadow(0 0 8px #ffe033) drop-shadow(0 0 18px #ffb800); } 50% { filter: drop-shadow(0 0 18px #ffe033) drop-shadow(0 0 36px #ffb800) brightness(1.2); } }
+      a[href*="/market"] { pointer-events: auto !important; }
+      @keyframes marketIconPulse { 0%, 100% { transform: scale(1); filter: drop-shadow(0 0 6px #ffe033); } 50% { transform: scale(1.18); filter: drop-shadow(0 0 18px #ffe033) drop-shadow(0 0 32px #ffb800); } }
+      a[href*="/market"] .menu-icon { overflow: visible !important; animation: marketIconPulse 1.2s ease-in-out infinite; transform-origin: center; }
     `}</style>
   )}
 
@@ -7869,6 +7647,20 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
             localStorage.setItem('sandbox_gems', String(currentGems - 50));
             window.dispatchEvent(new CustomEvent('sandboxGemsChanged'));
             trackGemSpend(50);
+            // Mark crop as skipped and visually ready AFTER payment
+            const plotIdx = tutGemPlotIndex;
+            if (plotIdx !== null) {
+              const skipped = JSON.parse(localStorage.getItem('sandbox_skipped_crops') || '{}');
+              skipped[plotIdx] = true;
+              localStorage.setItem('sandbox_skipped_crops', JSON.stringify(skipped));
+              setCropArray(prev => {
+                const newArr = new CropItemArrayClass(30);
+                newArr.copyFrom(prev);
+                const item = newArr.getItem(plotIdx);
+                if (item) { item.growStatus = 2; }
+                return newArr;
+              });
+            }
             setTutGemPopupOpen(false);
           }}
           style={{ display: 'inline-block', background: 'linear-gradient(135deg, #f5c842, #e0a800)', border: '3px solid #a67c00', borderRadius: '12px', padding: '12px 32px', fontFamily: 'Cartoonist', fontSize: '18px', color: '#3a2010', cursor: 'pointer', userSelect: 'none' }}
@@ -7925,7 +7717,7 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
         <PokemonPackRipDialog
           rollingInfo={{
             id: 'pabee_pack',
-            count: 4,
+            count: 2,
             isReveal: true,
             isComplete: true,
             isFallback: false,
@@ -7989,29 +7781,29 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
             <img src="/images/farming/realshovel.png" alt="Shovel" draggable={false}
               onClick={() => { toggleTool('shovel'); const next = selectedTool !== 'shovel'; setIsDigging(next); setIsHoeing(false); setIsWatering(false); setIsDirting(false); setIsSeeding(false); setIsPlanting(false); }}
               onMouseEnter={e => { e.currentTarget.style.filter = 'drop-shadow(0px 0px 6px rgba(255,255,255,0.8))'; e.currentTarget.style.transform = selectedTool === 'shovel' ? 'scale(1.15) translateY(-24px)' : 'scale(1.15)'; }}
-              onMouseLeave={e => { e.currentTarget.style.filter = selectedTool === 'shovel' ? 'drop-shadow(0px 0px 6px gold) drop-shadow(0px 0px 14px rgba(255,210,0,0.8))' : (tutorialStep === 3 && tutPage === 5) ? 'drop-shadow(0px 0px 8px white) drop-shadow(0px 0px 16px white)' : 'none'; e.currentTarget.style.transform = selectedTool === 'shovel' ? 'translateY(-24px)' : 'none'; }}
-              style={{ position: 'absolute', bottom: '43px', left: '167px', width: '48px', cursor: 'pointer', pointerEvents: 'auto', zIndex: 2, transform: selectedTool === 'shovel' ? 'translateY(-24px)' : 'none', filter: selectedTool === 'shovel' ? 'drop-shadow(0px 0px 6px gold) drop-shadow(0px 0px 14px rgba(255,210,0,0.8))' : (tutorialStep === 3 && tutPage === 5) ? 'drop-shadow(0px 0px 8px white) drop-shadow(0px 0px 16px white)' : 'none', transition: 'transform 0.4s ease, filter 0.2s ease', animation: (tutorialStep === 3 && tutPage === 5) || selectedTool === 'shovel' ? 'mapFloat 2s ease-in-out infinite' : 'none' }} />
+              onMouseLeave={e => { e.currentTarget.style.filter = selectedTool === 'shovel' ? 'drop-shadow(0px 0px 6px gold) drop-shadow(0px 0px 14px rgba(255,210,0,0.8))' : 'none'; e.currentTarget.style.transform = selectedTool === 'shovel' ? 'translateY(-24px)' : 'none'; }}
+              style={{ position: 'absolute', bottom: '43px', left: '167px', width: '48px', cursor: 'pointer', pointerEvents: 'auto', zIndex: 2, transform: selectedTool === 'shovel' ? 'translateY(-24px)' : 'none', filter: selectedTool === 'shovel' ? 'drop-shadow(0px 0px 6px gold) drop-shadow(0px 0px 14px rgba(255,210,0,0.8))' : 'none', transition: 'transform 0.4s ease, filter 0.2s ease', animation: (tutorialStep === 3 && tutPage === 5) || selectedTool === 'shovel' ? 'mapFloat 2s ease-in-out infinite' : 'none' }} />
           )}
           {(tutorialStep >= 32 || (tutorialStep === 3 && tutPage >= 6)) && (
             <img src="/images/farming/realsoil.png" alt="Soil" draggable={false}
               onClick={() => { toggleTool('soil'); const next = selectedTool !== 'soil'; setIsDirting(next); setIsHoeing(false); setIsWatering(false); setIsDigging(false); setIsSeeding(false); setIsPlanting(false); }}
               onMouseEnter={e => { e.currentTarget.style.filter = 'drop-shadow(0px 0px 6px rgba(255,255,255,0.8))'; e.currentTarget.style.transform = selectedTool === 'soil' ? 'scale(1.15) translateY(-24px)' : 'scale(1.15)'; }}
-              onMouseLeave={e => { e.currentTarget.style.filter = selectedTool === 'soil' ? 'drop-shadow(0px 0px 6px gold) drop-shadow(0px 0px 14px rgba(255,210,0,0.8))' : (tutorialStep === 3 && tutPage === 6) ? 'drop-shadow(0px 0px 8px white) drop-shadow(0px 0px 16px white)' : 'none'; e.currentTarget.style.transform = selectedTool === 'soil' ? 'translateY(-24px)' : 'none'; }}
-              style={{ position: 'absolute', bottom: '59px', left: '268px', width: '83px', cursor: 'pointer', pointerEvents: 'auto', zIndex: 2, transform: selectedTool === 'soil' ? 'translateY(-24px)' : 'none', filter: selectedTool === 'soil' ? 'drop-shadow(0px 0px 6px gold) drop-shadow(0px 0px 14px rgba(255,210,0,0.8))' : (tutorialStep === 3 && tutPage === 6) ? 'drop-shadow(0px 0px 8px white) drop-shadow(0px 0px 16px white)' : 'none', transition: 'transform 0.4s ease, filter 0.2s ease', animation: (tutorialStep === 3 && tutPage === 6) || selectedTool === 'soil' ? 'mapFloat 2s ease-in-out infinite' : 'none' }} />
+              onMouseLeave={e => { e.currentTarget.style.filter = selectedTool === 'soil' ? 'drop-shadow(0px 0px 6px gold) drop-shadow(0px 0px 14px rgba(255,210,0,0.8))' : 'none'; e.currentTarget.style.transform = selectedTool === 'soil' ? 'translateY(-24px)' : 'none'; }}
+              style={{ position: 'absolute', bottom: '59px', left: '268px', width: '83px', cursor: 'pointer', pointerEvents: 'auto', zIndex: 2, transform: selectedTool === 'soil' ? 'translateY(-24px)' : 'none', filter: selectedTool === 'soil' ? 'drop-shadow(0px 0px 6px gold) drop-shadow(0px 0px 14px rgba(255,210,0,0.8))' : 'none', transition: 'transform 0.4s ease, filter 0.2s ease', animation: (tutorialStep === 3 && tutPage === 6) || selectedTool === 'soil' ? 'mapFloat 2s ease-in-out infinite' : 'none' }} />
           )}
           {(tutorialStep >= 32 || (tutorialStep === 3 && tutPage >= 7)) && (
             <img src="/images/farming/realseeds.png" alt="Seeds" draggable={false}
               onClick={() => { toggleTool('seeds'); const next = selectedTool !== 'seeds'; setIsSeeding(next); setIsDirting(false); setIsHoeing(false); setIsWatering(false); setIsDigging(false); setIsPlanting(false); }}
               onMouseEnter={e => { e.currentTarget.style.filter = 'drop-shadow(0px 0px 6px rgba(255,255,255,0.8))'; e.currentTarget.style.transform = selectedTool === 'seeds' ? 'scale(1.15) translateY(-24px)' : 'scale(1.15)'; }}
-              onMouseLeave={e => { e.currentTarget.style.filter = selectedTool === 'seeds' ? 'drop-shadow(0px 0px 6px gold) drop-shadow(0px 0px 14px rgba(255,210,0,0.8))' : (tutorialStep === 3 && tutPage === 7) ? 'drop-shadow(0px 0px 8px white) drop-shadow(0px 0px 16px white)' : 'none'; e.currentTarget.style.transform = selectedTool === 'seeds' ? 'translateY(-24px)' : 'none'; }}
-              style={{ position: 'absolute', bottom: '61px', left: '413px', width: '69px', cursor: 'pointer', pointerEvents: 'auto', zIndex: 2, transform: selectedTool === 'seeds' ? 'translateY(-24px)' : 'none', filter: selectedTool === 'seeds' ? 'drop-shadow(0px 0px 6px gold) drop-shadow(0px 0px 14px rgba(255,210,0,0.8))' : (tutorialStep === 3 && tutPage === 7) ? 'drop-shadow(0px 0px 8px white) drop-shadow(0px 0px 16px white)' : 'none', transition: 'transform 0.4s ease, filter 0.2s ease', animation: (tutorialStep === 3 && tutPage === 7) || selectedTool === 'seeds' ? 'mapFloat 2s ease-in-out infinite' : 'none' }} />
+              onMouseLeave={e => { e.currentTarget.style.filter = selectedTool === 'seeds' ? 'drop-shadow(0px 0px 6px gold) drop-shadow(0px 0px 14px rgba(255,210,0,0.8))' : 'none'; e.currentTarget.style.transform = selectedTool === 'seeds' ? 'translateY(-24px)' : 'none'; }}
+              style={{ position: 'absolute', bottom: '61px', left: '413px', width: '69px', cursor: 'pointer', pointerEvents: 'auto', zIndex: 2, transform: selectedTool === 'seeds' ? 'translateY(-24px)' : 'none', filter: selectedTool === 'seeds' ? 'drop-shadow(0px 0px 6px gold) drop-shadow(0px 0px 14px rgba(255,210,0,0.8))' : 'none', transition: 'transform 0.4s ease, filter 0.2s ease', animation: (tutorialStep === 3 && tutPage === 7) || selectedTool === 'seeds' ? 'mapFloat 2s ease-in-out infinite' : 'none' }} />
           )}
           {(tutorialStep >= 32 || (tutorialStep === 3 && tutPage >= 8)) && (
             <img src="/images/farming/realbucket.png" alt="Bucket" draggable={false}
               onClick={() => { toggleTool('bucket'); const next = selectedTool !== 'bucket'; setIsWatering(next); setIsHoeing(false); setIsDigging(false); setIsDirting(false); setIsSeeding(false); setIsPlanting(false); }}
               onMouseEnter={e => { e.currentTarget.style.filter = 'drop-shadow(0px 0px 6px rgba(255,255,255,0.8))'; e.currentTarget.style.transform = selectedTool === 'bucket' ? 'scale(1.15) translateY(-24px)' : 'scale(1.15)'; }}
-              onMouseLeave={e => { e.currentTarget.style.filter = selectedTool === 'bucket' ? 'drop-shadow(0px 0px 6px gold) drop-shadow(0px 0px 14px rgba(255,210,0,0.8))' : (tutorialStep === 3 && tutPage === 8) ? 'drop-shadow(0px 0px 8px white) drop-shadow(0px 0px 16px white)' : 'none'; e.currentTarget.style.transform = selectedTool === 'bucket' ? 'translateY(-24px)' : 'none'; }}
-              style={{ position: 'absolute', bottom: '59px', left: '535px', width: '101px', cursor: 'pointer', pointerEvents: 'auto', zIndex: 2, transform: selectedTool === 'bucket' ? 'translateY(-24px)' : 'none', filter: selectedTool === 'bucket' ? 'drop-shadow(0px 0px 6px gold) drop-shadow(0px 0px 14px rgba(255,210,0,0.8))' : (tutorialStep === 3 && tutPage === 8) ? 'drop-shadow(0px 0px 8px white) drop-shadow(0px 0px 16px white)' : 'none', transition: 'transform 0.4s ease, filter 0.2s ease', animation: (tutorialStep === 3 && tutPage === 8) || selectedTool === 'bucket' ? 'mapFloat 2s ease-in-out infinite' : 'none' }} />
+              onMouseLeave={e => { e.currentTarget.style.filter = selectedTool === 'bucket' ? 'drop-shadow(0px 0px 6px gold) drop-shadow(0px 0px 14px rgba(255,210,0,0.8))' : 'none'; e.currentTarget.style.transform = selectedTool === 'bucket' ? 'translateY(-24px)' : 'none'; }}
+              style={{ position: 'absolute', bottom: '59px', left: '535px', width: '101px', cursor: 'pointer', pointerEvents: 'auto', zIndex: 2, transform: selectedTool === 'bucket' ? 'translateY(-24px)' : 'none', filter: selectedTool === 'bucket' ? 'drop-shadow(0px 0px 6px gold) drop-shadow(0px 0px 14px rgba(255,210,0,0.8))' : 'none', transition: 'transform 0.4s ease, filter 0.2s ease', animation: (tutorialStep === 3 && tutPage === 8) || selectedTool === 'bucket' ? 'mapFloat 2s ease-in-out infinite' : 'none' }} />
           )}
           {(tutorialStep >= 32 || (tutorialStep === 3 && tutPage >= 9)) && (
             <img src="/images/farming/realfork.png" alt="Fork" draggable={false}

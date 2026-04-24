@@ -1,383 +1,243 @@
 import React, { useEffect, useState, useCallback } from "react";
 import "./style.css";
 import BaseDialog from "../_BaseDialog";
-import {
-  ID_INVENTORY_MENUS,
-} from "../../constants/app_ids";
-import BaseButton from "../../components/buttons/BaseButton";
 import ItemSmallView from "../../components/boxes/ItemViewSmall";
 import ItemViewUsable from "../../components/boxes/ItemViewUsable";
 import { useItems } from "../../hooks/useItems";
 import { useChest } from "../../hooks/useChest";
 import { useNotification } from "../../contexts/NotificationContext";
-import { ID_CHEST_ITEMS, ID_POTION_ITEMS } from "../../constants/app_ids";
+import { ID_CHEST_ITEMS, ID_POTION_ITEMS, ID_INVENTORY_MENUS } from "../../constants/app_ids";
 import ChestRollingDialog from "./ChestRollingDialog";
 import ProduceListDialog from "../../components/boxes/ItemViewMarketplace";
+import { getInventoryBags, getInventoryMaxSlots, getProduceUsedSlots, SLOTS_PER_BAG } from "../../utils/inventorySlots";
 
-const menus = [
-  { id: ID_INVENTORY_MENUS.SEEDS, label: "Seeds" },
-  { id: ID_INVENTORY_MENUS.PRODUCE, label: "Produce" },
-  { id: ID_INVENTORY_MENUS.BAITS, label: "Baits" },
-  { id: ID_INVENTORY_MENUS.FISHES, label: "Fishes" },
-  { id: ID_INVENTORY_MENUS.CHESTS, label: "Chests" },
-  { id: ID_INVENTORY_MENUS.POTIONS, label: "Potions" },
-  { id: ID_INVENTORY_MENUS.ITEMS, label: "Items" },
+const FILTERS = [
+  { id: 'ALL',                        label: 'All' },
+  { id: ID_INVENTORY_MENUS.SEEDS,     label: 'Seeds' },
+  { id: ID_INVENTORY_MENUS.PRODUCE,   label: 'Produce' },
+  { id: ID_INVENTORY_MENUS.CHESTS,    label: 'Chests' },
 ];
 
-const InventoryDialog = ({ onClose }) => {
-  const [selectedMenu, setSelectedMenu] = useState(ID_INVENTORY_MENUS.SEEDS);
-  const { seeds, productions, baits, fish, chests, potions, items, refetch } = useItems();
-  const [list, setList] = useState([]);
-  // Use chest opening from useChest (transaction construction and submission)
-  const { openChest } = useChest();
+const USABLE_FILTERS = new Set([ID_INVENTORY_MENUS.CHESTS]);
 
-  // Potion usage is now handled via context - no need to destructure useFarming
+const InventoryDialog = ({ onClose }) => {
+  const [filter, setFilter] = useState('ALL');
+  const { seeds, productions, baits, fish, chests, potions, items, refetch } = useItems();
+  const { openChest } = useChest();
   const { show } = useNotification();
-  
-  // Function to detect if we're on the farm page
-  const isOnFarmPage = () => {
-    return window.location.pathname === '/farm' || window.location.pathname.endsWith('/farm');
-  };
-  
-  // Chest opening state
+
   const [usingItemId, setUsingItemId] = useState(null);
   const [chestResult, setChestResult] = useState(null);
   const [showChestDialog, setShowChestDialog] = useState(false);
   const [selectedProduce, setSelectedProduce] = useState(null);
+  const [bagCount, setBagCount] = useState(getInventoryBags);
+  const [usedSlots, setUsedSlots] = useState(getProduceUsedSlots);
+
+  useEffect(() => {
+    const refresh = () => {
+      setBagCount(getInventoryBags());
+      setUsedSlots(getProduceUsedSlots());
+    };
+    window.addEventListener('sandboxGoldChanged', refresh);
+    return () => window.removeEventListener('sandboxGoldChanged', refresh);
+  }, []);
+
+  const maxSlots = bagCount * SLOTS_PER_BAG;
+
+  const isOnFarmPage = () =>
+    window.location.pathname === '/farm' || window.location.pathname.endsWith('/farm');
 
   const onUseItem = async (itemId) => {
     setUsingItemId(itemId);
     try {
-      console.log("Using item:", itemId);
-      const idNum = Number(itemId & 0xFF);
-      console.log("🚀 ~ onUseItem ~ idNum:", idNum)
-      
-      // Handle chest opening
-      if (Number(itemId) === ID_CHEST_ITEMS.CHEST_WOOD || 
-          Number(itemId) === ID_CHEST_ITEMS.CHEST_BRONZE || 
-          Number(itemId) === ID_CHEST_ITEMS.CHEST_SILVER || 
+      if (Number(itemId) === ID_CHEST_ITEMS.CHEST_WOOD ||
+          Number(itemId) === ID_CHEST_ITEMS.CHEST_BRONZE ||
+          Number(itemId) === ID_CHEST_ITEMS.CHEST_SILVER ||
           Number(itemId) === ID_CHEST_ITEMS.CHEST_GOLD) {
-        
         show("Opening chest...", "info");
-        const result = await openChest(idNum);
-        
-        console.log("🎁 Chest opening result:", result);
-        if (result.success && result.results && result.results.length > 0) {
-          console.log("🎁 Showing chest result dialog with reward:", result.results[0]);
-          // Show the chest result dialog
-          setChestResult({
-            rewardId: result.results[0], // Take the first reward
-            chestType: idNum
-          });
+        const result = await openChest(Number(itemId) & 0xFF);
+        if (result.success && result.results?.length > 0) {
+          setChestResult({ rewardId: result.results[0], chestType: Number(itemId) & 0xFF });
           setShowChestDialog(true);
-          console.log("🎁 Dialog state set - showChestDialog should be true");
-          
-          // Refresh items immediately and then with retry mechanism
           await refetch();
-          
-          // Multiple refresh attempts to ensure inventory updates
-          const refreshInventory = async (attempt = 1) => {
-            console.log(`🔄 Refresh attempt ${attempt} after chest opening...`);
+          const retry = async (attempt = 1) => {
             await refetch();
-            
-            if (attempt < 5) {
-              setTimeout(() => refreshInventory(attempt + 1), 1000 * attempt);
-            }
+            if (attempt < 5) setTimeout(() => retry(attempt + 1), 1000 * attempt);
           };
-          
-          setTimeout(() => refreshInventory(), 1000);
+          setTimeout(() => retry(), 1000);
         } else if (result.success) {
-          console.log("🎁 Chest opened but no results found");
           show("Chest opened successfully!", "success");
-          
-          // Refresh items immediately and then with retry mechanism
           await refetch();
-          
-          // Multiple refresh attempts to ensure inventory updates
-          const refreshInventory = async (attempt = 1) => {
-            console.log(`🔄 Refresh attempt ${attempt} after chest opening...`);
-            await refetch();
-            
-            if (attempt < 5) {
-              setTimeout(() => refreshInventory(attempt + 1), 1000 * attempt);
-            }
-          };
-          
-          setTimeout(() => refreshInventory(), 1000);
-        }
-        return;
-      }
-      
-      // Handle potion usage - these require a plot selection
-      if (itemId === ID_POTION_ITEMS.POTION_GROWTH_ELIXIR ||
-          itemId === ID_POTION_ITEMS.POTION_GROWTH_ELIXIR_II ||
-          itemId === ID_POTION_ITEMS.POTION_GROWTH_ELIXIR_III) {
-        
-        if (isOnFarmPage()) {
-          // Directly trigger farm potion mode
-          window.dispatchEvent(new CustomEvent('startPotionUsage', {
-            detail: { id: itemId, name: 'Growth Elixir' }
-          }));
-          onClose(); // Close inventory dialog
-        } else {
-          show("Go to the Farm to use Growth Elixir on growing crops.", "info");
-        }
-        return;
-      }
-      
-      if (itemId === ID_POTION_ITEMS.POTION_PESTICIDE ||
-          itemId === ID_POTION_ITEMS.POTION_PESTICIDE_II ||
-          itemId === ID_POTION_ITEMS.POTION_PESTICIDE_III) {
-        
-        if (isOnFarmPage()) {
-          // Directly trigger farm potion mode
-          window.dispatchEvent(new CustomEvent('startPotionUsage', {
-            detail: { id: itemId, name: 'Pesticide' }
-          }));
-          onClose(); // Close inventory dialog
-        } else {
-          show("Go to the Farm to use Pesticide on growing crops.", "info");
-        }
-        return;
-      }
-      
-      if (itemId === ID_POTION_ITEMS.POTION_FERTILIZER ||
-          itemId === ID_POTION_ITEMS.POTION_FERTILIZER_II ||
-          itemId === ID_POTION_ITEMS.POTION_FERTILIZER_III) {
-        
-        if (isOnFarmPage()) {
-          // Directly trigger farm potion mode
-          window.dispatchEvent(new CustomEvent('startPotionUsage', {
-            detail: { id: itemId, name: 'Fertilizer' }
-          }));
-          onClose(); // Close inventory dialog
-        } else {
-          show("Go to the Farm to use Fertilizer on growing crops.", "info");
         }
         return;
       }
 
-      if (itemId === ID_POTION_ITEMS.SCARECROW) {
+      const potionEvents = {
+        [ID_POTION_ITEMS.POTION_GROWTH_ELIXIR]: 'Growth Elixir',
+        [ID_POTION_ITEMS.POTION_GROWTH_ELIXIR_II]: 'Growth Elixir',
+        [ID_POTION_ITEMS.POTION_GROWTH_ELIXIR_III]: 'Growth Elixir',
+        [ID_POTION_ITEMS.POTION_PESTICIDE]: 'Pesticide',
+        [ID_POTION_ITEMS.POTION_PESTICIDE_II]: 'Pesticide',
+        [ID_POTION_ITEMS.POTION_PESTICIDE_III]: 'Pesticide',
+        [ID_POTION_ITEMS.POTION_FERTILIZER]: 'Fertilizer',
+        [ID_POTION_ITEMS.POTION_FERTILIZER_II]: 'Fertilizer',
+        [ID_POTION_ITEMS.POTION_FERTILIZER_III]: 'Fertilizer',
+        [ID_POTION_ITEMS.SCARECROW]: 'Scarecrow',
+        [ID_POTION_ITEMS.LADYBUG]: 'Ladybug',
+        9998: 'Water Sprinkler',
+        9999: 'Umbrella',
+        9955: 'Yarn',
+      };
+
+      if (potionEvents[itemId]) {
         if (isOnFarmPage()) {
-          // Directly trigger farm placement mode
-          window.dispatchEvent(new CustomEvent('startPotionUsage', {
-            detail: { id: itemId, name: 'Scarecrow' }
-          }));
-          onClose(); // Close inventory dialog
+          window.dispatchEvent(new CustomEvent('startPotionUsage', { detail: { id: itemId, name: potionEvents[itemId] } }));
+          onClose();
         } else {
-          localStorage.setItem("pendingScarecrowPlacement", "true");
-          window.location.href = "/farm";
+          show("Go to the Farm to use this item.", "info");
         }
         return;
       }
 
-      if (itemId === ID_POTION_ITEMS.LADYBUG) {
-        if (isOnFarmPage()) {
-          // Directly trigger farm placement mode
-          window.dispatchEvent(new CustomEvent('startPotionUsage', {
-            detail: { id: itemId, name: 'Ladybug' }
-          }));
-          onClose(); // Close inventory dialog
-        } else {
-          localStorage.setItem("pendingLadybugPlacement", "true");
-          window.location.href = "/farm";
-        }
-        return;
-      }
-
-      if (itemId === 9998) {
-        if (isOnFarmPage()) {
-          // Directly trigger farm placement mode
-          window.dispatchEvent(new CustomEvent('startPotionUsage', {
-            detail: { id: itemId, name: 'Water Sprinkler' }
-          }));
-          onClose(); // Close inventory dialog
-        } else {
-          localStorage.setItem("pendingSprinklerPlacement", "true");
-          window.location.href = "/farm";
-        }
-        return;
-      }
-
-      if (itemId === 9999) {
-        if (isOnFarmPage()) {
-          // Directly trigger farm placement mode
-          window.dispatchEvent(new CustomEvent('startPotionUsage', {
-            detail: { id: itemId, name: 'Umbrella' }
-          }));
-          onClose(); // Close inventory dialog
-        } else {
-          localStorage.setItem("pendingUmbrellaPlacement", "true");
-          window.location.href = "/farm";
-        }
-        return;
-      }
-      
-      if (Number(itemId) === 9955) {
-        if (isOnFarmPage()) {
-          // Directly trigger yarn interaction mode
-          window.dispatchEvent(new CustomEvent('startPotionUsage', {
-            detail: { id: itemId, name: 'Yarn' }
-          }));
-          onClose(); // Close inventory dialog
-        } else {
-          localStorage.setItem("pendingYarnPlacement", "true");
-          window.location.href = "/farm";
-        }
-        return;
-      }
-
-      // Default case
       show("This item cannot be used directly from inventory.", "warning");
-      
     } catch (error) {
-      console.error("Error using item:", error);
       show(`Error: ${error.message}`, "error");
     } finally {
       setUsingItemId(null);
     }
   };
 
-  useEffect(() => {
-    
-    switch (selectedMenu) {
-      case ID_INVENTORY_MENUS.SEEDS:
-        setList(seeds.filter(item => item.count > 0));
-        break;
-      case ID_INVENTORY_MENUS.PRODUCE:
-        setList(productions.filter(item => item.count > 0));
-        break;
-      case ID_INVENTORY_MENUS.BAITS:
-        setList(baits.filter(item => item.count > 0));
-        break;
-      case ID_INVENTORY_MENUS.FISHES:
-        setList(fish.filter(item => item.count > 0));
-        break;
-      case ID_INVENTORY_MENUS.CHESTS:
-        setList(chests.filter(item => item.count > 0));
-        break;
-      case ID_INVENTORY_MENUS.POTIONS:
-        setList(potions.filter(item => item.count > 0));
-        break;
-      case ID_INVENTORY_MENUS.ITEMS:
-        setList(items.filter(item => item.count > 0));
-        break;
-      default:
-        break;
-    }
-  }, [selectedMenu, seeds, productions, baits, fish, chests, potions, items]);
+  const allItems = [
+    ...seeds.filter(i => i.count > 0),
+    ...productions.filter(i => i.count > 0),
+    ...chests.filter(i => i.count > 0),
+  ];
+
+  const filterMap = {
+    'ALL': allItems,
+    [ID_INVENTORY_MENUS.SEEDS]:   seeds.filter(i => i.count > 0),
+    [ID_INVENTORY_MENUS.PRODUCE]: productions.filter(i => i.count > 0),
+    [ID_INVENTORY_MENUS.CHESTS]:  chests.filter(i => i.count > 0),
+  };
+
+  const visibleItems = filterMap[filter] || allItems;
+  const isUsableFilter = USABLE_FILTERS.has(filter);
 
   return (
     <>
       <style>{`
-        .produce-hover {
-          transition: transform 0.2s ease, filter 0.2s ease;
+        .inv-filter-btn {
+          padding: 5px 10px;
+          border-radius: 6px;
+          border: 1px solid rgba(255,255,255,0.15);
+          background: rgba(255,255,255,0.05);
+          color: #aaa;
+          font-family: GROBOLD, Cartoonist, sans-serif;
+          font-size: 10px;
+          letter-spacing: 1px;
           cursor: pointer;
+          transition: all 0.15s;
+          white-space: nowrap;
         }
-        .produce-hover:hover {
-          transform: scale(1.1);
-          filter: drop-shadow(0px 0px 8px rgba(0, 255, 65, 0.8));
+        .inv-filter-btn.active {
+          background: rgba(245,216,122,0.2);
+          border-color: rgba(245,216,122,0.5);
+          color: #f5d87a;
         }
-          img[src*="rock.png"],
-          img[src*="wood.png"],
-          img[src*="axe.png"],
-          img[src*="picaxe.png"] {
-            transform: scale(0.1);
+        .inv-filter-btn:hover:not(.active) {
+          background: rgba(255,255,255,0.1);
+          color: #ddd;
         }
-        img[src*="yarn.png"] {
-            transform: scale(0.5);
-        }
+        img[src*="rock.png"], img[src*="wood.png"], img[src*="axe.png"], img[src*="picaxe.png"] { transform: scale(0.1); }
+        img[src*="yarn.png"] { transform: scale(0.5); }
       `}</style>
-      <BaseDialog onClose={onClose} title="INVENTORY" header="/images/dialog/modal-header-inventory.png" headerOffset={10} className="custom-modal-background">
-        <div className="inventory-dialog">
-          <div className="layout">
-            <div className="info-row">
-              {menus.map((item, index) => (
-                <BaseButton
-                  className={`button ${index === 0 ? "first" : ""}`}
-                  label={item.label}
-                  key={index}
-                  focused={selectedMenu === item.id}
-                  onClick={() => setSelectedMenu(item.id)}
-                  small
-                ></BaseButton>
-              ))}
+
+      <BaseDialog onClose={onClose} title="INVENTORY" header="/images/dialog/modal-header-inventory.png" headerOffset={10}>
+        <div style={{ width: 480, display: 'flex', flexDirection: 'column', gap: 10 }}>
+
+          {/* Slot bar */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ flex: 1, height: 5, background: 'rgba(255,255,255,0.1)', borderRadius: 3, overflow: 'hidden' }}>
+              <div style={{
+                height: '100%', borderRadius: 3,
+                width: `${Math.min(100, (usedSlots / maxSlots) * 100)}%`,
+                background: usedSlots >= maxSlots ? '#ff5555' : usedSlots / maxSlots > 0.75 ? '#f5a623' : '#5dbb63',
+                transition: 'width 0.3s ease',
+              }} />
             </div>
-            <div className="seed-row">
-              {selectedMenu !== ID_INVENTORY_MENUS.CHESTS && selectedMenu !== ID_INVENTORY_MENUS.POTIONS && selectedMenu !== ID_INVENTORY_MENUS.ITEMS && (
-                <div className="seed-row-wrapper" style={{ maxHeight: '400px', overflowY: 'auto', paddingRight: '5px' }}>
-                  {list.map((item, index) => (
-                  <div 
-                    key={index}
-                    className={(selectedMenu === ID_INVENTORY_MENUS.PRODUCE || selectedMenu === ID_INVENTORY_MENUS.FISHES) ? "produce-hover" : ""}
+            <span style={{
+              color: usedSlots >= maxSlots ? '#ff7777' : '#aaa',
+              fontSize: 10, fontFamily: 'monospace', whiteSpace: 'nowrap',
+            }}>
+              {usedSlots}/{maxSlots} slots
+            </span>
+          </div>
+
+          {/* Filter tabs */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+            {FILTERS.map(f => (
+              <button
+                key={f.id}
+                className={`inv-filter-btn${filter === f.id ? ' active' : ''}`}
+                onClick={() => setFilter(f.id)}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Item grid */}
+          <div style={{ minHeight: 300, maxHeight: 380, overflowY: 'auto', paddingRight: 4 }}>
+            {visibleItems.length === 0 ? (
+              <div style={{ textAlign: 'center', color: '#555', fontSize: 12, paddingTop: 60 }}>
+                Nothing here yet
+              </div>
+            ) : isUsableFilter ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '4px 0' }}>
+                {visibleItems.map((item, i) => (
+                  <ItemViewUsable
+                    key={i}
+                    itemId={item.id}
+                    count={item.count}
+                    onUse={onUseItem}
+                    usable={item.usable}
+                    buttonLabel={Number(usingItemId) === Number(item.id) ? "Using..." : "Use"}
+                    disabled={Number(usingItemId) === Number(item.id)}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, padding: '8px 4px', justifyContent: 'flex-start' }}>
+                {visibleItems.map((item, i) => (
+                  <div
+                    key={i}
+                    style={{ cursor: (filter === ID_INVENTORY_MENUS.PRODUCE || filter === ID_INVENTORY_MENUS.FISHES || filter === 'ALL') ? 'pointer' : 'default' }}
                     onClick={() => {
-                      if (selectedMenu === ID_INVENTORY_MENUS.PRODUCE || selectedMenu === ID_INVENTORY_MENUS.FISHES) {
+                      if (item.category && (String(item.category).includes('CROP') || String(item.category).includes('PRODUCE') || String(item.category).includes('FISH')))
                         setSelectedProduce(item);
-                      }
                     }}
                   >
-                    <ItemSmallView
-                      itemId={item.id}
-                      count={item.count}
-                    ></ItemSmallView>
+                    <ItemSmallView itemId={item.id} count={item.count} />
                   </div>
-                  ))}
-                </div>
-              )}
-              {(selectedMenu === ID_INVENTORY_MENUS.CHESTS || selectedMenu === ID_INVENTORY_MENUS.POTIONS || selectedMenu === ID_INVENTORY_MENUS.ITEMS) && (
-                <div className="seed-list" style={{ maxHeight: '400px', overflowY: 'auto', paddingRight: '5px' }}>
-                  {list.map((item, index) => {
-                    
-                    // Regular item (chest or potion)
-                    return (
-                      <ItemViewUsable
-                        key={index}
-                        itemId={item.id}
-                        count={item.count}
-                        onUse={onUseItem}
-                        usable={item.usable}
-                        buttonLabel={Number(usingItemId) === Number(item.id) ? "Using..." : "Use"}
-                        disabled={Number(usingItemId) === Number(item.id)}
-                      ></ItemViewUsable>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
+
         </div>
       </BaseDialog>
-      
-      {/* Produce List Dialog */}
+
       {selectedProduce && (
-        <ProduceListDialog 
-          item={selectedProduce} 
-          onClose={() => setSelectedProduce(null)} 
-        />
+        <ProduceListDialog item={selectedProduce} onClose={() => setSelectedProduce(null)} />
       )}
 
-      {/* Chest Result Dialog */}
-      {console.log("🔍 Dialog render check - showChestDialog:", showChestDialog, "chestResult:", chestResult)}
       {showChestDialog && chestResult && (
         <ChestRollingDialog
           rollingInfo={chestResult}
-          onClose={() => {
-            console.log("🎁 Closing chest dialog");
-            setShowChestDialog(false);
-            setChestResult(null);
-            // Refresh inventory when dialog is closed
-            refetch();
-          }}
-          onBack={() => {
-            console.log("🎁 Going back from chest dialog");
-            setShowChestDialog(false);
-            setChestResult(null);
-            // Refresh inventory when dialog is closed
-            refetch();
-          }}
+          onClose={() => { setShowChestDialog(false); setChestResult(null); refetch(); }}
+          onBack={() => { setShowChestDialog(false); setChestResult(null); refetch(); }}
         />
       )}
-      
     </>
   );
 };

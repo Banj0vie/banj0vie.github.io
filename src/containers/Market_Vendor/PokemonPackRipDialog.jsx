@@ -229,7 +229,8 @@ const DRAG_PX_FULL = 600;
 
 const PACK_CONFIGS = {
   pico_pack: { idleDir: 'card1idle/idle_1',         idlePrefix: 'idle_1',                idleFrames: 11, openDir: 'card1open/open_1',           openPrefix: 'open_1',                openFrames: 15, openFrameOffset: 13, sep: '_', alt: 'Pico Seeds Pack' },
-  2:         { idleDir: 'card1idle/chest_wood',      idlePrefix: 'New_idle_chest_wood_',  idleFrames: 21, openDir: 'card1open/open_chest_wood',  openPrefix: 'NEW_open_chest_wood_',  openFrames: 27, openFrameOffset: 21, sep: '', alt: 'Seeds Pack' },
+  pabee_pack: { idleDir: 'card1idle/chest_wood',      idlePrefix: 'New_idle_chest_wood_',  idleFrames: 21, openDir: 'card1open/new_open_chest_wood',  openPrefix: 'NEW_open_chest_wood_',  openFrames: 27, openFrameOffset: 21, sep: '', alt: 'Seeds Pack' },
+  2:         { idleDir: 'card1idle/chest_wood',      idlePrefix: 'New_idle_chest_wood_',  idleFrames: 21, openDir: 'card1open/new_open_chest_wood',  openPrefix: 'NEW_open_chest_wood_',  openFrames: 27, openFrameOffset: 21, sep: '', alt: 'Seeds Pack' },
   3:         { idleDir: 'basicseedidle/idle_2',      idlePrefix: 'idle_2',                openDir: 'basicseedopen/open_2',       openPrefix: 'open_2',                sep: '_', alt: 'Basic Seeds Pack' },
   4:         { idleDir: 'premseedidle/idle_3',       idlePrefix: 'idle_3',                openDir: 'premseedopen/open_3',        openPrefix: 'open_3',                sep: '_', alt: 'Premium Seeds Pack' },
   LEVEL_UP:  { idleDir: 'levelupidle/Idle_levelUP', idlePrefix: 'Idle_LevelUP',          idleFrames: 11, openDir: 'levelupopen/Open_LevelUP',   openPrefix: 'Open_LevelUP',          openFrames: 15, openFrameOffset: 13, sep: '_', alt: 'Level Up!' },
@@ -649,6 +650,18 @@ const PokemonPackRipDialog = ({ rollingInfo, onClose, onBack, onBuyAgain }) => {
                 0%   { left: -80px; }
                 100% { left: calc(100% + 80px); }
               }
+              @keyframes swipeFingerMove {
+                0%   { left: 8%;  opacity: 0; transform: translate(-50%, -50%) scale(0.7); }
+                12%  { left: 12%; opacity: 1; transform: translate(-50%, -50%) scale(1); }
+                88%  { left: 86%; opacity: 1; transform: translate(-50%, -50%) scale(1); }
+                100% { left: 88%; opacity: 0; transform: translate(-50%, -50%) scale(0.7); }
+              }
+              @keyframes fingerTrail {
+                0%   { left: 8%;  width: 0px; opacity: 0; }
+                12%  { opacity: 0.5; }
+                88%  { opacity: 0.5; }
+                100% { left: 8%;  width: 80%; opacity: 0; }
+              }
             `}</style>
             {(() => {
               return phase === 'idle'
@@ -692,6 +705,25 @@ const PokemonPackRipDialog = ({ rollingInfo, onClose, onBack, onBuyAgain }) => {
                     background: 'linear-gradient(to right, transparent, rgba(255,234,0,0.9), white, rgba(255,234,0,0.9), transparent)',
                     filter: 'blur(2px)',
                     animation: 'glowSweep 1.6s ease-in-out infinite',
+                  }} />
+                </div>
+
+                {/* Animated finger touch indicator sweeping along tear line */}
+                <div style={{
+                  position: 'absolute',
+                  top: 'calc(10% + 62.5px)',
+                  left: 0, right: 0, height: 0,
+                  pointerEvents: 'none',
+                }}>
+                  <div style={{
+                    position: 'absolute',
+                    width: '36px', height: '36px',
+                    borderRadius: '50%',
+                    background: 'radial-gradient(circle, rgba(255,255,255,0.95) 0%, rgba(255,234,0,0.6) 60%, transparent 100%)',
+                    boxShadow: '0 0 18px 7px rgba(255,234,0,0.7), 0 0 6px 2px rgba(255,255,255,0.9)',
+                    transform: 'translate(-50%, -50%)',
+                    pointerEvents: 'none',
+                    animation: 'swipeFingerMove 1.6s ease-in-out infinite',
                   }} />
                 </div>
               </>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import PanZoomViewport from "../layouts/PanZoomViewport";
 import { MARKET_VIEWPORT, MARKET_HOTSPOTS, MARKET_BEES, MARKET_STUFFS } from "../constants/scene_market";
 import DexDialog from "../containers/Market_Dex";
@@ -17,6 +18,7 @@ import { useNotification } from "../contexts/NotificationContext";
 import { useItems } from "../hooks/useItems";
 
 const Market = () => {
+  const navigate = useNavigate();
   const { width, height } = MARKET_VIEWPORT;
   const hotspots = MARKET_HOTSPOTS;
   const { refetch } = useItems();
@@ -170,7 +172,7 @@ const Market = () => {
         disablePanZoom
         hotspotScale={0.75}
         onHotspotClick={(id) => {
-          const LOCKED_IDS = [ID_MARKET_HOTSPOTS.SAGE, ID_MARKET_HOTSPOTS.LEADERBOARD, ID_MARKET_HOTSPOTS.BANKER, ID_MARKET_HOTSPOTS.DEX];
+          const LOCKED_IDS = [ID_MARKET_HOTSPOTS.SAGE, ID_MARKET_HOTSPOTS.DEX, ID_MARKET_HOTSPOTS.MARKET];
           if (LOCKED_IDS.includes(id)) {
             setShowLockedPopup(true);
             return true;
@@ -313,20 +315,22 @@ const Market = () => {
               <div
                 className="tut-arrow"
                 style={tutMarketPage === 12 ? { top: 'calc(50% + 40px)', right: '15px' } : { top: 'calc(50% + 50px)' }}
-                onClick={() => setTutMarketPage(prev => prev + 1)}
+                onClick={() => {
+                  if (tutMarketPage === 15) {
+                    localStorage.setItem('sandbox_dock_tut_page', '23');
+                    localStorage.setItem('sandbox_tutorial_step', '25');
+                    window.dispatchEvent(new CustomEvent('tutorialStepChanged'));
+                    navigate('/valley');
+                  } else {
+                    setTutMarketPage(prev => prev + 1);
+                  }
+                }}
               ><img src="/images/tutorial/next.png" style={{ width: '100%', height: '100%', objectFit: 'contain' }} /></div>
             </div>
           </div>
         </>
       )}
 
-      {tutMarketPage === 16 && (
-        <style>{`
-          a[href*="/farm"], a[href*="/market"], a[href*="/valley"], a[href*="/tavern"] { pointer-events: none !important; }
-          a[href*="/house"] { display: block !important; pointer-events: auto !important; animation: dockIconPulse 1.2s ease-in-out infinite !important; transform-origin: center; position: relative; z-index: 100001; }
-          @keyframes dockIconPulse { 0%, 100% { transform: scale(1.15); filter: drop-shadow(0 0 8px rgba(255,215,0,0.9)); } 50% { transform: scale(0.95); filter: drop-shadow(0 0 2px rgba(255,215,0,0.3)); } }
-        `}</style>
-      )}
     </>
   );
 };

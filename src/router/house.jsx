@@ -204,6 +204,15 @@ const House = () => {
         localStorage.setItem('sandbox_fishing_catches', (currentCatches + 1).toString());
         window.dispatchEvent(new CustomEvent('ls-update', { detail: { key: 'sandbox_fishing_catches', value: (currentCatches + 1).toString() } }));
 
+        // Leaderboard tracking
+        const fishPts = parseInt(localStorage.getItem('sandbox_fishing_points') || '0', 10);
+        localStorage.setItem('sandbox_fishing_points', (fishPts + 10).toString());
+        const fishW = (0.2 + Math.random() * 1.3).toFixed(2);
+        const storedFish = JSON.parse(localStorage.getItem('sandbox_heaviest_fish') || 'null');
+        if (!storedFish || parseFloat(fishW) > parseFloat(storedFish.weight)) {
+          localStorage.setItem('sandbox_heaviest_fish', JSON.stringify({ weight: fishW, name: 'Fish' }));
+        }
+
         const xpGains = { 80: 10, 70: 20, 60: 35, 50: 50, 40: 75 };
         const xpToAdd = xpGains[state.barSize] || 10;
         const currentXp = parseInt(localStorage.getItem('sandbox_fishing_xp') || '0', 10);

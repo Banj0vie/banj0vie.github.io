@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 const CLOUDS_IN   = 600;  // clouds rise to cover screen
 const CROW_IN     = 400;  // crow zooms in after clouds start
 const NAV_AT      = 950;  // navigate at this point (screen hidden)
-const CROW_OUT    = 500;  // crow flies away
+const CROW_OUT    = 900;  // crow flies away (extra time for images to load)
 const CLOUDS_OUT  = 600;  // clouds fall back down
 
 const CLOUD_SHAPES = [

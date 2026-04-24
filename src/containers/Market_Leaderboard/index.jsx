@@ -1,175 +1,156 @@
-/* eslint-disable no-unused-vars */
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import "./style.css";
 import BaseDialog from "../_BaseDialog";
-import BaseDivider from "../../components/dividers/BaseDivider";
-import CardView from "../../components/boxes/CardView";
-import { EPOCH_PERIOD, formatDuration } from "../../utils/basic";
-import { buttonFrames } from "../../constants/_baseimages";
-import BaseButton from "../../components/buttons/BaseButton";
-import RewardsDialog from "./RewardsDialog";
-import { useLeaderboard } from "../../hooks/useLeaderboard";
+import { getWeeklyFeaturedCrop } from "../../constants/crop_weights";
+
+const RANK_MEDAL = ['🥇', '🥈', '🥉'];
+const RANK_COLORS = ['#FFD700', '#C0C0C0', '#CD7F32'];
+
+const MOCK_FARMING = {
+  points:   [{ name: 'Barnabee', value: '284,500 pts' }, { name: 'Sunflora Bee', value: '196,000 pts' }, { name: 'Grubsworth', value: '118,200 pts' }],
+  heaviest: [{ name: 'Barnabee', value: '4.82 kg', sub: 'Cabbage' }, { name: 'Sunflora Bee', value: '3.91 kg', sub: 'Pumpkin' }, { name: 'Grubsworth', value: '3.14 kg', sub: 'Carrot' }],
+};
+
+const MOCK_FISHING = {
+  points:   [{ name: 'CapnHook Bee', value: '940 pts' }, { name: 'Dewey Jr.', value: '720 pts' }, { name: 'Wormtail', value: '580 pts' }],
+  heaviest: [{ name: 'CapnHook Bee', value: '2.31 kg', sub: 'Trout' }, { name: 'Dewey Jr.', value: '1.94 kg', sub: 'Herring' }, { name: 'Wormtail', value: '1.62 kg', sub: 'Salmon' }],
+};
+
+const Row = ({ rank, name, value, sub, isPlayer }) => (
+  <div style={{
+    display: 'flex', alignItems: 'center', gap: 6,
+    background: isPlayer ? 'rgba(100,220,100,0.13)' : 'rgba(255,255,255,0.04)',
+    border: `1px solid ${isPlayer ? 'rgba(100,220,100,0.35)' : rank < 3 ? RANK_COLORS[rank] + '33' : 'rgba(255,255,255,0.07)'}`,
+    borderRadius: 6, padding: '5px 8px', marginBottom: 3,
+  }}>
+    <span style={{ fontSize: 13, minWidth: 20 }}>{isPlayer ? '👤' : (RANK_MEDAL[rank] || `${rank + 1}.`)}</span>
+    <span style={{ flex: 1, color: isPlayer ? '#7fff7f' : '#ddd', fontSize: 11, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</span>
+    <div style={{ textAlign: 'right', flexShrink: 0 }}>
+      <div style={{ color: isPlayer ? '#7fff7f' : '#f5d87a', fontSize: 11, fontFamily: 'monospace', fontWeight: 'bold' }}>{value}</div>
+      {sub && <div style={{ color: '#999', fontSize: 9 }}>{sub}</div>}
+    </div>
+  </div>
+);
+
+const MiniLeaderboard = ({ title, rows, playerValue, playerSub }) => (
+  <div style={{ flex: 1 }}>
+    <div style={{
+      fontFamily: 'GROBOLD, Cartoonist, sans-serif', fontSize: 11,
+      color: '#f5d87a', textShadow: '1px 1px 0 #000', letterSpacing: 1,
+      marginBottom: 6, textAlign: 'center',
+    }}>
+      {title}
+    </div>
+    {rows.map((r, i) => (
+      <Row key={i} rank={i} name={r.name} value={r.value} sub={r.sub} />
+    ))}
+    <Row rank={-1} name="You" value={playerValue} sub={playerSub} isPlayer />
+  </div>
+);
+
+const SectionHeader = ({ label }) => (
+  <div style={{
+    fontFamily: 'GROBOLD, Cartoonist, sans-serif', fontSize: 15,
+    color: '#fff', textShadow: '2px 2px 0 #000', letterSpacing: 2,
+    textAlign: 'center', marginBottom: 10,
+    borderBottom: '1px solid rgba(245,216,122,0.3)', paddingBottom: 6,
+  }}>
+    {label}
+  </div>
+);
+
+const WeeklyBadge = ({ cropName }) => (
+  <div style={{
+    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+    background: 'rgba(245,216,122,0.1)', border: '1px solid rgba(245,216,122,0.3)',
+    borderRadius: 8, padding: '4px 10px', marginBottom: 10,
+  }}>
+    <span style={{ fontSize: 10, color: '#aaa', fontFamily: 'GROBOLD, Cartoonist, sans-serif', letterSpacing: 1 }}>
+      THIS WEEK
+    </span>
+    <span style={{ fontSize: 12, color: '#f5d87a', fontFamily: 'GROBOLD, Cartoonist, sans-serif', letterSpacing: 1 }}>
+      {cropName}
+    </span>
+  </div>
+);
 
 const LeaderboardDialog = ({ onClose, label = "LEADERBOARD", header = "", headerOffset = 0 }) => {
-  const {
-    leaderboardData,
-    userScore,
-    epochStart,
-    currentEpoch,
-    selectedEpoch,
-    fetchLeaderboardData,
-    setSelectedEpoch,
-    loading } = useLeaderboard();
-  const [remainedTime, setRemainedTime] = useState(0);
-  const [isRewardDlg, setIsRewardDlg] = useState(false);
-  const [isNavigating, setIsNavigating] = useState(false);
+  const [stats, setStats] = useState({
+    farmingPoints: 0, heaviestCrop: null, weeklyHeaviest: null,
+    fishingPoints: 0, heaviestFish: null,
+  });
+  const [featured] = useState(() => getWeeklyFeaturedCrop());
 
-  // Fetch data on component mount
   useEffect(() => {
-    fetchLeaderboardData();
-  }, [fetchLeaderboardData]);
+    const weekly = JSON.parse(localStorage.getItem('sandbox_weekly_heaviest_crop') || 'null');
+    setStats({
+      farmingPoints: parseInt(localStorage.getItem('sandbox_farming_points') || '0', 10),
+      heaviestCrop:  JSON.parse(localStorage.getItem('sandbox_heaviest_crop') || 'null'),
+      weeklyHeaviest: weekly?.weekNum === featured.weekNum ? weekly : null,
+      fishingPoints: parseInt(localStorage.getItem('sandbox_fishing_points') || '0', 10),
+      heaviestFish:  JSON.parse(localStorage.getItem('sandbox_heaviest_fish') || 'null'),
+    });
+  }, [featured.weekNum]);
 
-  // Handle epoch navigation
-  const handleEpochChange = useCallback((newEpoch) => {
-    if (isNavigating) {
-      return;
-    }
-
-    if (newEpoch >= 0 && newEpoch <= currentEpoch) {
-      setIsNavigating(true);
-      setSelectedEpoch(newEpoch);
-      fetchLeaderboardData(newEpoch).finally(() => {
-        setIsNavigating(false);
-      });
-    }
-  }, [currentEpoch, fetchLeaderboardData, isNavigating, setSelectedEpoch]);
-
-  // Update timer based on epochStart
-  useEffect(() => {
-    if (epochStart > 0) {
-      const updateTimer = () => {
-        const now = Math.floor(Date.now() / 1000); // Current timestamp in seconds
-        const epochEndTime = epochStart + EPOCH_PERIOD;
-        const remaining = Math.max(0, (epochEndTime - now) * 1000); // Convert to milliseconds
-        setRemainedTime(remaining);
-      };
-
-      // Update immediately
-      updateTimer();
-
-      // Update every second
-      const interval = setInterval(updateTimer, 1000);
-      return () => clearInterval(interval);
-    }
-  }, [epochStart]);
-
-  const leaderboardBg = [
-    "/images/label/golden-bg.png",
-    "/images/label/silver-bg.png",
-    "/images/label/bronze-bg.png",
-    "/images/label/choco-bg.png",
-    "/images/label/choco-bg.png",
-    "/images/label/choco-bg.png",
-    "/images/label/choco-bg.png",
-    "/images/label/choco-bg.png",
-    "/images/label/choco-bg.png",
-  ]
+  const weeklyHeaviestMock = MOCK_FARMING.heaviest.map(r => ({ ...r, sub: featured.name }));
 
   return (
     <BaseDialog onClose={onClose} title={label} header={header} headerOffset={headerOffset}>
-      <div className="leaderboard-content">
-        {leaderboardData.map((item, index) => (
-          <div key={index} className="leaderboard-card">
-            <img src={leaderboardBg[index]} alt="leaderboard-bg" className="leaderboard-item-bg" />
-            <div className="leaderboard-spliter" id={`leaderboard-item-${index}`}>
-              <div className="split">
-                {item.rank}. {item.name}
-              </div>
-              <div className={`split ${index >= 3 ? "highlight" : ""}`}>{item.score.toFixed(2)}</div>
+      <div style={{ width: 460, display: 'flex', flexDirection: 'column', gap: 20 }}>
+
+        {/* Farming */}
+        <div>
+          <SectionHeader label="🌾  Farming" />
+          <div style={{ display: 'flex', gap: 12 }}>
+            <MiniLeaderboard
+              title="BEST FARMER"
+              rows={MOCK_FARMING.points}
+              playerValue={stats.farmingPoints.toLocaleString() + ' pts'}
+            />
+            <div style={{ width: 1, background: 'rgba(255,255,255,0.1)' }} />
+            <div style={{ flex: 1 }}>
+              <WeeklyBadge cropName={featured.name} />
+              <MiniLeaderboard
+                title="HEAVIEST CROP"
+                rows={weeklyHeaviestMock}
+                playerValue={stats.weeklyHeaviest ? `${stats.weeklyHeaviest.weight} kg` : '—'}
+                playerSub={stats.weeklyHeaviest ? featured.name : undefined}
+              />
             </div>
           </div>
-        ))}
-        <CardView className="text-center min-h-0">
-          <div>Your score: <span className="highlight">{loading ? "Loading..." : userScore.toFixed(2)}</span></div>
-        </CardView>
-        <div className="text-center">
-          {(selectedEpoch ?? currentEpoch) === currentEpoch ? (
-            remainedTime <= 0 ? (
-              <div>
-                <div>Epoch Ended!</div>
-                {/* <BaseButton
-                  label="Advance Epoch"
-                  onClick={advanceEpoch}
-                  className="h-3rem mt-1rem"
-                  disabled={loading}
-                /> */}
-              </div>
-            ) : (
-              <>
-                Ends in:{" "}
-                <span className="highlight">{formatDuration(remainedTime)}</span>
-              </>
-            )
-          ) : (
-            <>
-              Historical Epoch: <span className="highlight">{selectedEpoch ?? currentEpoch}</span>
-            </>
-          )}
-        </div>
-        <CardView className="min-h-0">
-          <div className="epoch-selector">
-            <img
-              src={buttonFrames.leftTriangleButton}
-              alt="left"
-              className="triangle-button"
-              onClick={() => {
-                if (isNavigating) return;
-                const currentDisplayEpoch = selectedEpoch ?? currentEpoch;
-                const newEpoch = Math.max(0, currentDisplayEpoch - 1);
-                handleEpochChange(newEpoch);
-              }}
-              style={{
-                opacity: (selectedEpoch ?? currentEpoch) <= 0 || isNavigating ? 0.5 : 1,
-                cursor: (selectedEpoch ?? currentEpoch) <= 0 || isNavigating ? 'not-allowed' : 'pointer'
-              }}
-            ></img>
-            <div>
-              Epoch <span className="highlight">{selectedEpoch ?? currentEpoch}</span>
-            </div>
-            <img
-              src={buttonFrames.rightTriangleButton}
-              alt="right"
-              className="triangle-button"
-              onClick={() => {
-                if (isNavigating) return;
-                const newEpoch = (selectedEpoch ?? currentEpoch) + 1;
-                handleEpochChange(newEpoch);
-              }}
-              style={{
-                opacity: (selectedEpoch ?? currentEpoch) >= currentEpoch || isNavigating ? 0.5 : 1,
-                cursor: (selectedEpoch ?? currentEpoch) >= currentEpoch || isNavigating ? 'not-allowed' : 'pointer'
-              }}
-            ></img>
+          <div style={{ color: '#555', fontSize: 9, textAlign: 'center', marginTop: 6 }}>
+            Points: Pico 500–900 · Basic 2,000–4,000 · Premium 10,000–18,000 · Gem skips don't count
           </div>
-        </CardView>
-        <div className="button-row">
-          <BaseButton
-            label="Refresh"
-            onClick={() => fetchLeaderboardData(selectedEpoch ?? currentEpoch)}
-            className="h-4rem mt-1rem"
-            disabled={loading}
-            small
-          />
-          <BaseButton
-            label="See Rewards"
-            onClick={() => setIsRewardDlg(true)}
-            className="h-4rem mt-1rem"
-            small
-          />
+          <div style={{ color: '#555', fontSize: 9, textAlign: 'center', marginTop: 2 }}>
+            Heaviest: weekly featured crop only · weight range varies per crop · resets Monday
+          </div>
         </div>
-        {isRewardDlg && (
-          <RewardsDialog onClose={() => setIsRewardDlg(false)}></RewardsDialog>
-        )}
+
+        {/* Divider */}
+        <div style={{ height: 1, background: 'rgba(255,255,255,0.1)' }} />
+
+        {/* Fishing */}
+        <div>
+          <SectionHeader label="🎣  Fishing" />
+          <div style={{ display: 'flex', gap: 12 }}>
+            <MiniLeaderboard
+              title="BEST ANGLER"
+              rows={MOCK_FISHING.points}
+              playerValue={stats.fishingPoints.toLocaleString() + ' pts'}
+            />
+            <div style={{ width: 1, background: 'rgba(255,255,255,0.1)' }} />
+            <MiniLeaderboard
+              title="HEAVIEST FISH"
+              rows={MOCK_FISHING.heaviest}
+              playerValue={stats.heaviestFish ? `${stats.heaviestFish.weight} kg` : '—'}
+              playerSub={stats.heaviestFish?.name}
+            />
+          </div>
+          <div style={{ color: '#555', fontSize: 9, textAlign: 'center', marginTop: 6 }}>
+            Points: Common = 10 · Uncommon = 20 · Rare = 40 · Epic = 80
+          </div>
+        </div>
+
       </div>
     </BaseDialog>
   );

@@ -14,7 +14,7 @@ const getTutState = () => ({
 const GameMenu = () => {
   const location = useLocation();
   const [tutState, setTutState] = useState(getTutState);
-  const [isTavernUnlocked, setIsTavernUnlocked] = useState(() => localStorage.getItem('quest_q2_rebuild_tavern_completed') === 'true');
+  const [isTavernUnlocked] = useState(false);
 
   useEffect(() => {
     const update = () => setTutState(getTutState());
@@ -27,14 +27,6 @@ const GameMenu = () => {
       window.removeEventListener('tutMarketPageChanged', update);
     };
   }, []);
-
-  useEffect(() => {
-    const handler = () => setIsTavernUnlocked(true);
-    window.addEventListener('tavernUnlocked', handler);
-    return () => window.removeEventListener('tavernUnlocked', handler);
-  }, []);
-
-  const highlightMarket = tutState.step === 3 && tutState.page === 12 && !tutState.marketStarted && location.pathname !== '/market';
 
   return (
     <nav className="game-menu">
@@ -55,7 +47,7 @@ const GameMenu = () => {
             labelIcon={item.labelIcon}
             iconScale={item.iconScale}
             isActive={isActive}
-            highlight={highlightMarket && item.path === '/market'}
+            highlight={false}
             onClickOverride={tavernOverride}
           />
         );

@@ -287,6 +287,12 @@ a {
   padding: 0rem;
 }
 
+img[src*="/images/tutorial/tutp"],
+img[src*="/images/tutorial/tutmessage"],
+img[src*="/images/tutorial/sirbeetextbox"],
+img[src*="/images/tutorial/temptut"],
+img[src*="/images/tutorial/tutbluebar"] { pointer-events: none !important; }
+
 .tut-arrow { position: absolute; right: 10px; top: calc(50% + 30px); transform: translateY(-50%); width: 60px; height: 60px; cursor: pointer; transition: transform 0.1s, filter 0.1s; user-select: none; }
 .tut-arrow:hover { filter: brightness(1.2); transform: translateY(-50%) scale(1.1); }
 .tut-arrow:active { filter: brightness(0.85); transform: translateY(-50%) scale(0.95); }

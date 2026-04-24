@@ -7,44 +7,46 @@ const USERNAMES = [
   'CornQueen', 'FishFrenzy', 'GreenThumb', 'LureKing', 'BumperCrop',
 ];
 
-const LEGENDARY_FISH = [
-  { name: 'Deep Ocean Giant', image: '/images/fish/DEEP OCEAN FISH .png' },
-  { name: 'Ancient Tai', image: '/images/fish/Tai.png' },
-  { name: 'Shadow Aji', image: '/images/fish/Aji.png' },
-  { name: 'Titan of the Deep', image: '/images/fish/DEEP OCEAN FISH(SMALL).png' },
-  { name: 'Finding Nimo', image: '/images/fish/FindingNimofish.png' },
+const LEGENDARY_SEEDS = [
+  { name: 'Dragon Fruit', image: '/images/cardfront/dragonfruit/dragleg.png' },
+  { name: 'Pumpkin', image: '/images/cardfront/pumpkin/pumpleg.png' },
+  { name: 'Mango', image: '/images/cardfront/mango/mangoleg.png' },
+  { name: 'Pomegranate', image: '/images/cardfront/pomegranate/pomleg.png' },
+  { name: 'Lychee', image: '/images/cardfront/lychee/lycleg.png' },
+  { name: 'Blueberry', image: '/images/cardfront/blueberry/bbleg.png' },
+  { name: 'Pineapple', image: '/images/cardfront/pineapplecard/pineappleleg.png' },
+  { name: 'Papaya', image: '/images/cardfront/papaya/papleg.png' },
+  { name: 'Lavender', image: '/images/cardfront/lavender/lavleg.png' },
+  { name: 'Avocado', image: '/images/cardfront/avocado/avoleg.png' },
+  { name: 'Banana', image: '/images/cardfront/banana/banleg.png' },
+  { name: 'Apple', image: '/images/cardfront/apple/appleleg.png' },
 ];
 
-const EPIC_FISH = [
-  { name: 'Ocean Wanderer', image: '/images/fish/Normal Ocean Fish.png' },
-  { name: 'Sea Phantom', image: '/images/fish/Normal Ocean Fish (2).png' },
-  { name: 'Mysterious Catch', image: '/images/fish/Mysteriouse.gif' },
-];
-
-const SHINY_SEEDS = [
-  { name: 'Shiny Dragon Fruit', image: '/images/cardfront/dragonfruit/dragcom.png' },
-  { name: 'Shiny Pumpkin', image: '/images/cardfront/pumpkin/pumpuncom.png' },
-  { name: 'Shiny Mango', image: '/images/cardfront/mango/mangouncom.png' },
-  { name: 'Shiny Pomegranate', image: '/images/cardfront/pomegranate/pomuncom.png' },
-  { name: 'Shiny Lychee', image: '/images/cardfront/lychee/lyuncom.png' },
-  { name: 'Shiny Blueberry', image: '/images/cardfront/blueberry/bbuncom.png' },
-  { name: 'Shiny Lavender', image: '/images/cardfront/lavender/lavuncom.png' },
+const EPIC_SEEDS = [
+  { name: 'Tomato', image: '/images/cardfront/tomato/tomatoepic.png' },
+  { name: 'Corn', image: '/images/cardfront/corn/cornepic.png' },
+  { name: 'Pepper', image: '/images/cardfront/pepper/pepperepic.png' },
+  { name: 'Grapes', image: '/images/cardfront/grape/grapeepic.png' },
+  { name: 'Broccoli', image: '/images/cardfront/broccoli/brocepic.png' },
+  { name: 'Eggplant', image: '/images/cardfront/eggplant/eggepic.png' },
+  { name: 'Cauliflower', image: '/images/cardfront/califlower/caliepic.png' },
+  { name: 'Radish', image: '/images/cardfront/radish/radepic.png' },
+  { name: 'Wheat', image: '/images/cardfront/wheat/wheatepic.png' },
+  { name: 'Turnip', image: '/images/cardfront/turnip/turnipepic.png' },
+  { name: 'Bokchoy', image: '/images/cardfront/bokchoy/bchoyepic.png' },
+  { name: 'Celery', image: '/images/cardfront/celery/celepic.png' },
 ];
 
 const rand = (arr) => arr[Math.floor(Math.random() * arr.length)];
 
 const generateEvent = () => {
-  const roll = Math.random();
   const user = rand(USERNAMES);
-  if (roll < 0.33) {
-    const fish = rand(LEGENDARY_FISH);
-    return { type: 'legendary', user, item: fish.name, image: fish.image };
-  } else if (roll < 0.66) {
-    const fish = rand(EPIC_FISH);
-    return { type: 'epic', user, item: fish.name, image: fish.image };
+  if (Math.random() < 0.4) {
+    const seed = rand(LEGENDARY_SEEDS);
+    return { type: 'legendary', user, item: seed.name, image: seed.image };
   } else {
-    const seed = rand(SHINY_SEEDS);
-    return { type: 'shiny', user, item: seed.name, image: seed.image };
+    const seed = rand(EPIC_SEEDS);
+    return { type: 'epic', user, item: seed.name, image: seed.image };
   }
 };
 
@@ -83,7 +85,6 @@ export default function GlobalEventTicker() {
 
   const isLegendary = event.type === 'legendary';
   const isEpic      = event.type === 'epic';
-  const isShiny     = event.type === 'shiny';
 
   return (
     <>
@@ -146,13 +147,11 @@ export default function GlobalEventTicker() {
             gap: '5px',
             padding: '4px 10px 4px 5px',
             borderRadius: '40px',
-            border: `2px solid ${isLegendary ? '#ffaa00' : isEpic ? '#6644ff' : '#fff'}`,
+            border: `2px solid ${isLegendary ? '#ffaa00' : '#6644ff'}`,
             background: isLegendary
               ? 'linear-gradient(135deg, rgba(20,12,0,0.95), rgba(40,25,0,0.95))'
-              : isEpic
-              ? 'linear-gradient(135deg, rgba(10,5,30,0.95), rgba(25,10,60,0.95))'
-              : 'linear-gradient(135deg, rgba(10,0,30,0.95), rgba(30,0,60,0.95))',
-            animation: isLegendary ? 'goldBorder 1.5s ease-in-out infinite' : isEpic ? 'epicBorder 1.5s ease-in-out infinite' : 'rainbowBorder 1.5s linear infinite',
+              : 'linear-gradient(135deg, rgba(10,5,30,0.95), rgba(25,10,60,0.95))',
+            animation: isLegendary ? 'goldBorder 1.5s ease-in-out infinite' : 'epicBorder 1.5s ease-in-out infinite',
             backdropFilter: 'blur(8px)',
             whiteSpace: 'nowrap',
           }}>
@@ -160,11 +159,11 @@ export default function GlobalEventTicker() {
             <div style={{
               width: '24px', height: '24px',
               borderRadius: '50%',
-              background: isLegendary ? 'rgba(255,170,0,0.2)' : isEpic ? 'rgba(102,68,255,0.2)' : 'rgba(180,100,255,0.2)',
+              background: isLegendary ? 'rgba(255,170,0,0.2)' : 'rgba(102,68,255,0.2)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontSize: '13px', flexShrink: 0,
             }}>
-              {isLegendary ? '🏆' : isEpic ? '🎣' : '✨'}
+              {isLegendary ? '🏆' : '⚡'}
             </div>
 
             {/* Item image */}
@@ -174,9 +173,7 @@ export default function GlobalEventTicker() {
               style={{
                 width: '24px', height: '24px',
                 objectFit: 'contain', borderRadius: '4px', flexShrink: 0,
-                filter: isShiny
-                  ? 'drop-shadow(0 0 4px #fff) saturate(1.5)'
-                  : isEpic
+                filter: isEpic
                   ? 'drop-shadow(0 0 6px #6644ff)'
                   : 'drop-shadow(0 0 6px #ffaa00)',
               }}
@@ -191,22 +188,22 @@ export default function GlobalEventTicker() {
                 {event.user}
               </span>
               <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.6)' }}>
-                {isShiny ? 'pulled a' : 'caught a'}
+                pulled a
               </span>
               <span style={{
                 fontWeight: 'bold', fontSize: '11px',
-                animation: isLegendary ? 'legendaryGlow 1.5s ease-in-out infinite' : isEpic ? 'epicGlow 1.5s ease-in-out infinite' : 'rainbowShift 1.5s linear infinite',
-                color: isLegendary ? '#ffaa00' : isEpic ? '#aa88ff' : undefined,
+                animation: isLegendary ? 'legendaryGlow 1.5s ease-in-out infinite' : 'epicGlow 1.5s ease-in-out infinite',
+                color: isLegendary ? '#ffaa00' : '#aa88ff',
               }}>
-                {isShiny ? `🌱 ${event.item}` : `🐟 ${event.item}`}
+                {`🌱 ${event.item}`}
               </span>
               <span style={{
                 fontSize: '9px', fontWeight: 'bold', padding: '1px 6px', borderRadius: '10px',
-                background: isLegendary ? '#ffaa00' : isEpic ? 'linear-gradient(90deg,#6644ff,#aa44ff)' : 'linear-gradient(90deg,#ff44aa,#aa44ff)',
+                background: isLegendary ? '#ffaa00' : 'linear-gradient(90deg,#6644ff,#aa44ff)',
                 color: isLegendary ? '#000' : '#fff',
                 marginLeft: '2px',
               }}>
-                {isLegendary ? 'LEGENDARY' : isEpic ? 'EPIC' : 'SHINY'}
+                {isLegendary ? 'LEGENDARY' : 'EPIC'}
               </span>
             </div>
           </div>
