@@ -15,7 +15,7 @@ import { handleContractError } from "../utils/errorHandler";
 import { ID_POTION_ITEMS, ID_PRODUCE_ITEMS, ID_CHEST_ITEMS, ID_FISH_ITEMS, ID_SEEDS, ID_BAIT_ITEMS, ID_ITEM_CATEGORIES } from "../constants/app_ids";
 import { ALL_ITEMS, IMAGE_URL_CROP } from "../constants/item_data";
 import { clampVolume, getGrowthTime, getSubtype } from "../utils/basic";
-import { rollCropWeight, getWeeklyFeaturedCrop } from "../constants/crop_weights";
+import { rollCropWeight, getWeeklyFeaturedCrop, CROP_WEIGHTS } from "../constants/crop_weights";
 import { canHarvestProduce } from "../utils/inventorySlots";
 import { ONE_SEED_HEIGHT, ONE_SEED_WIDTH } from "../constants/item_seed";
 import { useAppSelector } from "../solana/store";
@@ -3369,6 +3369,30 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
     loading: farmingLoading,
   } = useFarming();
   const { show } = useNotification();
+
+  // Fire a one-time notification when the player first climbs into top 3 on the leaderboard
+  useEffect(() => {
+    const MOCK_THRESHOLDS = [
+      { rank: 1, pts: 284500, msg: '🥇 You\'re #1 on the Best Farmer leaderboard!' },
+      { rank: 2, pts: 196000, msg: '🥈 You reached #2 on the Best Farmer leaderboard!' },
+      { rank: 3, pts: 118200, msg: '🥉 You cracked the top 3 on the Best Farmer leaderboard!' },
+    ];
+    const checkRanks = () => {
+      const pts = parseInt(localStorage.getItem('sandbox_season_farming_points') || '0', 10);
+      const notified = new Set(JSON.parse(localStorage.getItem('sandbox_lb_notified_ranks') || '[]'));
+      for (const { rank, pts: threshold, msg } of MOCK_THRESHOLDS) {
+        if (pts >= threshold && !notified.has(rank)) {
+          notified.add(rank);
+          localStorage.setItem('sandbox_lb_notified_ranks', JSON.stringify([...notified]));
+          show(msg, 'success');
+          break;
+        }
+      }
+    };
+    window.addEventListener('seasonPointsChanged', checkRanks);
+    return () => window.removeEventListener('seasonPointsChanged', checkRanks);
+  }, [show]);
+
   const [isPlanting, setIsPlanting] = useState(true);
   const [isSelectCropDialog, setIsSelectCropDialog] = useState(false);
   const [cropArray, setCropArray] = useState(() => new CropItemArrayClass(30));
@@ -6094,9 +6118,22 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
           localStorage.setItem('sandbox_farming_points', (fp + pts).toString());
           const sfp = parseInt(localStorage.getItem('sandbox_season_farming_points') || '0', 10);
           localStorage.setItem('sandbox_season_farming_points', (sfp + pts).toString());
+          window.dispatchEvent(new CustomEvent('seasonPointsChanged'));
 
           // Weight tracking — per-crop all-time heaviest + potato + weekly featured crop
           const { weight, name: cropName, bracket, rarityLabel, rarityColor } = rollCropWeight(itemToHarvest.seedId);
+          // Notify if this crop lands in the top 10% of the legendary weight bracket (fraction >= 0.9)
+          if (bracket === 5) {
+            const baseId = itemToHarvest.seedId & 0xFFF;
+            const cropInfo = CROP_WEIGHTS[baseId];
+            if (cropInfo) {
+              const fraction = (weight - cropInfo.min) / (cropInfo.max - cropInfo.min);
+              if (fraction >= 0.9) {
+                const displayWeight = weight >= 1000 ? `${(weight / 1000).toFixed(2)} kg` : `${weight} g`;
+                show(`🏆 Elite ${cropName}! Your ${displayWeight} ${cropName} is in the top 10% of all legendary harvests!`, 'success');
+              }
+            }
+          }
           const harvestedAt = Date.now();
           window.dispatchEvent(new CustomEvent('cropHarvested', { detail: { cropName, weight, seedId: itemToHarvest.seedId, bracket, rarityLabel, rarityColor } }));
           const storedHeaviest = JSON.parse(localStorage.getItem('sandbox_heaviest_crop') || 'null');
