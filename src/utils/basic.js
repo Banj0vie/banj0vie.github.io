@@ -175,7 +175,7 @@ export const getSubtype = (seedId) => {
 }
 
 // Per-pack growth times in seconds. Basic uses the shared GROWTH_* constants.
-const PICO_TIMES    = [30, 60, 90, 120, 150];  // Common → Legendary (30s, 1m, 1.5m, 2m, 2.5m)
+const PICO_TIMES    = [30, 30, 30, 30, 30];  // All Pico rarities → 30s
 const PREMIUM_TIMES = [8*60, 12*60, 18*60, 24*60, 35*60];
 
 export const getGrowthTime = (seedId) => {

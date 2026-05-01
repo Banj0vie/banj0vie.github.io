@@ -9,8 +9,6 @@ import AuthPage from "../AuthPage";
 import { useAppSelector } from "../../solana/store";
 import { selectSettings } from "../../solana/store/slices/uiSlice";
 import { defaultSettings } from "../../utils/settings";
-import GlobalEventTicker from "../../components/GlobalEventTicker";
-import HarvestTicker from "../../components/HarvestTicker";
 
 if (typeof window !== 'undefined' && !window.__ls_patched_v2) {
   window.__ls_patched_v2 = true;
@@ -258,6 +256,10 @@ const PanZoomViewport = ({
       if (dialog) setActiveModal(dialog);
     };
     window.addEventListener("openDialog", handleOpenDialog);
+    // Generic close — dispatched programmatically (e.g. mayor cutscene closes the vendor dialog
+    // after the pack flow finishes so the user returns to the default market view).
+    const handleCloseDialog = () => setActiveModal(null);
+    window.addEventListener("closeDialog", handleCloseDialog);
     // Re-center when window resizes or layer size props change
     const handleResize = () => {
       setTx(computeInitialTx());
@@ -268,6 +270,7 @@ const PanZoomViewport = ({
       window.removeEventListener("keydown", handleEsc);
       window.removeEventListener("resize", handleResize);
       window.removeEventListener("openDialog", handleOpenDialog);
+      window.removeEventListener("closeDialog", handleCloseDialog);
     };
   }, [computeInitialTx, computeInitialTy, dialogs]);
 
@@ -285,8 +288,6 @@ const PanZoomViewport = ({
 
   return isWalletConnected() ? (
     <>
-      <GlobalEventTicker />
-      <HarvestTicker />
       <div className="panzoom-root">
 
         {!hideMenu && <GameMenu key={`game-menu-${menuKey}`} />}

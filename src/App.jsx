@@ -29,6 +29,9 @@ import store from "./solana/store";
 import { BG_COLORS } from "./constants/background_colors";
 import BackgroundMusic from "./components/audio/BackgroundMusic";
 import Jukebox from "./components/Jukebox";
+import PlayerPullNotification from "./components/PlayerPullNotification";
+import SkyOverlay from "./components/SkyOverlay";
+import { useCloudSync } from "./hooks/useCloudSync";
 
 // Import wallet adapter CSS
 import '@solana/wallet-adapter-react-ui/styles.css';
@@ -37,6 +40,7 @@ const AppContent = () => {
   const location = useLocation();
   const [isFarmMenu, setIsFarmMenu] = useState(false);
   useSolanaWallet(); // Initialize sandbox profile data
+  useCloudSync(); // Hydrate localStorage from Supabase + push changes back
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [isRouteLoading, setIsRouteLoading] = useState(false);
   const prevPathRef = React.useRef(location.pathname);
@@ -94,6 +98,7 @@ const AppContent = () => {
           position: "relative",
         }}
       >
+        <SkyOverlay />
         {isRouteLoading && (
           <div style={{
             position: 'fixed', inset: 0, zIndex: 99999,
@@ -220,6 +225,7 @@ const App = () => {
                 
                 <BackgroundMusic />
                 <Jukebox />
+                <PlayerPullNotification />
                 <AppContent />
                 {/* Subtle vignette — shadows bleeding in from all four edges */}
                 <div

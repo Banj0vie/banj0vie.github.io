@@ -7,11 +7,60 @@ import {
 } from "../../../constants/scene_farm";
 import { ONE_SEED_HEIGHT, ONE_SEED_WIDTH } from "../../../constants/item_seed";
 import { ALL_ITEMS } from "../../../constants/item_data";
+import { ID_SEEDS } from "../../../constants/app_ids";
 import CropTooltip from "./CropTooltip";
 import { getSetting, defaultSettings } from "../../../utils/settings";
 import { useAppSelector } from "../../../solana/store";
 import { selectSettings } from "../../../solana/store/slices/uiSlice";
 import { clampVolume } from "../../../utils/basic";
+
+// Per-crop overrides: when a seed has individual stage PNGs, swap them in for the sprite sheet.
+// Frame indices: 0 = sign (just planted), 1-4 = growth stages, 5 = ready.
+// Most crops currently only have a sign image — the override system uses Math.min(frameIndex, length-1)
+// so single-image entries display the sign on every growth frame until additional stages are added.
+const CROP_FRAME_OVERRIDES = {
+  // Pico seeds — potato locked to sign + p1 only (no p2/p3/p4/p5 progression yet)
+  [ID_SEEDS.POTATO]: [
+    '/images/crops/new/potato/potatosign.png',
+    '/images/crops/new/potato/potatop1.png',
+  ],
+  [ID_SEEDS.LETTUCE]:  ['/images/crops/new/lettuce/lettucesign.png',  '/images/crops/new/lettuce/lettucep1.png'],
+  [ID_SEEDS.CABBAGE]:  ['/images/crops/new/cellary/cellarysign.png',  '/images/crops/new/cellary/cellaryp1.png'], // labeled "Celery"
+  [ID_SEEDS.ONION]:    ['/images/crops/new/onion/onionsign.png',      '/images/crops/new/onion/onionp1.png'],
+  [ID_SEEDS.RADISH]:   ['/images/crops/new/raddish/raddishsign.png'],
+  [ID_SEEDS.TURNIP]:   ['/images/crops/new/turnip/turnipsign.png',    '/images/crops/new/turnip/turnipp1.png'],
+  // Feeble seeds — same artwork as their pico counterparts.
+  [ID_SEEDS.F_POTATO]: ['/images/crops/new/potato/potatosign.png',    '/images/crops/new/potato/potatop1.png'],
+  [ID_SEEDS.F_LETTUCE]:['/images/crops/new/lettuce/lettucesign.png',  '/images/crops/new/lettuce/lettucep1.png'],
+  [ID_SEEDS.F_CABBAGE]:['/images/crops/new/cellary/cellarysign.png',  '/images/crops/new/cellary/cellaryp1.png'],
+  [ID_SEEDS.F_ONION]:  ['/images/crops/new/onion/onionsign.png',      '/images/crops/new/onion/onionp1.png'],
+  [ID_SEEDS.F_RADISH]: ['/images/crops/new/raddish/raddishsign.png'],
+  // Basic seeds
+  [ID_SEEDS.WHEAT]:       ['/images/crops/new/wheat/wheatsign.png',         '/images/crops/new/wheat/wheatp1.png'],
+  [ID_SEEDS.TOMATO]:      ['/images/crops/new/tomato/tomatosign.png',       '/images/crops/new/tomato/tomatop1.png'],
+  [ID_SEEDS.CARROT]:      ['/images/crops/new/carrot/carrotsign.png',       '/images/crops/new/carrot/carrotp1.png'],
+  [ID_SEEDS.CORN]:        ['/images/crops/new/corn/cornsign.png',           '/images/crops/new/corn/cornp1.png'],
+  [ID_SEEDS.PUMPKIN]:     ['/images/crops/new/pumpkin/pumpkinsign.png',     '/images/crops/new/pumpkin/pumpkinp1.png'],
+  [ID_SEEDS.PEPPER]:      ['/images/crops/new/pepper/peppersign.png',       '/images/crops/new/pepper/pepperp1.png'],
+  [ID_SEEDS.CELERY]:      ['/images/crops/new/cellary/cellarysign.png',     '/images/crops/new/cellary/cellaryp1.png'],
+  [ID_SEEDS.BROCCOLI]:    ['/images/crops/new/brocoli/brocolisign.png',     '/images/crops/new/brocoli/broclip1.png'],
+  [ID_SEEDS.CAULIFLOWER]: ['/images/crops/new/califlower/califlowersign.png', '/images/crops/new/califlower/califlowerp1.png'],
+  [ID_SEEDS.GRAPES]:      ['/images/crops/new/grape/grapesign.png',         '/images/crops/new/grape/grapep1.png'],
+  [ID_SEEDS.BOKCHOY]:     ['/images/crops/new/bochoy/bochoysign.png',       '/images/crops/new/bochoy/bochoyp1.png'],
+  [ID_SEEDS.EGGPLANT]:    ['/images/crops/new/eggplant/eggplantsign.png',   '/images/crops/new/eggplant/eggplantp1.png'],
+  // Premium seeds
+  [ID_SEEDS.BANANA]:       ['/images/crops/new/banana/bananasign.png',         '/images/crops/new/banana/bananap1.png'],
+  [ID_SEEDS.MANGO]:        ['/images/crops/new/mango/mangosign.png',           '/images/crops/new/mango/mangop1.png'],
+  [ID_SEEDS.AVOCADO]:      ['/images/crops/new/avocado/avocadosign.png',       '/images/crops/new/avocado/avocadop1.png'],
+  [ID_SEEDS.PINEAPPLE]:    ['/images/crops/new/pineapple/pineapplesign.png',   '/images/crops/new/pineapple/pineapplep1.png'],
+  [ID_SEEDS.BLUEBERRY]:    ['/images/crops/new/blueberry/blueberrysign.png',   '/images/crops/new/blueberry/blueberryp1.png'],
+  [ID_SEEDS.PAPAYA]:       ['/images/crops/new/papaya/papyasign.png',          '/images/crops/new/papaya/papayap1.png'],
+  [ID_SEEDS.LICHI]:        ['/images/crops/new/lychee/lycheesign.png',         '/images/crops/new/lychee/lycheep1.png'],
+  [ID_SEEDS.LAVENDER]:     ['/images/crops/new/lavendar/lavendarsign.png',     '/images/crops/new/lavendar/lavendarp1.png'],
+  [ID_SEEDS.DRAGON_FRUIT]: ['/images/crops/new/dragonfruit/dragonfruitsign.png', '/images/crops/new/dragonfruit/dragonfruitp1.png'],
+  [ID_SEEDS.POMEGRANATE]:  ['/images/crops/new/pomagrante/pomogranetsign.png', '/images/crops/new/pomagrante/pomogranitep1.png'],
+  [ID_SEEDS.APPLE]:        ['/images/crops/new/apple/applesign.png',           '/images/crops/new/apple/applep1.png'],
+};
 
 // Module-level singleton so all CropItem instances share one fly audio
 let _flyAudio = null;
@@ -117,6 +166,8 @@ const CropItem = ({
   }, [index]);
   const [waterPhase, setWaterPhase] = useState('none');
   const [checkmarkPhase, setCheckmarkPhase] = useState('none');
+  const [holdSignAfterFirstWater, setHoldSignAfterFirstWater] = useState(false);
+  const holdSignTimerRef = useRef(null);
   const prevNeedsWaterRef = useRef(data.needsWater);
   const prevGrowStatusRef = useRef(data.growStatus);
   const waterTimerRef = useRef(null);
@@ -138,6 +189,14 @@ const CropItem = ({
     if (prevNeedsWaterRef.current === true && data.needsWater === false) {
       // Debounce: only animate if needsWater stays false for 80ms (ignores crop-placement flickers)
       clearTimeout(waterDebounceRef.current);
+      // If this was the INITIAL water (growth hasn't progressed yet), hold sign during the icon shrink.
+      const wState = JSON.parse(localStorage.getItem('sandbox_water_state') || '{}');
+      const wasInitialWater = wState[index]?.needsInitial === false && (growthProgress || 0) === 0;
+      if (wasInitialWater || (growthProgress || 0) === 0) {
+        setHoldSignAfterFirstWater(true);
+        clearTimeout(holdSignTimerRef.current);
+        holdSignTimerRef.current = setTimeout(() => setHoldSignAfterFirstWater(false), 350);
+      }
       waterDebounceRef.current = setTimeout(() => {
         clearTimeout(waterTimerRef.current);
         setWaterPhase('shrink');
@@ -519,12 +578,37 @@ const CropItem = ({
   const FRAMES_PER_SEED = 6; // total frames across X for one seed line
   const seedJustChanged = lastProgressSeedIdRef.current !== data.seedId;
   const stableProgress = seedJustChanged ? 0 : (growthProgress || 0);
+
+  // Gate sign-to-growth transition on first water actually being given.
+  // needsInitial in the water state is true from planting until the first water.
+  let needsInitialWater = false;
+  try {
+    const wState = JSON.parse(localStorage.getItem('sandbox_water_state') || '{}');
+    needsInitialWater = wState[index]?.needsInitial === true;
+  } catch (e) {}
+
+  // Tutorial: after the first water, lock the potato to p1 for the rest of the scripted phase.
+  // The plant never progresses past p1 during the tutorial — the gem-skip just leads to harvest.
+  const tutStepForFrame = parseInt(localStorage.getItem('sandbox_tutorial_step') || '0', 10);
+  const tutorialFrameOverride = (() => {
+    if (tutStepForFrame >= 17 && tutStepForFrame <= 25) {
+      // While initial water hasn't been given (or icon still shrinking), keep sign.
+      if (needsInitialWater || holdSignAfterFirstWater) return 0;
+      return 1; // p1 — locked, no further progression during the tutorial.
+    }
+    return null;
+  })();
+
   let frameIndex = 0;
   if (data.seedId && ALL_ITEMS[data.seedId]) {
-    if (seedJustChanged) {
+    if (tutorialFrameOverride !== null) {
+      frameIndex = tutorialFrameOverride;
+    } else if (seedJustChanged) {
       frameIndex = 0; // seedId changed but effects haven't run yet — hold on sign
     } else if (data.growStatus === 2) {
       frameIndex = FRAMES_PER_SEED - 1; // ready frame
+    } else if (needsInitialWater || holdSignAfterFirstWater) {
+      frameIndex = 0; // stay on sign until the first water icon finishes shrinking
     } else if (data.growStatus === -1 || data.growStatus === 0) {
       frameIndex = 0; // sign for newly planted and sprout stage
     } else {
@@ -532,28 +616,14 @@ const CropItem = ({
       if (clamped === 0) {
         frameIndex = 0; // sign until growth actually begins
       } else {
+        // 4 growth stages (p1, p2, p3, p4) — p5 reserved for ready (growStatus === 2).
         frameIndex = 1 + Math.floor(clamped * (FRAMES_PER_SEED - 2));
       }
     }
   }
 
-  // Calculate number of filled segments using same logic as sprite frame calculation
-  const getFilledSegments = () => {
-    if (!data.seedId || data.seedId === 0n) return 0;
-
-    // Use the exact same logic as the sprite frame calculation
-    if (data.growStatus === -1) {
-      return 0; // newly planted
-    } else if (data.growStatus === 2) {
-      return 5; // ready frame (all 5 segments)
-    } else {
-      // growing: interpolate segments based on progress, same as sprite frames
-      const clamped = Math.max(0, Math.min(0.999, stableProgress));
-      return Math.floor(clamped * 5); // 0-4 segments based on progress
-    }
-  };
-
-  const filledSegments = getFilledSegments();
+  // Filled segments match the displayed frame: sign = 0, p1 = 1, p2 = 2, ..., p5 (ready) = 5.
+  const filledSegments = (!data.seedId || data.seedId === 0n) ? 0 : frameIndex;
   
   const prep = plotPrep[index] || { status: 0 };
   const isPrepStage = (!data.seedId || data.seedId === 0n) && prep.status !== 3;
@@ -564,22 +634,65 @@ const CropItem = ({
       data-plot-index={index}
       data-plot-prep-status={prep.status || 0}
       data-plot-hover={isHovered ? 'true' : 'false'}
+      data-needs-water={data.needsWater ? 'true' : 'false'}
+      data-has-pest={(data.bugCountdown > 0 || data.crowCountdown > 0) ? 'true' : 'false'}
+      data-planted-image={(() => {
+        if (!data.seedId || data.seedId === 0n) return '';
+        const baseId = Number(data.seedId) & 0xFFF;
+        const frames = CROP_FRAME_OVERRIDES[baseId];
+        if (!frames) return '';
+        return frames[Math.min(frameIndex, frames.length - 1)] || '';
+      })()}
       className={`crop-item ${getStatusClass()} ${
         jiggling && data.growStatus < 1 ? "jiggling" : ""
       } ${highlighted ? "selected" : ""} ${isShaking ? "shaking" : ""}`}
-      style={{
-        ...position,
-        backgroundPositionX:
-          data.seedId && ALL_ITEMS[data.seedId]
-            ? 0 - frameIndex * ONE_SEED_WIDTH
-            : 0,
-        backgroundPositionY:
-          data.seedId && ALL_ITEMS[data.seedId]
-            ? 0 - ALL_ITEMS[data.seedId].pos * ONE_SEED_HEIGHT
-            : 0,
-        backgroundImage: isPrepStage || digPhase === 'hole-shrink' ? 'none' : undefined,
-        backgroundColor: isPrepStage || digPhase === 'hole-shrink' ? 'transparent' : undefined,
-      }}
+      style={(() => {
+        const isEmptyDirt = prep.status === 3 && (!data.seedId || data.seedId === 0n) && digPhase !== 'hole-shrink';
+        // Strip rarity bits — overrides are keyed by base seed id (lower 12 bits).
+        const seedNumId = data.seedId ? Number(data.seedId) & 0xFFF : 0;
+        const overrideFrames = CROP_FRAME_OVERRIDES[seedNumId];
+        const overrideFrameIdx = overrideFrames ? Math.min(frameIndex, overrideFrames.length - 1) : -1;
+        const overrideSrc = overrideFrames ? overrideFrames[overrideFrameIdx] : null;
+        const isSignFrame = overrideFrameIdx === 0;
+        const tutStepNow = parseInt(localStorage.getItem('sandbox_tutorial_step') || '0', 10);
+        // Hide the in-plot rendering during the tutorial steps where the bright overlay takes over —
+        // step 16 covers empty dirt, step 17 covers the planted sign.
+        const hideDirtForTutorial = (isEmptyDirt && tutStepNow === 16) || (overrideSrc && tutStepNow >= 17 && tutStepNow <= 25);
+        // During pest tutorial steps (20=crow, 22=bug), bump the plot above the dim so the bugs/crow are visible.
+        const elevatePlot = (tutStepNow === 20 || tutStepNow === 22) && [6, 7, 8].includes(index);
+        return {
+          ...position,
+          zIndex: elevatePlot ? 100002 : undefined,
+          backgroundPositionX: isEmptyDirt || overrideSrc
+            ? '0'
+            : (data.seedId && ALL_ITEMS[data.seedId] ? 0 - frameIndex * ONE_SEED_WIDTH : 0),
+          backgroundPositionY: isEmptyDirt || overrideSrc
+            ? '0'
+            : (data.seedId && ALL_ITEMS[data.seedId] ? 0 - ALL_ITEMS[data.seedId].pos * ONE_SEED_HEIGHT : 0),
+          backgroundImage: isPrepStage || digPhase === 'hole-shrink' || hideDirtForTutorial
+            ? 'none'
+            : (overrideSrc
+                ? `url(${overrideSrc})`
+                : (isEmptyDirt ? 'url(/images/crops/new/dirt.png)' : undefined)),
+          backgroundSize: overrideSrc
+            ? (isSignFrame ? 'auto 96%' : '65% auto')
+            : (isEmptyDirt ? (isHovered ? '69% auto' : '64% auto') : undefined),
+          backgroundPosition: overrideSrc
+            ? `${overrideFrameIdx === 0 ? 'calc(50% - 23px)' : (overrideFrameIdx === 1 ? 'calc(50% - 19px)' : 'calc(50% - 30px)')} ${overrideFrameIdx === 0 ? 'calc(50% + 4px)' : (overrideFrameIdx === 1 ? 'bottom' : (overrideFrameIdx === overrideFrames.length - 1 ? 'calc(50% + 21px)' : (overrideFrameIdx === overrideFrames.length - 2 ? 'calc(50% + 36px)' : 'calc(50% + 43px)')))}`
+            : (isEmptyDirt ? `${index === 11 ? 'calc(50% - 38px)' : 'calc(50% - 18px)'} center` : undefined),
+          backgroundRepeat: isEmptyDirt || overrideSrc ? 'no-repeat' : undefined,
+          transform: overrideSrc && isHovered && tutStepNow >= 36 ? 'scale(1.1)' : undefined,
+          transformOrigin: overrideSrc ? 'center' : undefined,
+          transition: isEmptyDirt
+            ? 'background-size 0.15s ease-out'
+            : (overrideSrc ? 'transform 0.15s ease-out' : undefined),
+          // Pop-in scale animation when dirt is first placed (status 1 → 3 transition).
+          animation: digPhase === 'dirt-appear' && isEmptyDirt
+            ? 'dirtPopIn 0.32s cubic-bezier(0.34, 1.56, 0.64, 1) both'
+            : undefined,
+          backgroundColor: isPrepStage || digPhase === 'hole-shrink' ? 'transparent' : undefined,
+        };
+      })()}
     >
       {/* Soil color overlay */}
       {soilColor && (
@@ -638,7 +751,7 @@ const CropItem = ({
                   width: '115px', height: '115px', objectFit: 'contain', marginTop: '115px', marginLeft: '-34px',
                   // On step 11, hide the real X — a bright overlay takes its place at the exact same position
                   visibility: (curStep === 12 || curStep === 14) ? 'hidden' : 'visible',
-                  animation: (curStep === 12 || curStep === 14) ? 'none'
+                  animation: (curStep >= 12 && curStep < 36) ? 'none'
                            : digPhase === 'x-shrink' ? 'xShrink 0.18s ease-in forwards'
                            : digPhase === 'x-appear' ? 'xAppear 0.2s ease-out forwards'
                            : 'xPulseIdle 1.4s ease-in-out infinite',
@@ -655,7 +768,7 @@ const CropItem = ({
                 data-hover={isHovered ? 'true' : 'false'}
                 src="/images/farming/hole.png"
                 alt="Hole"
-                style={{ width: '220px', height: '220px', objectFit: 'contain', marginTop: '115px', marginLeft: '-48px', visibility: (curStep === 14 || curStep === 15) ? 'hidden' : 'visible' }}
+                style={{ width: '200px', height: '200px', objectFit: 'contain', marginTop: index === 3 ? '111px' : '125px', marginLeft: '-38px', visibility: (curStep === 14 || curStep === 15) ? 'hidden' : 'visible', transform: isHovered ? 'scale(1.1)' : 'scale(1)', transformOrigin: 'center', transition: 'transform 0.15s ease-out' }}
               />
             );
           })()}
@@ -689,7 +802,7 @@ const CropItem = ({
       {digPhase === 'hole-shrink' && (
         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', justifyContent: 'center', alignItems: 'center', pointerEvents: 'none' }}>
           {prevAnimStatusRef.current === 1 && (
-            <img src="/images/farming/hole.png" alt="Hole" style={{ width: '220px', height: '220px', objectFit: 'contain', marginTop: '115px', marginLeft: '-48px', animation: 'holeShrink 0.18s ease-in forwards' }} />
+            <img src="/images/farming/hole.png" alt="Hole" style={{ width: '200px', height: '200px', objectFit: 'contain', marginTop: index === 3 ? '111px' : '125px', marginLeft: '-38px', animation: 'holeShrink 0.18s ease-in forwards' }} />
           )}
           {prevAnimStatusRef.current === 2 && (
             <div style={{ position: 'relative', width: '40px', height: '15px', backgroundColor: '#1a1008', borderRadius: '50%', border: '2px solid #000', boxShadow: 'inset 0 5px 10px rgba(0,0,0,0.8)', display: 'flex', justifyContent: 'center', alignItems: 'center', animation: 'holeShrink 0.18s ease-in forwards' }}>
@@ -716,7 +829,7 @@ const CropItem = ({
             <div
               key={i}
               className={`growth-segment ${
-                i <= filledSegments ? "filled" : ""
+                i < filledSegments ? "filled" : ""
               }`}
             />
           ))}
@@ -735,6 +848,7 @@ const CropItem = ({
             pos={tooltipPos}
             data={data}
             growthProgress={growthProgress}
+            filledSegments={filledSegments}
           />
         )}
 
@@ -843,11 +957,21 @@ const CropItem = ({
             @keyframes bugScatter2 { 0%{transform:translate(0,0);opacity:1;} 100%{transform:translate(-90px,20px) scale(0.3);opacity:0;} }
             @keyframes bugScatter3 { 0%{transform:translate(0,0);opacity:1;} 100%{transform:translate(90px,30px) scale(0.3);opacity:0;} }
             @keyframes bugScatter4 { 0%{transform:translate(0,0);opacity:1;} 100%{transform:translate(10px,-100px) scale(0.3);opacity:0;} }
+            @keyframes bugScatter5 { 0%{transform:translate(0,0);opacity:1;} 100%{transform:translate(-100px,40px) scale(0.3);opacity:0;} }
+            @keyframes bugScatter6 { 0%{transform:translate(0,0);opacity:1;} 100%{transform:translate(95px,-30px) scale(0.3);opacity:0;} }
+            @keyframes bugScatter7 { 0%{transform:translate(0,0);opacity:1;} 100%{transform:translate(-50px,80px) scale(0.3);opacity:0;} }
+            @keyframes bugScatter8 { 0%{transform:translate(0,0);opacity:1;} 100%{transform:translate(60px,90px) scale(0.3);opacity:0;} }
+            @keyframes bugScatter9 { 0%{transform:translate(0,0);opacity:1;} 100%{transform:translate(-25px,-95px) scale(0.3);opacity:0;} }
             @keyframes bugGather0 { 0%{transform:translate(-70px,-80px) scale(0.3);opacity:0;} 100%{transform:translate(0,0) scale(1);opacity:1;} }
             @keyframes bugGather1 { 0%{transform:translate(80px,-60px) scale(0.3);opacity:0;} 100%{transform:translate(0,0) scale(1);opacity:1;} }
             @keyframes bugGather2 { 0%{transform:translate(-90px,20px) scale(0.3);opacity:0;} 100%{transform:translate(0,0) scale(1);opacity:1;} }
             @keyframes bugGather3 { 0%{transform:translate(90px,30px) scale(0.3);opacity:0;} 100%{transform:translate(0,0) scale(1);opacity:1;} }
             @keyframes bugGather4 { 0%{transform:translate(10px,-100px) scale(0.3);opacity:0;} 100%{transform:translate(0,0) scale(1);opacity:1;} }
+            @keyframes bugGather5 { 0%{transform:translate(-100px,40px) scale(0.3);opacity:0;} 100%{transform:translate(0,0) scale(1);opacity:1;} }
+            @keyframes bugGather6 { 0%{transform:translate(95px,-30px) scale(0.3);opacity:0;} 100%{transform:translate(0,0) scale(1);opacity:1;} }
+            @keyframes bugGather7 { 0%{transform:translate(-50px,80px) scale(0.3);opacity:0;} 100%{transform:translate(0,0) scale(1);opacity:1;} }
+            @keyframes bugGather8 { 0%{transform:translate(60px,90px) scale(0.3);opacity:0;} 100%{transform:translate(0,0) scale(1);opacity:1;} }
+            @keyframes bugGather9 { 0%{transform:translate(-25px,-95px) scale(0.3);opacity:0;} 100%{transform:translate(0,0) scale(1);opacity:1;} }
           `}</style>
           <div
             onPointerDown={(e) => {
@@ -864,17 +988,25 @@ const CropItem = ({
                 setBugsFlyingAway(false);
               }, 900);
             }}
-            style={{
-              position: 'absolute',
-              top: 'calc(35% + 27.5px)',
-              left: 'calc(50% - 19px)',
-              width: '50px',
-              height: '50px',
-              marginLeft: '-25px',
-              zIndex: 9999,
-              cursor: 'crosshair',
-              pointerEvents: 'auto',
-            }}
+            style={(() => {
+              const ts = parseInt(localStorage.getItem('sandbox_tutorial_step') || '0', 10);
+              const inTutorial = ts === 22;
+              return {
+                position: 'absolute',
+                top: 'calc(35% + 27.5px)',
+                left: 'calc(50% - 19px)',
+                width: '50px',
+                height: '50px',
+                marginLeft: '-25px',
+                zIndex: 9999,
+                cursor: 'crosshair',
+                pointerEvents: 'auto',
+                filter: inTutorial
+                  ? 'drop-shadow(0 0 6px rgba(255,220,100,0.95)) drop-shadow(0 0 12px rgba(255,180,40,0.85))'
+                  : undefined,
+                animation: inTutorial ? 'tutXPulse 1.4s ease-in-out infinite' : undefined,
+              };
+            })()}
           >
             {[
               { anim: 'flyOrbit0', dur: '1.4s', size: 5, color: '#1a1a0a', delay: '0s',    scatter: 'bugScatter0' },
@@ -882,6 +1014,11 @@ const CropItem = ({
               { anim: 'flyOrbit2', dur: '1.6s', size: 5, color: '#111108', delay: '-0.8s', scatter: 'bugScatter2' },
               { anim: 'flyOrbit3', dur: '1.3s', size: 4, color: '#1a1208', delay: '-0.2s', scatter: 'bugScatter3' },
               { anim: 'flyOrbit0', dur: '1.8s', size: 3, color: '#2a2000', delay: '-1.0s', scatter: 'bugScatter4' },
+              { anim: 'flyOrbit1', dur: '1.5s', size: 5, color: '#1f1a0c', delay: '-0.6s', scatter: 'bugScatter5' },
+              { anim: 'flyOrbit2', dur: '1.2s', size: 4, color: '#241800', delay: '-1.2s', scatter: 'bugScatter6' },
+              { anim: 'flyOrbit3', dur: '1.7s', size: 5, color: '#161208', delay: '-0.3s', scatter: 'bugScatter7' },
+              { anim: 'flyOrbit0', dur: '1.0s', size: 3, color: '#2a1d05', delay: '-0.9s', scatter: 'bugScatter8' },
+              { anim: 'flyOrbit2', dur: '1.9s', size: 4, color: '#1c1408', delay: '-0.5s', scatter: 'bugScatter9' },
             ].map((f, i) => (
               <div key={i} style={{
                 position: 'absolute',
@@ -1023,7 +1160,8 @@ const CropItem = ({
                 : "translate(-50%, -50%)",
               opacity: crowFlyingAway ? 0 : 1,
               transition: crowFlyingAway ? "transform 1.4s ease-in, opacity 1.4s ease-in 0.4s" : "none",
-              zIndex: 9000,
+              // Bump above the tutorial dim layer (z 100001) so the crow shows bright instead of darkened.
+              zIndex: parseInt(localStorage.getItem('sandbox_tutorial_step') || '0', 10) < 36 ? 100002 : 9000,
               cursor: crowFlyingAway ? "default" : "crosshair",
               display: "flex",
               flexDirection: "column",
@@ -1039,7 +1177,12 @@ const CropItem = ({
               style={{
                 width: crowLanded ? "85px" : "70px",
                 height: crowLanded ? "85px" : "70px",
-                filter: "drop-shadow(0px 0px 5px rgba(255,0,0,0.8))",
+                filter: parseInt(localStorage.getItem('sandbox_tutorial_step') || '0', 10) === 20
+                  ? "drop-shadow(0 0 6px rgba(255,220,100,0.9)) drop-shadow(0 0 12px rgba(255,180,40,0.7)) drop-shadow(0px 0px 5px rgba(255,0,0,0.8))"
+                  : "drop-shadow(0px 0px 5px rgba(255,0,0,0.8))",
+                animation: parseInt(localStorage.getItem('sandbox_tutorial_step') || '0', 10) === 20
+                  ? "tutXPulse 1.4s ease-in-out infinite"
+                  : "none",
                 transform: crowFlyingAway
                   ? (index < 15 ? "scaleX(1)" : "scaleX(-1)")
                   : (!crowLanded && index >= 15) ? "scaleX(-1)" : "none"
@@ -1052,7 +1195,7 @@ const CropItem = ({
               opacity: dirtFading ? 0 : 1,
               transition: dirtFading ? "opacity 0.8s ease-out" : "none",
             }}>
-              {Array.from({ length: 50 }, (_, i) => (
+              {Array.from({ length: 15 }, (_, i) => (
                 <div key={`dirt-${i}`} style={{
                   position: "fixed",
                   left: `${crowScreenPos.plotCX}px`,
@@ -1078,7 +1221,10 @@ const CropItem = ({
         @keyframes statusBounce { 0%, 100% { transform: translateX(-50%) translateY(0); } 50% { transform: translateX(-50%) translateY(-10px); } }
         @keyframes indicatorShrink { from { transform: scale(1); opacity: 1; } to { transform: scale(0); opacity: 0; } }
       `}</style>
-      {((data.needsWater || waterPhase === 'shrink') && !(data.bugCountdown > 0) && !(data.crowCountdown > 0) || (data.bugCountdown > 0 && !bugsFlyingAway) || (data.crowCountdown > 0 && crowLanded && !crowFlyingAway)) && (
+      {((data.needsWater || waterPhase === 'shrink') && !(data.bugCountdown > 0) && !(data.crowCountdown > 0) || (data.bugCountdown > 0 && !bugsFlyingAway) || (data.crowCountdown > 0 && crowLanded && !crowFlyingAway)) && (() => {
+        const ts = parseInt(localStorage.getItem('sandbox_tutorial_step') || '0', 10);
+        return !(ts >= 17 && ts <= 25);
+      })() && (
         <div style={{
           position: "absolute",
           top: "-25px",
@@ -1106,7 +1252,10 @@ const CropItem = ({
           }
         </div>
       )}
-      {(data.growStatus === 2 || checkmarkPhase === 'shrink') && !data.needsWater && waterPhase !== 'shrink' && !crowFlyingAway && !bugsFlyingAway && !pestJustKilled && (
+      {(data.growStatus === 2 || checkmarkPhase === 'shrink') && !data.needsWater && waterPhase !== 'shrink' && !crowFlyingAway && !bugsFlyingAway && !pestJustKilled && (() => {
+        const ts = parseInt(localStorage.getItem('sandbox_tutorial_step') || '0', 10);
+        return !(ts >= 17 && ts <= 25); // hide checkmark during the scripted potato phase
+      })() && (
         <div style={{
           position: "absolute",
           top: "60px",

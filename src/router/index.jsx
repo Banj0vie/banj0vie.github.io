@@ -1050,7 +1050,7 @@ const AdminPanel = () => {
       <style>{`
         /* Left Navigation Ordering & Visibility based on Tutorial Step */
         a[href*="/farm"] { order: 1; }
-        a[href*="/market"] { order: 2; ${tutorialStep < 10 && !(tutorialStep === 3 && tutPage >= 12) ? 'display: none !important;' : ''} }
+        a[href*="/market"] { order: 2; }
         a[href*="/house"] { order: 3; ${tutorialStep < 17 && tutMarketPage < 16 ? 'display: none !important;' : ''} }
         a[href*="/tavern" i] { order: 4; ${tutorialStep < 24 ? 'display: none !important;' : ''} }
         a[href*="/valley"] { order: 5; ${tutorialStep < 25 ? 'display: none !important;' : ''} }

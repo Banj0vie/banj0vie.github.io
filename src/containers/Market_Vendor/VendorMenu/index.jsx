@@ -21,11 +21,17 @@ const VendorMenu = ({
   buyingItem = null,
   tutorialStep = 0
 }) => {
-  const seedOrder = [
-    ID_CROP_CATEGORIES.PICO_SEED,
-    ID_CROP_CATEGORIES.BASIC_SEED,
-    ID_CROP_CATEGORIES.PREMIUM_SEED,
-  ];
+  // The market cutscene's "click on the vendor to enter the shop" beat sets this flag so the
+  // user only sees the Pico pack option (matches the script: "let me introduce you to our local
+  // seed vendor"). Cleared once the cutscene finishes the pack flow.
+  const picoOnly = typeof window !== 'undefined' && localStorage.getItem('sandbox_cutscene_pico_only') === 'true';
+  const seedOrder = picoOnly
+    ? [ID_CROP_CATEGORIES.PICO_SEED]
+    : [
+        ID_CROP_CATEGORIES.PICO_SEED,
+        ID_CROP_CATEGORIES.BASIC_SEED,
+        ID_CROP_CATEGORIES.PREMIUM_SEED,
+      ];
 
   // Tier mapping to match the contract
   const tierMap = {

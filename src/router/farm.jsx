@@ -81,6 +81,31 @@ const TutorialDirtSpotlight = () => {
   );
 };
 
+// Typewriter effect for queen letter body — types out paragraphs character-by-character on first open only
+const QueenLetterTypewriter = ({ body, instant = false }) => {
+  const fullText = body.join('\n\n');
+  const [typed, setTyped] = useState(instant ? fullText : '');
+
+  useEffect(() => {
+    if (instant) {
+      setTyped(fullText);
+      return;
+    }
+    setTyped('');
+    let i = 0;
+    const id = setInterval(() => {
+      i++;
+      setTyped(fullText.slice(0, i));
+      if (i >= fullText.length) clearInterval(id);
+    }, 25);
+    return () => clearInterval(id);
+  }, [fullText, instant]);
+
+  return (
+    <div style={{ whiteSpace: 'pre-wrap', color: '#2a1a08' }}>{typed}</div>
+  );
+};
+
 // Persistent Papabee — stays mounted across tutorial steps so the float animation doesn't reset.
 const TutorialPapabee = ({ step, dimmedBehind = false }) => {
   const silhouette = step === 0 || step === 2;
@@ -119,7 +144,7 @@ const TutorialPapabee = ({ step, dimmedBehind = false }) => {
         draggable={false}
         style={{
           position: 'fixed',
-          right: `${620 + shiftX}px`,
+          right: `${550 + shiftX}px`,
           bottom: `${200 + shiftY}px`,
           width: '180px',
           objectFit: 'contain',
@@ -154,28 +179,37 @@ const TutorialStarterPlotsBright = ({ staggered = false, onlyHoles = false, only
         const xEl    = document.querySelector(`.plot-x-marker[data-plot-x='${idx}']`);
         let el = null;
         let type = null;
-        // For dirt (empty or planted), use the crop-item itself — we copy its sprite background.
-        if (status === 3 && plotEl) { el = plotEl; type = 'dirt'; }
+        // Detect a planted override (e.g. potato sign) — prefer the data attribute set by CropItem,
+        // since the in-plot background may be hidden during tutorial steps.
+        let plantedImage = null;
+        if (plotEl) {
+          const dataAttr = plotEl.getAttribute('data-planted-image');
+          if (dataAttr) plantedImage = dataAttr;
+          else {
+            const cs = window.getComputedStyle(plotEl);
+            const bgImg = cs.backgroundImage || '';
+            const m = bgImg.match(/url\(["']?(\/images\/crops\/new\/[^"')]+\.(?:png|webp))["']?\)/);
+            if (m) plantedImage = m[1];
+          }
+        }
+        if (status === 3 && plotEl) {
+          el = plotEl;
+          // If the plot has a planted override image, treat it as 'planted' so we render the sign brightly.
+          type = (plantedImage && !plantedImage.endsWith('/dirt.png')) ? 'planted' : 'dirt';
+        }
         else if (holeEl) { el = holeEl; type = 'hole'; }
         else if (xEl)    { el = xEl;    type = 'x'; }
         if (!el) return null;
         const r = el.getBoundingClientRect();
-        const hoverAttr = type === 'dirt'
+        const hoverAttr = (type === 'dirt' || type === 'planted')
           ? (plotEl && plotEl.getAttribute('data-plot-hover') === 'true')
           : (el.getAttribute('data-hover') === 'true');
         const hovered = allowHover && !!hoverAttr;
         if (onlyHoles && type !== 'hole') return null;
-        if (onlyDirt  && type !== 'dirt') return null;
-        // For dirt/planted plots, copy the crop-item's actual sprite position so the overlay matches the real visual.
-        let bgPosX = 0, bgPosY = 0;
-        if (type === 'dirt' && plotEl) {
-          const cs = window.getComputedStyle(plotEl);
-          const bp = cs.backgroundPosition || '0px 0px';
-          const parts = bp.split(' ');
-          bgPosX = parseFloat(parts[0]) || 0;
-          bgPosY = parseFloat(parts[1]) || 0;
-        }
-        return { idx, type, hovered, left: r.left, top: r.top, width: r.width, height: r.height, bgPosX, bgPosY };
+        if (onlyDirt  && type !== 'dirt' && type !== 'planted') return null;
+        const needsWater = plotEl?.getAttribute('data-needs-water') === 'true';
+        const hasPest = plotEl?.getAttribute('data-has-pest') === 'true';
+        return { idx, type, hovered, plantedImage, needsWater, hasPest, left: r.left, top: r.top, width: r.width, height: r.height };
       }).filter(Boolean);
       setItems(next);
     };
@@ -186,13 +220,14 @@ const TutorialStarterPlotsBright = ({ staggered = false, onlyHoles = false, only
       clearInterval(timer);
       window.removeEventListener('resize', measure);
     };
-  }, [onlyHoles, allowHover]);
+  }, [onlyHoles, onlyDirt, allowHover]);
 
   return (
     <>
       <style>{`
         @keyframes tutXPop { 0% { transform: scale(0); opacity: 0; } 60% { transform: scale(1.18); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
         @keyframes tutXPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.2); } }
+        @keyframes tutWaterBounce { 0%, 100% { transform: translateX(-50%) translateY(0); } 50% { transform: translateX(-50%) translateY(-10px); } }
       `}</style>
       {items.map((p, i) => (
         <div
@@ -204,29 +239,51 @@ const TutorialStarterPlotsBright = ({ staggered = false, onlyHoles = false, only
             width: p.width,
             height: p.height,
             pointerEvents: 'none',
-            zIndex: 100001,
+            zIndex: 100002,
             transformOrigin: 'center',
-            transform: (p.hovered && p.type === 'dirt') ? 'scale(1.1)' : 'scale(1)',
+            transform: (p.hovered && p.type === 'dirt' && !p.hasPest) ? 'scale(1.1)' : 'scale(1)',
             transition: 'transform 0.15s ease-out',
           }}
         >
-          {p.type === 'dirt' ? (
+          {(p.type === 'dirt' || p.type === 'planted') ? (
             <div
-              key={`${p.idx}-dirt`}
+              key={`${p.idx}-${p.type}`}
               style={{
                 position: 'absolute',
                 left: 0,
                 top: 0,
-                width: '158.86px',
-                height: '207.76px',
-                transform: `scale(${p.width / 158.86})`,
-                transformOrigin: 'top left',
-                backgroundImage: 'url(/images/crops/bigger_plants.webp)',
-                backgroundPositionX: `${p.bgPosX}px`,
-                backgroundPositionY: `${p.bgPosY}px`,
+                width: '100%',
+                height: '100%',
+                backgroundImage: p.type === 'planted'
+                  ? `url(${p.plantedImage})`
+                  : 'url(/images/crops/new/dirt.png)',
+                backgroundSize: p.type === 'planted'
+                  ? ((p.plantedImage || '').endsWith('sign.png') ? 'auto 96%' : '65% auto')
+                  : '64% auto',
+                backgroundPosition: p.type === 'planted'
+                  ? ((p.plantedImage || '').endsWith('sign.png')
+                      ? 'calc(50% - 13px) calc(50% + 1.5px)'
+                      : `${(p.plantedImage || '').endsWith('p1.png') ? 'calc(50% - 8px)' : 'calc(50% - 13px)'} calc(50% + ${(p.plantedImage || '').endsWith('p5.png') ? 9 : ((p.plantedImage || '').endsWith('p4.png') ? 16 : ((p.plantedImage || '').endsWith('p1.png') ? 59 : 19))}px)`)
+                  : 'calc(50% - 8px) bottom',
                 backgroundRepeat: 'no-repeat',
                 pointerEvents: 'none',
-                animation: `tutXPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both`,
+                filter: (() => {
+                  const ts = parseInt(localStorage.getItem('sandbox_tutorial_step') || '0', 10);
+                  if (ts === 20 || ts === 22 || p.hasPest) return 'none';
+                  // Only the empty dirt gets the hover glow — planted overrides stay static.
+                  if (p.type === 'planted') return 'none';
+                  return p.hovered
+                    ? 'brightness(1.2) drop-shadow(0 0 6px rgba(255,220,100,0.9)) drop-shadow(0 0 12px rgba(255,180,40,0.7))'
+                    : 'none';
+                })(),
+                transition: 'filter 0.15s ease-out',
+                // Only run the pop-in for the empty dirt (first appearance). Planted overrides
+                // shouldn't re-pop every step transition — they should stay still.
+                animation: p.type === 'planted'
+                  ? 'none'
+                  : (staggered
+                      ? `tutXPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) ${i * 0.3}s both`
+                      : `tutXPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both`),
               }}
             />
           ) : (
@@ -245,7 +302,7 @@ const TutorialStarterPlotsBright = ({ staggered = false, onlyHoles = false, only
                   ? 'brightness(1.2) drop-shadow(0 0 6px rgba(255,220,100,0.9)) drop-shadow(0 0 12px rgba(255,180,40,0.7))'
                   : 'none',
                 transition: 'filter 0.15s ease-out',
-                animation: (p.type === 'x' || p.type === 'hole')
+                animation: p.type === 'x'
                   ? (staggered
                       ? `tutXPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) ${i * 0.3}s both, tutXPulse 1.4s ease-in-out ${0.4 + i * 0.3}s infinite`
                       : `tutXPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both, tutXPulse 1.4s ease-in-out 0.4s infinite`)
@@ -254,6 +311,23 @@ const TutorialStarterPlotsBright = ({ staggered = false, onlyHoles = false, only
                       : `tutXPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both`),
               }}
             />
+          )}
+          {/* Status indicator on planted plots — pest "!" badge wins, otherwise water-needed icon. */}
+          {p.type === 'planted' && (p.hasPest || p.needsWater) && (
+            <div style={{ position: 'absolute', top: '6px', left: 'calc(50% + 17px)', pointerEvents: 'none', animation: 'tutWaterBounce 1.5s infinite', transform: 'translateX(-50%)' }}>
+              <img
+                src={p.hasPest ? '/images/mail/!.png' : '/images/farming/waterneeded.png'}
+                alt={p.hasPest ? '!' : 'Needs Water'}
+                draggable={false}
+                style={{
+                  width: '30px',
+                  height: '30px',
+                  display: 'block',
+                  pointerEvents: 'none',
+                  filter: 'drop-shadow(0px 2px 2px black)',
+                }}
+              />
+            </div>
           )}
         </div>
       ))}
@@ -335,7 +409,7 @@ const TutorialNamePrompt = ({ setTutorialStep, advanceTo }) => {
   );
 };
 
-const TutorialBubbleOverlay = ({ setTutorialStep, fullText, advanceTo, bubbleSrc = '/images/tutorial/bubblequestion.png', showPapabee = false, papabeeSilhouette = false, papabeeReveal = false, fontSize = '56px', textMaxWidth = null, shiftX = 0, shiftY = 0, textShiftY = 0, noDim = false, noAdvance = false, exitOnAdvance = false }) => {
+const TutorialBubbleOverlay = ({ setTutorialStep, fullText, advanceTo, bubbleSrc = '/images/tutorial/questionmarkrealbubble.png', showPapabee = false, papabeeSilhouette = false, papabeeReveal = false, fontSize = '56px', textMaxWidth = null, shiftX = 0, shiftY = 0, textShiftY = 0, noDim = false, noAdvance = false, exitOnAdvance = false }) => {
   const [typed, setTyped] = useState('');
   const [revealed, setRevealed] = useState(!papabeeReveal);
   const [revealComplete, setRevealComplete] = useState(!papabeeReveal);
@@ -369,8 +443,11 @@ const TutorialBubbleOverlay = ({ setTutorialStep, fullText, advanceTo, bubbleSrc
   }, [fullText, papabeeReveal]);
 
   const [exiting, setExiting] = useState(false);
+  // Click can only advance the bubble after the typewriter has finished writing the line.
+  const isTypingDone = typed.length >= fullText.length;
   const advance = () => {
     if (noAdvance) return;
+    if (!isTypingDone) return;
     if (exitOnAdvance) {
       setExiting(true);
       window.dispatchEvent(new CustomEvent('tutorialExit'));
@@ -391,23 +468,35 @@ const TutorialBubbleOverlay = ({ setTutorialStep, fullText, advanceTo, bubbleSrc
       {/* Dim overlay at root stacking context — papabee (z 100002) sits above this, bubble (z 100003) above papabee */}
       {!noDim && <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', pointerEvents: 'none', zIndex: 100001 }} />}
 
-      {/* Bubble — above papabee */}
+      {/* Bubble — above papabee and any tutorial bright overlays */}
       <div
         onClick={advance}
-        style={{ position: 'fixed', right: `${20 + shiftX}px`, bottom: `${-70 + shiftY}px`, width: '820px', cursor: 'pointer', pointerEvents: 'auto', userSelect: 'none', zIndex: 100003, transform: exiting ? 'scale(0)' : 'scale(1)', transformOrigin: 'center bottom', transition: 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)' }}
+        style={{ position: 'fixed', right: `${20 + shiftX}px`, bottom: `${-70 + shiftY}px`, width: '820px', cursor: 'pointer', pointerEvents: 'auto', userSelect: 'none', zIndex: 200000, transform: exiting ? 'scale(0)' : 'scale(1)', transformOrigin: 'center bottom', transition: 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)' }}
       >
-        <img
-          src={(papabeeReveal && !revealComplete) ? '/images/tutorial/bubblequestion.png' : bubbleSrc}
-          alt="Papabee says..."
-          draggable={false}
-          style={{ width: '100%', display: 'block', objectFit: 'contain' }}
-        />
+        {(() => {
+          const resolvedSrc = (papabeeReveal && !revealComplete) ? '/images/tutorial/questionmarkrealbubble.png' : bubbleSrc;
+          // The papabee/mayor bubble PNGs include leaves/crown above the body, pushing the
+          // visible bubble lower in their canvas than the questionmark bubble. Shift those
+          // images up so the bubble body lands in the same screen position regardless of which is shown.
+          const isPapabee = resolvedSrc?.includes('papabeebubble.png');
+          const isMayor   = resolvedSrc?.includes('mayorbeebubble.png');
+          const yOffset   = isPapabee ? -28 : (isMayor ? -28 : 0);
+          return (
+            <img
+              src={resolvedSrc}
+              alt="Papabee says..."
+              draggable={false}
+              style={{ width: '100%', display: 'block', objectFit: 'contain', transform: yOffset ? `translateY(${yOffset}px)` : undefined }}
+            />
+          );
+        })()}
         {/* Typewriter text overlay */}
         <div style={{
           position: 'absolute',
-          top: `calc(38% + ${45 + textShiftY}px)`,
-          left: 'calc(44% - 295px)',
-          transform: 'translateY(-50%)',
+          // Anchor at the TOP of the typeable area so text starts high and flows down as it grows,
+          // instead of being vertically centered (which made multi-line text feel like it was getting "pushed up").
+          top: `calc(38% + ${10 + textShiftY}px)`,
+          left: 'calc(44% - 245px)',
           fontFamily: '"Cartoonist", "GROBOLD", "Courier New", monospace',
           fontSize,
           color: '#3b1f0a',
@@ -421,6 +510,27 @@ const TutorialBubbleOverlay = ({ setTutorialStep, fullText, advanceTo, bubbleSrc
         }}>
           {typed}
         </div>
+        {/* "Click to continue" indicator — only after the typewriter is done, on advancing bubbles. */}
+        {!noAdvance && isTypingDone && (
+          <>
+            <style>{`@keyframes tutClickPulse { 0%,100% { transform: translateY(0) scale(1); opacity: 0.85; } 50% { transform: translateY(4px) scale(1.08); opacity: 1; } }`}</style>
+            <img
+              src="/images/tutorial/click.png"
+              alt=""
+              draggable={false}
+              style={{
+                position: 'absolute',
+                right: '100px',
+                bottom: '238px',
+                width: '64px',
+                height: 'auto',
+                pointerEvents: 'none',
+                userSelect: 'none',
+                animation: 'tutClickPulse 1.1s ease-in-out infinite',
+              }}
+            />
+          </>
+        )}
       </div>
     </>
   );
@@ -431,7 +541,7 @@ export const getQuestData = () => [
   // Wave 1: Early Bliss (0-60 min)
 
   {
-    id: "q1_beejamin_welcome",
+    id: "q1_beejamin",
     type: "main",
     sender: "Beejamin",
     subject: "YO! New Farmer Alert!",
@@ -439,38 +549,21 @@ export const getQuestData = () => [
     body: [
       "YO! Heard you moved into the old farm! That's SICK!",
       "I'm Beejamin. I lift boulders and stuff. Big supporter of the hustle!",
-      "Planted these potato seeds last season but I kinda forgot to go back for them haha. ENJOY! Grow big stuff!"
+      "Take these potato seeds — plant 'em, grow 'em, then come back and show me a couple! Potatoes are nature's dumbbells, BRO."
     ],
-    rewards: [
-      { id: 'pico_pack', seeds: [getRaritySeedId(ID_SEEDS.POTATO, 1), getRaritySeedId(ID_SEEDS.POTATO, 1)], count: 1, name: "Pico Seeds Pack", image: "/images/cardfront/card1idle/idle_1/idle_1_00000.png" },
-    ],
-    reqs: [],
-    unlockCondition: (step, completed) => completed.includes("q1b_queen_harvest")
-  },
-
-  {
-    id: "q1b_beejamin_harvest",
-    type: "main",
-    sender: "Beejamin",
-    subject: "How's the Potato Life??",
-    mailImage: "/images/mail/mailbeejamin.png",
-    body: [
-      "BRO. Did you grow the potatoes yet??",
-      "I bet they are SO BIG. Potatoes are like nature's dumbbells.",
-      "Send me proof and I'll hook you up with something nice."
-    ],
+    starterPack: { seeds: [getRaritySeedId(ID_SEEDS.POTATO, 1), getRaritySeedId(ID_SEEDS.POTATO, 1)] },
     rewards: [
       { id: 'honey', count: 7500, name: "HNY", image: "/images/profile_bar/hny.png" },
       { id: 'gems', count: 25, name: "Gems" },
     ],
     reqs: [
-      { id: ID_PRODUCE_ITEMS?.POTATO, count: 2, name: "Potatoes", pos: 24 }
+      { id: ID_PRODUCE_ITEMS?.POTATO, count: 4, name: "Potatoes", pos: 24 }
     ],
-    unlockCondition: (step, completed) => step >= 36 && completed.includes("q1_beejamin_welcome")
+    unlockCondition: (step, completed) => completed.includes("q1_queen")
   },
 
   {
-    id: "q1_potionmaster_welcome",
+    id: "q1_potionmaster",
     type: "main",
     sender: "The Potion Master",
     subject: "A Most Exciting Development!",
@@ -478,38 +571,21 @@ export const getQuestData = () => [
     body: [
       "OH! A new farmer! Wonderful! Spectacular!",
       "I'm Zim — the Potion Master. I've been cataloguing the botanical resonance frequencies of local crops for seventeen years and let me tell you, RADISHES are criminally underrated.",
-      "Please grow some. For science. And friendship!"
+      "Take these radish seeds — plant them, grow them, and bring me a couple when they're ready. For science! And friendship!"
     ],
-    rewards: [
-      { id: 'pico_pack', seeds: [getRaritySeedId(ID_SEEDS.RADISH, 1), getRaritySeedId(ID_SEEDS.RADISH, 1)], count: 1, name: "Pico Seeds Pack", image: "/images/cardfront/card1idle/idle_1/idle_1_00000.png" },
-    ],
-    reqs: [],
-    unlockCondition: (step, completed) => completed.includes("q1b_beejamin_harvest")
-  },
-
-  {
-    id: "q1b_potionmaster_harvest",
-    type: "main",
-    sender: "The Potion Master",
-    subject: "URGENT: Botanical Data Needed",
-    mailImage: "/images/mail/mailpotionmaster.png",
-    body: [
-      "THE RADISHES! Have you grown the radishes?!",
-      "I have been positively vibrating with anticipation. The quantum herb energy of a fresh radish is simply irreplaceable.",
-      "Bring them to me — scientifically! — and I shall reward you handsomely."
-    ],
+    starterPack: { seeds: [getRaritySeedId(ID_SEEDS.RADISH, 1), getRaritySeedId(ID_SEEDS.RADISH, 1)] },
     rewards: [
       { id: 'honey', count: 7500, name: "HNY", image: "/images/profile_bar/hny.png" },
       { id: 'gems', count: 25, name: "Gems" },
     ],
     reqs: [
-      { id: ID_PRODUCE_ITEMS?.RADISH, count: 2, name: "Radishes", pos: 28 }
+      { id: ID_PRODUCE_ITEMS?.RADISH, count: 3, name: "Radishes", pos: 28 }
     ],
-    unlockCondition: (step, completed) => step >= 36 && completed.includes("q1_potionmaster_welcome")
+    unlockCondition: (step, completed) => completed.includes("q1_beejamin")
   },
 
   {
-    id: "q1_queen_welcome",
+    id: "q1_queen",
     type: "main",
     sender: "Queen Beeatrice",
     subject: "A Letter from the Queen",
@@ -517,34 +593,19 @@ export const getQuestData = () => [
     body: [
       "My dear child,",
       "I heard you've taken on your grandfather's old farm and my heart just swelled with pride for you.",
-      "I've sent along some lettuce seeds from my personal garden. They're grown with care, and I hope you tend to them the same way. You are so loved here in Harvest Valley."
+      "I've sent along some lettuce seeds from my personal garden — please take them with my blessing. Plant them, water them well, and let me know when you've harvested some. I'd love to see how your garden is coming."
     ],
-    rewards: [
-      { id: 'pico_pack', seeds: [getRaritySeedId(ID_SEEDS.LETTUCE, 1), getRaritySeedId(ID_SEEDS.LETTUCE, 1)], count: 1, name: "Pico Seeds Pack", image: "/images/cardfront/card1idle/idle_1/idle_1_00000.png" },
-    ],
-    reqs: [],
-    unlockCondition: (step, completed) => step >= 36
-  },
-
-  {
-    id: "q1b_queen_harvest",
-    type: "main",
-    sender: "Queen Beeatrice",
-    subject: "Growing Well?",
-    mailImage: "/images/mail/mailqueen.png",
-    body: [
-      "Dearest Farmer,",
-      "I've been thinking about you and those little lettuce seeds. I do hope they've been getting enough water.",
-      "When you've harvested some, send them along — I'd love to see how your garden is coming. And of course, I'll make sure you're well rewarded, dear."
-    ],
+    // Starter gift — given on first read of the letter via the "Take Seeds" button.
+    starterPack: { seeds: [getRaritySeedId(ID_SEEDS.LETTUCE, 1), getRaritySeedId(ID_SEEDS.LETTUCE, 1)] },
+    // Completion reward — claimed when the harvest is brought back.
     rewards: [
       { id: 'honey', count: 7000, name: "HNY", image: "/images/profile_bar/hny.png" },
       { id: 'gems', count: 20, name: "Gems" },
     ],
     reqs: [
-      { id: ID_PRODUCE_ITEMS?.LETTUCE, count: 2, name: "Lettuce", pos: 26 }
+      { id: ID_PRODUCE_ITEMS?.LETTUCE, count: 3, name: "Lettuce", pos: 26 }
     ],
-    unlockCondition: (step, completed) => step >= 36 && completed.includes("q1_queen_welcome")
+    unlockCondition: (step, completed) => step >= 36
   },
 
   {
@@ -560,7 +621,7 @@ export const getQuestData = () => [
     ],
     rewards: [],
     reqs: [],
-    unlockCondition: (step, completed) => completed.includes("q1b_beejamin_harvest")
+    unlockCondition: (step, completed) => completed.includes("q1_beejamin")
   },
 
   {
@@ -580,7 +641,7 @@ export const getQuestData = () => [
     ],
     reqs: [],
     unlockCondition: (step, completed) => {
-      const WAVE1_QUESTS = ['q1_beejamin_welcome','q1_potionmaster_welcome','q1_queen_welcome','q1_end_papabee'];
+      const WAVE1_QUESTS = ['q1_beejamin','q1_potionmaster','q1_queen','q1_end_papabee'];
       return WAVE1_QUESTS.every(id => completed.includes(id));
     }
   },
@@ -816,6 +877,57 @@ export const getQuestData = () => [
   },
 
   {
+    id: "q_mayor_bank_intro",
+    type: "main",
+    sender: "Mayor Prezibee",
+    subject: "Your Bag's Filling Up",
+    mailImage: "/images/mail/mailmayor.png",
+    body: [
+      "Farmer,",
+      "I noticed your inventory's getting awfully full — wouldn't want you running out of room mid-harvest.",
+      "Stop by the Banker at the Harvest Market when you can. They'll help you store anything you don't need to carry around. A clean bag is a happy farmer."
+    ],
+    rewards: [],
+    reqs: [],
+    // Unlocks once the user's used produce/loot slots reach 70% of their bag capacity,
+    // BUT only while they're on the farm screen — the letter is meant to land in the
+    // mailbox during normal farming, not while they're already at the market.
+    unlockCondition: (step, completed) => {
+      if (step < 36) return false;
+      try {
+        const path = (typeof window !== 'undefined' ? window.location.pathname : '') || '';
+        if (!path.endsWith('/farm')) return false;
+        const produce = JSON.parse(localStorage.getItem('sandbox_produce') || '{}');
+        const loot = JSON.parse(localStorage.getItem('sandbox_loot') || '{}');
+        const bags = parseInt(localStorage.getItem('sandbox_inventory_bags') || '1', 10);
+        const used = Object.values(produce).filter((c) => Number(c) > 0).length
+                   + Object.values(loot).filter((c) => Number(c) > 0).length;
+        const max = Math.max(1, bags * 15);
+        return (used / max) >= 0.7;
+      } catch (_) { return false; }
+    }
+  },
+
+  {
+    id: "q_mayor_market_intro",
+    type: "main",
+    sender: "Mayor Prezibee",
+    subject: "Looks Like You Need More Seeds",
+    mailImage: "/images/mail/mailmayor.png",
+    body: [
+      "Farmer,",
+      "Looks like you're settling in nicely — but I noticed you're running low on seeds.",
+      "Head over to the Harvest Market when you can. I'll meet you there and show you how to stock up properly. The valley takes care of those who plan ahead."
+    ],
+    // No reward + no harvest req — this is just an informational nudge. The mailbox shows
+    // a single "Fold Letter" button, and folding marks it discarded + completed so the
+    // letter disappears from the inbox once the user dismisses it.
+    rewards: [],
+    reqs: [],
+    unlockCondition: (step, completed) => completed.includes("q1_end_papabee")
+  },
+
+  {
     id: "q2_missionboard_intro",
     type: "main",
     sender: "Mayor Prezibee",
@@ -844,7 +956,45 @@ export const getQuestData = () => [
         }
       }
     ],
-    unlockCondition: (step, completed) => completed.includes("q1_end_papabee")
+    unlockCondition: (step, completed) => completed.includes("q_mayor_market_intro")
+  },
+
+  {
+    id: "q_beejamin_dock_intro",
+    type: "main",
+    sender: "Beejamin",
+    subject: "More Plots, More Crops",
+    mailImage: "/images/mail/mailbeejamin.png",
+    body: [
+      "yo bro sorry I forgot to tell you...",
+      "you can actually unlock more plots so you can grow more crops, meet me at the dock and ill introduce you to our local gardener expert!",
+    ],
+    rewards: [],
+    reqs: [],
+    unlockCondition: (step, completed) => completed.includes("q2_missionboard_intro")
+  },
+
+  {
+    id: "q_beejamin_daily_chest_intro",
+    type: "main",
+    sender: "Beejamin",
+    subject: "Valley's Daily Chest",
+    mailImage: "/images/mail/mailbeejamin.png",
+    body: [
+      "yo bro, level 10! you're cookin out there.",
+      "swing by the dock when you can — I'll show you the Valley's Daily Chest. Free goodies for showing up, easy money.",
+    ],
+    rewards: [],
+    reqs: [],
+    // Unlocks once farming level reaches 10. Level formula: floor(sqrt(xp/150)) + 1,
+    // so level 10 = xp >= 9*9*150 = 12150.
+    unlockCondition: (step, completed) => {
+      try {
+        const xp = parseInt(localStorage.getItem('sandbox_farming_xp') || '0', 10);
+        const level = Math.floor(Math.sqrt(xp / 150)) + 1;
+        return level >= 10;
+      } catch (_) { return false; }
+    }
   },
 
   // PFP Unlock Letters from Pabee
@@ -3017,10 +3167,24 @@ const DOCK_SKIP_GEMS = 150;
 export const MailboxDialog = ({ onClose, tutorialStep, refetch, onTutorialAdvance, completedQuests, setCompletedQuests, readQuests, setReadQuests }) => {
   const [animState, setAnimState] = useState(0); // 0: list, 1: opening, 2: reading, 3: claiming
   const [activeQuest, setActiveQuest] = useState(null);
+  const [activeQuestWasRead, setActiveQuestWasRead] = useState(false);
   const [discardedQuests, setDiscardedQuests] = useState(() => JSON.parse(localStorage.getItem('sandbox_discarded_quests') || '[]'));
   const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
   const [dockTimeLeft, setDockTimeLeft] = useState(null);
   const [pendingLevelUp, setPendingLevelUp] = useState(null);
+
+  // Mark the body whenever a letter is open so other components (e.g. PlayerPullNotification)
+  // can suppress popups that would distract the user mid-read. Also fires an event so any
+  // currently-visible notification dismisses immediately the moment a letter opens.
+  useEffect(() => {
+    if (animState > 0) {
+      document.body.setAttribute('data-letter-open', 'true');
+      window.dispatchEvent(new CustomEvent('letterOpened'));
+    } else {
+      document.body.removeAttribute('data-letter-open');
+    }
+    return () => document.body.removeAttribute('data-letter-open');
+  }, [animState]);
 
   useEffect(() => {
     const tick = () => {
@@ -3249,11 +3413,16 @@ export const MailboxDialog = ({ onClose, tutorialStep, refetch, onTutorialAdvanc
   };
 
   const handleOpenLetter = (quest) => {
+    const alreadyRead = readQuests.includes(quest.id);
+    setActiveQuestWasRead(alreadyRead);
     setActiveQuest(quest);
-    if (!readQuests.includes(quest.id)) {
+    if (!alreadyRead) {
       const nextRead = [...readQuests, quest.id];
       setReadQuests(nextRead);
       localStorage.setItem('sandbox_read_quests', JSON.stringify(nextRead));
+      // Fires for any UI that needs to react to read-state changes (e.g. GameMenu showing
+      // the market icon once q_mayor_market_intro has been read).
+      window.dispatchEvent(new CustomEvent('questStateChanged'));
     }
     setAnimState(1);
     setTimeout(() => setAnimState(2), 2000);
@@ -3335,22 +3504,50 @@ export const MailboxDialog = ({ onClose, tutorialStep, refetch, onTutorialAdvanc
             ✉️
           </div>
         )}
-        {animState === 2 && (
-          <div style={{ backgroundColor: '#f4e4bc', padding: '40px', borderRadius: '8px', maxWidth: '600px', width: '90%', maxHeight: '80vh', display: 'flex', flexDirection: 'column', color: '#2c1e16', fontFamily: 'serif', boxShadow: '0 20px 50px rgba(0,0,0,0.8), inset 0 0 50px rgba(200,150,100,0.3)', animation: 'letterFadeIn 0.8s ease-out forwards', backgroundImage: 'repeating-linear-gradient(transparent, transparent 31px, rgba(0,0,0,0.05) 31px, rgba(0,0,0,0.05) 32px)', backgroundPositionY: '8px' }}>
+        {animState === 2 && (() => {
+          const isQueen = activeQuest.sender === 'Queen Beeatrice';
+          return (
+          <div style={{
+            position: 'relative',
+            backgroundColor: isQueen ? 'transparent' : '#f4e4bc',
+            backgroundImage: isQueen
+              ? 'url(/images/mail/letter.png)'
+              : 'repeating-linear-gradient(transparent, transparent 31px, rgba(0,0,0,0.05) 31px, rgba(0,0,0,0.05) 32px)',
+            backgroundSize: isQueen ? '100% 100%' : undefined,
+            backgroundRepeat: isQueen ? 'no-repeat' : undefined,
+            backgroundPositionY: isQueen ? undefined : '8px',
+            padding: isQueen ? '110px 100px 130px 160px' : '40px',
+            borderRadius: '8px',
+            width: isQueen ? '1100px' : '90%',
+            height: isQueen ? '733px' : undefined,
+            maxWidth: isQueen ? '95vw' : '600px',
+            maxHeight: isQueen ? '90vh' : '85vh',
+            boxSizing: 'border-box',
+            display: 'flex', flexDirection: 'column',
+            color: '#2c1e16',
+            fontFamily: 'serif',
+            boxShadow: isQueen ? 'none' : '0 20px 50px rgba(0,0,0,0.8), inset 0 0 50px rgba(200,150,100,0.3)',
+            animation: 'letterFadeIn 0.8s ease-out forwards',
+          }}>
             <style>{`@keyframes letterFadeIn { 0% { transform: scale(0.8) translateY(100px); opacity: 0; } 100% { transform: scale(1) translateY(0); opacity: 1; } }`}</style>
-            <h2 style={{ margin: '0 0 20px 0', borderBottom: '2px solid #8c6b4a', paddingBottom: '10px', fontFamily: 'monospace', color: '#5a402a' }}>From: {activeQuest.sender}</h2>
-            <div style={{ overflowY: 'auto', flex: 1, lineHeight: '2', fontSize: '20px', paddingRight: '15px', marginBottom: '20px' }}>
-              {activeQuest.body.map((para, i) => (
-                <p key={i} style={{ color: '#5a402a' }}>{para}</p>
-              ))}
+            <h2 style={{ margin: '0 0 20px 0', borderBottom: '2px solid #8c6b4a', paddingBottom: '10px', fontFamily: isQueen ? 'Cartoonist, GROBOLD, monospace' : 'monospace', color: isQueen ? '#000' : '#5a402a', width: isQueen ? '60%' : 'auto' }}>From: {activeQuest.sender}</h2>
+            <div style={{ overflowY: 'auto', flex: 1, lineHeight: '1.7', fontSize: isQueen ? '17px' : '20px', paddingRight: '15px', marginBottom: '20px', maxWidth: isQueen ? '560px' : undefined, fontFamily: isQueen ? '"Georgia", "Cambria", serif' : undefined, fontWeight: isQueen ? 700 : undefined, color: isQueen ? '#2a1a08' : '#5a402a', textShadow: 'none' }}>
+              {isQueen
+                ? <QueenLetterTypewriter body={activeQuest.body} key={activeQuest.id} instant={activeQuestWasRead} />
+                : activeQuest.body.map((para, i) => (
+                  <p key={i} style={{ color: '#5a402a' }}>{para}</p>
+                ))}
             </div>
 
-            {activeQuest.reqs.length > 0 && !completedQuests.includes(activeQuest.id) && activeQuest.id !== 'q2_rebuild_tavern' && (
-              <div style={{ backgroundColor: 'rgba(90, 64, 42, 0.1)', border: '1px solid #8c6b4a', padding: '15px', borderRadius: '8px', marginBottom: '20px' }}>
-                <h4 style={{ margin: '0 0 10px 0', fontFamily: 'monospace' }}>Required Items:</h4>
+            {activeQuest.reqs.length > 0 && !completedQuests.includes(activeQuest.id) && activeQuest.id !== 'q2_rebuild_tavern' && activeQuest.id !== 'q_mayor_market_intro' && (
+              <div style={isQueen ? {
+                marginBottom: '16px',
+                maxWidth: '560px',
+              } : { backgroundColor: 'rgba(90, 64, 42, 0.1)', border: '1px solid #8c6b4a', padding: '15px', borderRadius: '8px', marginBottom: '20px' }}>
+                <h4 style={{ margin: '0 0 8px 0', fontFamily: isQueen ? 'Cartoonist, GROBOLD, monospace' : 'monospace', color: isQueen ? '#000' : undefined, textShadow: isQueen ? '1px 1px 0 rgba(0,0,0,0.6)' : undefined }}>Required Items:</h4>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '15px' }}>
                   {reqCounts.map((req, i) => (
-                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontFamily: 'monospace', fontSize: '14px' }}>
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontFamily: isQueen ? 'Cartoonist, GROBOLD, monospace' : 'monospace', fontSize: '14px' }}>
                       {ALL_ITEMS[req.id]?.pos >= 0 ? (
                         <div style={{ width: '24px', height: '24px', backgroundImage: 'url(/images/crops/seeds.webp)', backgroundSize: `${(159 * 24 / 207.7647).toFixed(1)}px auto`, backgroundPositionX: 'center', backgroundPositionY: `-${(ALL_ITEMS[req.id].pos * 24).toFixed(1)}px`, backgroundRepeat: 'no-repeat', flexShrink: 0 }} />
                       ) : req.image ? (
@@ -3369,6 +3566,14 @@ export const MailboxDialog = ({ onClose, tutorialStep, refetch, onTutorialAdvanc
               <div style={{ backgroundColor: 'rgba(90, 64, 42, 0.15)', border: '1px solid #8c6b4a', padding: '12px 16px', borderRadius: '8px', marginBottom: '20px', textAlign: 'center' }}>
                 <p style={{ margin: 0, fontFamily: 'monospace', color: '#8c6b4a', fontSize: '14px' }}>
                   Head to the <strong>Tavern</strong> to submit your materials and rebuild it.
+                </p>
+              </div>
+            )}
+
+            {activeQuest.id === 'q_mayor_market_intro' && !completedQuests.includes(activeQuest.id) && (
+              <div style={{ backgroundColor: 'rgba(90, 64, 42, 0.15)', border: '1px solid #8c6b4a', padding: '12px 16px', borderRadius: '8px', marginBottom: '20px', textAlign: 'center' }}>
+                <p style={{ margin: 0, fontFamily: 'monospace', color: '#8c6b4a', fontSize: '14px' }}>
+                  Head to the <strong>Market</strong> — the Mayor will meet you there.
                 </p>
               </div>
             )}
@@ -3431,7 +3636,7 @@ export const MailboxDialog = ({ onClose, tutorialStep, refetch, onTutorialAdvanc
               </div>
             )}
 
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '15px' }}>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '15px', transform: isQueen ? 'scale(0.75)' : 'none', transformOrigin: 'center bottom' }}>
               {completedQuests.includes(activeQuest.id) ? (
                 <>
                   <BaseButton label="Discard" onClick={() => setShowDiscardConfirm(true)} />
@@ -3446,6 +3651,19 @@ export const MailboxDialog = ({ onClose, tutorialStep, refetch, onTutorialAdvanc
                     </>
                   ) : activeQuest.reqs.length > 0 ? (
                     <>
+                      {activeQuest.starterPack && localStorage.getItem(`sandbox_starter_pack_claimed_${activeQuest.id}`) !== 'true' && (
+                        <BaseButton
+                          label="Take Seeds"
+                          onClick={() => {
+                            localStorage.setItem(`sandbox_starter_pack_claimed_${activeQuest.id}`, 'true');
+                            window.dispatchEvent(new CustomEvent('closeMailbox'));
+                            onClose();
+                            setTimeout(() => {
+                              window.dispatchEvent(new CustomEvent('charPackOpen', { detail: { seeds: activeQuest.starterPack.seeds } }));
+                            }, 100);
+                          }}
+                        />
+                      )}
                       <BaseButton label={activeQuest.id === 'q2_unlock_dock' ? (isReadyToTurnIn ? "Invest & Start Construction" : "Need 1,500 Gold") : (isReadyToTurnIn ? "Turn In & Claim" : "Not Enough Items")} disabled={!isReadyToTurnIn} onClick={handleCompleteQuest} />
                       <BaseButton label="Fold Letter" onClick={() => setAnimState(0)} />
                     </>
@@ -3463,6 +3681,18 @@ export const MailboxDialog = ({ onClose, tutorialStep, refetch, onTutorialAdvanc
                         const nextCompleted = [...completedQuests, activeQuest.id];
                         setCompletedQuests(nextCompleted);
                         localStorage.setItem('sandbox_completed_quests', JSON.stringify(nextCompleted));
+                        // Bank letter — folding triggers the market icon to pulse so the user
+                        // is nudged to head to the Banker. The pulse clears on next market visit.
+                        if (activeQuest.id === 'q_mayor_bank_intro') {
+                          localStorage.setItem('sandbox_market_pulse_bank', 'true');
+                          window.dispatchEvent(new CustomEvent('questStateChanged'));
+                        }
+                        // Beejamin dock letter — folding reveals the dock nav icon and pulses it
+                        // until the user actually clicks through to /house for the first time.
+                        if (activeQuest.id === 'q_beejamin_dock_intro') {
+                          localStorage.setItem('sandbox_dock_letter_read', 'true');
+                          window.dispatchEvent(new CustomEvent('questStateChanged'));
+                        }
                       }
                       setAnimState(0);
                     }} />
@@ -3471,7 +3701,8 @@ export const MailboxDialog = ({ onClose, tutorialStep, refetch, onTutorialAdvanc
               )}
             </div>
           </div>
-        )}
+          );
+        })()}
 
         {/* Discard confirmation popup */}
         {showDiscardConfirm && (
@@ -3732,6 +3963,7 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
   const tutWaterPlotRef = useRef(null);  // plot index used in tutorial sequence
   const bugsRef = useRef({}); // Tracks bugs currently on the farm
   const crowsRef = useRef({}); // Tracks crows currently on the farm
+  const lastPestRollAtRef = useRef({}); // Per-plot timestamp of the last pest spawn roll
   const scarecrowsRef = useRef(JSON.parse(localStorage.getItem('sandbox_scarecrows') || '{}'));
   const ladybugsRef = useRef(JSON.parse(localStorage.getItem('sandbox_ladybugs') || '{}'));
   const sprinklersRef = useRef(JSON.parse(localStorage.getItem('sandbox_sprinklers') || '{}'));
@@ -4145,10 +4377,13 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
     if (tutorialStep !== 32) return;
     if (localStorage.getItem('sandbox_tutorial_gave_farewell_pack') !== 'true') {
       localStorage.setItem('sandbox_tutorial_gave_farewell_pack', 'true');
+      // One of each Wave-1 welcome-quest crop so every farewell-pack seed gets consumed by a
+      // welcome quest. This way the user is exactly out of seeds when the mayor's
+      // "go buy seeds at the market" mission triggers.
       const seeds = [
-        getRaritySeedId(ID_SEEDS.POTATO, 1),  // common
-        getRaritySeedId(ID_SEEDS.CARROT, 2),  // uncommon
-        getRaritySeedId(ID_SEEDS.ONION, 3),   // rare
+        getRaritySeedId(ID_SEEDS.POTATO, 1),
+        getRaritySeedId(ID_SEEDS.LETTUCE, 1),
+        getRaritySeedId(ID_SEEDS.RADISH, 1),
       ];
       const curHoney = parseFloat(localStorage.getItem('sandbox_honey') || '0');
       const newHoney = (curHoney + 2000).toString();
@@ -4159,12 +4394,18 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
       window.dispatchEvent(new CustomEvent('sandboxGemsChanged'));
       window.dispatchEvent(new CustomEvent('charPackOpen', { detail: { seeds, tier: 'tutorial_farewell_pack' } }));
     }
-    // Polling always runs while on step 32: advance once a pack has opened and then closed
-    let packEverOpened = false;
+    // Polling always runs while on step 32: advance once a pack has opened and then closed.
+    // The "ever opened" flag is persisted to localStorage so a refresh after the pack opens
+    // (but before the user clicks claim) auto-resumes — next tick sees no .card-inner +
+    // packEverOpened === true and advances to step 33.
+    let packEverOpened = localStorage.getItem('sandbox_tutorial_pack_opened') === 'true';
     const pollId = setInterval(() => {
       const packOpen = !!document.querySelector('.card-inner');
       if (packOpen) {
-        packEverOpened = true;
+        if (!packEverOpened) {
+          packEverOpened = true;
+          localStorage.setItem('sandbox_tutorial_pack_opened', 'true');
+        }
       } else if (packEverOpened) {
         clearInterval(pollId);
         setTutorialStep(33);
@@ -4726,10 +4967,19 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
                   }
                 }
 
-                item.growthTime = growthTime;
-                const adjustedEndTime = Math.floor(item.plantedAt / 1000) + growthTime;
-                const isReady = adjustedEndTime <= nowSec;
-                item.growStatus = isReady ? 2 : 1;
+                // Tutorial: keep starter potato locked to growing; never reach harvestable state.
+                const tsNow = parseInt(localStorage.getItem('sandbox_tutorial_step') || '0', 10);
+                const isStarterPlot = [6, 7, 8].includes(crop.plotNumber);
+                const tutorialFreeze = tsNow >= 17 && tsNow <= 25 && isStarterPlot;
+                if (tutorialFreeze) {
+                  item.growthTime = 9e12;
+                  item.growStatus = 1;
+                } else {
+                  item.growthTime = growthTime;
+                  const adjustedEndTime = Math.floor(item.plantedAt / 1000) + growthTime;
+                  const isReady = adjustedEndTime <= nowSec;
+                  item.growStatus = isReady ? 2 : 1;
+                }
               }
               
               // Store potion effect multipliers and growth elixir status for display
@@ -5621,7 +5871,7 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
             if (item && item.seedId && item.seedId !== 0n && !cropsToDestroy.includes(i)) {
               let wState = currentWaterState[i];
               if (!wState) {
-                wState = { needsInitial: true, needsMid: true, pausedMs: 0, contractPlantedAt: item.contractPlantedAt || item.plantedAt };
+                wState = { needsInitial: true, needsMid: false, pausedMs: 0, contractPlantedAt: item.contractPlantedAt || item.plantedAt };
                 currentWaterState[i] = wState;
                 localStorage.setItem('sandbox_water_state', JSON.stringify(currentWaterState));
                 hasChanges = true;
@@ -5739,21 +5989,40 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
               const tutPestsDone = localStorage.getItem('sandbox_tutorial_pests_done') === 'true';
               const tutStep = parseInt(localStorage.getItem('sandbox_tutorial_step') || '0', 10);
               const inTutorial = tutStep > 0 && tutStep < 36;
-              if (autoSpawnRef.current && bugsRef.current[i] === undefined && crowsRef.current[i] === undefined && !(inTutorial && tutPestsDone)) {
-                const roll = Math.random();
-                if (roll < 0.005) { // 0.5% chance per second for a crow
-                  if (!isProtectedFromCrows && !inTutorial) {
-                    crowsRef.current[i] = 30; // 30 seconds to click
-                    item.crowCountdown = 30;
-                    hasChanges = true;
-                  }
-                } else if (roll < 0.015) { // 1% chance per second for a bug
-                  if (!inTutorial) {
-                    bugsRef.current[i] = 60; // 60 seconds to click
-                    item.bugCountdown = 60;
-                    hasChanges = true;
-                    const prevSpawns = parseInt(localStorage.getItem('sandbox_total_bug_spawns') || '0', 10) + 1;
-                    localStorage.setItem('sandbox_total_bug_spawns', String(prevSpawns));
+              // Skip pest spawns while the plot is still on the sign frame (initial water not yet given).
+              const wStateForSpawn = waterStateRef.current[i];
+              const onSignFrame = wStateForSpawn?.needsInitial === true;
+              if (!onSignFrame && autoSpawnRef.current && bugsRef.current[i] === undefined && crowsRef.current[i] === undefined && !(inTutorial && tutPestsDone)) {
+                // Throttle the spawn check to once every 10 seconds per plot (was every 1s).
+                // Probabilities below are now "per 10s" instead of "per second", so we keep
+                // the same numerical chance per check but just check 10x less often.
+                const nowMs = Date.now();
+                const lastRoll = lastPestRollAtRef.current[i] || 0;
+                if (nowMs - lastRoll >= 10000) {
+                  lastPestRollAtRef.current[i] = nowMs;
+                  // Halve pest spawn rates at night (18:00 - 06:00 ET) — crops are quieter while
+                  // the player is "sleeping". Day: crow 0.5% / bug 1.0% per check. Night halved.
+                  let isNight = false;
+                  try {
+                    const h = parseInt(new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', hour: '2-digit', hour12: false }).formatToParts(new Date()).find(p => p.type === 'hour').value, 10);
+                    isNight = h >= 18 || h < 6;
+                  } catch (_) {}
+                  const nightFactor = isNight ? 0.5 : 1.0;
+                  const roll = Math.random();
+                  if (roll < 0.005 * nightFactor) {
+                    if (!isProtectedFromCrows && !inTutorial) {
+                      crowsRef.current[i] = 30;
+                      item.crowCountdown = 30;
+                      hasChanges = true;
+                    }
+                  } else if (roll < 0.015 * nightFactor) {
+                    if (!inTutorial) {
+                      bugsRef.current[i] = 60;
+                      item.bugCountdown = 60;
+                      hasChanges = true;
+                      const prevSpawns = parseInt(localStorage.getItem('sandbox_total_bug_spawns') || '0', 10) + 1;
+                      localStorage.setItem('sandbox_total_bug_spawns', String(prevSpawns));
+                    }
                   }
                 }
               }
@@ -5941,7 +6210,7 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
           const subtype = getSubtype(seed.id);
           encodedIdsToPlant.push((plotIdx << 24) | (category << 16) | (subtype << 8) | localId);
           plantedSeedIds.push(seed.id);
-          newWaterState[plotIdx] = { needsInitial: true, needsMid: tutorialStep >= 36, pausedMs: 0, contractPlantedAt: Date.now() };
+          newWaterState[plotIdx] = { needsInitial: true, needsMid: false, pausedMs: 0, contractPlantedAt: Date.now() };
       }
     }
 
@@ -6379,7 +6648,7 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
         
         const newWaterState = { ...waterStateRef.current };
         for (let i = 0; i < cropsToPlant.length; i++) {
-          newWaterState[cropsToPlant[i].plotNumber] = { needsInitial: true, needsMid: tutorialStep >= 36, pausedMs: 0, contractPlantedAt: Date.now() };
+          newWaterState[cropsToPlant[i].plotNumber] = { needsInitial: true, needsMid: false, pausedMs: 0, contractPlantedAt: Date.now() };
         }
         waterStateRef.current = newWaterState;
         localStorage.setItem('sandbox_water_state', JSON.stringify(newWaterState));
@@ -6680,6 +6949,27 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
           }
           const harvestedAt = Date.now();
           window.dispatchEvent(new CustomEvent('cropHarvested', { detail: { cropName, weight, seedId: itemToHarvest.seedId, bracket, rarityLabel, rarityColor } }));
+          // Player pull notification for rare/epic/legendary crops harvested
+          {
+            const rarityName = bracket === 5 ? 'legendary' : bracket === 4 ? 'epic' : bracket === 3 ? 'rare' : null;
+            if (rarityName) {
+              // Map seedId to its produce item for the box image (the harvested crop, not the seed).
+              const baseSeed = itemToHarvest.seedId & 0xFFF;
+              const produceId = (baseSeed & 0xFF) | (((baseSeed >> 8) + 2) << 8); // seed cat → produce cat (1→3, 2→4, 3→5, 4→6)
+              const produceItem = ALL_ITEMS[produceId] || ALL_ITEMS[itemToHarvest.seedId];
+              setTimeout(() => {
+                window.dispatchEvent(new CustomEvent('playerPullNoti', {
+                  detail: {
+                    rarity: rarityName,
+                    itemImage: produceItem?.image,
+                    itemName: cropName,
+                    username: localStorage.getItem('sandbox_username') || 'Player',
+                    action: 'grew',
+                  },
+                }));
+              }, 400);
+            }
+          }
           const storedHeaviest = JSON.parse(localStorage.getItem('sandbox_heaviest_crop') || 'null');
           if (!storedHeaviest || weight > storedHeaviest.weight) {
             localStorage.setItem('sandbox_heaviest_crop', JSON.stringify({ weight, name: cropName, harvestedAt }));
@@ -6688,6 +6978,42 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
             const storedPotato = JSON.parse(localStorage.getItem('sandbox_heaviest_potato') || 'null');
             if (!storedPotato || weight > storedPotato.weight) {
               localStorage.setItem('sandbox_heaviest_potato', JSON.stringify({ weight, harvestedAt }));
+            }
+          }
+
+          // === Heaviest-record notifications (legendary banner) ===
+          const username = localStorage.getItem('sandbox_username') || 'Player';
+          const baseSeedKey = (itemToHarvest.seedId & 0xFFF).toString();
+
+          // 1) Heaviest of the DAY (across all crops, resets at midnight local time).
+          const todayKey = new Date().toDateString();
+          const dailyKey = 'sandbox_heaviest_day';
+          const storedDaily = JSON.parse(localStorage.getItem(dailyKey) || 'null');
+          const isNewDailyRecord = !storedDaily || storedDaily.day !== todayKey || weight > storedDaily.weight;
+          if (isNewDailyRecord) {
+            localStorage.setItem(dailyKey, JSON.stringify({ day: todayKey, weight, name: cropName, harvestedAt }));
+            // Only fire the broadcast if the player actually beat a previous record (not just first crop of the day).
+            if (storedDaily && storedDaily.day === todayKey && weight > storedDaily.weight) {
+              setTimeout(() => {
+                window.dispatchEvent(new CustomEvent('playerPullNoti', {
+                  detail: { rarity: 'legendary', tag: 'heaviest_day', username, itemName: cropName, weight, action: 'grew' },
+                }));
+              }, 800);
+            }
+          }
+
+          // 2) Heaviest of THIS specific crop type (personal best per crop).
+          const perCropKey = `sandbox_heaviest_seed_${baseSeedKey}`;
+          const storedPerCrop = JSON.parse(localStorage.getItem(perCropKey) || 'null');
+          if (!storedPerCrop || weight > storedPerCrop.weight) {
+            localStorage.setItem(perCropKey, JSON.stringify({ weight, name: cropName, harvestedAt }));
+            // Skip the broadcast on the very first harvest of a crop (no previous record to break).
+            if (storedPerCrop) {
+              setTimeout(() => {
+                window.dispatchEvent(new CustomEvent('playerPullNoti', {
+                  detail: { rarity: 'legendary', tag: 'heaviest_crop', username, itemName: cropName, weight, action: 'grew' },
+                }));
+              }, 1300);
             }
           }
           const featured = getWeeklyFeaturedCrop();
@@ -7074,7 +7400,6 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
 
       // Auto-water: if the crop needs water and isn't ready yet, just water it on click
       if (!isReady && plotData.needsWater) {
-        flashToolBriefly('bucket');
         const wState = waterStateRef.current[index];
         if (wState) {
           if (wState.needsInitial) wState.needsInitial = false;
@@ -7195,7 +7520,6 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
           return;
         }
       }
-      flashToolBriefly('shovel');
       playPlantConfirmSound();
       updatePlotPrep(index, { status: 1 });
       if (tutorialStep === 3 && tutPage < 6) {
@@ -7203,7 +7527,6 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
       }
       return;
     } else if (pStatus === 1 || pStatus === 2) {
-      flashToolBriefly('soil');
       updatePlotPrep(index, { ...plotPrep[index], status: 3 });
       playPlantConfirmSound();
       if (tutorialStep === 3 && tutPage < 7) {
@@ -7211,7 +7534,14 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
       }
       return;
     } else if (pStatus === 3) {
-      flashToolBriefly('seeds');
+      // Auto-equip the seeds tool so it highlights in the belt, then open the seed picker.
+      setSelectedTool('seeds');
+      setIsSeeding(true);
+      setIsDirting(false);
+      setIsHoeing(false);
+      setIsWatering(false);
+      setIsDigging(false);
+      setIsPlanting(false);
       setCurrentFieldIndex(index);
       setIsSelectCropDialog(true);
       return;
@@ -7296,7 +7626,7 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
         localStorage.setItem('sandbox_loot', JSON.stringify(sandboxLoot));
         
         const newWaterState = { ...waterStateRef.current };
-        newWaterState[idx] = { needsInitial: true, needsMid: tutorialStep >= 36, pausedMs: 0, contractPlantedAt: Date.now() };
+        newWaterState[idx] = { needsInitial: true, needsMid: false, pausedMs: 0, contractPlantedAt: Date.now() };
         waterStateRef.current = newWaterState;
         localStorage.setItem('sandbox_water_state', JSON.stringify(newWaterState));
 
@@ -7381,145 +7711,102 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
 
       {tutorialStep >= 11 && <WeatherOverlay />}
 
-      {/* Drifting cloud shadows + wind streaks — only when weather is sunny (tutorial is always sunny) */}
-      {(tutorialStep < 36 || (weatherOverride === 'sunny') || (weatherOverride !== 'rain' && weatherOverride !== 'storm' && getWeatherForDay(simulatedDate) === '☀️')) && (
+      {/* Cloud shadows + wind streaks were here — now rendered globally by <SkyOverlay /> in App.jsx
+          so they animate continuously across all routes. The remaining <></> block below still
+          contains the per-scene sun gleam, light rays, etc. — kept here since those are farm-specific. */}
+      {(tutorialStep < 36 || (weatherOverride !== 'rain' && weatherOverride !== 'storm' && !['🌧️', '⚡'].includes(getWeatherForDay(simulatedDate)))) && (
       <>
-        <style>{`
-          /* Each cycle is 48s. A cloud is visible for ~6s (0-12.5%), then hidden until its next turn. */
-          @keyframes cloudDriftE   { 0% { transform: translate(-60vw,  0);    opacity: 0; } 1% { opacity: 1; } 12.5% { transform: translate(160vw,  0);    opacity: 1; } 13% { opacity: 0; } 100% { transform: translate(-60vw,  0);    opacity: 0; } }
-          @keyframes cloudDriftW   { 0% { transform: translate( 60vw,  0);    opacity: 0; } 1% { opacity: 1; } 12.5% { transform: translate(-160vw, 0);    opacity: 1; } 13% { opacity: 0; } 100% { transform: translate( 60vw,  0);    opacity: 0; } }
-          @keyframes cloudDriftS   { 0% { transform: translate( 0, -60vh);    opacity: 0; } 1% { opacity: 1; } 12.5% { transform: translate(  0, 160vh);   opacity: 1; } 13% { opacity: 0; } 100% { transform: translate( 0, -60vh);    opacity: 0; } }
-          @keyframes cloudDriftN   { 0% { transform: translate( 0,  60vh);    opacity: 0; } 1% { opacity: 1; } 12.5% { transform: translate(  0, -160vh);  opacity: 1; } 13% { opacity: 0; } 100% { transform: translate( 0,  60vh);    opacity: 0; } }
-          @keyframes cloudDriftSE  { 0% { transform: translate(-60vw, -60vh); opacity: 0; } 1% { opacity: 1; } 12.5% { transform: translate(160vw, 160vh); opacity: 1; } 13% { opacity: 0; } 100% { transform: translate(-60vw, -60vh); opacity: 0; } }
-          @keyframes cloudDriftSW  { 0% { transform: translate( 60vw, -60vh); opacity: 0; } 1% { opacity: 1; } 12.5% { transform: translate(-160vw, 160vh);opacity: 1; } 13% { opacity: 0; } 100% { transform: translate( 60vw, -60vh); opacity: 0; } }
-          @keyframes cloudDriftNE  { 0% { transform: translate(-60vw,  60vh); opacity: 0; } 1% { opacity: 1; } 12.5% { transform: translate(160vw, -160vh);opacity: 1; } 13% { opacity: 0; } 100% { transform: translate(-60vw,  60vh); opacity: 0; } }
-          @keyframes cloudDriftNW  { 0% { transform: translate( 60vw,  60vh); opacity: 0; } 1% { opacity: 1; } 12.5% { transform: translate(-160vw,-160vh); opacity: 1; } 13% { opacity: 0; } 100% { transform: translate( 60vw,  60vh); opacity: 0; } }
-        `}</style>
+        {/* (cloud keyframes moved to global SkyOverlay) */}
 
-        {/* → East, along top */}
-        <div aria-hidden="true" style={{
-          position: 'fixed', top: '-32vh', left: 0, width: '70vw', height: '55vh',
-          background: 'radial-gradient(ellipse at center, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0.14) 45%, transparent 75%)',
-          borderRadius: '50%', pointerEvents: 'none', zIndex: 400,
-          animation: 'cloudDriftE 80s linear infinite',
-          animationDelay: '0s',
-          filter: 'blur(28px)',
-        }} />
-        {/* ↘ Southeast diagonal */}
-        <div aria-hidden="true" style={{
-          position: 'fixed', top: '-25vh', left: 0, width: '55vw', height: '45vh',
-          background: 'radial-gradient(ellipse at center, rgba(0,0,0,0.20) 0%, rgba(0,0,0,0.11) 45%, transparent 75%)',
-          borderRadius: '50%', pointerEvents: 'none', zIndex: 400,
-          animation: 'cloudDriftSE 80s linear infinite',
-          animationDelay: '-10s',
-          filter: 'blur(30px)',
-        }} />
-        {/* ↓ South, along left edge */}
-        <div aria-hidden="true" style={{
-          position: 'fixed', top: 0, left: '-35vw', width: '55vw', height: '70vh',
-          background: 'radial-gradient(ellipse at center, rgba(0,0,0,0.22) 0%, rgba(0,0,0,0.12) 45%, transparent 75%)',
-          borderRadius: '50%', pointerEvents: 'none', zIndex: 400,
-          animation: 'cloudDriftS 80s linear infinite',
-          animationDelay: '-20s',
-          filter: 'blur(32px)',
-        }} />
-        {/* ↙ Southwest diagonal */}
-        <div aria-hidden="true" style={{
-          position: 'fixed', top: '-25vh', right: 0, width: '55vw', height: '45vh',
-          background: 'radial-gradient(ellipse at center, rgba(0,0,0,0.20) 0%, rgba(0,0,0,0.11) 45%, transparent 75%)',
-          borderRadius: '50%', pointerEvents: 'none', zIndex: 400,
-          animation: 'cloudDriftSW 80s linear infinite',
-          animationDelay: '-30s',
-          filter: 'blur(30px)',
-        }} />
-        {/* ← West, along bottom */}
-        <div aria-hidden="true" style={{
-          position: 'fixed', bottom: '-32vh', left: 0, width: '70vw', height: '55vh',
-          background: 'radial-gradient(ellipse at center, rgba(0,0,0,0.23) 0%, rgba(0,0,0,0.13) 45%, transparent 75%)',
-          borderRadius: '50%', pointerEvents: 'none', zIndex: 400,
-          animation: 'cloudDriftW 80s linear infinite',
-          animationDelay: '-40s',
-          filter: 'blur(28px)',
-        }} />
-        {/* ↖ Northwest diagonal */}
-        <div aria-hidden="true" style={{
-          position: 'fixed', bottom: '-25vh', right: 0, width: '55vw', height: '45vh',
-          background: 'radial-gradient(ellipse at center, rgba(0,0,0,0.20) 0%, rgba(0,0,0,0.11) 45%, transparent 75%)',
-          borderRadius: '50%', pointerEvents: 'none', zIndex: 400,
-          animation: 'cloudDriftNW 80s linear infinite',
-          animationDelay: '-50s',
-          filter: 'blur(30px)',
-        }} />
-        {/* ↑ North, along right edge */}
-        <div aria-hidden="true" style={{
-          position: 'fixed', top: 0, right: '-35vw', width: '55vw', height: '70vh',
-          background: 'radial-gradient(ellipse at center, rgba(0,0,0,0.22) 0%, rgba(0,0,0,0.12) 45%, transparent 75%)',
-          borderRadius: '50%', pointerEvents: 'none', zIndex: 400,
-          animation: 'cloudDriftN 80s linear infinite',
-          animationDelay: '-60s',
-          filter: 'blur(32px)',
-        }} />
-        {/* ↗ Northeast diagonal */}
-        <div aria-hidden="true" style={{
-          position: 'fixed', bottom: '-25vh', left: 0, width: '55vw', height: '45vh',
-          background: 'radial-gradient(ellipse at center, rgba(0,0,0,0.20) 0%, rgba(0,0,0,0.11) 45%, transparent 75%)',
-          borderRadius: '50%', pointerEvents: 'none', zIndex: 400,
-          animation: 'cloudDriftNE 80s linear infinite',
-          animationDelay: '-70s',
-          filter: 'blur(30px)',
-        }} />
+        {/* Cloud + wind blocks moved to global <SkyOverlay /> in App.jsx for cross-route continuity. */}
+        {false && [
+          // Top layer (high in the sky — small, fast, light)
+          { src: '/images/land/cloudone.png',   anim: 'cloudDriftEa', dur: 320, delay: '-20s',  pos: { top: '-5vh', left: '-50vw' }, size: { width: '230vw', height: '140vh' }, blur: 13, rot:  -8, flip: false },
+          { src: '/images/land/cloudthree.png', anim: 'cloudDriftEd', dur: 280, delay: '-130s', pos: { top: '2vh',  left: '-50vw' }, size: { width: '170vw', height: '110vh' }, blur: 12, rot:  10, flip: true  },
+          // Mid-upper layer (medium)
+          { src: '/images/land/cloudtwo.png',   anim: 'cloudDriftEb', dur: 380, delay: '-70s',  pos: { top: '12vh', left: '-50vw' }, size: { width: '310vw', height: '190vh' }, blur: 14, rot:  18, flip: false },
+          { src: '/images/land/cloudone.png',   anim: 'cloudDriftEc', dur: 340, delay: '-200s', pos: { top: '8vh',  left: '-50vw' }, size: { width: '200vw', height: '130vh' }, blur: 13, rot: -15, flip: true  },
+          // Mid layer (largest, dominant)
+          { src: '/images/land/cloudthree.png', anim: 'cloudDriftEa', dur: 460, delay: '-150s', pos: { top: '20vh', left: '-50vw' }, size: { width: '410vw', height: '260vh' }, blur: 15, rot:   0, flip: false },
+          { src: '/images/land/cloudtwo.png',   anim: 'cloudDriftEd', dur: 400, delay: '-280s', pos: { top: '24vh', left: '-50vw' }, size: { width: '270vw', height: '170vh' }, blur: 14, rot:  22, flip: true  },
+          // Lower layer (slower, larger feels closer)
+          { src: '/images/land/cloudone.png',   anim: 'cloudDriftEb', dur: 520, delay: '-100s', pos: { top: '36vh', left: '-50vw' }, size: { width: '350vw', height: '210vh' }, blur: 16, rot: -12, flip: false },
+          { src: '/images/land/cloudthree.png', anim: 'cloudDriftEc', dur: 360, delay: '-240s', pos: { top: '40vh', left: '-50vw' }, size: { width: '190vw', height: '120vh' }, blur: 13, rot:  30, flip: true  },
+          // Drifter — odd horizontal slice for variety
+          { src: '/images/land/cloudtwo.png',   anim: 'cloudDriftEa', dur: 600, delay: '-340s', pos: { top: '50vh', left: '-50vw' }, size: { width: '380vw', height: '230vh' }, blur: 16, rot:   8, flip: false },
+        ].map((c, i) => (
+          // Outer wrapper carries the drift animation; inner img gets the rotate/flip for diversity
+          // (separating them avoids the keyframe transform overriding the rotation).
+          <div
+            key={i}
+            aria-hidden="true"
+            style={{
+              position: 'fixed',
+              ...c.pos,
+              ...c.size,
+              pointerEvents: 'none',
+              zIndex: 400,
+              animation: `${c.anim} ${c.dur}s linear infinite`,
+              animationDelay: c.delay,
+            }}
+          >
+            <img
+              src={c.src}
+              alt=""
+              draggable={false}
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'contain',
+                opacity: 0.25,
+                filter: `brightness(0) blur(${c.blur}px)`,
+                transform: `rotate(${c.rot}deg)${c.flip ? ' scaleX(-1)' : ''}`,
+              }}
+            />
+          </div>
+        ))}
 
-        {/* Soft sun gleam — warm light gradient that gently drifts across the farm */}
-        <style>{`
-          @keyframes sunGleam {
-            0%   { transform: translate(-30vw, -10vh); opacity: 0.0; }
-            20%  { opacity: 0.55; }
-            80%  { opacity: 0.55; }
-            100% { transform: translate(60vw, 0vh); opacity: 0.0; }
-          }
-        `}</style>
-        <div aria-hidden="true" style={{
-          position: 'fixed',
-          top: '-15vh', left: 0,
-          width: '70vw', height: '90vh',
-          background: 'radial-gradient(ellipse at center, rgba(255,240,180,0.55) 0%, rgba(255,220,140,0.30) 35%, rgba(255,210,120,0.10) 60%, transparent 80%)',
-          mixBlendMode: 'screen',
-          pointerEvents: 'none',
-          zIndex: 401,
-          filter: 'blur(40px)',
-          animation: 'sunGleam 28s ease-in-out infinite',
-        }} />
+        {/* Sun gleam moved to global <SkyOverlay /> — now on a real-time 12-hour right→left cycle. */}
 
-        {/* Wind streaks — thin horizontal lines that sweep across occasionally */}
+        {/* God-rays — warm angled beams streaming down from upper-left, with subtle shimmer.
+            Each ray is a rotated rectangle filled with a top-bright → transparent gradient.
+            Anchored at the top so the rotation pivot looks like the rays emanate from the sun. */}
         <style>{`
-          @keyframes windStreak {
-            0%   { opacity: 0; transform: translateX(-20vw) scaleX(0.3); }
-            2%   { opacity: 0.5; transform: translateX(10vw) scaleX(1); }
-            6%   { opacity: 0.5; transform: translateX(85vw) scaleX(1); }
-            9%   { opacity: 0; transform: translateX(120vw) scaleX(0.3); }
-            100% { opacity: 0; transform: translateX(120vw) scaleX(0.3); }
-          }
-          .wind-streak {
-            position: fixed; left: 0;
-            height: 2px;
-            background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.7) 50%, transparent 100%);
-            pointerEvents: none;
-            z-index: 401;
-            opacity: 0;
-            filter: blur(0.5px);
-          }
+          @keyframes rayShimmerA { 0%, 100% { opacity: 0.32; transform: rotate(18deg) scaleY(1); } 50% { opacity: 0.44; transform: rotate(18deg) scaleY(1.04); } }
+          @keyframes rayShimmerB { 0%, 100% { opacity: 0.28; transform: rotate(24deg) scaleY(1); } 50% { opacity: 0.40; transform: rotate(24deg) scaleY(1.06); } }
+          @keyframes rayShimmerC { 0%, 100% { opacity: 0.24; transform: rotate(30deg) scaleY(1); } 50% { opacity: 0.36; transform: rotate(30deg) scaleY(1.05); } }
+          @keyframes rayShimmerD { 0%, 100% { opacity: 0.20; transform: rotate(13deg) scaleY(1); } 50% { opacity: 0.34; transform: rotate(13deg) scaleY(1.07); } }
+          @keyframes rayShimmerE { 0%, 100% { opacity: 0.18; transform: rotate(36deg) scaleY(1); } 50% { opacity: 0.30; transform: rotate(36deg) scaleY(1.05); } }
         `}</style>
         {[
-          { top: '14vh', width: '30vw', duration: 55, delay: -5 },
-          { top: '42vh', width: '26vw', duration: 70, delay: -30 },
-          { top: '78vh', width: '34vw', duration: 60, delay: -48 },
-        ].map((w, i) => (
-          <div key={`wind-${i}`} aria-hidden="true" className="wind-streak" style={{
-            top: w.top, width: w.width,
-            animation: `windStreak ${w.duration}s ease-in-out infinite`,
-            animationDelay: `${w.delay}s`,
-          }} />
+          { left: '8vw',  width: '10vw', anim: 'rayShimmerA', dur: 7,  delay: '-1s' },
+          { left: '20vw', width: '7vw',  anim: 'rayShimmerB', dur: 9,  delay: '-3s' },
+          { left: '32vw', width: '12vw', anim: 'rayShimmerC', dur: 8,  delay: '-5s' },
+          { left: '0vw',  width: '8vw',  anim: 'rayShimmerD', dur: 10, delay: '-2s' },
+          { left: '46vw', width: '9vw',  anim: 'rayShimmerE', dur: 11, delay: '-6s' },
+        ].map((r, i) => (
+          <div
+            key={`ray-${i}`}
+            aria-hidden="true"
+            style={{
+              position: 'fixed',
+              top: '-30vh',
+              left: r.left,
+              width: r.width,
+              height: '160vh',
+              background: 'linear-gradient(180deg, rgba(255,243,190,0.55) 0%, rgba(255,235,160,0.32) 25%, rgba(255,225,130,0.16) 55%, transparent 90%)',
+              mixBlendMode: 'screen',
+              filter: 'blur(6px)',
+              pointerEvents: 'none',
+              zIndex: 402,
+              transformOrigin: 'top center',
+              animation: `${r.anim} ${r.dur}s ease-in-out infinite`,
+              animationDelay: r.delay,
+            }}
+          />
         ))}
+
+        {/* Wind streaks moved to global <SkyOverlay /> in App.jsx. */}
       </>
       )}
 
@@ -7568,29 +7855,32 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
           setIsHoeing(false);
           setIsDirting(false);
           setIsSeeding(false);
-          if (hotspotId === ID_FARM_HOTSPOTS.FARMER) { setShowMissionBoard(true); return true; }
+          if (hotspotId === ID_FARM_HOTSPOTS.FARMER) {
+            // Mark mission board as seen on first click so the attention pulse + "!" badge clear.
+            if (localStorage.getItem('sandbox_missionboard_seen') !== 'true') {
+              localStorage.setItem('sandbox_missionboard_seen', 'true');
+              window.dispatchEvent(new CustomEvent('questStateChanged'));
+            }
+            setShowMissionBoard(true);
+            return true;
+          }
           return false;
         }}
       >
         )}
-        {/* Soil only on tutp6 with yellow highlight */}
+        {/* Soil only on tutp6 (decorative — clicking plots handles dirt placement). */}
         {tutorialStep === 3 && tutPage === 6 && (
         <img
           src="/images/farming/realsoil.png"
           alt="Soil"
           draggable={false}
-          onClick={() => { toggleTool('soil'); const next = selectedTool !== 'soil'; setIsDirting(next); setIsHoeing(false); setIsWatering(false); setIsDigging(false); setIsSeeding(false); setIsPlanting(false); }}
           style={{
             position: 'absolute',
             top: '638px',
             left: '618px',
             width: '52px',
             zIndex: 6,
-            cursor: 'pointer',
-            filter: selectedTool === 'soil' ? 'drop-shadow(0px 0px 10px yellow) drop-shadow(0px 0px 20px yellow)' : 'none',
-            transform: selectedTool === 'soil' ? 'translateY(-15px)' : 'none',
-            transition: 'transform 0.4s ease, filter 0.2s ease',
-            animation: selectedTool === 'soil' ? 'mapFloat 2s ease-in-out infinite' : 'none',
+            pointerEvents: 'none',
           }}
         />
         )}
@@ -8143,17 +8433,17 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
   {/* Tutorial Part 4 — Papabee addresses the player */}
   {tutorialStep === 4 && <TutorialBubbleOverlay setTutorialStep={setTutorialStep} fullText="And its you... the one with the name..." advanceTo={5} bubbleSrc="/images/tutorial/papabeebubble.png" showPapabee={true} fontSize="22px" textMaxWidth="620px" />}
   {/* Tutorial Part 5 — Papabee apologizes */}
-  {tutorialStep === 5 && <TutorialBubbleOverlay setTutorialStep={setTutorialStep} fullText="sorry I have a terrible memory and its been years." advanceTo={6} bubbleSrc="/images/tutorial/papabeebubble.png" showPapabee={true} fontSize="22px" textMaxWidth="620px" />}
+  {tutorialStep === 5 && <TutorialBubbleOverlay setTutorialStep={setTutorialStep} fullText="Sorry I have a terrible memory and its been years." advanceTo={6} bubbleSrc="/images/tutorial/papabeebubble.png" showPapabee={true} fontSize="22px" textMaxWidth="620px" />}
   {/* Tutorial Part 6 — Papabee asks for name */}
-  {tutorialStep === 6 && <TutorialBubbleOverlay setTutorialStep={setTutorialStep} fullText="remind me, what is your name?" advanceTo={7} bubbleSrc="/images/tutorial/papabeebubble.png" showPapabee={true} fontSize="22px" textMaxWidth="620px" />}
+  {tutorialStep === 6 && <TutorialBubbleOverlay setTutorialStep={setTutorialStep} fullText="Remind me, what is your name?" advanceTo={7} bubbleSrc="/images/tutorial/papabeebubble.png" showPapabee={true} fontSize="22px" textMaxWidth="620px" />}
   {/* Tutorial Part 7 — Name prompt popup */}
   {tutorialStep === 7 && <TutorialNamePrompt setTutorialStep={setTutorialStep} advanceTo={8} />}
   {/* Tutorial Part 8 — Papabee remembers the name */}
   {tutorialStep === 8 && <TutorialBubbleOverlay setTutorialStep={setTutorialStep} fullText={`AH ${localStorage.getItem('sandbox_username') || 'friend'}! how could I forget, its great to see you again!`} advanceTo={9} bubbleSrc="/images/tutorial/papabeebubble.png" showPapabee={true} fontSize="22px" textMaxWidth="620px" />}
   {/* Tutorial Part 9 — Welcome to the farm */}
-  {tutorialStep === 9 && <TutorialBubbleOverlay setTutorialStep={setTutorialStep} fullText="well welcome to my farm... well actually its now yours!" advanceTo={10} bubbleSrc="/images/tutorial/papabeebubble.png" showPapabee={true} fontSize="22px" textMaxWidth="620px" />}
+  {tutorialStep === 9 && <TutorialBubbleOverlay setTutorialStep={setTutorialStep} fullText="Well welcome to my farm... well actually its now yours!" advanceTo={10} bubbleSrc="/images/tutorial/papabeebubble.png" showPapabee={true} fontSize="22px" textMaxWidth="620px" />}
   {/* Tutorial Part 10 — Papabee offers a lesson */}
-  {tutorialStep === 10 && <TutorialBubbleOverlay setTutorialStep={setTutorialStep} fullText="let me give you a quick lesson on how to be the best farmer in the valley, second to me of course HAHA!" advanceTo={11} bubbleSrc="/images/tutorial/papabeebubble.png" showPapabee={true} fontSize="22px" textMaxWidth="620px" />}
+  {tutorialStep === 10 && <TutorialBubbleOverlay setTutorialStep={setTutorialStep} fullText="Let me give you a quick lesson on how to be the best farmer in the valley, second to me of course HAHA!" advanceTo={11} bubbleSrc="/images/tutorial/papabeebubble.png" showPapabee={true} fontSize="22px" textMaxWidth="620px" />}
   {/* Tutorial Part 11 — Toolbelt intro (bubble + papabee moved up & left) */}
   {tutorialStep === 11 && <TutorialBubbleOverlay setTutorialStep={setTutorialStep} fullText="This is your toolbelt, it holds everything you need to get to growing crops, dont lose it thats the only one I have..." advanceTo={12} bubbleSrc="/images/tutorial/papabeebubble.png" showPapabee={true} fontSize="22px" textMaxWidth="620px" shiftX={600} shiftY={50} />}
   {/* Tutorial Part 12 — Show the 3 starter plots (Xs appear, no dim) */}
@@ -8165,12 +8455,22 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
   {tutorialStep === 14 && <TutorialBubbleOverlay setTutorialStep={setTutorialStep} fullText="Click on any plot to dig your first hole!" advanceTo={15} bubbleSrc="/images/tutorial/papabeebubble.png" showPapabee={true} fontSize="22px" textMaxWidth="620px" noAdvance={true} />}
   {tutorialStep === 14 && <TutorialStarterPlotsBright staggered={false} allowHover={true} />}
   {/* Tutorial Part 15 — Dirt bag intro (dim on, holes bright, shovel hidden, soil highlighted) */}
-  {tutorialStep === 15 && <TutorialBubbleOverlay setTutorialStep={setTutorialStep} fullText="Wow great job! you see the bag of dirt, thats what you use to fill up the hole. Click on the hole to fill it with dirt." advanceTo={16} bubbleSrc="/images/tutorial/papabeebubble.png" showPapabee={true} fontSize="22px" textMaxWidth="620px" noAdvance={true} />}
+  {tutorialStep === 15 && <TutorialBubbleOverlay setTutorialStep={setTutorialStep} fullText="Wow great job! You see the bag of dirt, thats what you use to fill up the hole. Click on the hole to fill it with dirt." advanceTo={16} bubbleSrc="/images/tutorial/papabeebubble.png" showPapabee={true} fontSize="22px" textMaxWidth="620px" noAdvance={true} />}
   {tutorialStep === 15 && <TutorialStarterPlotsBright staggered={false} onlyHoles={true} allowHover={true} />}
   {/* Tutorial Part 16 — Seed bag intro (dim on, dirt bright, soil hidden, seeds highlighted) */}
-  {tutorialStep === 16 && !isSelectCropDialog && <TutorialBubbleOverlay setTutorialStep={setTutorialStep} fullText="Ok have you done this before? Must be genetics! here is a potato seed, click on the dirt to plant the potato!" advanceTo={17} bubbleSrc="/images/tutorial/papabeebubble.png" showPapabee={true} fontSize="20px" textMaxWidth="620px" />}
+  {tutorialStep === 16 && !isSelectCropDialog && <TutorialBubbleOverlay setTutorialStep={setTutorialStep} fullText="Ok have you done this before? Must be genetics! Here is a potato seed, click on the dirt to plant the potato!" advanceTo={17} bubbleSrc="/images/tutorial/papabeebubble.png" showPapabee={true} fontSize="20px" textMaxWidth="620px" />}
+  {tutorialStep === 16 && <TutorialStarterPlotsBright staggered={false} onlyDirt={true} allowHover={true} />}
+  {tutorialStep === 17 && <TutorialStarterPlotsBright staggered={false} onlyDirt={true} allowHover={true} />}
+  {tutorialStep === 18 && <TutorialStarterPlotsBright staggered={false} onlyDirt={true} allowHover={true} />}
+  {tutorialStep === 19 && <TutorialStarterPlotsBright staggered={false} onlyDirt={true} allowHover={true} />}
+  {tutorialStep === 20 && <TutorialStarterPlotsBright staggered={false} onlyDirt={true} allowHover={true} />}
+  {tutorialStep === 21 && <TutorialStarterPlotsBright staggered={false} onlyDirt={true} allowHover={true} />}
+  {tutorialStep === 22 && <TutorialStarterPlotsBright staggered={false} onlyDirt={true} allowHover={true} />}
+  {tutorialStep === 23 && <TutorialStarterPlotsBright staggered={false} onlyDirt={true} allowHover={true} />}
+  {tutorialStep === 24 && <TutorialStarterPlotsBright staggered={false} onlyDirt={true} allowHover={true} />}
+  {tutorialStep === 25 && <TutorialStarterPlotsBright staggered={false} onlyDirt={true} allowHover={true} />}
   {/* Tutorial Part 17 — Water bucket intro */}
-  {tutorialStep === 17 && <TutorialBubbleOverlay setTutorialStep={setTutorialStep} fullText="Perfect! Now you see the water bucket, thats what you use to water your plants! Click on your pile now to give that soil and seed some well deserved H20" advanceTo={18} bubbleSrc="/images/tutorial/papabeebubble.png" showPapabee={true} fontSize="18px" textMaxWidth="620px" textShiftY={7} />}
+  {tutorialStep === 17 && <TutorialBubbleOverlay setTutorialStep={setTutorialStep} fullText="Perfect! Now you see the water bucket, thats what you use to water your plants! Click on your pile now to give that soil and seed some well deserved H20" advanceTo={18} bubbleSrc="/images/tutorial/papabeebubble.png" showPapabee={true} fontSize="18px" textMaxWidth="620px" textShiftY={-3} />}
   {/* Tutorial Part 18 — Heat mention (click to advance) */}
   {tutorialStep === 18 && <TutorialBubbleOverlay setTutorialStep={setTutorialStep} fullText="Ouf I might need some water soon, its hot!" advanceTo={19} bubbleSrc="/images/tutorial/papabeebubble.png" showPapabee={true} fontSize="20px" textMaxWidth="620px" />}
   {/* Tutorial Part 19 — WOAH, crow flies in, auto-advances when it lands */}
@@ -8180,11 +8480,11 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
   {/* Tutorial Part 21 — Crows are dangerous */}
   {tutorialStep === 21 && <TutorialBubbleOverlay setTutorialStep={setTutorialStep} fullText="Man, crows are very dangeruos to your crops, if they stay on the crop too long they will eat it! Now as I was saying... wait... whats that sound" advanceTo={22} bubbleSrc="/images/tutorial/papabeebubble.png" showPapabee={true} fontSize="18px" textMaxWidth="620px" />}
   {/* Tutorial Part 22 — Tap the bugs */}
-  {tutorialStep === 22 && <TutorialBubbleOverlay setTutorialStep={setTutorialStep} fullText="Ugh I hate bugs... wait Im a bug... Well these ones are still super annoying if you let them buzz around your crop will stop growing, tap them, hurry!" advanceTo={23} bubbleSrc="/images/tutorial/papabeebubble.png" showPapabee={true} fontSize="18px" textMaxWidth="620px" textShiftY={5} />}
+  {tutorialStep === 22 && <TutorialBubbleOverlay setTutorialStep={setTutorialStep} fullText="Ugh I hate bugs... wait Im a bug... Well these ones are still super annoying if you let them buzz around your crop will stop growing, tap them, hurry!" advanceTo={23} bubbleSrc="/images/tutorial/papabeebubble.png" showPapabee={true} fontSize="18px" textMaxWidth="620px" textShiftY={-5} noAdvance={true} />}
   {/* Tutorial Part 23 — Gems gift */}
-  {tutorialStep === 23 && <TutorialBubbleOverlay setTutorialStep={setTutorialStep} fullText="Finnally peace and quite, I guess all there is to do is Well... wait... But you know busy bees, we cant wait forever... here are some gems to speed up the process" advanceTo={24} bubbleSrc="/images/tutorial/papabeebubble.png" showPapabee={true} fontSize="18px" textMaxWidth="620px" textShiftY={5} />}
+  {tutorialStep === 23 && <TutorialBubbleOverlay setTutorialStep={setTutorialStep} fullText="Finally peace and quiet. I guess all there is to do is wait... but you know busy bees, we cant wait forever... Here are some gems to speed up the process." advanceTo={24} bubbleSrc="/images/tutorial/papabeebubble.png" showPapabee={true} fontSize="18px" textMaxWidth="620px" textShiftY={5} />}
   {/* Tutorial Part 24 — Click pile to skip wait time */}
-  {tutorialStep === 24 && <TutorialBubbleOverlay setTutorialStep={setTutorialStep} fullText="click on the pile to skip the wait time" advanceTo={25} bubbleSrc="/images/tutorial/papabeebubble.png" showPapabee={true} fontSize="20px" textMaxWidth="620px" noAdvance={true} />}
+  {tutorialStep === 24 && <TutorialBubbleOverlay setTutorialStep={setTutorialStep} fullText="Click on the pile to skip the wait time." advanceTo={25} bubbleSrc="/images/tutorial/papabeebubble.png" showPapabee={true} fontSize="20px" textMaxWidth="620px" noAdvance={true} />}
   {/* Tutorial Part 25 — Congrats on first harvest */}
   {tutorialStep === 25 && <TutorialBubbleOverlay setTutorialStep={setTutorialStep} fullText="CONGRATS on your first harvest, I see you going far and this is just the beggining" advanceTo={26} bubbleSrc="/images/tutorial/papabeebubble.png" showPapabee={true} fontSize="20px" textMaxWidth="620px" />}
   {/* Tutorial Part 26 — Your farm, your story */}
@@ -8202,7 +8502,7 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
   {/* Tutorial Part 34 — Heading off */}
   {tutorialStep === 34 && <TutorialBubbleOverlay setTutorialStep={setTutorialStep} fullText="Well I think ill be heading off now" advanceTo={35} bubbleSrc="/images/tutorial/papabeebubble.png" showPapabee={true} fontSize="22px" textMaxWidth="620px" />}
   {/* Tutorial Part 35 — Farewell (uses username) */}
-  {tutorialStep === 35 && <TutorialBubbleOverlay setTutorialStep={setTutorialStep} fullText={`so long ${localStorage.getItem('sandbox_username') || 'friend'}, Make me proud!`} advanceTo={36} bubbleSrc="/images/tutorial/papabeebubble.png" showPapabee={true} fontSize="22px" textMaxWidth="620px" exitOnAdvance={true} />}
+  {tutorialStep === 35 && <TutorialBubbleOverlay setTutorialStep={setTutorialStep} fullText={`So long ${localStorage.getItem('sandbox_username') || 'friend'}, make me proud!`} advanceTo={36} bubbleSrc="/images/tutorial/papabeebubble.png" showPapabee={true} fontSize="22px" textMaxWidth="620px" exitOnAdvance={true} />}
 
 
   {/* Easter Basket Dialog */}
@@ -8312,53 +8612,37 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
           <img src="/images/farming/realbeltbottom.png" alt="" draggable={false} style={{ position: 'absolute', bottom: 0, left: 0, width: '896px', pointerEvents: 'none', zIndex: 1, animation: (tutorialStep === 11) ? 'beltGlow 1.4s ease-in-out infinite' : 'none' }} />
           {(() => {
             const shovelVisible = (tutorialStep >= 36 || tutorialStep === 13 || tutorialStep === 14 || (tutorialStep >= 25 && tutorialStep <= 35) || (tutorialStep === 3 && tutPage >= 5));
-            const shovelHighlighted = (selectedTool === 'shovel' || flashTool === 'shovel' || tutorialStep === 13 || tutorialStep === 14);
             return (
-              <div style={{ position: 'absolute', bottom: '43px', left: '167px', width: '48px', zIndex: 2, transform: shovelVisible ? 'scale(1)' : 'scale(0)', transformOrigin: 'center', transition: 'transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)', pointerEvents: shovelVisible ? 'auto' : 'none' }}>
+              <div style={{ position: 'absolute', bottom: '43px', left: '167px', width: '48px', zIndex: 2, transform: shovelVisible ? 'scale(1)' : 'scale(0)', transformOrigin: 'center', transition: 'transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)', pointerEvents: 'none' }}>
                 <img src="/images/farming/realshovel.png" alt="Shovel" draggable={false}
-                  onClick={() => { toggleTool('shovel'); const next = selectedTool !== 'shovel'; setIsDigging(next); setIsHoeing(false); setIsWatering(false); setIsDirting(false); setIsSeeding(false); setIsPlanting(false); }}
-                  onMouseEnter={e => { e.currentTarget.style.filter = 'drop-shadow(0px 0px 6px rgba(255,255,255,0.8))'; e.currentTarget.style.transform = selectedTool === 'shovel' ? 'scale(1.15) translateY(-24px)' : 'scale(1.15)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.filter = shovelHighlighted ? 'drop-shadow(0px 0px 6px gold) drop-shadow(0px 0px 14px rgba(255,210,0,0.8))' : 'none'; e.currentTarget.style.transform = shovelHighlighted ? 'translateY(-24px)' : 'none'; }}
-                  style={{ width: '100%', cursor: 'pointer', transform: shovelHighlighted ? 'translateY(-24px)' : 'none', filter: shovelHighlighted ? 'drop-shadow(0px 0px 6px gold) drop-shadow(0px 0px 14px rgba(255,210,0,0.8))' : 'none', transition: 'transform 0.4s ease, filter 0.2s ease', animation: shovelHighlighted || (tutorialStep === 3 && tutPage === 5) ? 'mapFloat 2s ease-in-out infinite' : 'none' }} />
+                  style={{ width: '100%', pointerEvents: 'none' }} />
               </div>
             );
           })()}
           {(() => {
             const soilVisible = (tutorialStep >= 36 || tutorialStep === 15 || (tutorialStep >= 25 && tutorialStep <= 35) || (tutorialStep === 3 && tutPage >= 6)) && tutorialStep !== 16;
-            const soilHighlighted = (selectedTool === 'soil' || flashTool === 'soil' || tutorialStep === 15);
             return (
-              <div style={{ position: 'absolute', bottom: '59px', left: '268px', width: '83px', zIndex: 2, transform: soilVisible ? 'scale(1)' : 'scale(0)', transformOrigin: 'center', transition: 'transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)', pointerEvents: soilVisible ? 'auto' : 'none' }}>
+              <div style={{ position: 'absolute', bottom: '59px', left: '268px', width: '83px', zIndex: 2, transform: soilVisible ? 'scale(1)' : 'scale(0)', transformOrigin: 'center', transition: 'transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)', pointerEvents: 'none' }}>
                 <img src="/images/farming/realsoil.png" alt="Soil" draggable={false}
-                  onClick={() => { toggleTool('soil'); const next = selectedTool !== 'soil'; setIsDirting(next); setIsHoeing(false); setIsWatering(false); setIsDigging(false); setIsSeeding(false); setIsPlanting(false); }}
-                  onMouseEnter={e => { e.currentTarget.style.filter = 'drop-shadow(0px 0px 6px rgba(255,255,255,0.8))'; e.currentTarget.style.transform = selectedTool === 'soil' ? 'scale(1.15) translateY(-24px)' : 'scale(1.15)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.filter = soilHighlighted ? 'drop-shadow(0px 0px 6px gold) drop-shadow(0px 0px 14px rgba(255,210,0,0.8))' : 'none'; e.currentTarget.style.transform = soilHighlighted ? 'translateY(-24px)' : 'none'; }}
-                  style={{ width: '100%', cursor: 'pointer', transform: soilHighlighted ? 'translateY(-24px)' : 'none', filter: soilHighlighted ? 'drop-shadow(0px 0px 6px gold) drop-shadow(0px 0px 14px rgba(255,210,0,0.8))' : 'none', transition: 'transform 0.4s ease, filter 0.2s ease', animation: soilHighlighted || (tutorialStep === 3 && tutPage === 6) ? 'mapFloat 2s ease-in-out infinite' : 'none' }} />
+                  style={{ width: '100%', pointerEvents: 'none' }} />
               </div>
             );
           })()}
           {(() => {
             const seedsVisible = (tutorialStep >= 36 || tutorialStep === 16 || (tutorialStep >= 25 && tutorialStep <= 35) || (tutorialStep === 3 && tutPage >= 7));
-            const seedsHighlighted = (selectedTool === 'seeds' || flashTool === 'seeds' || tutorialStep === 16);
             return (
-              <div style={{ position: 'absolute', bottom: '61px', left: '413px', width: '69px', zIndex: 2, transform: seedsVisible ? 'scale(1)' : 'scale(0)', transformOrigin: 'center', transition: 'transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)', pointerEvents: seedsVisible ? 'auto' : 'none' }}>
+              <div style={{ position: 'absolute', bottom: '61px', left: '413px', width: '69px', zIndex: 2, transform: seedsVisible ? 'scale(1)' : 'scale(0)', transformOrigin: 'center', transition: 'transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)', pointerEvents: 'none' }}>
                 <img src="/images/farming/realseeds.png" alt="Seeds" draggable={false}
-                  onClick={() => { toggleTool('seeds'); const next = selectedTool !== 'seeds'; setIsSeeding(next); setIsDirting(false); setIsHoeing(false); setIsWatering(false); setIsDigging(false); setIsPlanting(false); }}
-                  onMouseEnter={e => { e.currentTarget.style.filter = 'drop-shadow(0px 0px 6px rgba(255,255,255,0.8))'; e.currentTarget.style.transform = selectedTool === 'seeds' ? 'scale(1.15) translateY(-24px)' : 'scale(1.15)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.filter = seedsHighlighted ? 'drop-shadow(0px 0px 6px gold) drop-shadow(0px 0px 14px rgba(255,210,0,0.8))' : 'none'; e.currentTarget.style.transform = seedsHighlighted ? 'translateY(-24px)' : 'none'; }}
-                  style={{ width: '100%', cursor: 'pointer', transform: seedsHighlighted ? 'translateY(-24px)' : 'none', filter: seedsHighlighted ? 'drop-shadow(0px 0px 6px gold) drop-shadow(0px 0px 14px rgba(255,210,0,0.8))' : 'none', transition: 'transform 0.4s ease, filter 0.2s ease', animation: seedsHighlighted || (tutorialStep === 3 && tutPage === 7) ? 'mapFloat 2s ease-in-out infinite' : 'none' }} />
+                  style={{ width: '100%', pointerEvents: 'none' }} />
               </div>
             );
           })()}
           {(() => {
             const bucketVisible = (tutorialStep >= 36 || tutorialStep === 17 || (tutorialStep >= 25 && tutorialStep <= 35) || (tutorialStep === 3 && tutPage >= 8));
-            const bucketHighlighted = (selectedTool === 'bucket' || flashTool === 'bucket' || tutorialStep === 17);
             return (
-              <div style={{ position: 'absolute', bottom: '59px', left: '535px', width: '101px', zIndex: 2, transform: bucketVisible ? 'scale(1)' : 'scale(0)', transformOrigin: 'center', transition: 'transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)', pointerEvents: bucketVisible ? 'auto' : 'none' }}>
+              <div style={{ position: 'absolute', bottom: '59px', left: '535px', width: '101px', zIndex: 2, transform: bucketVisible ? 'scale(1)' : 'scale(0)', transformOrigin: 'center', transition: 'transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)', pointerEvents: 'none' }}>
                 <img src="/images/farming/realbucket.png" alt="Bucket" draggable={false}
-                  onClick={() => { toggleTool('bucket'); const next = selectedTool !== 'bucket'; setIsWatering(next); setIsHoeing(false); setIsDigging(false); setIsDirting(false); setIsSeeding(false); setIsPlanting(false); }}
-                  onMouseEnter={e => { e.currentTarget.style.filter = 'drop-shadow(0px 0px 6px rgba(255,255,255,0.8))'; e.currentTarget.style.transform = selectedTool === 'bucket' ? 'scale(1.15) translateY(-24px)' : 'scale(1.15)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.filter = bucketHighlighted ? 'drop-shadow(0px 0px 6px gold) drop-shadow(0px 0px 14px rgba(255,210,0,0.8))' : 'none'; e.currentTarget.style.transform = bucketHighlighted ? 'translateY(-24px)' : 'none'; }}
-                  style={{ width: '100%', cursor: 'pointer', transform: bucketHighlighted ? 'translateY(-24px)' : 'none', filter: bucketHighlighted ? 'drop-shadow(0px 0px 6px gold) drop-shadow(0px 0px 14px rgba(255,210,0,0.8))' : 'none', transition: 'transform 0.4s ease, filter 0.2s ease', animation: bucketHighlighted || (tutorialStep === 3 && tutPage === 8) ? 'mapFloat 2s ease-in-out infinite' : 'none' }} />
+                  style={{ width: '100%', pointerEvents: 'none' }} />
               </div>
             );
           })()}

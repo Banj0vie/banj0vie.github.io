@@ -19,6 +19,120 @@ const FILTERS = [
 
 const USABLE_FILTERS = new Set([ID_INVENTORY_MENUS.CHESTS]);
 
+// --- Image lookup tables (must match PlayerPullNotification) ---
+const CROP_SEED_PATHS = {
+  Apple:        { folder: 'appleseed', prefix: 'apple' },
+  Avocado:      { folder: 'avocadoseed', prefix: 'avocado' },
+  Banana:       { folder: 'bananaseed', prefix: 'ban' },
+  Blueberry:    { folder: 'blueberryseed', prefix: 'blueberry' },
+  'Bok Choy':   { folder: 'bochoyseed', prefix: 'boc' },
+  Bokchoy:      { folder: 'bochoyseed', prefix: 'boc' },
+  Broccoli:     { folder: 'brocseed', prefix: 'broc' },
+  Cauliflower:  { folder: 'califlowerseed', prefix: 'califlower' },
+  Carrot:       { folder: 'carrotseed', prefix: 'carrot' },
+  Celery:       { folder: 'celseed', prefix: 'cel' },
+  Cabbage:      { folder: 'celseed', prefix: 'cel' },
+  Corn:         { folder: 'cornseed', prefix: 'corn' },
+  'Dragon Fruit':{ folder: 'dragonfruitseed', prefix: 'drag' },
+  Dragonfruit:  { folder: 'dragonfruitseed', prefix: 'drag' },
+  Eggplant:     { folder: 'eggplantseed', prefix: 'egg' },
+  Grape:        { folder: 'grapeseed', prefix: 'grape' },
+  Grapes:       { folder: 'grapeseed', prefix: 'grape' },
+  Lavender:     { folder: 'lavendarseed', prefix: 'lav' },
+  Lettuce:      { folder: 'lettuceseed', prefix: 'lettuce' },
+  Lychee:       { folder: 'lycheeseed', prefix: 'ly' },
+  Lichi:        { folder: 'lycheeseed', prefix: 'ly' },
+  Mango:        { folder: 'mangoseed', prefix: 'mango' },
+  Onion:        { folder: 'onseed', prefix: 'on' },
+  Papaya:       { folder: 'papyaseed', prefix: 'pap' },
+  Pepper:       { folder: 'pepperseed', prefix: 'pepper' },
+  Pineapple:    { folder: 'pineseed', prefix: 'pine' },
+  Pomegranate:  { folder: 'pomseed', prefix: 'pom' },
+  Potato:       { folder: 'potseed', prefix: 'pot' },
+  Pumpkin:      { folder: 'pumpkinseed', prefix: 'pumpkin' },
+  Radish:       { folder: 'raddishseed', prefix: 'raddish' },
+  Tomato:       { folder: 'tomatoseed', prefix: 'tom' },
+  Turnip:       { folder: 'turnipseed', prefix: 'turnip' },
+  Wheat:        { folder: 'wheatseed', prefix: 'wheat' },
+};
+
+const CROP_DEFAULT_IMAGES = {
+  Apple:         '/images/crops/new/apple/defultapple.png',
+  Avocado:       '/images/crops/new/avocado/defultavocado.png',
+  Banana:        '/images/crops/new/banana/defultbanaa.png',
+  Blueberry:     '/images/crops/new/blueberry/defultblueberry.png',
+  'Bok Choy':    '/images/crops/new/wheat/defultbokchoy.png',
+  Bokchoy:       '/images/crops/new/wheat/defultbokchoy.png',
+  Broccoli:      '/images/crops/new/brocoli/defultbroc.png',
+  Cauliflower:   '/images/crops/new/califlower/defultcaliflower.png',
+  Carrot:        '/images/crops/new/carrot/defultcarrot.png',
+  Celery:        '/images/crops/new/cellary/defultcellary.png',
+  Cabbage:       '/images/crops/new/cellary/defultcellary.png',
+  Corn:          '/images/crops/new/corn/defultcorn.png',
+  'Dragon Fruit':'/images/crops/new/dragonfruit/defultdragon.png',
+  Dragonfruit:   '/images/crops/new/dragonfruit/defultdragon.png',
+  Eggplant:      '/images/crops/new/eggplant/defulteggplant.png',
+  Grape:         '/images/crops/new/grape/defultgrape.png',
+  Grapes:        '/images/crops/new/grape/defultgrape.png',
+  Lavender:      '/images/crops/new/lavendar/defultlavendar.png',
+  Lettuce:       '/images/crops/new/lettuce/defultlettuce.png',
+  Lychee:        '/images/crops/new/lychee/defultlychee.png',
+  Lichi:         '/images/crops/new/lychee/defultlychee.png',
+  Mango:         '/images/crops/new/mango/defultmango.png',
+  Onion:         '/images/crops/new/onion/defultonion.png',
+  Papaya:        '/images/crops/new/papaya/defultpapaya.png',
+  Pepper:        '/images/crops/new/pepper/defultpepper.png',
+  Pineapple:     '/images/crops/new/pineapple/defultpineapple.png',
+  Pomegranate:   '/images/crops/new/pomagrante/defultpom.png',
+  Potato:        '/images/crops/new/potato/defultpotato.png',
+  Pumpkin:       '/images/crops/new/pumpkin/defultpumpkin.png',
+  Radish:        '/images/crops/new/raddish/defultraddish.png',
+  Tomato:        '/images/crops/new/tomato/defulttomato.png',
+  Turnip:        '/images/crops/new/turnip/defultturnip.png',
+  Wheat:         '/images/crops/new/wheat/defultwheat.png',
+};
+
+// Decode rarity tier from a seed id (rarity is encoded in bits 12+).
+const getRarityCode = (seedId) => {
+  const rarityLevel = (Number(seedId) >> 12) & 0xF;
+  // 1 = common, 2 = uncommon, 3 = rare, 4 = epic, 5 = legendary
+  // Default to common (level 1 or 0) for plain ids.
+  if (rarityLevel <= 1) return 'com';
+  return ['', 'com', 'uncom', 'rare', 'epic', 'leg'][rarityLevel] || 'com';
+};
+
+// Build a case-insensitive lookup so seed labels like "POTATO" still match the "Potato" key.
+const SEED_PATHS_CI = Object.fromEntries(
+  Object.entries(CROP_SEED_PATHS).map(([k, v]) => [k.toLowerCase(), v])
+);
+
+const getInventorySeedImage = (label, seedId) => {
+  if (!label) return null;
+  // Normalize the label: lowercase, strip "F." (feeble) prefix.
+  const normalized = label.toString().replace(/^F\./i, '').trim().toLowerCase();
+  const data = SEED_PATHS_CI[normalized];
+  if (!data) return null;
+  const code = getRarityCode(seedId);
+  return `/images/seeds/${data.folder}/${data.prefix}${code}.png`;
+};
+
+// Case-insensitive default-image lookup (mirrors SEED_PATHS_CI).
+const DEFAULT_IMAGES_CI = Object.fromEntries(
+  Object.entries(CROP_DEFAULT_IMAGES).map(([k, v]) => [k.toLowerCase(), v])
+);
+
+const getInventoryItemImage = (item) => {
+  if (!item) return null;
+  const label = item.label || '';
+  const normalized = label.replace(/^F\./i, '').trim().toLowerCase();
+  // Produce → default per-crop crop image
+  if (item.category === 'ID_ITEM_CROP' || item.category === 'PRODUCE' || (typeof item.category === 'number' && item.category === 2)) {
+    return DEFAULT_IMAGES_CI[normalized] || null;
+  }
+  // Seed → rarity-tier seed image
+  return getInventorySeedImage(label, item.id);
+};
+
 const InventoryDialog = ({ onClose }) => {
   const [filter, setFilter] = useState('ALL');
   const { seeds, productions, baits, fish, chests, potions, items, refetch } = useItems();
@@ -45,6 +159,15 @@ const InventoryDialog = ({ onClose }) => {
   }, []);
 
   const maxSlots = bagCount * SLOTS_PER_BAG;
+
+  // Only show items the user actually owns (count > 0).
+  const ownedSeeds   = (seeds || []).filter((s) => (s.count || 0) > 0);
+  const ownedProduce = (productions || []).filter((p) => (p.count || 0) > 0);
+  const displayItems = (() => {
+    if (filter === 'SEEDS')   return ownedSeeds;
+    if (filter === 'PRODUCE') return ownedProduce;
+    return [...ownedSeeds, ...ownedProduce];
+  })();
 
   const isOnFarmPage = () =>
     window.location.pathname === '/farm' || window.location.pathname.endsWith('/farm');
@@ -147,6 +270,197 @@ const InventoryDialog = ({ onClose }) => {
   };
 
   return (
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 100000,
+        background: 'rgba(0,0,0,0.65)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        cursor: 'pointer',
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{ position: 'relative', maxWidth: '90vw', maxHeight: '90vh' }}
+      >
+        <img
+          src="/images/inventory/inventory.png"
+          alt="Inventory"
+          draggable={false}
+          style={{ display: 'block', maxWidth: '90vw', maxHeight: '90vh', objectFit: 'contain', userSelect: 'none' }}
+        />
+        {/* Close (X) button */}
+        <img
+          src="/images/inventory/x.png"
+          alt="Close"
+          draggable={false}
+          onClick={onClose}
+          style={{
+            position: 'absolute',
+            top: 'calc(8% + 60px)',
+            right: 'calc(4% - 54px)',
+            width: '70px',
+            height: 'auto',
+            cursor: 'pointer',
+            userSelect: 'none',
+            transition: 'transform 0.15s ease-out, filter 0.15s ease-out',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'scale(1.1)';
+            e.currentTarget.style.filter = 'brightness(1.15) drop-shadow(0 0 6px rgba(255,220,100,0.9)) drop-shadow(0 0 12px rgba(255,180,40,0.7))';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'scale(1)';
+            e.currentTarget.style.filter = 'none';
+          }}
+        />
+        {/* Filter tabs (All / Seeds / Produce) — clickable image buttons */}
+        <div
+          style={{
+            position: 'absolute',
+            top: 'calc(14% + 120px)',
+            left: '50%',
+            transform: 'translateX(calc(-50% + 130px))',
+            display: 'flex',
+            gap: '12px',
+            pointerEvents: 'none',
+          }}
+        >
+          {[
+            { id: 'ALL',     src: '/images/inventory/all.png',     alt: 'All'     },
+            { id: 'SEEDS',   src: '/images/inventory/seeds.png',   alt: 'Seeds'   },
+            { id: 'PRODUCE', src: '/images/inventory/produce.png', alt: 'Produce' },
+          ].map((tab) => (
+            <img
+              key={tab.id}
+              src={tab.src}
+              alt={tab.alt}
+              draggable={false}
+              onClick={() => setFilter(tab.id)}
+              style={{
+                width: '110px', height: 'auto', objectFit: 'contain',
+                cursor: 'pointer', pointerEvents: 'auto', userSelect: 'none',
+                transition: 'transform 0.15s ease-out, filter 0.15s ease-out',
+                filter: filter === tab.id
+                  ? 'brightness(1.15) drop-shadow(0 0 6px rgba(255,220,100,0.9)) drop-shadow(0 0 12px rgba(255,180,40,0.7))'
+                  : 'none',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'scale(1.1)';
+                if (filter !== tab.id) {
+                  e.currentTarget.style.filter = 'brightness(1.1) drop-shadow(0 0 4px rgba(255,220,100,0.7))';
+                }
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'scale(1)';
+                e.currentTarget.style.filter = filter === tab.id
+                  ? 'brightness(1.15) drop-shadow(0 0 6px rgba(255,220,100,0.9)) drop-shadow(0 0 12px rgba(255,180,40,0.7))'
+                  : 'none';
+              }}
+            />
+          ))}
+        </div>
+        {/* 3 rows × 5 boxes overlaid on the inventory image */}
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            display: 'grid',
+            // Fixed cell sizes so boxes stay the same size regardless of how close they sit.
+            gridTemplateColumns: 'repeat(5, 95px)',
+            gridTemplateRows: 'repeat(3, 95px)',
+            justifyContent: 'center',
+            alignContent: 'center',
+            columnGap: '6px',
+            rowGap: '6px',
+            padding: '28% 12%',
+            pointerEvents: 'none',
+            transform: 'translate(132.5px, 65px)',
+          }}
+        >
+          {Array.from({ length: 15 }).map((_, i) => {
+            const item = displayItems[i];
+            return (
+              <div
+                key={i}
+                style={{
+                  position: 'relative',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  pointerEvents: 'auto', cursor: 'pointer',
+                }}
+                onMouseEnter={(e) => {
+                  const wrap = e.currentTarget.querySelector('.box-wrap');
+                  if (wrap) {
+                    wrap.style.transform = 'scale(1.1)';
+                    wrap.style.filter = 'brightness(1.15) drop-shadow(0 0 6px rgba(255,220,100,0.9)) drop-shadow(0 0 12px rgba(255,180,40,0.7))';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  const wrap = e.currentTarget.querySelector('.box-wrap');
+                  if (wrap) {
+                    wrap.style.transform = 'scale(1)';
+                    wrap.style.filter = 'none';
+                  }
+                }}
+              >
+                <div
+                  className="box-wrap"
+                  style={{
+                    position: 'relative', width: '100%', height: '100%',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    transition: 'transform 0.15s ease-out, filter 0.15s ease-out',
+                  }}
+                >
+                  <img
+                    src="/images/inventory/box.png"
+                    alt=""
+                    draggable={false}
+                    style={{ width: '100%', height: '100%', objectFit: 'contain', userSelect: 'none' }}
+                  />
+                  {item && (() => {
+                    const imgSrc = getInventoryItemImage(item) || item.image;
+                    return (
+                    <>
+                      <img
+                        src={imgSrc}
+                        alt={item.label || ''}
+                        draggable={false}
+                        style={{
+                          position: 'absolute', top: '50%', left: '50%',
+                          transform: 'translate(-50%, -50%)',
+                          width: '70%', height: '70%', objectFit: 'contain',
+                          userSelect: 'none', pointerEvents: 'none',
+                        }}
+                      />
+                      {item.count > 1 && (
+                        <span
+                          style={{
+                            position: 'absolute', right: '8%', bottom: '6%',
+                            fontFamily: 'GROBOLD, Cartoonist, sans-serif',
+                            fontSize: '14px', color: '#fff',
+                            textShadow: '1px 1px 0 #000, -1px 1px 0 #000, 1px -1px 0 #000, -1px -1px 0 #000',
+                            pointerEvents: 'none',
+                          }}
+                        >
+                          {item.count}
+                        </span>
+                      )}
+                    </>
+                    );
+                  })()}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+
+  /* eslint-disable */
+  // Legacy UI kept below for reference; not rendered.
+  // eslint-disable-next-line no-unreachable
+  return (
     <>
       <style>{`
         .inv-filter-btn {
@@ -177,6 +491,14 @@ const InventoryDialog = ({ onClose }) => {
 
       <BaseDialog onClose={onClose} title="INVENTORY" header="/images/dialog/modal-header-inventory.png" headerOffset={10}>
         <div style={{ width: 480, display: 'flex', flexDirection: 'column', gap: 10 }}>
+
+          {/* Banner image — shown at the top when the inventory dialog opens */}
+          <img
+            src="/images/inventory/inventory.png"
+            alt="Inventory"
+            draggable={false}
+            style={{ width: '100%', display: 'block', objectFit: 'contain', userSelect: 'none' }}
+          />
 
           {/* Slot bar */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>

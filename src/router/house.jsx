@@ -45,6 +45,10 @@ const House = () => {
   useEffect(() => {
     localStorage.setItem('seen_dock_repair_prompt', 'true');
     window.dispatchEvent(new CustomEvent('seenDockPrompt'));
+    if (localStorage.getItem('sandbox_beejamin_dock_visited') !== 'true') {
+      localStorage.setItem('sandbox_beejamin_dock_visited', 'true');
+      window.dispatchEvent(new CustomEvent('questStateChanged'));
+    }
   }, []);
 
   useEffect(() => {

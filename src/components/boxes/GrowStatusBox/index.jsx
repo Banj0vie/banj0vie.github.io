@@ -9,6 +9,7 @@ const GrowStatusBox = ({
   isPlanted = false,
   lockedAmount = 0,
   unlockedAmount = 0,
+  filledSegments = null,
 }) => {
   const [progress, setProgress] = useState(0);
   const [timeLeft, setTimeLeft] = useState(0);
@@ -74,22 +75,29 @@ const GrowStatusBox = ({
       )}
       {/* Growth progress bar */}
       <div className="progress-bar">
-        {[0, 1, 2, 3, 4].map((step) => (
-          <div
-            key={step}
-            className={`step`}
-          >
-            <img
-              src={
-                progress >= step
-                  ? "/images/input/grow-status-active.png"
-                  : "/images/input/grow-status-bg.png"
-              }
-              className="step-image"
-              alt="grow status image"
-            ></img>
-          </div>
-        ))}
+        {[0, 1, 2, 3, 4].map((step) => {
+          // When filledSegments is provided (from CropItem), drive the fill from frame index
+          // (sign=0, p1=1, p2=2, p3=3, p4=4, p5=5). Otherwise fall back to time-based progress.
+          const isFilled = filledSegments !== null
+            ? step < filledSegments
+            : progress >= step;
+          return (
+            <div
+              key={step}
+              className={`step`}
+            >
+              <img
+                src={
+                  isFilled
+                    ? "/images/input/grow-status-active.png"
+                    : "/images/input/grow-status-bg.png"
+                }
+                className="step-image"
+                alt="grow status image"
+              ></img>
+            </div>
+          );
+        })}
       </div>
       {/* Token amounts display */}
       {/* {isReady && (lockedAmount > 0 || unlockedAmount > 0) && (

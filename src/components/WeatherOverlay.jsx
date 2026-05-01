@@ -2,7 +2,7 @@ import React, { useMemo, useEffect, useState, useRef } from 'react';
 
 // Global weather helper
 export const getWeatherForDay = (day) => {
-  if (day === 15) return '⚡'; // 1 day of lightning
+  // Lightning disabled for now — day 15 falls through to the normal cloud/rain rules.
   if (day % 4 === 0) return '🌧️'; // Standard rainy days
   if (day % 3 === 0 || day % 5 === 0) return '☁️'; // Mix of cloudy
   return '☀️'; // Sunny by default

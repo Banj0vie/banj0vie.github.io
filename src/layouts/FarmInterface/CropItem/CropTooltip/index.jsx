@@ -18,6 +18,7 @@ const CropTooltip = ({
   pos = { x: 0, y: 0 },
   data = {},
   growthProgress = 0,
+  filledSegments = 0,
 }) => {
   const { account } = useSolanaWallet();
   const { previewHarvestForSeed } = useFarming();
@@ -241,6 +242,7 @@ const CropTooltip = ({
           isPlanted={!!data.seedId}
           lockedAmount={locked}
           unlockedAmount={unlocked}
+          filledSegments={filledSegments}
         />
         <CardView className="p-0.5rem">
           <div className="status-label-layout">

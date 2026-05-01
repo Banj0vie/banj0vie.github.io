@@ -591,10 +591,16 @@ const VendorDialog = ({ onClose, label = "VENDOR", header = "", headerOffset = 0
       rollingInfo={rollingInfo}
       onClose={cancelReveal}
       onBack={cancelReveal}
-      onBuyAgain={() => {
-        cancelReveal();
-        handleBuy(rollingInfo);
-      }}
+      onBuyAgain={
+        // Hide "Buy Again" during the mayor cutscene's pico-only beat — the user is meant to
+        // open exactly one pack, then the cutscene resumes.
+        localStorage.getItem('sandbox_cutscene_pico_only') === 'true'
+          ? null
+          : () => {
+              cancelReveal();
+              handleBuy(rollingInfo);
+            }
+      }
     ></PokemonPackRipDialog>
   );
 };

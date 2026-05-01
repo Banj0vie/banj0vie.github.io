@@ -51,6 +51,18 @@ const ProfileAuthBox = ({ onCreateProfile }) => {
   return (
     <div className="profile-auth-box">
       <div className="profile-label">Create your Profile!</div>
+      <img
+        src="/images/tutorial/username.png"
+        alt="Username"
+        draggable={false}
+        style={{
+          display: 'block',
+          width: '60%', maxWidth: '320px',
+          height: 'auto', margin: '0 auto 8px',
+          objectFit: 'contain', userSelect: 'none',
+          imageRendering: 'pixelated',
+        }}
+      />
       <BaseInput
         className="h-2.5rem w-75"
         type="text"
