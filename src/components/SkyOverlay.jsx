@@ -3,15 +3,27 @@ import React, { useState, useEffect } from 'react';
 // Pulse + "!" badge effect for the VENDOR and Mission Board labels until the user has
 // clicked them for the first time. Uses localStorage flags + a questStateChanged listener
 // so it reactively turns off on click without polling.
+//
+// The mission board pulse waits until the dedicated `q2_missionboard_intro` letter has
+// been read or completed — the earlier mayor market-intro letter wakes the hotspot
+// (so it's visible) but doesn't yet ask the player to act on it.
+const isMissionBoardLetterRead = () => {
+  let read = [];
+  let completed = [];
+  try { read = JSON.parse(localStorage.getItem('sandbox_read_quests') || '[]'); } catch (_) {}
+  try { completed = JSON.parse(localStorage.getItem('sandbox_completed_quests') || '[]'); } catch (_) {}
+  return read.includes('q2_missionboard_intro') || completed.includes('q2_missionboard_intro');
+};
+
 const HotspotAttentionEffects = () => {
   const [pulse, setPulse] = useState(() => ({
     vendor: localStorage.getItem('sandbox_vendor_label_seen') !== 'true',
-    missionBoard: localStorage.getItem('sandbox_missionboard_seen') !== 'true',
+    missionBoard: localStorage.getItem('sandbox_missionboard_seen') !== 'true' && isMissionBoardLetterRead(),
   }));
   useEffect(() => {
     const update = () => setPulse({
       vendor: localStorage.getItem('sandbox_vendor_label_seen') !== 'true',
-      missionBoard: localStorage.getItem('sandbox_missionboard_seen') !== 'true',
+      missionBoard: localStorage.getItem('sandbox_missionboard_seen') !== 'true' && isMissionBoardLetterRead(),
     });
     window.addEventListener('questStateChanged', update);
     return () => window.removeEventListener('questStateChanged', update);
@@ -158,8 +170,11 @@ const SkyOverlay = () => {
           66%      { transform: translate( 24px, 18px); }
         }
         @keyframes fireflyBlink {
-          0%, 100% { opacity: 0.35; box-shadow: 0 0 4px #d8ff7a, 0 0 8px rgba(216,255,122,0.35); }
-          50%      { opacity: 1;    box-shadow: 0 0 10px #d8ff7a, 0 0 20px rgba(216,255,122,0.65); }
+          /* Single box-shadow per state (was a 2-layer stack ×10 fireflies =
+             20 shadows being recomputed each frame). One shadow with a larger
+             spread reads identically and is much cheaper to rasterize. */
+          0%, 100% { opacity: 0.35; box-shadow: 0 0 6px rgba(216,255,122,0.45); }
+          50%      { opacity: 1;    box-shadow: 0 0 14px rgba(216,255,122,0.85); }
         }
         @keyframes windStreak {
           0%   { opacity: 0;   transform: translateX(-20vw) scaleX(0.3); }
@@ -227,7 +242,10 @@ const SkyOverlay = () => {
             mixBlendMode: 'screen',
             pointerEvents: 'none',
             zIndex: 401,
-            filter: 'blur(40px)',
+            // Reduced from blur(40px) — large blur on a 70vw element was an
+            // expensive constant cost. 22px reads almost identical at typical
+            // resolutions.
+            filter: 'blur(22px)',
             animation: 'sunGleamArc 43200s linear infinite',
             animationDelay: sunAnimationDelay,
           }}
@@ -261,7 +279,8 @@ const SkyOverlay = () => {
               mixBlendMode: 'screen',
               pointerEvents: 'none',
               zIndex: 401,
-              filter: 'blur(36px)',
+              // Reduced from blur(36px) — see sun gleam comment above.
+              filter: 'blur(20px)',
               animation: 'moonGleamArc 43200s linear infinite',
               animationDelay: moonAnimationDelay,
             }}

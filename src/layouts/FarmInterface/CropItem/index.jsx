@@ -10,8 +10,8 @@ import { ALL_ITEMS } from "../../../constants/item_data";
 import { ID_SEEDS } from "../../../constants/app_ids";
 import CropTooltip from "./CropTooltip";
 import { getSetting, defaultSettings } from "../../../utils/settings";
-import { useAppSelector } from "../../../solana/store";
-import { selectSettings } from "../../../solana/store/slices/uiSlice";
+import { useAppSelector } from "../../../store";
+import { selectSettings } from "../../../store/slices/uiSlice";
 import { clampVolume } from "../../../utils/basic";
 
 // Per-crop overrides: when a seed has individual stage PNGs, swap them in for the sprite sheet.

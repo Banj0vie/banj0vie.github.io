@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import "./style.css";
 import BaseDialog from "../_BaseDialog";
 import ItemSmallView from "../../components/boxes/ItemViewSmall";
@@ -7,9 +7,12 @@ import { useItems } from "../../hooks/useItems";
 import { useChest } from "../../hooks/useChest";
 import { useNotification } from "../../contexts/NotificationContext";
 import { ID_CHEST_ITEMS, ID_POTION_ITEMS, ID_INVENTORY_MENUS } from "../../constants/app_ids";
+import { ALL_ITEMS } from "../../constants/item_data";
 import ChestRollingDialog from "./ChestRollingDialog";
 import ProduceListDialog from "../../components/boxes/ItemViewMarketplace";
-import { getInventoryBags, getInventoryMaxSlots, getProduceUsedSlots, SLOTS_PER_BAG } from "../../utils/inventorySlots";
+import { getInventoryBags, getProduceUsedSlots, SLOTS_PER_BAG } from "../../utils/inventorySlots";
+import { CARD_FRONT_IMAGES, getBaseAndRarity } from "../Market_Vendor/PokemonPackRipDialog";
+import { CROP_CARD_IMAGES } from "../../components/HarvestCardReveal";
 
 const FILTERS = [
   { id: 'ALL',                        label: 'All' },
@@ -135,7 +138,7 @@ const getInventoryItemImage = (item) => {
 
 const InventoryDialog = ({ onClose }) => {
   const [filter, setFilter] = useState('ALL');
-  const { seeds, productions, baits, fish, chests, potions, items, refetch } = useItems();
+  const { seeds, productions, refetch } = useItems();
   const { openChest } = useChest();
   const { show } = useNotification();
 
@@ -148,6 +151,104 @@ const InventoryDialog = ({ onClose }) => {
   const [trashHover, setTrashHover] = useState(false);
   const [bagCount, setBagCount] = useState(getInventoryBags);
   const [usedSlots, setUsedSlots] = useState(getProduceUsedSlots);
+  // Most-recently-clicked slot's item id — drives the card-front preview rendered in
+  // the inventory popup's left panel.
+  const [selectedItemId, setSelectedItemId] = useState(null);
+  // Index of which "instance" within the selected stack the user is viewing (0-based)
+  // for the arrow navigation on the card preview.
+  const [instanceIndex, setInstanceIndex] = useState(0);
+
+  // Mark the body while the bag inventory is open so the portaled GameMenu nav can
+  // drop into the background (mirrors BankerDialog's data-bank-open). Also tear down
+  // any pull notification that's currently on screen so it doesn't sit on top of the
+  // popup. Only targets <nav class="game-menu"> in CSS — leaves the App.jsx top
+  // profile container alone.
+  useEffect(() => {
+    document.body.setAttribute('data-bag-open', 'true');
+    window.dispatchEvent(new CustomEvent('letterOpened'));
+    return () => document.body.removeAttribute('data-bag-open');
+  }, []);
+
+  // Auto-select the first available item the moment the inventory opens (and the
+  // useItems data finishes loading), so the card preview is populated by default.
+  useEffect(() => {
+    if (selectedItemId != null) return;
+    const all = [...(seeds || []), ...(productions || [])];
+    const first = all.find((it) => (it.count || 0) > 0);
+    if (first) {
+      setSelectedItemId(first.id);
+      setInstanceIndex(0);
+    }
+  }, [seeds, productions, selectedItemId]);
+
+  // Total count for the selected item — used by the prev/next arrows on the card preview.
+  const selectedCount = useMemo(() => {
+    if (selectedItemId == null) return 0;
+    const allInv = [...(seeds || []), ...(productions || [])];
+    const found = allInv.find((it) => Number(it.id) === Number(selectedItemId));
+    return found ? Number(found.count) || 0 : 0;
+  }, [selectedItemId, seeds, productions]);
+
+  // Format a timestamp as MM/DD/YYYY (always with slashes, regardless of locale).
+  const formatObtainedDate = (ts) => {
+    const d = new Date(ts);
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${m}/${day}/${d.getFullYear()}`;
+  };
+
+  // Whether the selected id is a PRODUCE item (categories 5/6/7) vs a seed/other.
+  // Used to gate the weight + date overlay — seeds don't have weight info.
+  const selectedIsProduce = useMemo(() => {
+    if (selectedItemId == null) return false;
+    const cat = (Number(selectedItemId) >> 8) & 0xF;
+    return cat >= 5 && cat <= 7;
+  }, [selectedItemId]);
+
+  // Per-instance weight + harvest date for the selected item. Indexed by instanceIndex
+  // so each individual card in a stack shows its own personal stats (driven by the
+  // prev/next arrows on the card preview). The log keeps the most recent entries; we
+  // window into them so the displayed cards always show the player's current crops.
+  const selectedWeightInfo = useMemo(() => {
+    if (selectedItemId == null) return null;
+    try {
+      const log = JSON.parse(localStorage.getItem('sandbox_produce_weights') || '{}');
+      const entries = log[Number(selectedItemId)];
+      if (!Array.isArray(entries) || entries.length === 0) return null;
+      // Show the most recent `selectedCount` entries — older entries belong to crops
+      // the player no longer owns.
+      const startIdx = Math.max(0, entries.length - (selectedCount || 0));
+      const idx = startIdx + Math.max(0, instanceIndex);
+      if (idx < 0 || idx >= entries.length) return null;
+      return entries[idx];
+    } catch (_) { return null; }
+  }, [selectedItemId, selectedCount, instanceIndex]);
+
+  // Preview image lookup for the selected item:
+  //   1. SEED packs (categories 2/3/4) → CARD_FRONT_IMAGES (the seed-pack art).
+  //   2. PRODUCE (categories 5/6/7) → CROP_CARD_IMAGES (the crop card), keyed by the
+  //      matching seed id (produce cat - 3 = seed cat with same low-byte index).
+  //   3. Fall back to the inventory icon / base ALL_ITEMS image if neither map has it.
+  const selectedPreviewImage = useMemo(() => {
+    if (selectedItemId == null) return null;
+    const id = Number(selectedItemId);
+    const { baseId, rarityLevel } = getBaseAndRarity(id);
+    const cat = (baseId >> 8) & 0xF;
+    let cardImg = null;
+    if (cat >= 5 && cat <= 7) {
+      // Produce → look up the corresponding seed id and pull from CROP_CARD_IMAGES.
+      const seedBaseId = ((cat - 3) << 8) | (baseId & 0xFF);
+      cardImg = CROP_CARD_IMAGES?.[seedBaseId]?.[rarityLevel] || CROP_CARD_IMAGES?.[seedBaseId]?.[1];
+    } else {
+      // Seed pack (or other) → seed-pack art.
+      cardImg = CARD_FRONT_IMAGES?.[baseId]?.[rarityLevel];
+    }
+    if (cardImg) return cardImg;
+    const data = ALL_ITEMS[id];
+    return getInventoryItemImage({ id, label: data?.label, category: data?.category, image: data?.image })
+        || data?.image
+        || null;
+  }, [selectedItemId]);
 
   useEffect(() => {
     const refresh = () => {
@@ -246,6 +347,51 @@ const InventoryDialog = ({ onClose }) => {
   const visibleItems = filterMap[filter] || allItems;
   const isUsableFilter = USABLE_FILTERS.has(filter);
 
+  // Delete the currently-shown card from the card preview. Drops one unit
+  // from sandbox_produce or sandbox_loot, removes the matching entry from the
+  // per-instance weight log (so the remaining cards keep their stats), and
+  // nudges instanceIndex back into range so the preview shifts to a valid
+  // neighbor card.
+  const handleDeleteSelectedCard = () => {
+    if (selectedItemId == null) return;
+    const id = Number(selectedItemId);
+    const cat = (id >> 8) & 0xF;
+    const isProduce = cat >= 5 && cat <= 7;
+    const storageKey = isProduce ? 'sandbox_produce' : 'sandbox_loot';
+    try {
+      const inv = JSON.parse(localStorage.getItem(storageKey) || '{}');
+      const cur = Number(inv[id]) || 0;
+      if (cur <= 0) return;
+      const next = cur - 1;
+      if (next <= 0) delete inv[id];
+      else inv[id] = next;
+      localStorage.setItem(storageKey, JSON.stringify(inv));
+
+      // Produce — also drop the matching entry from the weight log so the
+      // displayed weights stay aligned with the remaining cards.
+      if (isProduce) {
+        const log = JSON.parse(localStorage.getItem('sandbox_produce_weights') || '{}');
+        const entries = Array.isArray(log[id]) ? log[id] : [];
+        if (entries.length > 0) {
+          const startIdx = Math.max(0, entries.length - cur);
+          const removeAt = startIdx + Math.max(0, instanceIndex);
+          if (removeAt >= 0 && removeAt < entries.length) {
+            entries.splice(removeAt, 1);
+            log[id] = entries;
+            localStorage.setItem('sandbox_produce_weights', JSON.stringify(log));
+          }
+        }
+      }
+
+      // Keep instanceIndex pointing at a real card.
+      setInstanceIndex((idx) => Math.max(0, Math.min(idx, next - 1)));
+      // If we just emptied the stack, drop the selection so the preview clears.
+      if (next <= 0) setSelectedItemId(null);
+
+      refetch?.();
+    } catch (_) {}
+  };
+
   const handleTrash = (item) => {
     if (!item) return;
     try {
@@ -274,7 +420,8 @@ const InventoryDialog = ({ onClose }) => {
       onClick={onClose}
       style={{
         position: 'fixed', inset: 0, zIndex: 100000,
-        background: 'rgba(0,0,0,0.65)',
+        // backdrop-filter blur dropped for perf — opaque dim is cheaper.
+        background: 'rgba(0,0,0,0.7)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         cursor: 'pointer',
       }}
@@ -289,6 +436,139 @@ const InventoryDialog = ({ onClose }) => {
           draggable={false}
           style={{ display: 'block', maxWidth: '90vw', maxHeight: '90vh', objectFit: 'contain', userSelect: 'none' }}
         />
+        {/* Card-front / icon preview — rendered in the empty left panel area. Shows the
+            most recently clicked item's seed pack art (or fallback icon). The image's
+            height is locked to 297px (= 3 box rows + 2 gaps) so its top/bottom lines up
+            exactly with the grid's top/bottom rows; width is auto so the natural card
+            aspect ratio drives sizing. The wrapper sizes to the image so the overlaid
+            weight/date text sits on the card's bottom panel. */}
+        {selectedPreviewImage && (() => {
+          const canPrev = selectedCount > 1 && instanceIndex > 0;
+          const canNext = selectedCount > 1 && instanceIndex < selectedCount - 1;
+          return (
+          <div
+            style={{
+              position: 'absolute',
+              top: 'calc(50% - 83.5px)', left: 'calc(12% - 30px)',
+              pointerEvents: 'none', userSelect: 'none',
+            }}
+          >
+            <img
+              src={selectedPreviewImage}
+              alt=""
+              draggable={false}
+              style={{
+                display: 'block',
+                height: '297px', width: 'auto',
+                filter: 'drop-shadow(0 6px 18px rgba(0,0,0,0.55))',
+              }}
+            />
+            {/* Prev / Next arrows — overlaid on the card when stack count > 1. First
+                instance hides the left arrow; last instance hides the right arrow. */}
+            {canPrev && (
+              <div
+                onClick={() => setInstanceIndex((i) => Math.max(0, i - 1))}
+                style={{
+                  position: 'absolute', top: '50%', left: '-6%',
+                  transform: 'translateY(-50%)',
+                  width: 38, height: 38, borderRadius: '50%',
+                  background: 'rgba(20,10,5,0.85)', border: '2px solid #c8821a',
+                  color: '#f5d87a',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontFamily: 'GROBOLD, Cartoonist, sans-serif', fontSize: 20, lineHeight: 1,
+                  cursor: 'pointer', pointerEvents: 'auto', userSelect: 'none',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.45)',
+                  transition: 'transform 0.15s ease-out, filter 0.15s ease-out',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.filter = 'brightness(1.2) drop-shadow(0 0 6px rgba(245,216,122,0.7))';
+                  e.currentTarget.style.transform = 'translateY(-50%) scale(1.1)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.filter = 'none';
+                  e.currentTarget.style.transform = 'translateY(-50%)';
+                }}
+              >‹</div>
+            )}
+            {canNext && (
+              <div
+                onClick={() => setInstanceIndex((i) => Math.min(selectedCount - 1, i + 1))}
+                style={{
+                  position: 'absolute', top: '50%', right: '-6%',
+                  transform: 'translateY(-50%)',
+                  width: 38, height: 38, borderRadius: '50%',
+                  background: 'rgba(20,10,5,0.85)', border: '2px solid #c8821a',
+                  color: '#f5d87a',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontFamily: 'GROBOLD, Cartoonist, sans-serif', fontSize: 20, lineHeight: 1,
+                  cursor: 'pointer', pointerEvents: 'auto', userSelect: 'none',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.45)',
+                  transition: 'transform 0.15s ease-out, filter 0.15s ease-out',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.filter = 'brightness(1.2) drop-shadow(0 0 6px rgba(245,216,122,0.7))';
+                  e.currentTarget.style.transform = 'translateY(-50%) scale(1.1)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.filter = 'none';
+                  e.currentTarget.style.transform = 'translateY(-50%)';
+                }}
+              >›</div>
+            )}
+            {/* Trash button — sits below the card preview and deletes the
+                currently-shown card (the exact instance the player is on per
+                instanceIndex), not the whole stack. */}
+            <img
+              src="/images/inventory/trash.png"
+              alt="Discard card"
+              draggable={false}
+              onClick={handleDeleteSelectedCard}
+              style={{
+                position: 'absolute',
+                top: 'calc(100% - 362px)', left: 'calc(50% + 550px)',
+                transform: 'translateX(-50%)',
+                width: 56, height: 'auto',
+                cursor: 'pointer',
+                pointerEvents: 'auto',
+                userSelect: 'none',
+                filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.55))',
+                transition: 'transform 0.15s ease-out, filter 0.15s ease-out',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateX(-50%) scale(1.12)';
+                e.currentTarget.style.filter = 'drop-shadow(0 4px 8px rgba(0,0,0,0.55)) drop-shadow(0 0 6px rgba(255,80,80,0.85))';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateX(-50%)';
+                e.currentTarget.style.filter = 'drop-shadow(0 4px 8px rgba(0,0,0,0.55))';
+              }}
+            />
+            {/* Weight + Date Obtained overlay — produce-only. */}
+            {selectedIsProduce && (
+              <div style={{
+                position: 'absolute', bottom: 'calc(6% + 14px)', left: 0, right: 0,
+                textAlign: 'center',
+                fontFamily: 'GROBOLD, Cartoonist, sans-serif',
+                color: '#fff',
+                textShadow: '1px 1px 0 #000, -1px 1px 0 #000, 1px -1px 0 #000, -1px -1px 0 #000',
+                lineHeight: 1.3,
+                pointerEvents: 'none',
+              }}>
+                <div style={{ fontSize: '11px', letterSpacing: 1 }}>
+                  Weight: {selectedWeightInfo
+                    ? (selectedWeightInfo.w >= 1000 ? `${(selectedWeightInfo.w / 1000).toFixed(2)} kg` : `${selectedWeightInfo.w} g`)
+                    : 'Unknown'}
+                </div>
+                <div style={{ fontSize: '11px', letterSpacing: 1 }}>
+                  Date Obtained: {selectedWeightInfo
+                    ? formatObtainedDate(selectedWeightInfo.d)
+                    : formatObtainedDate(Date.now())}
+                </div>
+              </div>
+            )}
+          </div>
+          );
+        })()}
         {/* Close (X) button */}
         <img
           src="/images/inventory/x.png"
@@ -320,7 +600,7 @@ const InventoryDialog = ({ onClose }) => {
             position: 'absolute',
             top: 'calc(14% + 120px)',
             left: '50%',
-            transform: 'translateX(calc(-50% + 130px))',
+            transform: 'translateX(calc(-50% + 90px))',
             display: 'flex',
             gap: '12px',
             pointerEvents: 'none',
@@ -367,15 +647,15 @@ const InventoryDialog = ({ onClose }) => {
             inset: 0,
             display: 'grid',
             // Fixed cell sizes so boxes stay the same size regardless of how close they sit.
-            gridTemplateColumns: 'repeat(5, 95px)',
-            gridTemplateRows: 'repeat(3, 95px)',
+            gridTemplateColumns: 'repeat(5, 88px)',
+            gridTemplateRows: 'repeat(3, 88px)',
             justifyContent: 'center',
             alignContent: 'center',
             columnGap: '6px',
             rowGap: '6px',
             padding: '28% 12%',
             pointerEvents: 'none',
-            transform: 'translate(132.5px, 65px)',
+            transform: 'translate(122.5px, 65px)',
           }}
         >
           {Array.from({ length: 15 }).map((_, i) => {
@@ -388,16 +668,17 @@ const InventoryDialog = ({ onClose }) => {
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   pointerEvents: 'auto', cursor: 'pointer',
                 }}
+                onClick={item ? () => { setSelectedItemId(item.id); setInstanceIndex(0); } : undefined}
                 onMouseEnter={(e) => {
                   const wrap = e.currentTarget.querySelector('.box-wrap');
-                  if (wrap) {
+                  if (wrap && (!item || item.id !== selectedItemId)) {
                     wrap.style.transform = 'scale(1.1)';
                     wrap.style.filter = 'brightness(1.15) drop-shadow(0 0 6px rgba(255,220,100,0.9)) drop-shadow(0 0 12px rgba(255,180,40,0.7))';
                   }
                 }}
                 onMouseLeave={(e) => {
                   const wrap = e.currentTarget.querySelector('.box-wrap');
-                  if (wrap) {
+                  if (wrap && (!item || item.id !== selectedItemId)) {
                     wrap.style.transform = 'scale(1)';
                     wrap.style.filter = 'none';
                   }
@@ -409,6 +690,11 @@ const InventoryDialog = ({ onClose }) => {
                     position: 'relative', width: '100%', height: '100%',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     transition: 'transform 0.15s ease-out, filter 0.15s ease-out',
+                    // Persistent highlight when this slot is the selected one.
+                    ...(item && item.id === selectedItemId ? {
+                      transform: 'scale(1.08)',
+                      filter: 'brightness(1.2) drop-shadow(0 0 8px rgba(255,220,100,1)) drop-shadow(0 0 16px rgba(255,180,40,0.9))',
+                    } : {}),
                   }}
                 >
                   <img

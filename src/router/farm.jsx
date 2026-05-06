@@ -18,14 +18,16 @@ import { clampVolume, getGrowthTime, getSubtype } from "../utils/basic";
 import { rollCropWeight, getWeeklyFeaturedCrop, CROP_WEIGHTS } from "../constants/crop_weights";
 import { canHarvestProduce } from "../utils/inventorySlots";
 import { ONE_SEED_HEIGHT, ONE_SEED_WIDTH } from "../constants/item_seed";
-import { useAppSelector } from "../solana/store";
-import { selectSettings } from "../solana/store/slices/uiSlice";
+import { useAppSelector } from "../store";
+import { selectSettings } from "../store/slices/uiSlice";
 import { defaultSettings } from "../utils/settings";
 import BaseDialog from "../containers/_BaseDialog";
 import BaseButton from "../components/buttons/BaseButton";
 import AdminPanel from "./index";
 import WeatherOverlay, { getSimulatedDateInfo, getWeatherForDay } from "../components/WeatherOverlay";
 import { useNavigate } from "react-router-dom";
+import { navigateWithClouds } from "../components/RouteCloudTransition";
+import { withIris } from "../components/IrisTransition";
 import MissionBoard from "../containers/MissionBoard";
 import Shop from "../containers/Shop";
 import FarmCustomizePanel from "../containers/FarmCustomizePanel";
@@ -51,7 +53,8 @@ const TutorialDirtSpotlight = () => {
       setCenters(next);
     };
     measure();
-    const timer = setInterval(measure, 80);
+    // 250ms (was 80) — tutorial highlight follow doesn't need 12fps polling, 4fps is fine.
+    const timer = setInterval(measure, 250);
     window.addEventListener('resize', measure);
     return () => { clearInterval(timer); window.removeEventListener('resize', measure); };
   }, []);
@@ -115,8 +118,8 @@ const TutorialPapabee = ({ step, dimmedBehind = false }) => {
   // During the pack-opening step (32), push papabee behind the pack dialog and blur it
   const dimmedBehindPack = step === 32;
   const effectiveDimmed = dimmedBehind || dimmedBehindPack;
-  const shiftX = step === 11 ? 600 : 0;
-  const shiftY = step === 11 ? 50 : 0;
+  const shiftX = step === 11 ? 600 : step === 25 ? 660 : 0;
+  const shiftY = step === 11 ? 50 : step === 25 ? -160 : 0;
 
   const [revealed, setRevealed] = useState(!reveal);
   const [exiting, setExiting] = useState(false);
@@ -150,7 +153,7 @@ const TutorialPapabee = ({ step, dimmedBehind = false }) => {
           objectFit: 'contain',
           pointerEvents: 'none',
           userSelect: 'none',
-          zIndex: effectiveDimmed ? 500 : 100002,
+          zIndex: effectiveDimmed ? 500 : 200000,
           animation: exiting ? 'none' : 'papabeeFloat 2.4s ease-in-out infinite',
           transform: exiting ? 'scale(0)' : undefined,
           transformOrigin: 'center bottom',
@@ -214,7 +217,9 @@ const TutorialStarterPlotsBright = ({ staggered = false, onlyHoles = false, only
       setItems(next);
     };
     measure();
-    const timer = setInterval(measure, 50);
+    // 250ms (was 50) — re-measuring 20× per second was constant DOM work for visuals
+    // that don't move that fast. 4fps follow is plenty for tutorial pulse alignment.
+    const timer = setInterval(measure, 250);
     window.addEventListener('resize', measure);
     return () => {
       clearInterval(timer);
@@ -360,57 +365,87 @@ const TutorialNamePrompt = ({ setTutorialStep, advanceTo }) => {
       {/* Dim overlay */}
       <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.45)', pointerEvents: 'none', zIndex: 1 }} />
 
-      {/* Centered prompt */}
+      {/* The username.png image IS the entire UI — input + buttons are positioned
+          invisibly on top of it via percentage-based offsets. */}
       <div style={{
         position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-        background: 'linear-gradient(135deg, #2d1a0e, #4a2c10)',
-        border: '3px solid #c8821a', borderRadius: 16,
-        padding: '32px 36px', minWidth: 360, textAlign: 'center',
-        fontFamily: 'GROBOLD, Cartoonist, sans-serif',
         pointerEvents: 'auto', zIndex: 2,
-        boxShadow: '0 8px 28px rgba(0,0,0,0.7)',
       }}>
-        <div style={{ fontSize: 22, color: '#f5d87a', marginBottom: 10, textShadow: '1px 1px 0 #000' }}>
-          What's your name?
-        </div>
-        <div style={{ fontSize: 12, color: '#c8a46a', marginBottom: 18 }}>
-          This is what will show on your name tag.
-        </div>
+        <img
+          src="/images/tutorial/username.png"
+          alt="Username"
+          draggable={false}
+          style={{
+            display: 'block',
+            maxWidth: '90vw', maxHeight: '90vh',
+            objectFit: 'contain', userSelect: 'none',
+            imageRendering: 'pixelated',
+          }}
+        />
+
+        {/* Invisible input overlaid on the image's input rectangle. */}
         <input
           ref={inputRef}
           value={name}
           onChange={e => { setName(e.target.value); setError(''); }}
           onKeyDown={e => { if (e.key === 'Enter') submit(); }}
           maxLength={12}
-          placeholder="Enter your name"
           style={{
-            width: '100%', boxSizing: 'border-box',
-            padding: '12px 14px', fontSize: 18,
-            borderRadius: 10, border: '2px solid #c8821a',
-            background: '#1a0e05', color: '#fff',
-            fontFamily: 'inherit', outline: 'none', marginBottom: 10, textAlign: 'center',
+            // All offsets are percentages of the wrapper, which auto-sizes to
+            // the username.png image — so the input stays in the same spot on
+            // the artwork regardless of viewport size. Font size scales with
+            // the image too (clamped so it never gets ridiculous).
+            position: 'absolute',
+            top: '48%', left: '14%', width: '72%', height: '14%',
+            background: 'transparent', border: 'none', outline: 'none',
+            fontFamily: 'GROBOLD, Cartoonist, sans-serif',
+            fontSize: 'min(50px, 5.5vmin)', color: '#3b1f0a', fontWeight: 'bold',
+            textAlign: 'center',
+            padding: 0, margin: 0,
           }}
         />
-        {error && (
-          <div style={{ color: '#ff6b6b', fontSize: 13, marginBottom: 10 }}>{error}</div>
-        )}
-        <button
+
+        {/* Confirm button — uses the confirm.png art from /images/tutorial/. */}
+        <img
+          src="/images/tutorial/confirm.png"
+          alt="Confirm"
+          draggable={false}
           onClick={submit}
-          style={{
-            padding: '11px 32px', background: '#c8821a', border: 'none', borderRadius: 10,
-            color: '#fff', fontWeight: 'bold', cursor: 'pointer', fontSize: 15, fontFamily: 'inherit',
-            marginTop: 6,
+          onMouseEnter={(e) => {
+            e.currentTarget.style.filter = 'brightness(1.15) drop-shadow(0 0 8px rgba(255,220,100,0.7))';
+            e.currentTarget.style.transform = 'translateX(-50%) scale(1.05)';
           }}
-        >
-          Confirm
-        </button>
+          onMouseLeave={(e) => {
+            e.currentTarget.style.filter = 'none';
+            e.currentTarget.style.transform = 'translateX(-50%)';
+          }}
+          style={{
+            position: 'absolute',
+            top: '70%', left: '50%', transform: 'translateX(-50%)',
+            width: '24%', height: 'auto',
+            objectFit: 'contain',
+            cursor: 'pointer',
+            userSelect: 'none',
+            imageRendering: 'pixelated',
+            transition: 'transform 0.15s ease, filter 0.15s ease',
+          }}
+        />
+
+        {/* Error toast under the image if validation fails. */}
+        {error && (
+          <div style={{
+            position: 'absolute', top: '102%', left: 0, right: 0,
+            textAlign: 'center', color: '#ff6b6b', fontSize: 13,
+            fontFamily: 'GROBOLD, Cartoonist, sans-serif', textShadow: '1px 1px 0 #000',
+            pointerEvents: 'none',
+          }}>{error}</div>
+        )}
       </div>
     </div>
   );
 };
 
-const TutorialBubbleOverlay = ({ setTutorialStep, fullText, advanceTo, bubbleSrc = '/images/tutorial/questionmarkrealbubble.png', showPapabee = false, papabeeSilhouette = false, papabeeReveal = false, fontSize = '56px', textMaxWidth = null, shiftX = 0, shiftY = 0, textShiftY = 0, noDim = false, noAdvance = false, exitOnAdvance = false }) => {
-  const [typed, setTyped] = useState('');
+const TutorialBubbleOverlay = ({ setTutorialStep, fullText, advanceTo, bubbleSrc = '/images/tutorial/questionmarkrealbubble.png', showPapabee = false, papabeeSilhouette = false, papabeeReveal = false, fontSize = '56px', textMaxWidth = null, shiftX = 0, shiftY = 0, textShiftY = 0, noDim = false, noAdvance = false, exitOnAdvance = false, advanceOnAnyClick = false, dismissHarvestRevealOnAdvance = false }) => {
   const [revealed, setRevealed] = useState(!papabeeReveal);
   const [revealComplete, setRevealComplete] = useState(!papabeeReveal);
 
@@ -423,31 +458,13 @@ const TutorialBubbleOverlay = ({ setTutorialStep, fullText, advanceTo, bubbleSrc
     return () => { clearTimeout(t1); clearTimeout(t2); };
   }, [papabeeReveal]);
 
-  useEffect(() => {
-    setTyped('');
-    // If papabee is revealing from silhouette, wait for the reveal transition to finish before typing.
-    const startDelay = papabeeReveal ? 1600 : 0;
-    let i = 0;
-    let id;
-    const startTimer = setTimeout(() => {
-      id = setInterval(() => {
-        i++;
-        setTyped(fullText.slice(0, i));
-        if (i >= fullText.length) clearInterval(id);
-      }, 30);
-    }, startDelay);
-    return () => {
-      clearTimeout(startTimer);
-      if (id) clearInterval(id);
-    };
-  }, [fullText, papabeeReveal]);
-
   const [exiting, setExiting] = useState(false);
-  // Click can only advance the bubble after the typewriter has finished writing the line.
-  const isTypingDone = typed.length >= fullText.length;
   const advance = () => {
     if (noAdvance) return;
-    if (!isTypingDone) return;
+    if (papabeeReveal && !revealComplete) return;
+    if (dismissHarvestRevealOnAdvance) {
+      window.dispatchEvent(new CustomEvent('dismissHarvestReveal'));
+    }
     if (exitOnAdvance) {
       setExiting(true);
       window.dispatchEvent(new CustomEvent('tutorialExit'));
@@ -465,8 +482,20 @@ const TutorialBubbleOverlay = ({ setTutorialStep, fullText, advanceTo, bubbleSrc
 
   return (
     <>
-      {/* Dim overlay at root stacking context — papabee (z 100002) sits above this, bubble (z 100003) above papabee */}
-      {!noDim && <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', pointerEvents: 'none', zIndex: 100001 }} />}
+      {/* Dim overlay at root stacking context — papabee (z 100002) sits above this, bubble (z 100003) above papabee.
+          If advanceOnAnyClick is set, the dim catches clicks and advances the tutorial. */}
+      {!noDim && (
+        <div
+          onClick={advanceOnAnyClick ? advance : undefined}
+          style={{
+            position: 'fixed', inset: 0,
+            background: 'rgba(0,0,0,0.45)',
+            pointerEvents: advanceOnAnyClick ? 'auto' : 'none',
+            cursor: advanceOnAnyClick ? 'pointer' : 'default',
+            zIndex: 100001,
+          }}
+        />
+      )}
 
       {/* Bubble — above papabee and any tutorial bright overlays */}
       <div
@@ -490,28 +519,31 @@ const TutorialBubbleOverlay = ({ setTutorialStep, fullText, advanceTo, bubbleSrc
             />
           );
         })()}
-        {/* Typewriter text overlay */}
-        <div style={{
-          position: 'absolute',
-          // Anchor at the TOP of the typeable area so text starts high and flows down as it grows,
-          // instead of being vertically centered (which made multi-line text feel like it was getting "pushed up").
-          top: `calc(38% + ${10 + textShiftY}px)`,
-          left: 'calc(44% - 245px)',
-          fontFamily: '"Cartoonist", "GROBOLD", "Courier New", monospace',
-          fontSize,
-          color: '#3b1f0a',
-          fontWeight: 'bold',
-          textShadow: '2px 2px 0 rgba(0,0,0,0.12)',
-          whiteSpace: textMaxWidth ? 'normal' : 'nowrap',
-          maxWidth: textMaxWidth || 'none',
-          lineHeight: 1.15,
-          letterSpacing: '2px',
-          pointerEvents: 'none',
-        }}>
-          {typed}
-        </div>
-        {/* "Click to continue" indicator — only after the typewriter is done, on advancing bubbles. */}
-        {!noAdvance && isTypingDone && (
+        {/* Bubble text — shown in full immediately (no typewriter). During the papabee
+            reveal it stays hidden until the silhouette → reveal transition is done so
+            text doesn't sit on top of the questionmark bubble. */}
+        {(!papabeeReveal || revealComplete) && (
+          <div style={{
+            position: 'absolute',
+            top: `calc(38% + ${10 + textShiftY}px)`,
+            left: 'calc(44% - 245px)',
+            fontFamily: '"Cartoonist", "GROBOLD", "Courier New", monospace',
+            fontSize,
+            color: '#3b1f0a',
+            fontWeight: 'bold',
+            textShadow: '2px 2px 0 rgba(0,0,0,0.12)',
+            whiteSpace: textMaxWidth ? 'normal' : 'nowrap',
+            maxWidth: textMaxWidth || 'none',
+            lineHeight: 1.15,
+            letterSpacing: '2px',
+            pointerEvents: 'none',
+          }}>
+            {fullText}
+          </div>
+        )}
+        {/* "Click to continue" indicator — visible immediately on advancing bubbles
+            (or once the reveal transition is done, when present). */}
+        {!noAdvance && (!papabeeReveal || revealComplete) && (
           <>
             <style>{`@keyframes tutClickPulse { 0%,100% { transform: translateY(0) scale(1); opacity: 0.85; } 50% { transform: translateY(4px) scale(1.08); opacity: 1; } }`}</style>
             <img
@@ -553,8 +585,8 @@ export const getQuestData = () => [
     ],
     starterPack: { seeds: [getRaritySeedId(ID_SEEDS.POTATO, 1), getRaritySeedId(ID_SEEDS.POTATO, 1)] },
     rewards: [
-      { id: 'honey', count: 7500, name: "HNY", image: "/images/profile_bar/hny.png" },
-      { id: 'gems', count: 25, name: "Gems" },
+      { id: 'honey', count: 7500, name: "Gold", image: "/images/profile_bar/hny.png" },
+      { id: 'gems', count: 100, name: "Gems" },
     ],
     reqs: [
       { id: ID_PRODUCE_ITEMS?.POTATO, count: 4, name: "Potatoes", pos: 24 }
@@ -575,8 +607,8 @@ export const getQuestData = () => [
     ],
     starterPack: { seeds: [getRaritySeedId(ID_SEEDS.RADISH, 1), getRaritySeedId(ID_SEEDS.RADISH, 1)] },
     rewards: [
-      { id: 'honey', count: 7500, name: "HNY", image: "/images/profile_bar/hny.png" },
-      { id: 'gems', count: 25, name: "Gems" },
+      { id: 'honey', count: 7500, name: "Gold", image: "/images/profile_bar/hny.png" },
+      { id: 'gems', count: 100, name: "Gems" },
     ],
     reqs: [
       { id: ID_PRODUCE_ITEMS?.RADISH, count: 3, name: "Radishes", pos: 28 }
@@ -599,51 +631,13 @@ export const getQuestData = () => [
     starterPack: { seeds: [getRaritySeedId(ID_SEEDS.LETTUCE, 1), getRaritySeedId(ID_SEEDS.LETTUCE, 1)] },
     // Completion reward — claimed when the harvest is brought back.
     rewards: [
-      { id: 'honey', count: 7000, name: "HNY", image: "/images/profile_bar/hny.png" },
-      { id: 'gems', count: 20, name: "Gems" },
+      { id: 'honey', count: 7000, name: "Gold", image: "/images/profile_bar/hny.png" },
+      { id: 'gems', count: 100, name: "Gems" },
     ],
     reqs: [
       { id: ID_PRODUCE_ITEMS?.LETTUCE, count: 3, name: "Lettuce", pos: 26 }
     ],
     unlockCondition: (step, completed) => step >= 36
-  },
-
-  {
-    id: "q1_end_papabee",
-    type: "main",
-    sender: "Pabee",
-    subject: "About Those Extra Plots...",
-    mailImage: "/images/mail/mailpapabee.png",
-    body: [
-      "You're doing incredible, kid — better than I ever did in my first season.",
-      "Now, I know getting started feels limiting. Here's something I should've told you sooner: the market in town has everything you need to level up — Basic seed packs, Premium packs, all of it.",
-      "Visit the vendor when you're ready. Better seeds mean better harvests, and bigger rewards. The valley rewards those who invest in their farm."
-    ],
-    rewards: [],
-    reqs: [],
-    unlockCondition: (step, completed) => completed.includes("q1_beejamin")
-  },
-
-  {
-    id: "q_beta_gift",
-    type: "main",
-    sender: "The Dev",
-    subject: "Beta Gift 🎁",
-    mailImage: "/images/mail/devletter.png",
-    body: [
-      "Hey,",
-      "You've completed all the welcome quests — that means you're one of our earliest testers and we genuinely appreciate you being here.",
-      "The game is still being built, and your feedback matters more than you know. Thank you for exploring, breaking things, and helping us make this better.",
-      "As a small token of appreciation, we've included a special profile picture just for beta testers. Claim it below — you've earned it!"
-    ],
-    rewards: [
-      { id: 'betapfp_unlock', count: 1, name: "Beta Tester PFP", image: "/images/pfp/betapfp.png" }
-    ],
-    reqs: [],
-    unlockCondition: (step, completed) => {
-      const WAVE1_QUESTS = ['q1_beejamin','q1_potionmaster','q1_queen','q1_end_papabee'];
-      return WAVE1_QUESTS.every(id => completed.includes(id));
-    }
   },
 
   // Wave 2: Growing Up (60-120 min) — Basic seeds & bigger harvests
@@ -660,7 +654,8 @@ export const getQuestData = () => [
       "The Harvest Market has Basic seed packs available now. I strongly recommend you invest in one. Better seeds mean better harvests, and the valley rewards those who push their limits."
     ],
     rewards: [
-      { id: 'honey', count: 400, name: "HNY", image: "/images/profile_bar/hny.png" },
+      { id: 'honey', count: 3000, name: "Gold", image: "/images/profile_bar/hny.png" },
+      { id: 'gems', count: 80, name: "Gems" },
     ],
     reqs: [],
     unlockCondition: (step, completed) => completed.includes("q2_missionboard_intro")
@@ -677,8 +672,8 @@ export const getQuestData = () => [
       "Bring me 3 bundles of Wheat and I'll set you up with a little something. You can grab Basic seeds at the market."
     ],
     rewards: [
-      { id: 'honey', count: 500, name: "HNY", image: "/images/profile_bar/hny.png" },
-      { id: 'gems', count: 20, name: "Gems" },
+      { id: 'honey', count: 20000, name: "Gold", image: "/images/profile_bar/hny.png" },
+      { id: 'gems', count: 100, name: "Gems" },
     ],
     reqs: [
       { id: ID_PRODUCE_ITEMS?.WHEAT, count: 3, name: "Wheat" }
@@ -699,32 +694,11 @@ export const getQuestData = () => [
       "Proud of you. Keep growing."
     ],
     rewards: [
-      { id: 'honey', count: 300, name: "HNY", image: "/images/profile_bar/hny.png" },
-      { id: 'gems', count: 25, name: "Gems" },
+      { id: 'honey', count: 3000, name: "Gold", image: "/images/profile_bar/hny.png" },
+      { id: 'gems', count: 80, name: "Gems" },
     ],
     reqs: [],
     unlockCondition: (step, completed) => completed.includes("q2b_wheat_harvest")
-  },
-
-  {
-    id: "q4_tavern_corn",
-    type: "main",
-    sender: "Tavern Barkeep",
-    subject: "Big Night at the Tavern",
-    body: [
-      "Farmer! Big news — we're hosting a harvest feast this weekend and we need supplies.",
-      "Can you bring us 5 Corn? Corn roasted over an open fire is the specialty of the house.",
-      "We'll make it worth your while, I promise."
-    ],
-    rewards: [
-      { id: 'honey', count: 400, name: "HNY", image: "/images/profile_bar/hny.png" },
-      { id: 'gems', count: 20, name: "Gems" },
-      { id: ID_CHEST_ITEMS?.CHEST_BRONZE || 20001, count: 1, name: "Bronze Chest", image: "/images/items/chest.png" }
-    ],
-    reqs: [
-      { id: ID_PRODUCE_ITEMS?.CORN, count: 5, name: "Corn" }
-    ],
-    unlockCondition: (step, completed) => step >= 36 && completed.includes("q3_pabee_grow_tip")
   },
 
   {
@@ -739,13 +713,13 @@ export const getQuestData = () => [
       "Bring me 3 Pumpkins and I will reward you handsomely. The fate of knowledge depends on it!"
     ],
     rewards: [
-      { id: 'honey', count: 600, name: "HNY", image: "/images/profile_bar/hny.png" },
-      { id: 'gems', count: 30, name: "Gems" },
+      { id: 'honey', count: 30000, name: "Gold", image: "/images/profile_bar/hny.png" },
+      { id: 'gems', count: 150, name: "Gems" },
     ],
     reqs: [
       { id: ID_PRODUCE_ITEMS?.PUMPKIN, count: 3, name: "Pumpkins" }
     ],
-    unlockCondition: (step, completed) => step >= 36 && completed.includes("q4_tavern_corn")
+    unlockCondition: (step, completed) => step >= 36 && completed.includes("q3_pabee_grow_tip")
   },
 
   {
@@ -760,8 +734,8 @@ export const getQuestData = () => [
       "Bring me 5 Carrots and 5 Tomatoes and I'll make sure you get something good. LET'S GOOO!"
     ],
     rewards: [
-      { id: 'honey', count: 600, name: "HNY", image: "/images/profile_bar/hny.png" },
-      { id: 'gems', count: 30, name: "Gems" },
+      { id: 'honey', count: 25000, name: "Gold", image: "/images/profile_bar/hny.png" },
+      { id: 'gems', count: 120, name: "Gems" },
     ],
     reqs: [
       { id: ID_PRODUCE_ITEMS?.CARROT, count: 5, name: "Carrots", pos: 3 },
@@ -783,8 +757,8 @@ export const getQuestData = () => [
       "I shall reward you generously, of course."
     ],
     rewards: [
-      { id: 'honey', count: 800, name: "HNY", image: "/images/profile_bar/hny.png" },
-      { id: 'gems', count: 40, name: "Gems" },
+      { id: 'honey', count: 20000, name: "Gold", image: "/images/profile_bar/hny.png" },
+      { id: 'gems', count: 100, name: "Gems" },
     ],
     reqs: [
       { id: ID_PRODUCE_ITEMS?.BROCCOLI, count: 3, name: "Broccoli" }
@@ -803,9 +777,9 @@ export const getQuestData = () => [
       "Grow 10 Potatoes and bring them to me. I'll give you some seeds to keep you going!"
     ],
     rewards: [
-      { id: 'honey', count: 250, name: "HNY", image: "/images/profile_bar/hny.png" },
-      { id: ID_SEEDS?.CARROT || 131848, count: 5, name: "Carrot Seeds", image: "/images/items/seeds.png" },
-      { id: 'honey', count: 200, name: "Honey", image: "/images/items/honey.png" }
+      { id: 'honey', count: 5000, name: "Gold", image: "/images/profile_bar/hny.png" },
+      { id: 'gems', count: 80, name: "Gems" },
+      { id: ID_SEEDS?.CARROT || 131848, count: 5, name: "Carrot Seeds", image: "/images/items/seeds.png" }
     ],
     reqs: [
       { id: ID_PRODUCE_ITEMS?.POTATO || 131586, count: 10, name: "Potatoes", image: ALL_ITEMS[ID_PRODUCE_ITEMS?.POTATO]?.image || "/images/items/potato.png" }
@@ -816,15 +790,16 @@ export const getQuestData = () => [
   {
     id: "q9_cornucopia",
     type: "farming",
-    sender: "Tavern Barkeep",
+    sender: "Farmer Bob",
     subject: "Salad Days",
     body: [
-      "We're updating the Tavern menu and we need fresh greens!",
+      "We're stocking up the kitchen and we need fresh greens!",
       "Can you supply us with 5 Corn and 5 Tomatoes?",
       "I'll trade you some gold and a couple of chests for them."
     ],
     rewards: [
-      { id: 'honey', count: 350, name: "HNY", image: "/images/profile_bar/hny.png" },
+      { id: 'honey', count: 25000, name: "Gold", image: "/images/profile_bar/hny.png" },
+      { id: 'gems', count: 120, name: "Gems" },
       { id: ID_CHEST_ITEMS?.CHEST_BRONZE || 20001, count: 2, name: "Bronze Chests", image: "/images/items/chest.png" }
     ],
     reqs: [
@@ -845,33 +820,12 @@ export const getQuestData = () => [
       "I'll make it worth your while!"
     ],
     rewards: [
-      { id: 'honey', count: 300, name: "HNY", image: "/images/profile_bar/hny.png" },
-      { id: 'gems', count: 15, name: "Gems" },
+      { id: 'honey', count: 8000, name: "Gold", image: "/images/profile_bar/hny.png" },
+      { id: 'gems', count: 80, name: "Gems" },
     ],
     reqs: [
       { id: ID_PRODUCE_ITEMS?.ONION, count: 5, name: "Onions", pos: 27 },
       { id: ID_PRODUCE_ITEMS?.RADISH, count: 5, name: "Radishes", pos: 28 },
-    ],
-    unlockCondition: (step, completed) => completed.includes("q2_missionboard_intro")
-  },
-
-  {
-    id: "q9d_tavern_greens",
-    type: "farming",
-    sender: "Tavern Barkeep",
-    subject: "Fresh Greens for the Menu",
-    body: [
-      "Between you and me, the tavern menu was getting a bit stale.",
-      "We're adding some lighter options — salads, sides, that sort of thing.",
-      "Can you bring us some lettuce and celery? We'd really appreciate it!"
-    ],
-    rewards: [
-      { id: 'honey', count: 250, name: "HNY", image: "/images/profile_bar/hny.png" },
-      { id: 'gems', count: 15, name: "Gems" },
-    ],
-    reqs: [
-      { id: ID_PRODUCE_ITEMS?.LETTUCE, count: 5, name: "Lettuce", pos: 25 },
-      { id: ID_PRODUCE_ITEMS?.CABBAGE, count: 5, name: "Celery", pos: 26 },
     ],
     unlockCondition: (step, completed) => completed.includes("q2_missionboard_intro")
   },
@@ -924,7 +878,10 @@ export const getQuestData = () => [
     // letter disappears from the inbox once the user dismisses it.
     rewards: [],
     reqs: [],
-    unlockCondition: (step, completed) => completed.includes("q1_end_papabee")
+    unlockCondition: (step, completed) => {
+      const WAVE1_QUESTS = ['q1_beejamin','q1_potionmaster','q1_queen'];
+      return WAVE1_QUESTS.every((id) => completed.includes(id));
+    }
   },
 
   {
@@ -936,16 +893,16 @@ export const getQuestData = () => [
     body: [
       "Now that you're settling in, I wanted to make you aware of a key town resource: the Valley Mission Board.",
       "Local residents post tasks there regularly — harvests they need, crops to be grown, all manner of farming requests. Complete them and you'll be compensated well.",
-      "To formally recognize your commitment to Harvest Valley, complete five tasks from the board and I'll make sure you're well rewarded. The valley looks after those who look after it."
+      "To formally recognize your commitment to Harvest Valley, complete three tasks from the board and I'll make sure you're well rewarded. The valley looks after those who look after it."
     ],
     rewards: [
-      { id: 'honey', count: 1500, name: "HNY", image: "/images/profile_bar/hny.png" },
+      { id: 'honey', count: 5000, name: "Gold", image: "/images/profile_bar/hny.png" },
       { id: 'gems', count: 100, name: "Gems" },
     ],
     reqs: [
       {
-        id: 'mission_board_5',
-        count: 5,
+        id: 'mission_board_3',
+        count: 3,
         name: "Mission Board Tasks",
         image: null,
         fn: () => {
@@ -1103,122 +1060,6 @@ export const getQuestData = () => [
 
 ];
 
-const TamagotchiDialog = ({ onClose, onFeed, onWater, catFeedTimeLeft, bowlWaterFilled, bowlFishId, starvingTime, isCatUnlocked, firstFedTime, catHappiness, currentHunger, catHealth }) => {
-  const [activePet, setActivePet] = useState('felix');
-
-  const isHungry = starvingTime > 0 || (currentHunger < 50);
-  const isThirsty = starvingTime > 0 || !bowlWaterFilled;
-  const isHappy = catHappiness >= 50;
-
-  const happiness = Math.round(catHappiness || 0);
-  const health = Math.round(catHealth || 100);
-  const hunger = Math.round(currentHunger || 0);
-  const thirst = bowlWaterFilled ? 100 : 15;
-
-  const StatBar = ({ label, value, color }) => (
-    <div style={{ width: '100%', marginBottom: '10px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '2px', color: '#ccc' }}>
-        <span>{label}</span>
-        <span>{value}%</span>
-      </div>
-      <div style={{ width: '100%', height: '12px', backgroundColor: 'rgba(0,0,0,0.5)', borderRadius: '6px', border: '1px solid #5a402a', overflow: 'hidden' }}>
-        <div style={{ width: `${value}%`, height: '100%', backgroundColor: color, transition: 'width 0.5s ease-in-out' }} />
-      </div>
-    </div>
-  );
-
-  return (
-    <BaseDialog onClose={onClose} title="PETS" header="/images/dialog/modal-header-inventory.png" headerOffset={10} className="custom-modal-background">
-      <div style={{ display: 'flex', width: '490px', height: '350px', fontFamily: 'monospace', color: '#fff', maxWidth: '90vw' }}>
-        
-        {/* Left Sidebar - Pet List */}
-        <div style={{ width: '180px', borderRight: '2px solid #5a402a', padding: '15px', backgroundColor: 'rgba(0,0,0,0.3)', display: 'flex', flexDirection: 'column', gap: '10px', overflowY: 'auto' }}>
-          <h3 style={{ margin: '0 0 10px 0', color: '#ffea00', fontSize: '16px', borderBottom: '1px solid #5a402a', paddingBottom: '5px' }}>Your Pets</h3>
-          
-          <div 
-            onClick={() => setActivePet('felix')}
-            style={{ padding: '10px', backgroundColor: activePet === 'felix' ? 'rgba(0,255,65,0.2)' : 'rgba(0,0,0,0.5)', border: `1px solid ${activePet === 'felix' ? '#00ff41' : '#5a402a'}`, borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px' }}
-          >
-            <span style={{ fontSize: '24px' }}>{isCatUnlocked ? '😺' : '❓'}</span>
-            <span style={{ fontWeight: 'bold', color: activePet === 'felix' ? '#00ff41' : '#ccc' }}>{isCatUnlocked ? 'Felix' : '???'}</span>
-          </div>
-
-          <div style={{ padding: '10px', backgroundColor: 'rgba(0,0,0,0.3)', border: '1px dashed #5a402a', borderRadius: '8px', cursor: 'not-allowed', display: 'flex', alignItems: 'center', gap: '10px', opacity: 0.5 }}>
-            <span style={{ fontSize: '24px' }}>🐶</span>
-            <span style={{ color: '#aaa', fontSize: '12px' }}>Locked</span>
-          </div>
-        </div>
-
-        {/* Right Content - Pet Details */}
-        <div style={{ flex: 1, padding: '20px', display: 'flex', flexDirection: 'column', position: 'relative' }}>
-          {activePet === 'felix' ? (
-            <>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
-                <div>
-                  <h2 style={{ margin: 0, color: '#00ff41', fontSize: '28px' }}>{isCatUnlocked ? 'Felix The Cat' : 'Unknown Pet'}</h2>
-                  <p style={{ margin: '5px 0 0 0', color: '#aaa', fontSize: '12px' }}>
-                    {isCatUnlocked ? 'A wandering stray looking for snacks.' : (firstFedTime > 0 ? 'Something is smelling the food...' : 'Leave some food and water, maybe something will show up?')}
-                  </p>
-                </div>
-                <div style={{ width: '80px', height: '80px', backgroundColor: '#9bbc0f', border: '4px solid #8bac0f', borderRadius: '8px', boxShadow: 'inset 2px 2px 10px rgba(0,0,0,0.3)', display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'relative' }}>
-                  <style>{`
-                    @keyframes tamaBounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
-                    .tama-sprite { animation: tamaBounce 1s infinite steps(2); width: 48px; height: 48px; object-fit: contain; image-rendering: pixelated; }
-                  `}</style>
-                  {isCatUnlocked ? (
-                    <img 
-                      src={starvingTime > 0 ? "/images/pets/catangry.png" : "/images/pets/catface.png"} 
-                      alt="Cat Status" 
-                      className="tama-sprite"
-                      onError={(e) => { e.target.src = starvingTime > 0 ? "/images/pets/catangry.png" : "/images/pets/catface.png"; }}
-                    />
-                  ) : (
-                    <span style={{ fontSize: '40px', color: '#306030', fontWeight: 'bold' }}>?</span>
-                  )}
-                </div>
-              </div>
-
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '5px', opacity: isCatUnlocked ? 1 : 0.3 }}>
-                <StatBar label="Happiness" value={isCatUnlocked ? happiness : 0} color="#ffea00" />
-                <StatBar label="Health" value={isCatUnlocked ? health : 0} color="#ff4444" />
-                <StatBar label="Hunger" value={isCatUnlocked ? hunger : 0} color="#ff8800" />
-                <StatBar label="Thirst" value={isCatUnlocked ? thirst : 0} color="#00bfff" />
-              </div>
-
-              {catFeedTimeLeft && isCatUnlocked && (
-                <div style={{ color: '#00ff41', fontSize: '12px', textAlign: 'center', marginTop: '10px' }}>
-                  Next interaction available in: {catFeedTimeLeft}
-                </div>
-              )}
-              {firstFedTime > 0 && !isCatUnlocked && (
-                <div style={{ color: '#ffea00', fontSize: '12px', textAlign: 'center', marginTop: '10px' }}>
-                  Time until arrival: {(() => {
-                     const rem = (firstFedTime + 60 * 60 * 1000) - Date.now();
-                     if (rem <= 0) return "Arriving...";
-                     const m = Math.floor(rem / 60000);
-                     const s = Math.floor((rem % 60000) / 1000);
-                     return `${m}m ${s}s`;
-                  })()}
-                </div>
-              )}
-
-              {/* Action Buttons */}
-              <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', marginTop: '20px' }}>
-                <BaseButton small label={bowlWaterFilled ? "Water Full" : "Give Water 💧"} disabled={bowlWaterFilled} onClick={onWater} />
-                <BaseButton small label={bowlFishId ? "Food Full" : "Give Fish 🐟"} disabled={!!bowlFishId} onClick={onFeed} />
-              </div>
-            </>
-          ) : (
-            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', color: '#aaa' }}>
-              Select a pet to view details.
-            </div>
-          )}
-        </div>
-      </div>
-    </BaseDialog>
-  );
-};
-
 // Shared Protection Logic Map
 const protectedPlotsBySpot = {
   1: [8, 9], // Spot 1 protects 8 and 9
@@ -1282,38 +1123,6 @@ const PlotPrepDialog = ({ onClose, onPlaceDirt, onAddFish, availableFish, farmin
             <BaseButton small label="Back" onClick={() => setShowFish(false)} />
           </div>
         )}
-      </div>
-    </BaseDialog>
-  );
-};
-
-const FishBowlDialog = ({ onClose, onAddFish, availableFish }) => {
-  return (
-    <BaseDialog onClose={onClose} title="PET BOWL" header="/images/dialog/modal-header-inventory.png" headerOffset={10} className="custom-modal-background">
-      <div style={{ padding: '20px', color: '#fff', fontFamily: 'monospace', display: 'flex', flexDirection: 'column', gap: '20px', alignItems: 'center' }}>
-        <h2 style={{ color: '#ffea00', margin: '0' }}>Select a Fish</h2>
-        <p style={{ margin: 0, color: '#ccc', textAlign: 'center' }}>Leave a fish for the stray cat.</p>
-        
-        {availableFish.length > 0 ? (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', justifyContent: 'center', maxHeight: '200px', overflowY: 'auto', width: '100%' }}>
-            {availableFish.map(fish => (
-              <div 
-                key={fish.id} 
-                onClick={() => onAddFish(fish.id)}
-                style={{ border: '2px solid #5a402a', borderRadius: '8px', padding: '10px', cursor: 'pointer', backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px', minWidth: '80px' }}
-                onMouseEnter={(e) => e.currentTarget.style.borderColor = '#00ff41'}
-                onMouseLeave={(e) => e.currentTarget.style.borderColor = '#5a402a'}
-              >
-                <img src={fish.image} alt={fish.label} style={{ width: '40px', height: '40px', objectFit: 'contain' }} />
-                <span style={{ fontSize: '12px', color: '#fff', textAlign: 'center' }}>{fish.label}</span>
-                <span style={{ fontSize: '10px', color: '#aaa' }}>x{fish.count}</span>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p style={{ color: '#ff4444' }}>You have no fish in your inventory!</p>
-        )}
-        <BaseButton small label="Cancel" onClick={onClose} />
       </div>
     </BaseDialog>
   );
@@ -3030,13 +2839,13 @@ export const RegionalQuestBoard = ({ onClose, title, questType, tutorialStep, re
                 <div key={idx} style={{ width: '220px', height: '310px', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 4px 24px rgba(0,0,0,0.7)', flexShrink: 0 }}>
                   {rew.id === 'honey' ? (
                     <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-                      <img src="/images/cardfront/goldcard/goldcard.png" alt="HNY" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-                      <div style={{ position: 'absolute', bottom: 'calc(27% - 4px)', left: '50%', transform: 'translateX(-50%)', fontFamily: 'GROBOLD, Cartoonist, monospace', fontWeight: 'bold', fontSize: '15px', color: '#3b2000', whiteSpace: 'nowrap', textShadow: '0 1px 0 rgba(255,255,255,0.3)' }}>{rew.count} HONEY</div>
+                      <img src="/images/cardfront/goldcard/goldcard.png" alt="Gold" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                      <div style={{ position: 'absolute', bottom: '20%', left: '50%', transform: 'translateX(-50%)', fontFamily: 'GROBOLD, Cartoonist, monospace', fontWeight: 'bold', fontSize: '20px', color: '#3b2000', whiteSpace: 'nowrap', textShadow: '1px 1px 0 rgba(255,255,255,0.4)' }}>{rew.count} HONEY</div>
                     </div>
                   ) : rew.id === 'gems' ? (
                     <div style={{ position: 'relative', width: '100%', height: '100%' }}>
                       <img src="/images/cardfront/gemcard/gemcard.png" alt="Gems" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-                      <div style={{ position: 'absolute', bottom: 'calc(27% - 4px)', left: '50%', transform: 'translateX(-50%)', fontFamily: 'GROBOLD, Cartoonist, monospace', fontWeight: 'bold', fontSize: '15px', color: '#3b2000', whiteSpace: 'nowrap', textShadow: '0 1px 0 rgba(255,255,255,0.3)' }}>{rew.count} GEMS</div>
+                      <div style={{ position: 'absolute', bottom: '20%', left: '50%', transform: 'translateX(-50%)', fontFamily: 'GROBOLD, Cartoonist, monospace', fontWeight: 'bold', fontSize: '20px', color: '#3b2000', whiteSpace: 'nowrap', textShadow: '1px 1px 0 rgba(255,255,255,0.4)' }}>{rew.count} GEMS</div>
                     </div>
                   ) : (
                     <div style={{ width: '100%', height: '100%', background: '#1a1a2e', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '16px' }}>
@@ -3086,16 +2895,6 @@ export const RegionalQuestBoard = ({ onClose, title, questType, tutorialStep, re
               </div>
             )}
 
-            {activeQuest.id === 'q_beta_gift' && !completedQuests.includes(activeQuest.id) && (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', marginBottom: '16px', padding: '14px', backgroundColor: 'rgba(90,64,42,0.1)', border: '2px solid #8c6b4a', borderRadius: '10px' }}>
-                <img
-                  src="/images/pfp/betapfp.png"
-                  alt="Beta Tester PFP"
-                  style={{ width: '80px', height: '80px', objectFit: 'contain', borderRadius: '50%', border: '3px solid #c8821a', boxShadow: '0 0 14px rgba(200,130,26,0.5)', animation: 'mapFloat 2.5s ease-in-out infinite' }}
-                />
-                <span style={{ fontFamily: 'monospace', fontSize: '12px', color: '#5a402a', fontWeight: 'bold' }}>Beta Tester Profile Picture</span>
-              </div>
-            )}
             {activeQuest.pfpImage && (
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', marginBottom: '16px', padding: '14px', backgroundColor: 'rgba(90,64,42,0.1)', border: '2px solid #c8821a', borderRadius: '10px' }}>
                 <img
@@ -3186,11 +2985,21 @@ export const MailboxDialog = ({ onClose, tutorialStep, refetch, onTutorialAdvanc
     return () => document.body.removeAttribute('data-letter-open');
   }, [animState]);
 
+  // Mailbox-level flag: set the whole time the mailbox dialog is mounted, so
+  // PlayerPullNotification suppresses popups even before a specific letter is opened.
   useEffect(() => {
+    document.body.setAttribute('data-mailbox-open', 'true');
+    window.dispatchEvent(new CustomEvent('letterOpened'));
+    return () => document.body.removeAttribute('data-mailbox-open');
+  }, []);
+
+  useEffect(() => {
+    // Dock-build countdown. Only ticks while the dock is actually mid-build —
+    // returns immediately (no interval) when not building or already repaired.
     const tick = () => {
       const start = parseInt(localStorage.getItem('sandbox_dock_build_start') || '0', 10);
-      if (!start) { setDockTimeLeft(null); return; }
-      if (localStorage.getItem('sandbox_dock_repaired') === 'true') { setDockTimeLeft(0); return; }
+      if (!start) { setDockTimeLeft(null); return false; }
+      if (localStorage.getItem('sandbox_dock_repaired') === 'true') { setDockTimeLeft(0); return false; }
       const elapsed = Date.now() - start;
       const remaining = Math.max(0, DOCK_BUILD_MS - elapsed);
       setDockTimeLeft(remaining);
@@ -3198,10 +3007,14 @@ export const MailboxDialog = ({ onClose, tutorialStep, refetch, onTutorialAdvanc
         localStorage.setItem('sandbox_dock_repaired', 'true');
         localStorage.setItem('sandbox_dock_unlocked', 'true');
         window.dispatchEvent(new CustomEvent('dockRepaired'));
+        return false;
       }
+      return true;
     };
-    tick();
-    const id = setInterval(tick, 1000);
+    if (!tick()) return; // not building / done — no interval
+    const id = setInterval(() => {
+      if (!tick()) clearInterval(id);
+    }, 1000);
     return () => clearInterval(id);
   }, []);
 
@@ -3320,12 +3133,9 @@ export const MailboxDialog = ({ onClose, tutorialStep, refetch, onTutorialAdvanc
 
     // Give rewards
     for (const reward of quest.rewards) {
-      if (reward.id === 'honey') {
-        const currentHoney = parseInt(localStorage.getItem('sandbox_honey') || '0', 10);
-        const newHoney = currentHoney + reward.count;
-        localStorage.setItem('sandbox_honey', newHoney.toString());
-        window.dispatchEvent(new CustomEvent('sandboxHoneyChanged', { detail: newHoney.toString() }));
-      } else if (reward.id === 'gold') {
+      if (reward.id === 'honey' || reward.id === 'gold') {
+        // Treat legacy "honey" rewards as gold — single source of truth lives
+        // in sandbox_gold, which the ProfileBar counter reads.
         const currentGold = parseInt(localStorage.getItem('sandbox_gold') || '0', 10);
         const newGold = currentGold + reward.count;
         localStorage.setItem('sandbox_gold', newGold.toString());
@@ -3337,8 +3147,6 @@ export const MailboxDialog = ({ onClose, tutorialStep, refetch, onTutorialAdvanc
         window.dispatchEvent(new CustomEvent('sandboxGemsChanged'));
       } else if (reward.id === 'pico_pack') {
         // Pack animation handles seed delivery via charPackOpen event
-      } else if (reward.id === 'betapfp_unlock') {
-        // Handled in post-completion hook below
       } else {
         sandboxLoot[reward.id] = (sandboxLoot[reward.id] || 0) + reward.count;
       }
@@ -3350,9 +3158,6 @@ export const MailboxDialog = ({ onClose, tutorialStep, refetch, onTutorialAdvanc
     const nextCompleted = [...completedQuests, quest.id];
     setCompletedQuests(nextCompleted);
     localStorage.setItem('sandbox_completed_quests', JSON.stringify(nextCompleted));
-
-    // Claim pfp reward when completing any pfp letter
-    if (quest.id === 'q_beta_gift') claimPfp('betapfp');
 
     // Auto-delete letter after completion (except q1_end_papabee — stays until first plot unlock)
     if (quest.id !== 'q1_end_papabee') {
@@ -3443,13 +3248,13 @@ export const MailboxDialog = ({ onClose, tutorialStep, refetch, onTutorialAdvanc
                 <div key={idx} style={{ width: '220px', height: '310px', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 4px 24px rgba(0,0,0,0.7)', flexShrink: 0 }}>
                   {rew.id === 'honey' ? (
                     <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-                      <img src="/images/cardfront/goldcard/goldcard.png" alt="HNY" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-                      <div style={{ position: 'absolute', bottom: 'calc(27% - 4px)', left: '50%', transform: 'translateX(-50%)', fontFamily: 'GROBOLD, Cartoonist, monospace', fontWeight: 'bold', fontSize: '15px', color: '#3b2000', whiteSpace: 'nowrap', textShadow: '0 1px 0 rgba(255,255,255,0.3)' }}>{rew.count} HONEY</div>
+                      <img src="/images/cardfront/goldcard/goldcard.png" alt="Gold" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                      <div style={{ position: 'absolute', bottom: '20%', left: '50%', transform: 'translateX(-50%)', fontFamily: 'GROBOLD, Cartoonist, monospace', fontWeight: 'bold', fontSize: '20px', color: '#3b2000', whiteSpace: 'nowrap', textShadow: '1px 1px 0 rgba(255,255,255,0.4)' }}>{rew.count} HONEY</div>
                     </div>
                   ) : rew.id === 'gems' ? (
                     <div style={{ position: 'relative', width: '100%', height: '100%' }}>
                       <img src="/images/cardfront/gemcard/gemcard.png" alt="Gems" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-                      <div style={{ position: 'absolute', bottom: 'calc(27% - 4px)', left: '50%', transform: 'translateX(-50%)', fontFamily: 'GROBOLD, Cartoonist, monospace', fontWeight: 'bold', fontSize: '15px', color: '#3b2000', whiteSpace: 'nowrap', textShadow: '0 1px 0 rgba(255,255,255,0.3)' }}>{rew.count} GEMS</div>
+                      <div style={{ position: 'absolute', bottom: '20%', left: '50%', transform: 'translateX(-50%)', fontFamily: 'GROBOLD, Cartoonist, monospace', fontWeight: 'bold', fontSize: '20px', color: '#3b2000', whiteSpace: 'nowrap', textShadow: '1px 1px 0 rgba(255,255,255,0.4)' }}>{rew.count} GEMS</div>
                     </div>
                   ) : (
                     <div style={{ width: '100%', height: '100%', background: '#1a1a2e', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '16px' }}>
@@ -3505,34 +3310,59 @@ export const MailboxDialog = ({ onClose, tutorialStep, refetch, onTutorialAdvanc
           </div>
         )}
         {animState === 2 && (() => {
-          const isQueen = activeQuest.sender === 'Queen Beeatrice';
+          // Sender → custom letter background image. Each entry uses the
+          // same parchment-style rendering the Queen letter pioneered. New
+          // letters can be added by dropping a PNG and adding a row here.
+          const SENDER_LETTER_IMAGES = {
+            'Queen Beeatrice': '/images/mail/letter.png',
+            'Beejamin':        '/images/tutorial/beejaminletter.png',
+            'Mayor Prezibee':  '/images/tutorial/mayorbeeletter.png',
+            'Sam':             '/images/tutorial/samletter.png',
+          };
+          const customLetterImage = SENDER_LETTER_IMAGES[activeQuest.sender];
+          const isCustomLetter = !!customLetterImage;
           return (
           <div style={{
             position: 'relative',
-            backgroundColor: isQueen ? 'transparent' : '#f4e4bc',
-            backgroundImage: isQueen
-              ? 'url(/images/mail/letter.png)'
+            backgroundColor: isCustomLetter ? 'transparent' : '#f4e4bc',
+            backgroundImage: isCustomLetter
+              ? `url(${customLetterImage})`
               : 'repeating-linear-gradient(transparent, transparent 31px, rgba(0,0,0,0.05) 31px, rgba(0,0,0,0.05) 32px)',
-            backgroundSize: isQueen ? '100% 100%' : undefined,
-            backgroundRepeat: isQueen ? 'no-repeat' : undefined,
-            backgroundPositionY: isQueen ? undefined : '8px',
-            padding: isQueen ? '110px 100px 130px 160px' : '40px',
+            backgroundSize: isCustomLetter ? '100% 100%' : undefined,
+            backgroundRepeat: isCustomLetter ? 'no-repeat' : undefined,
+            backgroundPositionY: isCustomLetter ? undefined : '8px',
+            padding: isCustomLetter ? '110px 100px 130px 160px' : '40px',
             borderRadius: '8px',
-            width: isQueen ? '1100px' : '90%',
-            height: isQueen ? '733px' : undefined,
-            maxWidth: isQueen ? '95vw' : '600px',
-            maxHeight: isQueen ? '90vh' : '85vh',
+            width: isCustomLetter ? '1100px' : '90%',
+            height: isCustomLetter ? '733px' : undefined,
+            maxWidth: isCustomLetter ? '95vw' : '600px',
+            maxHeight: isCustomLetter ? '90vh' : '85vh',
             boxSizing: 'border-box',
             display: 'flex', flexDirection: 'column',
             color: '#2c1e16',
             fontFamily: 'serif',
-            boxShadow: isQueen ? 'none' : '0 20px 50px rgba(0,0,0,0.8), inset 0 0 50px rgba(200,150,100,0.3)',
+            boxShadow: isCustomLetter ? 'none' : '0 20px 50px rgba(0,0,0,0.8), inset 0 0 50px rgba(200,150,100,0.3)',
             animation: 'letterFadeIn 0.8s ease-out forwards',
           }}>
             <style>{`@keyframes letterFadeIn { 0% { transform: scale(0.8) translateY(100px); opacity: 0; } 100% { transform: scale(1) translateY(0); opacity: 1; } }`}</style>
-            <h2 style={{ margin: '0 0 20px 0', borderBottom: '2px solid #8c6b4a', paddingBottom: '10px', fontFamily: isQueen ? 'Cartoonist, GROBOLD, monospace' : 'monospace', color: isQueen ? '#000' : '#5a402a', width: isQueen ? '60%' : 'auto' }}>From: {activeQuest.sender}</h2>
-            <div style={{ overflowY: 'auto', flex: 1, lineHeight: '1.7', fontSize: isQueen ? '17px' : '20px', paddingRight: '15px', marginBottom: '20px', maxWidth: isQueen ? '560px' : undefined, fontFamily: isQueen ? '"Georgia", "Cambria", serif' : undefined, fontWeight: isQueen ? 700 : undefined, color: isQueen ? '#2a1a08' : '#5a402a', textShadow: 'none' }}>
-              {isQueen
+            {isCustomLetter ? (
+              <h1 style={{
+                margin: '0 0 18px 0',
+                fontFamily: 'GROBOLD, Cartoonist, sans-serif',
+                fontSize: '42px',
+                lineHeight: 1.0,
+                fontWeight: 'bold',
+                color: '#3b1f0a',
+                letterSpacing: '1px',
+                textTransform: 'uppercase',
+                maxWidth: '60%',
+                textShadow: '2px 2px 0 rgba(0,0,0,0.06)',
+              }}>{activeQuest.sender}</h1>
+            ) : (
+              <h2 style={{ margin: '0 0 20px 0', borderBottom: '2px solid #8c6b4a', paddingBottom: '10px', fontFamily: 'monospace', color: '#5a402a' }}>From: {activeQuest.sender}</h2>
+            )}
+            <div style={{ overflowY: 'auto', flex: 1, lineHeight: '1.7', fontSize: isCustomLetter ? '17px' : '20px', paddingRight: '15px', marginBottom: '20px', maxWidth: isCustomLetter ? '560px' : undefined, fontFamily: isCustomLetter ? '"Georgia", "Cambria", serif' : undefined, fontWeight: isCustomLetter ? 700 : undefined, color: isCustomLetter ? '#2a1a08' : '#5a402a', textShadow: 'none' }}>
+              {isCustomLetter
                 ? <QueenLetterTypewriter body={activeQuest.body} key={activeQuest.id} instant={activeQuestWasRead} />
                 : activeQuest.body.map((para, i) => (
                   <p key={i} style={{ color: '#5a402a' }}>{para}</p>
@@ -3540,26 +3370,85 @@ export const MailboxDialog = ({ onClose, tutorialStep, refetch, onTutorialAdvanc
             </div>
 
             {activeQuest.reqs.length > 0 && !completedQuests.includes(activeQuest.id) && activeQuest.id !== 'q2_rebuild_tavern' && activeQuest.id !== 'q_mayor_market_intro' && (
-              <div style={isQueen ? {
-                marginBottom: '16px',
-                maxWidth: '560px',
-              } : { backgroundColor: 'rgba(90, 64, 42, 0.1)', border: '1px solid #8c6b4a', padding: '15px', borderRadius: '8px', marginBottom: '20px' }}>
-                <h4 style={{ margin: '0 0 8px 0', fontFamily: isQueen ? 'Cartoonist, GROBOLD, monospace' : 'monospace', color: isQueen ? '#000' : undefined, textShadow: isQueen ? '1px 1px 0 rgba(0,0,0,0.6)' : undefined }}>Required Items:</h4>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '15px' }}>
-                  {reqCounts.map((req, i) => (
-                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontFamily: isQueen ? 'Cartoonist, GROBOLD, monospace' : 'monospace', fontSize: '14px' }}>
-                      {ALL_ITEMS[req.id]?.pos >= 0 ? (
-                        <div style={{ width: '24px', height: '24px', backgroundImage: 'url(/images/crops/seeds.webp)', backgroundSize: `${(159 * 24 / 207.7647).toFixed(1)}px auto`, backgroundPositionX: 'center', backgroundPositionY: `-${(ALL_ITEMS[req.id].pos * 24).toFixed(1)}px`, backgroundRepeat: 'no-repeat', flexShrink: 0 }} />
+              isCustomLetter ? (
+                /* Inline "Task:" section with slot icons + Turn In button. */
+                <div style={{ marginBottom: '8px', maxWidth: '560px' }}>
+                  {reqCounts.map((req, i) => {
+                    const slotItems = Array.from({ length: req.count });
+                    const item = ALL_ITEMS[req.id];
+                    const renderIcon = (greyed) => (
+                      item?.pos >= 0 ? (
+                        <div style={{
+                          width: '70%', height: '70%',
+                          backgroundImage: 'url(/images/crops/seeds.webp)',
+                          backgroundSize: `${(159 * 30 / 207.7647).toFixed(1)}px auto`,
+                          backgroundPositionX: 'center',
+                          backgroundPositionY: `-${(item.pos * 30).toFixed(1)}px`,
+                          backgroundRepeat: 'no-repeat',
+                          opacity: greyed ? 0.35 : 1,
+                          filter: greyed ? 'grayscale(80%)' : 'none',
+                        }} />
                       ) : req.image ? (
-                        <img src={req.image} style={{ width: '24px', height: '24px', objectFit: 'contain' }} alt={req.name} onError={(e) => { e.target.onerror = null; }} />
-                      ) : null}
-                      <span style={{ color: req.current >= req.count ? '#006400' : '#8b0000', fontWeight: 'bold' }}>
-                        {req.name}: {req.current}/{req.count}
-                      </span>
-                    </div>
-                  ))}
+                        <img src={req.image} alt={req.name} style={{ width: '70%', height: '70%', objectFit: 'contain', opacity: greyed ? 0.35 : 1, filter: greyed ? 'grayscale(80%)' : 'none' }} onError={(e) => { e.target.onerror = null; }} />
+                      ) : null
+                    );
+                    return (
+                      <div key={i}>
+                        <h3 style={{ margin: '0 0 4px 0', fontFamily: 'GROBOLD, Cartoonist, sans-serif', color: '#3b1f0a', fontSize: '20px' }}>Task:</h3>
+                        <p style={{ margin: '0 0 10px 0', fontFamily: '"Georgia", "Cambria", serif', fontWeight: 700, color: '#2a1a08', fontSize: '16px' }}>
+                          Collect &amp; turn in {req.count}x {req.name} crops
+                        </p>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          {slotItems.map((_, slotIdx) => {
+                            const filled = slotIdx < req.current;
+                            return (
+                              <div key={slotIdx} style={{
+                                width: 56, height: 56,
+                                border: '2px solid #8c6b4a',
+                                borderRadius: 8,
+                                background: filled ? 'rgba(255,235,180,0.4)' : 'rgba(140,107,74,0.15)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                flexShrink: 0,
+                                boxShadow: filled ? 'inset 0 0 6px rgba(255,200,100,0.3)' : 'none',
+                              }}>
+                                {renderIcon(!filled)}
+                              </div>
+                            );
+                          })}
+                          <div style={{ marginLeft: '6px' }}>
+                            <BaseButton
+                              label="TURN IN"
+                              small
+                              disabled={req.current < req.count}
+                              onClick={handleCompleteQuest}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-              </div>
+              ) : (
+                <div style={{ backgroundColor: 'rgba(90, 64, 42, 0.1)', border: '1px solid #8c6b4a', padding: '15px', borderRadius: '8px', marginBottom: '20px' }}>
+                  <h4 style={{ margin: '0 0 8px 0', fontFamily: 'monospace' }}>Required Items:</h4>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '15px' }}>
+                    {reqCounts.map((req, i) => (
+                      <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontFamily: 'monospace', fontSize: '14px' }}>
+                        {ALL_ITEMS[req.id]?.pos >= 0 ? (
+                          <div style={{ width: '24px', height: '24px', backgroundImage: 'url(/images/crops/seeds.webp)', backgroundSize: `${(159 * 24 / 207.7647).toFixed(1)}px auto`, backgroundPositionX: 'center', backgroundPositionY: `-${(ALL_ITEMS[req.id].pos * 24).toFixed(1)}px`, backgroundRepeat: 'no-repeat', flexShrink: 0 }} />
+                        ) : req.image ? (
+                          <img src={req.image} style={{ width: '24px', height: '24px', objectFit: 'contain' }} alt={req.name} onError={(e) => { e.target.onerror = null; }} />
+                        ) : null}
+                        <span style={{ color: req.current >= req.count ? '#006400' : '#8b0000', fontWeight: 'bold' }}>
+                          {req.name}: {req.current}/{req.count}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )
             )}
 
             {activeQuest.id === 'q2_rebuild_tavern' && !completedQuests.includes(activeQuest.id) && (
@@ -3613,17 +3502,6 @@ export const MailboxDialog = ({ onClose, tutorialStep, refetch, onTutorialAdvanc
               </div>
             )}
 
-            {activeQuest.id === 'q_beta_gift' && !completedQuests.includes(activeQuest.id) && (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', marginBottom: '16px', padding: '16px', backgroundColor: 'rgba(90,64,42,0.12)', border: '2px solid #8c6b4a', borderRadius: '10px' }}>
-                <img
-                  src="/images/pfp/betapfp.png"
-                  alt="Beta Tester PFP"
-                  style={{ width: '90px', height: '90px', objectFit: 'contain', borderRadius: '50%', border: '3px solid #c8821a', boxShadow: '0 0 16px rgba(200,130,26,0.5)', animation: 'mapFloat 2.5s ease-in-out infinite' }}
-                />
-                <span style={{ fontFamily: 'monospace', fontSize: '13px', color: '#5a402a', fontWeight: 'bold' }}>Beta Tester Profile Picture</span>
-              </div>
-            )}
-
             {activeQuest.pfpImage && !completedQuests.includes(activeQuest.id) && (
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', marginBottom: '16px', padding: '16px', backgroundColor: 'rgba(90,64,42,0.12)', border: '2px solid #c8821a', borderRadius: '10px' }}>
                 <img
@@ -3636,7 +3514,7 @@ export const MailboxDialog = ({ onClose, tutorialStep, refetch, onTutorialAdvanc
               </div>
             )}
 
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '15px', transform: isQueen ? 'scale(0.75)' : 'none', transformOrigin: 'center bottom' }}>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '15px', transform: isCustomLetter ? 'scale(0.75)' : 'none', transformOrigin: 'center bottom' }}>
               {completedQuests.includes(activeQuest.id) ? (
                 <>
                   <BaseButton label="Discard" onClick={() => setShowDiscardConfirm(true)} />
@@ -3664,7 +3542,11 @@ export const MailboxDialog = ({ onClose, tutorialStep, refetch, onTutorialAdvanc
                           }}
                         />
                       )}
-                      <BaseButton label={activeQuest.id === 'q2_unlock_dock' ? (isReadyToTurnIn ? "Invest & Start Construction" : "Need 1,500 Gold") : (isReadyToTurnIn ? "Turn In & Claim" : "Not Enough Items")} disabled={!isReadyToTurnIn} onClick={handleCompleteQuest} />
+                      {/* Custom-letter senders show the Turn In button inline
+                          with the task slots above, so we skip it here. */}
+                      {!isCustomLetter && (
+                        <BaseButton label={activeQuest.id === 'q2_unlock_dock' ? (isReadyToTurnIn ? "Invest & Start Construction" : "Need 1,500 Gold") : (isReadyToTurnIn ? "Turn In & Claim" : "Not Enough Items")} disabled={!isReadyToTurnIn} onClick={handleCompleteQuest} />
+                      )}
                       <BaseButton label="Fold Letter" onClick={() => setAnimState(0)} />
                     </>
                   ) : (
@@ -3993,6 +3875,24 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
     }
     return saved;
   });
+
+  // Mirror sandbox_read_quests + sandbox_completed_quests into farm-local state so
+  // the mission-board hotspot filter (and anything else here) re-renders when
+  // letters are read/folded in the global mailbox dialog. The mailbox lives in
+  // router/index.jsx so its setReadQuests doesn't reach this component otherwise —
+  // the global `questStateChanged` event keeps both copies in sync.
+  const [readQuests, setReadQuests] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('sandbox_read_quests') || '[]'); }
+    catch { return []; }
+  });
+  useEffect(() => {
+    const update = () => {
+      try { setReadQuests(JSON.parse(localStorage.getItem('sandbox_read_quests') || '[]')); } catch (_) {}
+      try { setCompletedQuests(JSON.parse(localStorage.getItem('sandbox_completed_quests') || '[]')); } catch (_) {}
+    };
+    window.addEventListener('questStateChanged', update);
+    return () => window.removeEventListener('questStateChanged', update);
+  }, []);
   
   const hasBarnMissionUnlocked = useMemo(() => {
     return completedQuests.includes('q16_build_barn');
@@ -4009,31 +3909,8 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
   const [umbrellas, setUmbrellas] = useState(umbrellasRef.current);
   const [showEasterBasket, setShowEasterBasket] = useState(false);
 
-  const [bowlWaterFilled, setBowlWaterFilled] = useState(() => localStorage.getItem('sandbox_bowl_water') === 'true');
-  const [bowlFishId, setBowlFishId] = useState(() => localStorage.getItem('sandbox_bowl_fish') || null);
-  const [showBowlFishDialog, setShowBowlFishDialog] = useState(false);
-  
-  const [showTamagotchiDialog, setShowTamagotchiDialog] = useState(false);
-  const [isCatShaking, setIsCatShaking] = useState(false);
-  const [catFeedTimeLeft, setCatFeedTimeLeft] = useState('');
-  const [catPos, setCatPos] = useState({ left: 960, top: 500 });
-  const [catState, setCatState] = useState('sit');
-  const [catDirection, setCatDirection] = useState(1);
-  const catSleepUntil = useRef(0);
-  const catBusyUntil = useRef(0);
   const [skipGrowTarget, setSkipGrowTarget] = useState(null);
   const [tookHoney, setTookHoney] = useState(false);
-  
-  const [firstFedTime, setFirstFedTime] = useState(() => parseInt(localStorage.getItem('sandbox_cat_first_fed_time') || '0', 10));
-  const [isCatUnlocked, setIsCatUnlocked] = useState(false);
-  const [catHappiness, setCatHappiness] = useState(() => parseFloat(localStorage.getItem('sandbox_cat_happiness') || '50'));
-  const [catHealth, setCatHealth] = useState(() => parseFloat(localStorage.getItem('sandbox_cat_health') || '100'));
-  const [currentHunger, setCurrentHunger] = useState(0);
-  const [yarnState, setYarnState] = useState(null);
-
-  const forestTimestamp = parseInt(localStorage.getItem('forest_last_visited') || '0', 10);
-  const starvingTime = parseInt(localStorage.getItem('sandbox_cat_starving_time') || '0', 10);
-  const catWillAppear = isCatUnlocked;
 
   const [isGlobalDialogOpen, setIsGlobalDialogOpen] = useState(false);
   
@@ -4069,7 +3946,7 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
   useEffect(() => {
     const blocking = isGlobalDialogOpen || isMailboxOpenForLevelUp || showMissionBoard || showShop
       || !!charPackInfo || showFarmCustomize || showFestivals
-      || showTamagotchiDialog || showBowlFishDialog || isSelectCropDialog
+      || isSelectCropDialog
       || showPabeePack;
     const wasBlocking = levelUpBlockingRef.current;
     levelUpBlockingRef.current = blocking;
@@ -4084,7 +3961,7 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
     }
   }, [isGlobalDialogOpen, isMailboxOpenForLevelUp, showMissionBoard, showShop,
       charPackInfo, showFarmCustomize, showFestivals,
-      showTamagotchiDialog, showBowlFishDialog, isSelectCropDialog,
+      isSelectCropDialog,
       showPabeePack]);
 
   const fireNextLevelUpPack = useCallback(() => {
@@ -4117,28 +3994,7 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
     return () => window.removeEventListener('levelUp', handler);
   }, [fireNextLevelUpPack]);
 
-  useEffect(() => {
-    window.dispatchEvent(new CustomEvent('petDialogOpen', { detail: showTamagotchiDialog || showBowlFishDialog }));
-  }, [showTamagotchiDialog, showBowlFishDialog]);
-
-  const hideIcons = isGlobalDialogOpen || showTamagotchiDialog || showBowlFishDialog || isSelectCropDialog;
-
-  useEffect(() => {
-    const checkUnlock = () => {
-      if (firstFedTime > 0 && Date.now() - firstFedTime >= 60 * 60 * 1000) {
-        setIsCatUnlocked(true);
-      } else {
-        setIsCatUnlocked(false);
-        // Fix for early starving bug: clean it up if it was erroneously set
-        if (localStorage.getItem('sandbox_cat_starving_time')) {
-          localStorage.removeItem('sandbox_cat_starving_time');
-        }
-      }
-    };
-    checkUnlock();
-    const interval = setInterval(checkUnlock, 1000);
-    return () => clearInterval(interval);
-  }, [firstFedTime]);
+  const hideIcons = isGlobalDialogOpen || isSelectCropDialog;
 
   useEffect(() => {
     window.dispatchEvent(new CustomEvent('seedDialogOpen', { detail: isSelectCropDialog }));
@@ -4385,10 +4241,10 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
         getRaritySeedId(ID_SEEDS.LETTUCE, 1),
         getRaritySeedId(ID_SEEDS.RADISH, 1),
       ];
-      const curHoney = parseFloat(localStorage.getItem('sandbox_honey') || '0');
-      const newHoney = (curHoney + 2000).toString();
-      localStorage.setItem('sandbox_honey', newHoney);
-      window.dispatchEvent(new CustomEvent('sandboxHoneyChanged', { detail: newHoney }));
+      const curGold = parseInt(localStorage.getItem('sandbox_gold') || '0', 10);
+      const newGold = (curGold + 2000).toString();
+      localStorage.setItem('sandbox_gold', newGold);
+      window.dispatchEvent(new CustomEvent('sandboxGoldChanged', { detail: newGold }));
       const curGems = parseInt(localStorage.getItem('sandbox_gems') || '0', 10);
       localStorage.setItem('sandbox_gems', String(curGems + 250));
       window.dispatchEvent(new CustomEvent('sandboxGemsChanged'));
@@ -4416,11 +4272,22 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
     return () => clearInterval(pollId);
   }, [tutorialStep]);
 
-  // Tutorial step 23 — animate gems from 0 to 50 with a stock-ticker style count-up
+  // Tutorial step 23 — animate gems from 0 to 50 with a stock-ticker style
+  // count-up. Use a ref instead of a localStorage flag so the gift fires every
+  // time the player enters step 23, including tutorial restarts. The ref
+  // resets whenever step ≠ 23, so each fresh entry re-arms the grant.
+  const gaveTutorialGemsRef = useRef(false);
+  // Drop the legacy persistent flag so older saves aren't permanently blocked.
   useEffect(() => {
-    if (tutorialStep !== 23) return;
-    if (localStorage.getItem('sandbox_tutorial_gave_gems') === 'true') return;
-    localStorage.setItem('sandbox_tutorial_gave_gems', 'true');
+    try { localStorage.removeItem('sandbox_tutorial_gave_gems'); } catch (_) {}
+  }, []);
+  useEffect(() => {
+    if (tutorialStep !== 23) {
+      gaveTutorialGemsRef.current = false;
+      return;
+    }
+    if (gaveTutorialGemsRef.current) return;
+    gaveTutorialGemsRef.current = true;
     // Delay until text is mostly done
     const startDelay = setTimeout(() => {
       const start = parseInt(localStorage.getItem('sandbox_gems') || '0', 10);
@@ -4492,186 +4359,6 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
     }
   }, [tutorialStep, waterEffects]);
 
-  useEffect(() => {
-    const handleShake = () => {
-      setIsCatShaking(true);
-      setTimeout(() => setIsCatShaking(false), 1500); // 3 shakes in 1.5 seconds
-    };
-    window.addEventListener('crazyCatShake', handleShake);
-    return () => window.removeEventListener('crazyCatShake', handleShake);
-  }, []);
-
-  useEffect(() => {
-    const handleCatAttack = (e) => {
-      const { plotIndex } = e.detail;
-      const target = FARM_POSITIONS[plotIndex];
-      if (!target) return;
-      
-      const targetX = parseInt(target.left) || 500;
-      const targetY = parseInt(target.top) || 300;
-      
-      setCatPos(prev => {
-        const actualDeltaX = targetX - prev.left;
-        setCatDirection(actualDeltaX > 0 ? -1 : 1);
-        return { left: targetX, top: targetY - 40 };
-      });
-      setCatState('walk');
-      catSleepUntil.current = 0;
-      catBusyUntil.current = Date.now() + 4500;
-      
-      setTimeout(() => {
-        const currentFedTime = parseInt(localStorage.getItem('sandbox_cat_fed_time') || '0', 10);
-        if (currentFedTime > 0) {
-           localStorage.setItem('sandbox_cat_fed_time', (currentFedTime - 4 * 60 * 60 * 1000).toString());
-        }
-        setBowlWaterFilled(false);
-        localStorage.removeItem('sandbox_bowl_water');
-        setCatState('sit');
-      }, 3800);
-    };
-    window.addEventListener('animateCatAttack', handleCatAttack);
-    return () => window.removeEventListener('animateCatAttack', handleCatAttack);
-  }, [setCropArray]);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-        const fedTime = parseInt(localStorage.getItem('sandbox_cat_fed_time') || '0', 10);
-        const starvingTime = parseInt(localStorage.getItem('sandbox_cat_starving_time') || '0', 10);
-        
-        let hungerVal = 0;
-        if (fedTime > 0) {
-            const twelveHours = 12 * 60 * 60 * 1000;
-            const endTime = fedTime + twelveHours;
-            const remaining = endTime - Date.now();
-            
-            hungerVal = Math.max(0, 100 - ((Date.now() - fedTime) / twelveHours) * 100);
-            setCurrentHunger(hungerVal);
-            
-            if (remaining > 0) {
-                const hours = Math.floor(remaining / (1000 * 60 * 60));
-                const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
-                const seconds = Math.floor((remaining % (1000 * 60)) / 1000);
-                setCatFeedTimeLeft(`${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
-            } else {
-                setCatFeedTimeLeft('');
-            }
-        } else if (starvingTime > 0) {
-            setCurrentHunger(0);
-            const twentyFourHours = 24 * 60 * 60 * 1000;
-            const remaining = (starvingTime + twentyFourHours) - Date.now();
-            if (remaining > 0) {
-                const hours = Math.floor(remaining / (1000 * 60 * 60));
-                const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
-                const seconds = Math.floor((remaining % (1000 * 60)) / 1000);
-                setCatFeedTimeLeft(`ANGRY: ${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
-            } else {
-                setCatFeedTimeLeft('');
-            }
-        } else {
-            setCurrentHunger(0);
-            setCatFeedTimeLeft('');
-        }
-        
-        // Happiness and Health Decay or Increase
-        let happy = parseFloat(localStorage.getItem('sandbox_cat_happiness') || '50');
-        let hlth = parseFloat(localStorage.getItem('sandbox_cat_health') || '100');
-        let lastUpdateStr = localStorage.getItem('sandbox_cat_happy_update');
-        if (!lastUpdateStr) {
-           lastUpdateStr = Date.now().toString();
-           localStorage.setItem('sandbox_cat_happy_update', lastUpdateStr);
-        }
-        const lastUpdate = parseInt(lastUpdateStr, 10);
-        const now = Date.now();
-        const elapsedHours = (now - lastUpdate) / (1000 * 60 * 60);
-
-        if (elapsedHours > 0) {
-           if (hungerVal < 50) {
-              happy = Math.max(0, happy - (10 * elapsedHours)); // 10% per hour
-              localStorage.setItem('sandbox_cat_happiness', happy.toString());
-           } else if (hungerVal >= 95 && bowlWaterFilled && starvingTime === 0) {
-              happy = Math.min(100, happy + (10 * elapsedHours)); // +10% per hour increase
-              localStorage.setItem('sandbox_cat_happiness', happy.toString());
-           }
-           
-           if (starvingTime > 0) {
-              hlth = Math.max(0, hlth - (20 * elapsedHours));
-              localStorage.setItem('sandbox_cat_health', hlth.toString());
-           } else if (hungerVal >= 80 && bowlWaterFilled) {
-              hlth = Math.min(100, hlth + (10 * elapsedHours));
-              localStorage.setItem('sandbox_cat_health', hlth.toString());
-           }
-           
-           localStorage.setItem('sandbox_cat_happy_update', now.toString());
-           setCatHappiness(happy);
-           setCatHealth(hlth);
-        }
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [bowlWaterFilled, bowlFishId]);
-
-  useEffect(() => {
-    if (!catWillAppear || tutorialStep < 11 || yarnState?.active) return;
-
-    const catLoop = setInterval(() => {
-      if (Date.now() < catBusyUntil.current) return;
-      if (Date.now() < catSleepUntil.current) return;
-
-      setCatPos(prev => {
-        const isAngry = starvingTime > 0;
-        if (isAngry) {
-          setCatState('sit');
-          return prev;
-        }
-
-        const randomAction = Math.random();
-        if (randomAction < 0.4) {
-          setCatState('walk');
-          const deltaX = Math.random() * 1000 - 500;
-          const deltaY = Math.random() * 500 - 250;
-          const newLeft = prev.left + deltaX;
-          const newTop = prev.top + deltaY;
-          const clampedLeft = Math.max(95, Math.min(1126, newLeft));
-          const clampedTop = Math.max(303, Math.min(803, newTop));
-          const actualDeltaX = clampedLeft - prev.left;
-          
-          setCatDirection(actualDeltaX > 0 ? -1 : 1);
-          return { left: clampedLeft, top: clampedTop };
-        } else if (randomAction < 0.7) {
-          setCatState('sit');
-          return prev;
-        } else {
-          setCatState('sleep');
-          catSleepUntil.current = Date.now() + (10 * 60 * 1000) + (Math.random() * 10 * 60 * 1000);
-          return prev;
-        }
-      });
-    }, 4000);
-
-    return () => clearInterval(catLoop);
-  }, [catWillAppear, tutorialStep, starvingTime, yarnState?.active]);
-
-  useEffect(() => {
-    if (bowlWaterFilled && bowlFishId !== null) {
-      if (!localStorage.getItem('sandbox_cat_fed_time')) {
-        localStorage.setItem('sandbox_cat_fed_time', Date.now().toString());
-        localStorage.removeItem('sandbox_cat_starving_time');
-      }
-      if (!localStorage.getItem('sandbox_cat_first_fed_time')) {
-         const now = Date.now();
-         localStorage.setItem('sandbox_cat_first_fed_time', now.toString());
-         setFirstFedTime(now);
-      }
-    } else {
-      localStorage.removeItem('sandbox_cat_fed_time');
-      if (isCatUnlocked && !localStorage.getItem('sandbox_cat_starving_time')) {
-        localStorage.setItem('sandbox_cat_starving_time', Date.now().toString());
-      }
-    }
-  }, [bowlWaterFilled, bowlFishId, isCatUnlocked]);
-  
-  // Forest Lock Timer
-  const [forestLockTime, setForestLockTime] = useState(0);
-  const [mineLockTime, setMineLockTime] = useState(0);
   const [selectedTool, setSelectedTool] = useState(null);
   const [flashTool, setFlashTool] = useState(null);
   const flashToolTimerRef = useRef(null);
@@ -4683,36 +4370,7 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
   };
 
   useEffect(() => {
-    const checkLock = () => {
-      const lv = localStorage.getItem('forest_last_visited');
-      if (lv) {
-        const el = Date.now() - parseInt(lv, 10);
-        const th = 45 * 60 * 1000; // 45 mins
-        if (el < th) setForestLockTime(th - el);
-        else setForestLockTime(0);
-      } else setForestLockTime(0);
-      
-      const mlv = localStorage.getItem('mine_last_visited');
-      if (mlv) {
-        const el = Date.now() - parseInt(mlv, 10);
-        const th = 45 * 60 * 1000; // 45 mins
-        if (el < th) setMineLockTime(th - el);
-        else setMineLockTime(0);
-      } else setMineLockTime(0);
-    };
-    
-    checkLock();
-    const timer = setInterval(checkLock, 1000);
-
     window.cml = (cmd) => {
-      if (cmd === 'forest' || cmd === 'forset') {
-        localStorage.removeItem('forest_last_visited');
-        setForestLockTime(0);
-      }
-      if (cmd === 'mine') {
-        localStorage.removeItem('mine_last_visited');
-        setMineLockTime(0);
-      }
       if (cmd === 'skip') {
           setTutorialStep(9);
           localStorage.setItem('sandbox_tutorial_step', '9');
@@ -4732,11 +4390,6 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
         window.dispatchEvent(new CustomEvent('showNotification', { detail: { msg: "Animal Farm unlocked!", type: "success" } }));
       }
       if (cmd === 'skip time') {
-        const skipAmount = 24 * 60 * 60 * 1000;
-        const fVisit = localStorage.getItem('forest_last_visited');
-        if (fVisit) localStorage.setItem('forest_last_visited', (parseInt(fVisit, 10) - skipAmount).toString());
-        const mVisit = localStorage.getItem('mine_last_visited');
-        if (mVisit) localStorage.setItem('mine_last_visited', (parseInt(mVisit, 10) - skipAmount).toString());
         window.dispatchEvent(new CustomEvent('skipTime'));
         window.dispatchEvent(new CustomEvent('showNotification', { detail: { msg: "Time skipped by 24 hours!", type: "success" } }));
       }
@@ -4784,7 +4437,6 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
     };
 
     return () => {
-      clearInterval(timer);
       delete window.cml;
     };
   }, []);
@@ -5204,11 +4856,6 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
       }
     };
 
-    const onSkipCatTime = () => {
-      const fTime = localStorage.getItem('sandbox_cat_first_fed_time');
-      if (fTime) setFirstFedTime(parseInt(fTime, 10));
-    };
-
     const handleOpenCrafting = (e) => {
       setIsPlacingScarecrow(false);
       setIsPlacingLadybug(false);
@@ -5239,7 +4886,6 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
     window.addEventListener('setAllPlotsX', onSetAllPlotsX);
     window.addEventListener('skipTutorial', onSkipTutorial);
     window.addEventListener('skipTime', onSkipTime);
-    window.addEventListener('skipCatTime', onSkipCatTime);
     window.addEventListener('openCraftingFor', handleOpenCrafting);
 
     return () => {
@@ -5258,7 +4904,6 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
       window.removeEventListener('setAllPlotsX', onSetAllPlotsX);
       window.removeEventListener('skipTutorial', onSkipTutorial);
       window.removeEventListener('skipTime', onSkipTime);
-      window.removeEventListener('skipCatTime', onSkipCatTime);
       window.removeEventListener('openCraftingFor', handleOpenCrafting);
     };
   }, [handleRemoveScarecrow, handleRemoveLadybug, handleRemoveSprinkler, handleRemoveUmbrella, loadCropsFromContract, cropArray, updatePlotPrep]);
@@ -5311,19 +4956,6 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
       setTimeout(() => show("Select a purple border to place your umbrella!", "info"), 500);
     }
 
-    if (localStorage.getItem("pendingYarnPlacement") === "true") {
-      localStorage.removeItem("pendingYarnPlacement");
-      setYarnState({ active: true, phase: 'cursor', x: 960, y: 540, vx: 0, vy: 0, angle: 0, direction: 1 });
-      setIsUsingPotion(false);
-      setIsPlanting(false);
-      setIsFarmMenu(false);
-      
-      const sandboxLoot = JSON.parse(localStorage.getItem('sandbox_loot') || '{}');
-      sandboxLoot[9955] = Math.max(0, (sandboxLoot[9955] || 0) - 1);
-      localStorage.setItem('sandbox_loot', JSON.stringify(sandboxLoot));
-      
-      setTimeout(() => show("Click anywhere to place the yarn!", "info"), 500);
-    }
   }, [show]);
 
   useEffect(() => {
@@ -5408,21 +5040,6 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
         return;
       }
       
-      if (Number(id) === 9955) {
-        setYarnState({ active: true, phase: 'cursor', x: 960, y: 540, vx: 0, vy: 0, angle: 0, direction: 1 });
-        setIsUsingPotion(false);
-        setIsPlanting(false);
-        setIsFarmMenu(false);
-        
-        const sandboxLoot = JSON.parse(localStorage.getItem('sandbox_loot') || '{}');
-        sandboxLoot[9955] = Math.max(0, (sandboxLoot[9955] || 0) - 1);
-        localStorage.setItem('sandbox_loot', JSON.stringify(sandboxLoot));
-        if (refetch) refetch();
-        
-        show("Click anywhere to place the yarn!", "info");
-        return;
-      }
-
       setSelectedPotion({ id, name });
       setIsUsingPotion(true);
       setIsPlanting(false);
@@ -5512,89 +5129,6 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
     audio.play().catch(() => {});
   }, [settings?.soundVolume]);
   
-  // Yarn mechanics loops
-  useEffect(() => {
-    if (!yarnState || !yarnState.active) return;
-    let frameId;
-    let lastTime = performance.now();
-    const loop = (time) => {
-      const dt = Math.max(1, Math.min(32, time - lastTime)); // Cap dt to avoid huge jumps
-      lastTime = time;
-      setYarnState(prev => {
-        if (!prev || !prev.active) return prev;
-        
-        if (prev.phase === 'aiming') {
-           let newAngle = (prev.angle || 0) + ((prev.direction || 1) * 0.18 * dt);
-           let newDir = prev.direction || 1;
-           if (newAngle > 75) { newAngle = 75; newDir = -1; }
-           if (newAngle < -75) { newAngle = -75; newDir = 1; }
-           return { ...prev, angle: newAngle, direction: newDir };
-        }
-        
-        if (prev.phase === 'rolling') {
-            let { x, y, vx, vy } = prev;
-            if (Math.abs(vx) > 0.1 || Math.abs(vy) > 0.1) {
-               x += vx;
-               y += vy;
-               vx *= 0.98;
-               vy *= 0.98;
-               
-               if (x < 150) { x = 150; vx *= -0.8; }
-               if (x > 1700) { x = 1700; vx *= -0.8; }
-               if (y < 150) { y = 150; vy *= -0.8; }
-               if (y > 900) { y = 900; vy *= -0.8; }
-               return { ...prev, x, y, vx, vy };
-            }
-        }
-        return prev;
-      });
-      frameId = requestAnimationFrame(loop);
-    };
-    frameId = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(frameId);
-  }, [yarnState?.active]);
-
-  useEffect(() => {
-    if (!yarnState || !yarnState.active) return;
-    const chaseInterval = setInterval(() => {
-       setYarnState(currentYarn => {
-          if (!currentYarn || currentYarn.phase !== 'rolling') return currentYarn;
-          setCatPos(prev => {
-             const dx = currentYarn.x - prev.left;
-             const dy = currentYarn.y - prev.top;
-             const dist = Math.hypot(dx, dy);
-
-             if (dist < 60) {
-                 let happy = parseFloat(localStorage.getItem('sandbox_cat_happiness') || '50');
-                 happy = Math.min(100, happy + 40);
-                 localStorage.setItem('sandbox_cat_happiness', happy.toString());
-                 setCatHappiness(happy);
-
-                 let hlth = parseFloat(localStorage.getItem('sandbox_cat_health') || '100');
-                 hlth = Math.min(100, hlth + 20);
-                 localStorage.setItem('sandbox_cat_health', hlth.toString());
-                 setCatHealth(hlth);
-
-                 show("Felix caught the yarn! Happiness +40%, Health +20%", "success");
-                 
-                 setTimeout(() => setYarnState(null), 10);
-                 setCatState('sit');
-                 return prev;
-             }
-
-             const speed = 25; 
-             const moveX = (dx / dist) * speed;
-             const moveY = (dy / dist) * speed;
-             setCatState('walk');
-             setCatDirection(moveX > 0 ? -1 : 1);
-             return { left: prev.left + moveX, top: prev.top + moveY };
-          });
-          return currentYarn;
-       });
-    }, 50); 
-    return () => clearInterval(chaseInterval);
-  }, [yarnState?.active]);
-
   // Keep Farm updated with tutorial steps that progress outside of Farm
   useEffect(() => {
     const stepHandler = () => setTutorialStep(parseInt(localStorage.getItem('sandbox_tutorial_step') || '0', 10));
@@ -5660,7 +5194,7 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
         }
         return newArr;
       });
-      show("Bug squashed!", "success");
+      // (Top-right "Bug squashed!" notification removed — silent kill.)
 
       if (tutPostWaterRef.current) {
         tutBugKilledRef.current = true;
@@ -5696,7 +5230,7 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
         }
         return newArr;
       });
-      show("Crow scared away!", "success");
+      // (Top-right "Crow scared away!" notification removed — silent kill.)
 
       if (tutPostWaterRef.current && tutBugKilledRef.current) {
         tutPostWaterRef.current = false;
@@ -5719,37 +5253,6 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
   // Growth timer effect
   useEffect(() => {
     const interval = setInterval(() => {
-      // CAT TIMERS LOGIC
-      const isWaterFilled = localStorage.getItem('sandbox_bowl_water') === 'true';
-      const isFishFilled = localStorage.getItem('sandbox_bowl_fish') !== null;
-      const fedTime = parseInt(localStorage.getItem('sandbox_cat_fed_time') || '0', 10);
-      const starvingTime = parseInt(localStorage.getItem('sandbox_cat_starving_time') || '0', 10);
-      
-      if (fedTime > 0 && isWaterFilled && isFishFilled) {
-        if (Date.now() - fedTime >= 12 * 60 * 60 * 1000) { // 12 Hours
-          localStorage.removeItem('sandbox_bowl_water');
-          localStorage.removeItem('sandbox_bowl_fish');
-          localStorage.removeItem('sandbox_cat_fed_time');
-          localStorage.setItem('sandbox_cat_starving_time', Date.now().toString());
-          setBowlWaterFilled(false);
-          setBowlFishId(null);
-        }
-      } else if (starvingTime > 0) {
-        if (Date.now() - starvingTime >= 24 * 60 * 60 * 1000) { // 24 Hours
-          localStorage.removeItem('sandbox_cat_starving_time');
-        } else {
-          const lastShake = parseInt(localStorage.getItem('sandbox_cat_last_shake') || starvingTime.toString(), 10);
-          const fTimestamp = parseInt(localStorage.getItem('forest_last_visited') || '0', 10);
-          const tStep = parseInt(localStorage.getItem('sandbox_tutorial_step') || '0', 10);
-          if (fTimestamp > 0 && tStep >= 4) {
-            if (Date.now() - lastShake >= 60 * 60 * 1000) { // 1 Hour
-              window.dispatchEvent(new CustomEvent('crazyCatShake'));
-              localStorage.setItem('sandbox_cat_last_shake', Date.now().toString());
-            }
-          }
-        }
-      }
-
       // Only update growth when not in farm menu to prevent flickering during harvest selection
       if (!isFarmMenu) {
         // Lightning mechanic
@@ -6447,6 +5950,7 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
   const handleHarvestAll = async () => {
     try {
       const readySlots = [];
+      const readySeedIds = [];
       let harvestedCarrot = false;
       const carrotSeed = (currentSeeds || []).find(s => s.label && s.label.toLowerCase().includes('carrot'));
       const currentTimeSeconds = Math.floor(Date.now() / 1000);
@@ -6460,6 +5964,7 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
           const isReady = (item.growStatus === 2) || (currentTimeSeconds >= endTime);
           if (isReady) {
             readySlots.push(i);
+            readySeedIds.push(item.seedId);
             totalXpToAward += 10; // 10 Farming XP per crop
             if (carrotSeed && item.seedId.toString() === carrotSeed.id.toString()) harvestedCarrot = true;
           }
@@ -6472,7 +5977,7 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
       }
       playHarvestConfirmSound();
 
-      show(`Harvesting ${readySlots.length} ready crops...`, "info");
+      // (Top-right harvest notification removed.)
 
       let ok = false;
       try {
@@ -6498,12 +6003,33 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
         return;
       }
 
+      // Roll + log a per-instance weight for every harvested crop. Keyed by produce id
+      // so the inventory/bank popup card preview can render "Weight: <g>" + date.
+      try {
+        const log = JSON.parse(localStorage.getItem('sandbox_produce_weights') || '{}');
+        readySeedIds.forEach((seedId) => {
+          if (!seedId) return;
+          const baseSeed = seedId & 0xFFF;
+          const produceIdForLog = (baseSeed & 0xFF) | (((baseSeed >> 8) + 3) << 8);
+          const list = Array.isArray(log[produceIdForLog]) ? log[produceIdForLog] : [];
+          // Roll N weights to match the N produce yielded by harvestMany.
+          const produceCount = ALL_ITEMS[Number(seedId)]?.produceCount ?? 1;
+          for (let i = 0; i < produceCount; i++) {
+            const { weight } = rollCropWeight(seedId);
+            list.push({ w: weight, d: Date.now() });
+          }
+          if (list.length > 64) list.splice(0, list.length - 64);
+          log[produceIdForLog] = list;
+        });
+        localStorage.setItem('sandbox_produce_weights', JSON.stringify(log));
+      } catch (_) {}
+
       // Reload crops from contract to sync state
       // Small delay to ensure blockchain state is updated
       await new Promise(resolve => setTimeout(resolve, 1000));
       await loadCropsFromContract();
       if (typeof refetchSeeds === "function") refetchSeeds();
-      
+
       // Force a re-render by updating the preview update key
       setPreviewUpdateKey(prev => prev + 1);
 
@@ -6513,7 +6039,7 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
         const oldLevel = getLevelFromXp(currentFarmingXp);
         const newFarmingXp = currentFarmingXp + totalXpToAward;
         localStorage.setItem('sandbox_farming_xp', newFarmingXp.toString());
-        window.dispatchEvent(new CustomEvent('showNotification', { detail: { msg: `+${totalXpToAward} Farming XP!`, type: "info" } }));
+        // (Top-right "+X Farming XP!" notification removed.)
         setFarmingXp(newFarmingXp);
         const newLevel = getLevelFromXp(newFarmingXp);
         if (newLevel > oldLevel) {
@@ -6549,7 +6075,7 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
         window.dispatchEvent(new CustomEvent('soilProgressChanged'));
       }
 
-      show(`✅ Successfully harvested ${readySlots.length} crops!`, "success");
+      // (Top-right "Successfully harvested" notification removed.)
       // Clear any selection state after harvest all
       setSelectedIndexes([]);
       setIsFarmMenu(false);
@@ -6767,15 +6293,37 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
         return;
       }
       playHarvestConfirmSound();
-      show(`Harvesting ${readyCrops.length} ready crops...`, "info");
+      // (Top-right harvest notification removed.)
 
       let successCount = 0;
+      // Capture seed ids while cropArray still holds them — we'll log a per-instance
+      // weight for each one after the harvest succeeds.
+      const readySeedIds = readyCrops.map((idx) => cropArray.getItem(idx)?.seedId).filter(Boolean);
+
       // Prefer batch harvest when multiple crops are ready
       const result = await harvestMany(readyCrops);
       if (result) {
         successCount = readyCrops.length;
+        // Roll + log a weight for each harvested crop, keyed by produce id.
+        try {
+          const log = JSON.parse(localStorage.getItem('sandbox_produce_weights') || '{}');
+          readySeedIds.forEach((seedId) => {
+            const baseSeed = seedId & 0xFFF;
+            const produceIdForLog = (baseSeed & 0xFF) | (((baseSeed >> 8) + 3) << 8);
+            const list = Array.isArray(log[produceIdForLog]) ? log[produceIdForLog] : [];
+            // Roll N weights to match the N produce yielded by harvestMany.
+            const produceCount = ALL_ITEMS[Number(seedId)]?.produceCount ?? 1;
+            for (let i = 0; i < produceCount; i++) {
+              const { weight } = rollCropWeight(seedId);
+              list.push({ w: weight, d: Date.now() });
+            }
+            if (list.length > 64) list.splice(0, list.length - 64);
+            log[produceIdForLog] = list;
+          });
+          localStorage.setItem('sandbox_produce_weights', JSON.stringify(log));
+        } catch (_) {}
       }
-    
+
       // Small delay to ensure blockchain state is updated
       await new Promise(resolve => setTimeout(resolve, 1000));
       await loadCropsFromContract();
@@ -6788,9 +6336,14 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
         // Award XP (skipped during tutorial)
         if (totalXpToAward > 0 && tutorialStep >= 36) {
           const currentFarmingXp = parseInt(localStorage.getItem('sandbox_farming_xp') || '0', 10);
+          const oldLevel = getLevelFromXp(currentFarmingXp);
           const newFarmingXp = currentFarmingXp + totalXpToAward;
           localStorage.setItem('sandbox_farming_xp', newFarmingXp.toString());
-          window.dispatchEvent(new CustomEvent('showNotification', { detail: { msg: `+${totalXpToAward} Farming XP!`, type: "info" } }));
+          setFarmingXp(newFarmingXp);
+          const newLevel = getLevelFromXp(newFarmingXp);
+          if (newLevel > oldLevel) {
+            window.dispatchEvent(new CustomEvent('levelUp', { detail: { skill: 'Farming', level: newLevel } }));
+          }
         }
 
         const ringExpiry = parseInt(localStorage.getItem('sandbox_ring_expiry') || '0', 10);
@@ -6831,7 +6384,7 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
           window.dispatchEvent(new CustomEvent('soilProgressChanged'));
         }
 
-        show(`✅ Successfully harvested ${successCount} crops!`, "success");
+        // (Top-right "Successfully harvested N crops!" notification removed.)
         // Clear selection state after successful harvest
         setSelectedIndexes([]);
         setIsFarmMenu(false);
@@ -6873,9 +6426,35 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
   const handleInstantHarvest = async (index, skipPoints = false) => {
     try {
       playHarvestConfirmSound();
-      show(`Harvesting crop...`, "info");
+      // (Top-right "Harvesting crop..." notification removed.)
 
       const itemToHarvest = cropArray.getItem(index);
+      // Roll a weight ONCE up here (regardless of skipPoints) and persist the per-
+      // instance entry into sandbox_produce_weights. The same weight is reused below
+      // by the !skipPoints leaderboard / heaviest tracking so the value displayed in
+      // notifications matches what the inventory/bank popup shows.
+      let rolledHarvest = null;
+      try {
+        if (itemToHarvest?.seedId) {
+          rolledHarvest = rollCropWeight(itemToHarvest.seedId);
+          const baseSeed = itemToHarvest.seedId & 0xFFF;
+          const produceIdForLog = (baseSeed & 0xFF) | (((baseSeed >> 8) + 3) << 8);
+          const log = JSON.parse(localStorage.getItem('sandbox_produce_weights') || '{}');
+          const list = Array.isArray(log[produceIdForLog]) ? log[produceIdForLog] : [];
+          // Higher-rarity seeds yield multiple produce per harvest (uncommon = 2,
+          // rare = 3, etc.) — log a separate weight entry for each unit so every
+          // resulting card gets its own weight instead of one showing "Unknown".
+          const produceCount = ALL_ITEMS[Number(itemToHarvest.seedId)]?.produceCount ?? 1;
+          list.push({ w: rolledHarvest.weight, d: Date.now() });
+          for (let i = 1; i < produceCount; i++) {
+            const extra = rollCropWeight(itemToHarvest.seedId);
+            list.push({ w: extra.weight, d: Date.now() });
+          }
+          if (list.length > 64) list.splice(0, list.length - 64);
+          log[produceIdForLog] = list;
+          localStorage.setItem('sandbox_produce_weights', JSON.stringify(log));
+        }
+      } catch (_) {}
       const carrotSeed = (currentSeeds || []).find(s => s.label && s.label.toLowerCase().includes('carrot'));
       let wasCarrot = false;
       if (carrotSeed && itemToHarvest && itemToHarvest.seedId && itemToHarvest.seedId.toString() === carrotSeed.id.toString()) {
@@ -6912,6 +6491,23 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
         const totalHarvested = parseInt(localStorage.getItem('sandbox_total_harvested') || '0', 10);
         localStorage.setItem('sandbox_total_harvested', String(totalHarvested + 1));
 
+        // Fire the harvest-card-reveal event regardless of skipPoints so gem-skip
+        // harvests also get the center-screen card animation. Multiple harvests in
+        // quick succession queue up inside HarvestCardReveal — no harvest blocking
+        // here so subsequent clicks can land their cards behind the front one.
+        if (itemToHarvest?.seedId && rolledHarvest) {
+          window.dispatchEvent(new CustomEvent('cropHarvested', {
+            detail: {
+              cropName: rolledHarvest.name,
+              weight: rolledHarvest.weight,
+              seedId: itemToHarvest.seedId,
+              bracket: rolledHarvest.bracket,
+              rarityLabel: rolledHarvest.rarityLabel,
+              rarityColor: rolledHarvest.rarityColor,
+            },
+          }));
+        }
+
         // Leaderboard tracking (skipped crops don't count)
         if (!skipPoints && itemToHarvest?.seedId) {
           const baseSeedId = itemToHarvest.seedId & 0xFFF;
@@ -6933,8 +6529,10 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
             window.dispatchEvent(new CustomEvent('seasonPointsChanged'));
           }
 
-          // Weight tracking — per-crop all-time heaviest + potato + weekly featured crop
-          const { weight, name: cropName, bracket, rarityLabel, rarityColor } = rollCropWeight(itemToHarvest.seedId);
+          // Weight tracking — reuse the harvest-time roll captured at the top of
+          // handleInstantHarvest so the heaviest tracker, notifications, and the
+          // sandbox_produce_weights log all see the same value.
+          const { weight, name: cropName, bracket, rarityLabel, rarityColor } = rolledHarvest || rollCropWeight(itemToHarvest.seedId);
           // Notify if this crop lands in the top 10% of the legendary weight bracket (fraction >= 0.9)
           if (bracket === 5) {
             const baseId = itemToHarvest.seedId & 0xFFF;
@@ -6948,7 +6546,10 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
             }
           }
           const harvestedAt = Date.now();
-          window.dispatchEvent(new CustomEvent('cropHarvested', { detail: { cropName, weight, seedId: itemToHarvest.seedId, bracket, rarityLabel, rarityColor } }));
+          // (Per-instance weight log moved to the top of handleInstantHarvest so it
+          // runs regardless of skipPoints / tutorial state. The cropHarvested event
+          // is now also dispatched outside this block so gem-skip harvests trigger
+          // the harvest card reveal too.)
           // Player pull notification for rare/epic/legendary crops harvested
           {
             const rarityName = bracket === 5 ? 'legendary' : bracket === 4 ? 'epic' : bracket === 3 ? 'rare' : null;
@@ -7030,7 +6631,7 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
           const oldLevel = getLevelFromXp(currentFarmingXp);
           const newFarmingXp = currentFarmingXp + 10;
           localStorage.setItem('sandbox_farming_xp', newFarmingXp.toString());
-          window.dispatchEvent(new CustomEvent('showNotification', { detail: { msg: `+10 Farming XP!`, type: "info" } }));
+          // (Top-right "+10 Farming XP!" notification removed.)
           setFarmingXp(newFarmingXp);
           const newLevel = getLevelFromXp(newFarmingXp);
           if (newLevel > oldLevel) {
@@ -7056,7 +6657,7 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
             localStorage.setItem('sandbox_loot', JSON.stringify(sandboxLoot));
             show("🐣 You unearthed the Purple Easter Egg!", "success");
         }
-        show(`✅ Successfully harvested crop!`, "success");
+        // (Top-right "Successfully harvested crop!" notification removed.)
         updatePlotPrep(index, { status: 0 });
         setSelectedIndexes([]);
         setIsFarmMenu(false);
@@ -7534,14 +7135,10 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
       }
       return;
     } else if (pStatus === 3) {
-      // Auto-equip the seeds tool so it highlights in the belt, then open the seed picker.
-      setSelectedTool('seeds');
-      setIsSeeding(true);
-      setIsDirting(false);
-      setIsHoeing(false);
-      setIsWatering(false);
-      setIsDigging(false);
-      setIsPlanting(false);
+      // Open the seed picker. We don't set is*ing tool flags anymore — the toolbelt is
+      // decorative (clicks happen on the plot, action is determined by plot state).
+      // Setting setIsSeeding(true) here is what was making subsequent X-plot clicks
+      // fall into the "You can only plant seeds in prepared dirt" early branch.
       setCurrentFieldIndex(index);
       setIsSelectCropDialog(true);
       return;
@@ -7675,40 +7272,7 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
 
   const bees = tutorialStep < 36 ? [] : FARM_BEES;
   return (
-    <div className={isCatShaking ? "shake-screen" : ""}>
-      <style>{`
-        @keyframes crazyCatShake {
-          0%, 100% { transform: translate(0, 0) rotate(0deg); }
-          10%, 30%, 50%, 70%, 90% { transform: translate(-10px, -5px) rotate(-1deg); }
-          20%, 40%, 60%, 80% { transform: translate(10px, 5px) rotate(1deg); }
-        }
-        .shake-screen {
-          animation: crazyCatShake 0.5s ease-in-out 3;
-        }
-      `}</style>
-      
-      {isCatShaking && (
-        <div style={{
-          position: 'fixed',
-          top: 0, left: 0, width: '100vw', height: '100vh',
-          zIndex: 999999,
-          display: 'flex', justifyContent: 'center', alignItems: 'center',
-          pointerEvents: 'none',
-          backgroundColor: 'rgba(255, 0, 0, 0.3)'
-        }}>
-          <img src="/images/pets/catangry.png" alt="Angry Cat" style={{
-            width: '90vw', height: '90vh', objectFit: 'contain',
-            animation: 'zoomIn 0.3s ease-out', filter: 'drop-shadow(0 0 20px red)'
-          }} />
-          <style>{`
-            @keyframes zoomIn {
-              from { transform: scale(0.5); opacity: 0; }
-              to { transform: scale(1); opacity: 1; }
-            }
-          `}</style>
-        </div>
-      )}
-
+    <div>
       {tutorialStep >= 11 && <WeatherOverlay />}
 
       {/* Cloud shadows + wind streaks were here — now rendered globally by <SkyOverlay /> in App.jsx
@@ -7836,7 +7400,13 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
 
       <PanZoomViewport
         backgroundSrc="/images/backgrounds/realfarm.png"
-        hotspots={tutorialStep >= 36 ? hotspots.filter(h => h.id !== ID_FARM_HOTSPOTS.FARMER || completedQuests.includes('q2_missionboard_intro') || JSON.parse(localStorage.getItem('sandbox_read_quests') || '[]').includes('q2_missionboard_intro')) : []}
+        hotspots={tutorialStep >= 36 ? hotspots.filter((h) => {
+          if (h.id !== ID_FARM_HOTSPOTS.FARMER) return true;
+          // Mission board (FARMER hotspot) shows ONLY after the player has
+          // read or completed the dedicated mission-board letter.
+          return completedQuests.includes('q2_missionboard_intro')
+              || readQuests.includes('q2_missionboard_intro');
+        }) : []}
         width={width}
         height={height}
         dialogs={dialogs}
@@ -7861,7 +7431,9 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
               localStorage.setItem('sandbox_missionboard_seen', 'true');
               window.dispatchEvent(new CustomEvent('questStateChanged'));
             }
-            setShowMissionBoard(true);
+            // Iris-wipe in/out so the mission board entrance feels like the
+            // vendor + banker entrances.
+            withIris(() => setShowMissionBoard(true));
             return true;
           }
           return false;
@@ -7886,36 +7458,6 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
         )}
         {/* Well */}
         <img src="/images/land/well.png" alt="Well" style={{ position: 'absolute', top: '385px', left: '230px', width: '190px', pointerEvents: 'none', zIndex: 10 }} draggable={false} />
-        {/* Mine */}
-        <img src="/images/land/mine.png" alt="Mine" style={{ position: 'absolute', top: '409px', left: '1007.5px', width: '215px', pointerEvents: 'none', zIndex: 10 }} draggable={false} />
-        {false && <img
-          src="/images/label/mineslabel.png"
-          alt="Mine Label"
-          draggable={false}
-          onMouseEnter={(e) => {
-            if (mineLockTime <= 0) {
-              e.currentTarget.style.filter = 'drop-shadow(0px 0px 8px rgba(255,255,255,0.8))';
-              e.currentTarget.style.transform = 'scale(1.1)';
-            }
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.filter = 'none';
-            e.currentTarget.style.transform = 'scale(1)';
-          }}
-          onPointerDown={(e) => {
-            e.stopPropagation();
-            e.preventDefault();
-            if (mineLockTime > 0) {
-              const m = Math.floor(mineLockTime / 60000);
-              const s = Math.floor((mineLockTime % 60000) / 1000);
-              show(`The mine is resting! Come back in ${m}m ${s}s.`, "error");
-              return;
-            }
-            e.currentTarget.style.transform = 'scale(0.9)';
-            setTimeout(() => { navigate('/mine'); }, 150);
-          }}
-          style={{ position: 'absolute', top: '367px', left: '1129px', width: '78px', zIndex: 11, cursor: mineLockTime > 0 ? 'not-allowed' : 'pointer', animation: 'mapFloat 2.6s ease-in-out infinite', transition: 'filter 0.2s ease', opacity: mineLockTime > 0 ? 0.6 : 1 }}
-        />}
 
         <FarmInterface
           key={isFarmMenu ? `preview-${previewUpdateKey}` : "main"}
@@ -7930,51 +7472,6 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
           crops={cropArray}
           unlockedPlots={unlockedPlots}
         />
-
-        {/* Cat Appearance */}
-
-        {catWillAppear && tutorialStep >= 11 && (
-          <img 
-            src={
-              starvingTime > 0 
-                ? "/images/pets/catangry.png" 
-                : catState === 'walk' 
-                  ? "/images/pets/cat_walk.png" 
-                  : catState === 'sleep' 
-                    ? "/images/pets/catsleep.png" 
-                    : "/images/pets/catsit.png"
-            } 
-            alt="Cat Pet" 
-            style={{ 
-              position: 'absolute', 
-              left: `${catPos.left}px`,
-              top: `${catPos.top}px`,
-              width: '80px', 
-              height: 'auto', 
-              zIndex: 15,
-              cursor: 'pointer',
-              transform: `scaleX(${catDirection})`,
-              transition: yarnState?.active ? 'left 0.1s linear, top 0.1s linear, transform 0.2s' : 'left 3.8s linear, top 3.8s linear, transform 0.2s',
-              filter: starvingTime > 0 ? 'drop-shadow(0 0 10px red)' : 'drop-shadow(0px 2px 4px rgba(0,0,0,0.4))'
-            }} 
-            onPointerDown={(e) => {
-              e.stopPropagation();
-              e.preventDefault();
-              if (catState === 'sleep') {
-                 let happy = parseFloat(localStorage.getItem('sandbox_cat_happiness') || '50');
-                 happy = Math.max(0, happy - 10);
-                 localStorage.setItem('sandbox_cat_happiness', happy.toString());
-                 setCatHappiness(happy);
-                 show("You woke up Felix! Happiness -10%", "error");
-                 setCatState('sit');
-                 catSleepUntil.current = 0;
-              } else {
-                 show(starvingTime > 0 ? "HISS! The cat is very hungry!" : "Meow! The cat is happy and fed.", starvingTime > 0 ? "error" : "success");
-              }
-            }}
-          />
-        )}
-
 
         {/* Protector Spots Overlay */}
         {FARM_POSITIONS && SHARED_SPOTS_CONFIG.map((spot) => {
@@ -8045,156 +7542,8 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
           );
         })}
 
-        {yarnState && yarnState.phase === 'cursor' && (
-          <div
-            style={{
-              position: 'absolute',
-              top: 0, left: 0, width: '1920px', height: '1080px',
-              zIndex: 99999,
-              cursor: 'none'
-            }}
-            onPointerMove={(e) => {
-              const x = e.nativeEvent.offsetX;
-              const y = e.nativeEvent.offsetY;
-              setYarnState(prev => ({ ...prev, x, y }));
-            }}
-            onPointerDown={(e) => {
-              e.stopPropagation();
-              e.preventDefault();
-              const x = e.nativeEvent.offsetX;
-              const y = e.nativeEvent.offsetY;
-              setYarnState(prev => ({ ...prev, phase: 'idle', x, y }));
-              show("Drag the yarn down to aim!", "info");
-            }}
-          >
-            <div
-              style={{
-                position: 'absolute',
-                left: `${yarnState.x - 25}px`,
-                top: `${yarnState.y - 25}px`,
-                width: '50px',
-                height: '50px',
-                pointerEvents: 'none',
-                filter: 'drop-shadow(0px 4px 6px rgba(0,0,0,0.5))',
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center'
-              }}
-            >
-              <img src="/images/pets/yarn.png" alt="Yarn" style={{ width: '100%', height: '100%', objectFit: 'contain', transform: 'scale(0.5)' }} onError={(e) => e.target.src='/images/items/seeds.png'} />
-            </div>
-          </div>
-        )}
-
-        {yarnState && yarnState.active && yarnState.phase !== 'cursor' && (
-          <div
-            style={{
-              position: 'absolute',
-              left: `${yarnState.x - 25}px`,
-              top: `${yarnState.y - 25}px`,
-              width: '50px',
-              height: '50px',
-              zIndex: 100000,
-              cursor: yarnState.phase === 'idle' ? 'grab' : (yarnState.phase === 'dragging' || yarnState.phase === 'aiming' ? 'grabbing' : 'default'),
-              filter: 'drop-shadow(0px 4px 6px rgba(0,0,0,0.5))',
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center'
-            }}
-            onPointerDown={(e) => {
-              e.stopPropagation();
-              e.preventDefault();
-              if (yarnState.phase === 'idle' || yarnState.phase === 'rolling') {
-                 e.currentTarget.setPointerCapture(e.pointerId);
-                 setYarnState(prev => ({ ...prev, phase: 'dragging', startY: e.clientY, vx: 0, vy: 0, angle: prev.angle || 0 }));
-              }
-            }}
-            onPointerMove={(e) => {
-              if (yarnState.phase === 'dragging' && e.clientY > (yarnState.startY || 0) + 30) {
-                 setYarnState(prev => ({ ...prev, phase: 'aiming' }));
-              }
-            }}
-            onPointerUp={(e) => {
-              e.stopPropagation();
-              e.preventDefault();
-              e.currentTarget.releasePointerCapture(e.pointerId);
-              if (yarnState.phase === 'aiming') {
-                 setYarnState(prev => {
-                   if (!prev || prev.phase !== 'aiming') return prev;
-                   const rad = prev.angle * (Math.PI / 180);
-                   const power = 15; 
-                   const vx = Math.sin(rad) * power;
-                   const vy = -Math.cos(rad) * power;
-                   return { ...prev, phase: 'rolling', vx, vy };
-                 });
-              } else if (yarnState.phase === 'dragging') {
-                 setYarnState(prev => ({ ...prev, phase: 'idle' }));
-              }
-            }}
-          >
-             <img src="/images/pets/yarn.png" alt="Yarn" style={{ width: '100%', height: '100%', objectFit: 'contain', transform: 'scale(0.5)', pointerEvents: 'none' }} onError={(e) => e.target.src='/images/items/seeds.png'} />
-             
-             {yarnState.phase === 'idle' && (
-               <div style={{ position: 'absolute', top: '-30px', left: '50%', transform: 'translateX(-50%)', whiteSpace: 'nowrap', color: '#ffea00', fontWeight: 'bold', textShadow: '1px 1px 2px black', fontSize: '14px', pointerEvents: 'none' }}>
-                 Drag down to aim!
-               </div>
-             )}
-
-             {yarnState.phase === 'aiming' && (
-               <div style={{
-                 position: 'absolute',
-                 top: '25px',
-                 left: '25px',
-                 width: '0px',
-                 height: '0px',
-                 transform: `rotate(${yarnState.angle}deg)`,
-                 zIndex: -1
-               }}>
-                 <div style={{ position: 'absolute', bottom: '30px', left: '-10px', width: '20px', height: '150px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                   <div style={{ width: 0, height: 0, borderLeft: '15px solid transparent', borderRight: '15px solid transparent', borderBottom: '25px solid #ffea00', filter: 'drop-shadow(0 2px 2px black)' }} />
-                   <div style={{ width: '10px', height: '125px', backgroundColor: '#ffea00', filter: 'drop-shadow(0 2px 2px black)', borderRadius: '4px' }} />
-                 </div>
-               </div>
-             )}
-          </div>
-        )}
-
         {tutorialStep >= 36 && (
           <>
-        {/* Forest Label Overlay - temporarily hidden */}
-        {false && <div
-          onMouseEnter={(e) => {
-            if (forestLockTime <= 0) {
-              e.currentTarget.style.transform = 'scale(1.1)';
-              e.currentTarget.style.filter = 'drop-shadow(0px 0px 8px rgba(255, 255, 255, 0.8))';
-            }
-          }}
-          onMouseLeave={(e) => {
-            if (forestLockTime <= 0) {
-              e.currentTarget.style.transform = 'scale(1)';
-              e.currentTarget.style.filter = 'drop-shadow(0px 4px 6px rgba(0,0,0,0.5))';
-            }
-          }}
-          onPointerDown={(e) => {
-            e.stopPropagation();
-            e.preventDefault();
-            if (forestLockTime > 0) {
-              const m = Math.floor((forestLockTime % 3600000) / 60000);
-              const s = Math.floor((forestLockTime % 60000) / 1000);
-              show(`The forest is resting! Come back in ${m}m ${s}s.`, "error");
-              return;
-            }
-            navigate('/forest');
-          }}
-          style={{ position: 'absolute', bottom: 'calc(100% - 170px)', right: 'calc(15% - 1180px)', zIndex: 9998, cursor: forestLockTime > 0 ? 'not-allowed' : 'pointer', transition: 'all 0.2s ease', filter: 'drop-shadow(0px 4px 6px rgba(0,0,0,0.5))', opacity: forestLockTime > 0 ? 0.6 : 1, animation: 'mapFloat 2.6s ease-in-out infinite', willChange: 'transform' }}
-        >
-          <img src="/images/label/forestlabel (2).png" alt="Forest" style={{ height: '50px', objectFit: 'contain' }} />
-          {forestLockTime > 0 && (
-            <div style={{ position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)', backgroundColor: 'rgba(0,0,0,0.8)', color: '#ff4444', padding: '4px 8px', borderRadius: '4px', fontSize: '14px', fontWeight: 'bold', whiteSpace: 'nowrap', marginTop: '5px', border: '1px solid #ff4444', fontFamily: 'monospace' }}>
-              {Math.floor(forestLockTime / 60000)}m {Math.floor((forestLockTime % 60000) / 1000)}s
-            </div>
-          )}
-        </div>}
 
         {/* The Well Label Overlay */}
         <div 
@@ -8238,7 +7587,7 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
             onPointerDown={(e) => {
               e.stopPropagation();
               e.preventDefault();
-              navigate('/animal');
+              navigateWithClouds(navigate, '/animal');
             }}
             style={{ position: 'absolute', top: '518px', left: '200px', zIndex: 9998, cursor: 'pointer', transition: 'all 0.2s ease', filter: 'drop-shadow(0px 4px 6px rgba(0,0,0,0.5))' }}
           >
@@ -8303,25 +7652,6 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
         />
       )}
 
-      {showBowlFishDialog && (
-        <FishBowlDialog
-          onClose={() => { setShowBowlFishDialog(false); setShowTamagotchiDialog(true); }}
-          onAddFish={(fishId) => {
-            const sandboxLoot = JSON.parse(localStorage.getItem('sandbox_loot') || '{}');
-            sandboxLoot[fishId] = Math.max(0, (sandboxLoot[fishId] || 0) - 1);
-            localStorage.setItem('sandbox_loot', JSON.stringify(sandboxLoot));
-            
-            setBowlFishId(fishId);
-            localStorage.setItem('sandbox_bowl_fish', fishId.toString());
-            setShowBowlFishDialog(false);
-            setShowTamagotchiDialog(true);
-            show("Fish placed in the bowl!", "success");
-            if (refetchSeeds) refetchSeeds();
-          }}
-          availableFish={allItems.filter(item => Object.values(ID_FISH_ITEMS || {}).includes(item.id) && item.count > 0)}
-        />
-      )}
-
       {skipGrowTarget !== null && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 1000000 }}>
           <SkipGrowthDialog
@@ -8331,50 +7661,16 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
         </div>
       )}
 
-      {/* Interactive Bowls */}
-      {false && tutorialStep >= 36 && !hideIcons && (
-        <div style={{ position: 'fixed', bottom: '20px', left: '50%', transform: 'translateX(-50%)', display: 'flex', alignItems: 'flex-end', gap: '15px', zIndex: 9999 }}>
-          
-          {/* Tamagotchi Pet Device */}
-          <div 
-            onPointerDown={(e) => {
-              e.stopPropagation();
-              e.preventDefault();
-              setShowTamagotchiDialog(true);
-            }}
-            style={{
-              width: '80px', height: 'auto', cursor: 'pointer', position: 'relative',
-              filter: 'drop-shadow(0px 4px 6px rgba(0,0,0,0.5))',
-              animation: 'mapFloat 2.5s ease-in-out infinite alternate',
-              transition: 'transform 0.1s ease',
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
-            onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-            title="Felix the Cat"
-          >
-            <img src={`/images/pets/paw.png?v=${Date.now()}`} alt="Tamagotchi" style={{ width: '100%', height: 'auto', objectFit: 'contain' }} onError={(e) => e.target.src='/images/pets/bowl.png'} />
-            {(!bowlFishId || !bowlWaterFilled || starvingTime > 0) && <div style={{ position: 'absolute', top: '-5px', right: '-5px', fontSize: '24px', animation: 'mailboxAlert 1s infinite' }}>❗️</div>}
-          </div>
-        </div>
-      )}
-
       {/* Cancel Placement Button */}
-      {(isPlacingScarecrow || isPlacingLadybug || isPlacingSprinkler || isPlacingUmbrella || isPlacingTesla || yarnState?.phase === 'cursor') && (
+      {(isPlacingScarecrow || isPlacingLadybug || isPlacingSprinkler || isPlacingUmbrella || isPlacingTesla) && (
         <div style={{ position: 'fixed', top: '20px', left: '50%', transform: 'translateX(-50%)', zIndex: 10000 }}>
-          <button 
+          <button
             onClick={() => {
               setIsPlacingScarecrow(false);
               setIsPlacingLadybug(false);
               setIsPlacingTesla(false);
               setIsPlacingSprinkler(false);
               setIsPlacingUmbrella(false);
-              if (yarnState?.phase === 'cursor') {
-                setYarnState(null);
-                const sandboxLoot = JSON.parse(localStorage.getItem('sandbox_loot') || '{}');
-                sandboxLoot[9955] = (sandboxLoot[9955] || 0) + 1;
-                localStorage.setItem('sandbox_loot', JSON.stringify(sandboxLoot));
-                if (refetch) refetch();
-              }
               setIsPlanting(true);
             }}
             style={{ backgroundColor: 'rgba(0,0,0,0.8)', color: '#ff4444', border: '2px solid #ff4444', padding: '10px 20px', borderRadius: '8px', cursor: 'pointer', fontFamily: 'monospace', fontSize: '16px', fontWeight: 'bold', boxShadow: '0 0 10px rgba(255,68,68,0.5)' }}
@@ -8458,7 +7754,7 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
   {tutorialStep === 15 && <TutorialBubbleOverlay setTutorialStep={setTutorialStep} fullText="Wow great job! You see the bag of dirt, thats what you use to fill up the hole. Click on the hole to fill it with dirt." advanceTo={16} bubbleSrc="/images/tutorial/papabeebubble.png" showPapabee={true} fontSize="22px" textMaxWidth="620px" noAdvance={true} />}
   {tutorialStep === 15 && <TutorialStarterPlotsBright staggered={false} onlyHoles={true} allowHover={true} />}
   {/* Tutorial Part 16 — Seed bag intro (dim on, dirt bright, soil hidden, seeds highlighted) */}
-  {tutorialStep === 16 && !isSelectCropDialog && <TutorialBubbleOverlay setTutorialStep={setTutorialStep} fullText="Ok have you done this before? Must be genetics! Here is a potato seed, click on the dirt to plant the potato!" advanceTo={17} bubbleSrc="/images/tutorial/papabeebubble.png" showPapabee={true} fontSize="20px" textMaxWidth="620px" />}
+  {tutorialStep === 16 && !isSelectCropDialog && <TutorialBubbleOverlay setTutorialStep={setTutorialStep} fullText="Ok have you done this before? Must be genetics! Here is a potato seed, click on the dirt to plant the potato!" advanceTo={17} bubbleSrc="/images/tutorial/papabeebubble.png" showPapabee={true} fontSize="20px" textMaxWidth="620px" noAdvance={true} />}
   {tutorialStep === 16 && <TutorialStarterPlotsBright staggered={false} onlyDirt={true} allowHover={true} />}
   {tutorialStep === 17 && <TutorialStarterPlotsBright staggered={false} onlyDirt={true} allowHover={true} />}
   {tutorialStep === 18 && <TutorialStarterPlotsBright staggered={false} onlyDirt={true} allowHover={true} />}
@@ -8470,7 +7766,7 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
   {tutorialStep === 24 && <TutorialStarterPlotsBright staggered={false} onlyDirt={true} allowHover={true} />}
   {tutorialStep === 25 && <TutorialStarterPlotsBright staggered={false} onlyDirt={true} allowHover={true} />}
   {/* Tutorial Part 17 — Water bucket intro */}
-  {tutorialStep === 17 && <TutorialBubbleOverlay setTutorialStep={setTutorialStep} fullText="Perfect! Now you see the water bucket, thats what you use to water your plants! Click on your pile now to give that soil and seed some well deserved H20" advanceTo={18} bubbleSrc="/images/tutorial/papabeebubble.png" showPapabee={true} fontSize="18px" textMaxWidth="620px" textShiftY={-3} />}
+  {tutorialStep === 17 && <TutorialBubbleOverlay setTutorialStep={setTutorialStep} fullText="Perfect! Now you see the water bucket, thats what you use to water your plants! Click on your pile now to give that soil and seed some well deserved H20" advanceTo={18} bubbleSrc="/images/tutorial/papabeebubble.png" showPapabee={true} fontSize="18px" textMaxWidth="620px" textShiftY={-3} noAdvance={true} />}
   {/* Tutorial Part 18 — Heat mention (click to advance) */}
   {tutorialStep === 18 && <TutorialBubbleOverlay setTutorialStep={setTutorialStep} fullText="Ouf I might need some water soon, its hot!" advanceTo={19} bubbleSrc="/images/tutorial/papabeebubble.png" showPapabee={true} fontSize="20px" textMaxWidth="620px" />}
   {/* Tutorial Part 19 — WOAH, crow flies in, auto-advances when it lands */}
@@ -8482,11 +7778,11 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
   {/* Tutorial Part 22 — Tap the bugs */}
   {tutorialStep === 22 && <TutorialBubbleOverlay setTutorialStep={setTutorialStep} fullText="Ugh I hate bugs... wait Im a bug... Well these ones are still super annoying if you let them buzz around your crop will stop growing, tap them, hurry!" advanceTo={23} bubbleSrc="/images/tutorial/papabeebubble.png" showPapabee={true} fontSize="18px" textMaxWidth="620px" textShiftY={-5} noAdvance={true} />}
   {/* Tutorial Part 23 — Gems gift */}
-  {tutorialStep === 23 && <TutorialBubbleOverlay setTutorialStep={setTutorialStep} fullText="Finally peace and quiet. I guess all there is to do is wait... but you know busy bees, we cant wait forever... Here are some gems to speed up the process." advanceTo={24} bubbleSrc="/images/tutorial/papabeebubble.png" showPapabee={true} fontSize="18px" textMaxWidth="620px" textShiftY={5} />}
+  {tutorialStep === 23 && <TutorialBubbleOverlay setTutorialStep={setTutorialStep} fullText="Finally peace and quiet. I guess all there is to do is wait... but you know busy bees, we cant wait forever... Here are some gems to speed up the process." advanceTo={24} bubbleSrc="/images/tutorial/papabeebubble.png" showPapabee={true} fontSize="18px" textMaxWidth="620px" textShiftY={-10} />}
   {/* Tutorial Part 24 — Click pile to skip wait time */}
   {tutorialStep === 24 && <TutorialBubbleOverlay setTutorialStep={setTutorialStep} fullText="Click on the pile to skip the wait time." advanceTo={25} bubbleSrc="/images/tutorial/papabeebubble.png" showPapabee={true} fontSize="20px" textMaxWidth="620px" noAdvance={true} />}
   {/* Tutorial Part 25 — Congrats on first harvest */}
-  {tutorialStep === 25 && <TutorialBubbleOverlay setTutorialStep={setTutorialStep} fullText="CONGRATS on your first harvest, I see you going far and this is just the beggining" advanceTo={26} bubbleSrc="/images/tutorial/papabeebubble.png" showPapabee={true} fontSize="20px" textMaxWidth="620px" />}
+  {tutorialStep === 25 && <TutorialBubbleOverlay setTutorialStep={setTutorialStep} fullText="CONGRATS on your first harvest, I see you going far and this is just the beggining" advanceTo={26} bubbleSrc="/images/tutorial/papabeebubble.png" showPapabee={true} fontSize="20px" textMaxWidth="620px" shiftX={660} shiftY={-160} dismissHarvestRevealOnAdvance={true} />}
   {/* Tutorial Part 26 — Your farm, your story */}
   {tutorialStep === 26 && <TutorialBubbleOverlay setTutorialStep={setTutorialStep} fullText="This is your farm, your valley, and your story" advanceTo={27} bubbleSrc="/images/tutorial/papabeebubble.png" showPapabee={true} fontSize="22px" textMaxWidth="620px" />}
   {/* Tutorial Part 27 — Where am I going? */}
@@ -8508,43 +7804,9 @@ const [tutGemPopupOpen, setTutGemPopupOpen] = useState(false);
   {/* Easter Basket Dialog */}
       {tutorialStep >= 9 && showEasterBasket && <EasterBasketDialog onClose={() => setShowEasterBasket(false)} />}
 
-  {/* Tamagotchi Dialog UI */}
-  {showTamagotchiDialog && (
-    <TamagotchiDialog
-      onClose={() => setShowTamagotchiDialog(false)}
-      catFeedTimeLeft={catFeedTimeLeft}
-      starvingTime={starvingTime}
-      bowlWaterFilled={bowlWaterFilled}
-      bowlFishId={bowlFishId}
-      isCatUnlocked={isCatUnlocked}
-      firstFedTime={firstFedTime}
-      catHappiness={catHappiness}
-      catHealth={catHealth}
-      currentHunger={currentHunger}
-      onWater={() => {
-        if (!bowlWaterFilled) {
-          setBowlWaterFilled(true);
-          localStorage.setItem('sandbox_bowl_water', 'true');
-          playWaterSound();
-          show("You filled Felix's water!", "success");
-        } else {
-          show("Felix isn't thirsty right now.", "info");
-        }
-      }}
-      onFeed={() => {
-        if (!bowlFishId) {
-          setShowBowlFishDialog(true);
-          setShowTamagotchiDialog(false); // Close tama, open fish picker
-        } else {
-          show("Felix already has fish!", "info");
-        }
-      }}
-    />
-  )}
-
       <AdminPanel />
 
-      {showMissionBoard && <MissionBoard onClose={() => setShowMissionBoard(false)} />}
+      {showMissionBoard && <MissionBoard onClose={() => withIris(() => setShowMissionBoard(false))} />}
       {showShop && <Shop onClose={() => setShowShop(false)} />}
       {showFarmCustomize && <FarmCustomizePanel onClose={() => setShowFarmCustomize(false)} />}
       {showPabeePack && (

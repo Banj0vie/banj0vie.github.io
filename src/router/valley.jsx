@@ -4,6 +4,7 @@ import PanZoomViewport from "../layouts/PanZoomViewport";
 import { VALLEY_HOTSPOTS, VALLEY_VIEWPORT } from "../constants/scene_valley";
 import AdminPanel from "./index";
 import WeatherOverlay from "../components/WeatherOverlay";
+import { navigateWithClouds } from "../components/RouteCloudTransition";
 
 const Valley = () => {
   const navigate = useNavigate();
@@ -51,7 +52,7 @@ const Valley = () => {
               localStorage.removeItem('sandbox_tut_market_page');
               localStorage.setItem('sandbox_tutorial_step', '999');
               window.dispatchEvent(new CustomEvent('tutorialStepChanged'));
-              navigate('/farm');
+              navigateWithClouds(navigate, '/farm');
             }}
           />
         </div>

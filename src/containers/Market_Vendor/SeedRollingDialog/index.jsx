@@ -3,8 +3,8 @@ import "./style.css";
 import BaseDialog from "../../_BaseDialog";
 import BaseButton from "../../../components/buttons/BaseButton";
 import SeedRollingBox from "../../../components/boxes/SeedRollingBox";
-import { useAppSelector } from "../../../solana/store";
-import { selectSettings } from "../../../solana/store/slices/uiSlice";
+import { useAppSelector } from "../../../store";
+import { selectSettings } from "../../../store/slices/uiSlice";
 import { defaultSettings } from "../../../utils/settings";
 import { clampVolume } from "../../../utils/basic";
 

@@ -673,7 +673,7 @@ const FishingMiniGame = ({ fishItem, fishRarity: _fishRarity, fishWeight, onComp
               }} onError={e => { e.target.src = '/images/fish/Normal Ocean Fish (2).png'; }} />
               <div style={{
                 width:'210px',
-                background:'rgba(0,0,0,.55)', backdropFilter:'blur(10px)',
+                background:'rgba(0,0,0,.75)',
                 border:`2px solid ${rarityColor}`,
                 borderRadius:'12px', padding:'14px 16px',
                 display:'flex', flexDirection:'column', gap:'10px',

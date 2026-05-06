@@ -6,9 +6,11 @@ import TooltipButton from "../../components/buttons/TooltipButton";
 import GameMenu from "../GameMenu";
 import { isWalletConnected, clampVolume } from "../../utils/basic";
 import AuthPage from "../AuthPage";
-import { useAppSelector } from "../../solana/store";
-import { selectSettings } from "../../solana/store/slices/uiSlice";
+import { useAppSelector } from "../../store";
+import { selectSettings } from "../../store/slices/uiSlice";
 import { defaultSettings } from "../../utils/settings";
+import { withIris } from "../../components/IrisTransition";
+import { navigateWithClouds } from "../../components/RouteCloudTransition";
 
 if (typeof window !== 'undefined' && !window.__ls_patched_v2) {
   window.__ls_patched_v2 = true;
@@ -397,12 +399,15 @@ const PanZoomViewport = ({
                     }
                   }
                   if (h.link) {
-                    // Navigate based on link content
-                    navigate(h.link);
+                    // Route changes use the cloud sweep transition.
+                    navigateWithClouds(navigate, h.link);
                   } else {
-                    setActiveModal(
-                      dialogs.find((d) => d.id === h.id) || dialogs[0]
-                    );
+                    // Building/dialog hotspots use the iris wipe.
+                    withIris(() => {
+                      setActiveModal(
+                        dialogs.find((d) => d.id === h.id) || dialogs[0]
+                      );
+                    });
                   }
                 }}
               />
@@ -415,7 +420,7 @@ const PanZoomViewport = ({
       </div>
       {activeModal && (
         <activeModal.component
-          onClose={() => setActiveModal(null)}
+          onClose={() => withIris(() => setActiveModal(null))}
           label={activeModal.label}
           header={activeModal.header}
           headerOffset={activeModal.headerOffset}

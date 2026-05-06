@@ -5,17 +5,14 @@ import { MARKET_VIEWPORT, MARKET_HOTSPOTS, MARKET_BEES, MARKET_STUFFS } from "..
 import DexDialog from "../containers/Market_Dex";
 import VendorDialog from "../containers/Market_Vendor";
 import BankerDialog from "../containers/Market_Banker";
-import { ID_MARKET_HOTSPOTS, ID_PRODUCE_ITEMS, ID_SEEDS, ID_POTION_ITEMS } from "../constants/app_ids";
+import { ID_MARKET_HOTSPOTS } from "../constants/app_ids";
 import MarketPlaceDialog from "../containers/Market_Marketplace";
 import LeaderboardDialog from "../containers/Market_Leaderboard";
 import SageDialog from "../containers/Market_Sage";
 import AdminPanel from "./index";
+import { navigateWithClouds } from "../components/RouteCloudTransition";
 import WeatherOverlay from "../components/WeatherOverlay";
 import Shop from "../containers/Shop";
-import BaseDialog from "../containers/_BaseDialog";
-import BaseButton from "../components/buttons/BaseButton";
-import { useNotification } from "../contexts/NotificationContext";
-import { useItems } from "../hooks/useItems";
 
 // Step 0 is the silhouette intro — text computed dynamically with the saved username.
 // Steps 1+ are the revealed mayor's regular dialogue.
@@ -32,7 +29,9 @@ const MAYOR_CUTSCENE_DIALOGUE = [
   "Your're here to get some more seeds right, well let me introduce to you our local seed vendor",
   "Now that you know where to get more seeds lets go get some! Click on the vendor to enter the shop!",
   "",  // step 6 — vendor interaction; cutscene UI is fully hidden, user interacts with vendor normally
-  "Did you get anything good?",  // step 7 — mayor returns after pack flow finishes
+  "Nice! Looks like you got some good seeds!",  // step 7 — mayor returns after pack flow finishes
+  "Alright, now you know how to get more seeds",  // step 8
+  "Happy Farming!",  // step 9 — last line; bubble click completes the cutscene
 ];
 const MAYOR_CUTSCENE_TOTAL_STEPS = 1 + MAYOR_CUTSCENE_DIALOGUE.length; // silhouette + revealed dialogue lines
 
@@ -62,7 +61,7 @@ const BANK_CUTSCENE_DIALOGUE = [
   "This way you can free up some room in your bag",
   "Then we have withdraw which allows you to take items out of your bank and put it in your bag",
   "And thats pretty much it!",
-  "Just so you know it costs 1,000 HNY a week to keep your account open",
+  "Just so you know it costs 1,000 Gold a week to keep your account open",
   "Ill send you a letter when its time to pay up!",
   "The longer you are as a customer the more likely I am to allow you to be apart of our next tier membership...",
   "That gives you 100 slots",
@@ -74,7 +73,6 @@ const Market = () => {
   const navigate = useNavigate();
   const { width, height } = MARKET_VIEWPORT;
   const hotspots = MARKET_HOTSPOTS;
-  const { refetch } = useItems();
   const [tutorialStep, setTutorialStep] = useState(() => parseInt(localStorage.getItem('sandbox_tutorial_step') || '0', 10));
   const [showShop, setShowShop] = useState(false);
   const [showLockedPopup, setShowLockedPopup] = useState(false);
@@ -85,13 +83,20 @@ const Market = () => {
 
   // Mayor cutscene — plays on first market arrival after the user has read the
   // q_mayor_market_intro letter. -1 means hidden, otherwise it's the current line index.
-  const [mayorCutsceneStep, setMayorCutsceneStep] = useState(() => {
+  // We deliberately START at -1 and bump to 0 after the route-loading splash clears
+  // (~950ms) so the silhouette intro doesn't render behind the loading screen.
+  const [mayorCutsceneStep, setMayorCutsceneStep] = useState(-1);
+  useEffect(() => {
     let read = [];
     try { read = JSON.parse(localStorage.getItem('sandbox_read_quests') || '[]'); } catch (_) {}
     const introRead = Array.isArray(read) && read.includes('q_mayor_market_intro');
     const introSeen = localStorage.getItem('sandbox_mayor_market_intro_seen') === 'true';
-    return (introRead && !introSeen) ? 0 : -1;
-  });
+    if (!introRead || introSeen) return;
+    // App.jsx's route-loading splash holds for 900ms — start the cutscene just after
+    // it clears so the player sees the silhouette + bubble on a settled scene.
+    const t = setTimeout(() => setMayorCutsceneStep(0), 950);
+    return () => clearTimeout(t);
+  }, []);
 
   // Bank cutscene — plays the first time the user reaches the market AFTER folding the
   // q_mayor_bank_intro letter. Reads sandbox_market_pulse_bank synchronously on init so
@@ -167,6 +172,21 @@ const Market = () => {
     return () => window.removeEventListener('questStateChanged', update);
   }, []);
 
+  // Track day/night (Eastern Time, 18:00-06:00 = night) so the vendor + banker bees
+  // can be hidden after dark, matching the rest of the night atmosphere in SkyOverlay.
+  const computeIsNight = () => {
+    try {
+      const h = parseInt(new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', hour: '2-digit', hour12: false })
+        .formatToParts(new Date()).find((p) => p.type === 'hour').value, 10);
+      return h >= 18 || h < 6;
+    } catch (_) { return false; }
+  };
+  const [isNight, setIsNight] = useState(computeIsNight);
+  useEffect(() => {
+    const id = setInterval(() => setIsNight(computeIsNight()), 60000);
+    return () => clearInterval(id);
+  }, []);
+
   // Mark the body while the mayor OR bank cutscene is showing so PlayerPullNotification
   // can suppress popups (mirrors the data-letter-open behavior used by mailbox).
   useEffect(() => {
@@ -180,7 +200,7 @@ const Market = () => {
     return () => document.body.removeAttribute('data-cutscene-active');
   }, [mayorCutsceneStep, bankCutsceneStep]);
 
-  // Bank cutscene typewriter — same 30ms/char pacing.
+  // Bank cutscene dialogue — text shows in full immediately (no typewriter).
   // Step 0 — username-interpolated greeting; later steps come from BANK_CUTSCENE_DIALOGUE.
   // Step 4 — silhouette intro of the banker; bubble shows "???".
   const getBankCutsceneLine = (step) => {
@@ -190,23 +210,9 @@ const Market = () => {
     if (step === 5) return `Oh are you ${name}?`;
     return BANK_CUTSCENE_DIALOGUE[step] || '';
   };
-  const [bankTyped, setBankTyped] = useState('');
   const bankCurrentLine = bankCutsceneStep >= 0 ? getBankCutsceneLine(bankCutsceneStep) : '';
-  useEffect(() => {
-    setBankTyped('');
-    if (!bankCurrentLine) return;
-    let i = 0;
-    const id = setInterval(() => {
-      i++;
-      setBankTyped(bankCurrentLine.slice(0, i));
-      if (i >= bankCurrentLine.length) clearInterval(id);
-    }, 30);
-    return () => clearInterval(id);
-  }, [bankCurrentLine]);
-  const bankTypingDone = bankTyped.length >= bankCurrentLine.length;
 
   const advanceBankCutscene = () => {
-    if (!bankTypingDone) return;
     // Step 3 advances ONLY when the user clicks the bank hotspot (handled in
     // onHotspotClick below). Background clicks must not advance.
     if (bankCutsceneStep === 3) return;
@@ -254,29 +260,15 @@ const Market = () => {
     return () => window.removeEventListener('bankAccountOpened', onOpen);
   }, []);
 
-  // Typewriter for the cutscene line — same 30ms/char pacing as the tutorial bubble.
-  const [mayorTyped, setMayorTyped] = useState('');
+  // Mayor cutscene dialogue — text shows in full immediately (no typewriter).
   const mayorCurrentLine = mayorCutsceneStep >= 0 ? getMayorCutsceneLine(mayorCutsceneStep) : '';
-  useEffect(() => {
-    setMayorTyped('');
-    if (!mayorCurrentLine) return;
-    let i = 0;
-    const id = setInterval(() => {
-      i++;
-      setMayorTyped(mayorCurrentLine.slice(0, i));
-      if (i >= mayorCurrentLine.length) clearInterval(id);
-    }, 30);
-    return () => clearInterval(id);
-  }, [mayorCurrentLine]);
-  const mayorTypingDone = mayorTyped.length >= mayorCurrentLine.length;
 
   const advanceMayorCutscene = () => {
-    if (!mayorTypingDone) return;
     // Step 5 (vendor-click step) advances only via the vendor hotspot, not background clicks.
     if (mayorCutsceneStep === 4) return;
     // Step 6 (vendor interaction) advances only when the user finishes the pack flow.
     if (mayorCutsceneStep === 5) return;
-    // Step 7 — last cutscene line. Bubble click completes the cutscene.
+    // Step 9 — last cutscene line ("Happy Farming!"). Bubble click completes the cutscene.
     if (mayorCutsceneStep === MAYOR_CUTSCENE_TOTAL_STEPS - 1) {
       completeMayorCutscene();
       return;
@@ -393,7 +385,7 @@ const Market = () => {
     {
       id: ID_MARKET_HOTSPOTS.DEX,
       component: DexDialog,
-      label: "EXCHANGE TOKENS",
+      label: "EXCHANGE",
       header: "/images/dialog/modal-header-dex.png",
     },
     {
@@ -490,6 +482,14 @@ const Market = () => {
           .map-btn[title="BANKER"] img { display: inline !important; }
         `}</style>
       )}
+      {/* Permanent LEADERBOARD label override — visible post-tutorial. */}
+      {tutorialStep >= 36 && (
+        <style>{`
+          .map-btn[title="LEADERBOARD"] { background-image: url(/images/backgrounds/tooltip_bg.png) !important; animation: hotspotLabelFloat 3.2s ease-in-out infinite !important; pointer-events: auto !important; }
+          .map-btn[title="LEADERBOARD"] span { display: inline !important; }
+          .map-btn[title="LEADERBOARD"] img { display: inline !important; }
+        `}</style>
+      )}
       <WeatherOverlay />
       <PanZoomViewport
         backgroundSrc="/images/backgrounds/market.webp"
@@ -500,7 +500,9 @@ const Market = () => {
         stuffs={MARKET_STUFFS}
         bees={(() => {
           // MARKET_BEES indices: 0 queen, 1 farmer, 2 bee, 3 clerk (banker), 4 vendor.
-          // Vendor + clerk bees only return after their respective cutscenes finish.
+          // Vendor + clerk bees only return after their respective cutscenes finish,
+          // and they hide entirely at night (matches the rest of the night atmosphere).
+          if (isNight) return [];
           const out = [];
           if (mayorIntroSeen) out.push(MARKET_BEES[4]);
           if (bankCutsceneSeen) out.push(MARKET_BEES[3]);
@@ -588,7 +590,7 @@ const Market = () => {
               <div style={{ position: 'absolute', top: 'calc(10% + 45px)', left: '22%', right: '10%', bottom: '22%', display: 'flex', alignItems: 'flex-start' }}>
                 {tutorialStep === 11 && (
                   <p style={{ fontFamily: 'Cartoonist', fontSize: '11px', color: '#3b1f0a', lineHeight: '1.5', margin: 0 }}>
-                    Welcome to the Town Market! First, you'll need some Honey to buy things. Click on the DEX to exchange your tokens for Honey!
+                    Welcome to the Town Market! Take a look around — head to the Vendor to grab some seed packs for your farm.
                   </p>
                 )}
               </div>
@@ -819,13 +821,12 @@ const Market = () => {
               letterSpacing: '2px',
               pointerEvents: 'none',
             }}>
-              {mayorTyped}
+              {mayorCurrentLine}
             </div>
-            {/* Click-to-continue triangle — only shown after the typewriter completes.
-                Hidden on the vendor-click step (5), where bubble click does nothing
-                (the user must click the vendor instead). Visible on step 7 where bubble
-                click completes the cutscene. */}
-            {mayorTypingDone && !isVendorClickStep && (
+            {/* Click-to-continue triangle — hidden on the vendor-click step (5), where
+                bubble click does nothing (the user must click the vendor instead).
+                Visible on step 7 where bubble click completes the cutscene. */}
+            {!isVendorClickStep && (
               <>
                 <style>{`@keyframes mayorCutscenePulse { 0%,100% { transform: translateY(0) scale(1); opacity: 0.85; } 50% { transform: translateY(4px) scale(1.08); opacity: 1; } }`}</style>
                 <img
@@ -944,7 +945,10 @@ const Market = () => {
                   width: '820px',
                   userSelect: 'none',
                   zIndex: 100003,
-                  pointerEvents: 'auto',
+                  // At the "tap on Open an Account" prompt the bubble overlaps
+                  // the popup's button — disable clicks here so they reach the
+                  // button instead of being swallowed by the bubble div.
+                  pointerEvents: isOpenAccountPrompt ? 'none' : 'auto',
                 }}
               >
                 <img
@@ -973,9 +977,9 @@ const Market = () => {
                   letterSpacing: '2px',
                   pointerEvents: 'none',
                 }}>
-                  {bankTyped}
+                  {bankCurrentLine}
                 </div>
-                {bankTypingDone && !isOpenAccountPrompt && (
+                {!isOpenAccountPrompt && (
                   <>
                     <style>{`@keyframes bankBankerClickPulse { 0%,100% { transform: translateY(0) scale(1); opacity: 0.85; } 50% { transform: translateY(4px) scale(1.08); opacity: 1; } }`}</style>
                     <img
@@ -1126,10 +1130,10 @@ const Market = () => {
               letterSpacing: '2px',
               pointerEvents: 'none',
             }}>
-              {bankTyped}
+              {bankCurrentLine}
             </div>
             {/* Click-to-continue triangle — hidden on step 3 (user must click the bank). */}
-            {bankTypingDone && !isBankClickStep && (
+            {!isBankClickStep && (
               <>
                 <style>{`@keyframes bankBubbleClickPulse { 0%,100% { transform: translateY(0) scale(1); opacity: 0.85; } 50% { transform: translateY(4px) scale(1.08); opacity: 1; } }`}</style>
                 <img
@@ -1176,7 +1180,7 @@ const Market = () => {
                     localStorage.setItem('sandbox_dock_tut_page', '23');
                     localStorage.setItem('sandbox_tutorial_step', '25');
                     window.dispatchEvent(new CustomEvent('tutorialStepChanged'));
-                    navigate('/valley');
+                    navigateWithClouds(navigate, '/valley');
                   } else {
                     setTutMarketPage(prev => prev + 1);
                   }

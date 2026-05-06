@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useMemo } from "react";
-import { BrowserRouter as Router, Routes, Route, useLocation, Navigate, useNavigate } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from "react-router-dom";
 import { Provider } from 'react-redux';
-import { useSolanaWallet } from "./hooks/useSolanaWallet";
 import { NotificationProvider } from "./contexts/NotificationContext";
 import LoadingPage from "./layouts/LoadingPage";
 import Market from "./router/market.jsx";
@@ -15,43 +14,25 @@ import {
 } from "./constants/_baseimages.js";
 import Farm from "./router/farm.jsx";
 import House from "./router/house.jsx";
-import Forest from "./router/forest.jsx";
-import Mine from "./router/mine.jsx";
 import AnimalFarm from "./router/animal.jsx";
-import { ConnectionProvider, WalletProvider } from '@solana/wallet-adapter-react';
-import { WalletModalProvider } from '@solana/wallet-adapter-react-ui';
-import { FINAL_RPC_ENDPOINT } from './solana/constants/programId';
-import Tavern from "./router/tavern.jsx";
 import Valley from "./router/valley.jsx";
 import ProfileBar from "./layouts/GameMenu/ProfileBar";
-import wallets from "./config/solanaWallet";
-import store from "./solana/store";
+import { store } from "./store";
 import { BG_COLORS } from "./constants/background_colors";
 import BackgroundMusic from "./components/audio/BackgroundMusic";
 import Jukebox from "./components/Jukebox";
 import PlayerPullNotification from "./components/PlayerPullNotification";
+import HarvestCardReveal from "./components/HarvestCardReveal";
 import SkyOverlay from "./components/SkyOverlay";
+import IrisTransition from "./components/IrisTransition";
+import RouteCloudTransition from "./components/RouteCloudTransition";
 import { useCloudSync } from "./hooks/useCloudSync";
-
-// Import wallet adapter CSS
-import '@solana/wallet-adapter-react-ui/styles.css';
 
 const AppContent = () => {
   const location = useLocation();
   const [isFarmMenu, setIsFarmMenu] = useState(false);
-  useSolanaWallet(); // Initialize sandbox profile data
   useCloudSync(); // Hydrate localStorage from Supabase + push changes back
   const [isInitialLoad, setIsInitialLoad] = useState(true);
-  const [isRouteLoading, setIsRouteLoading] = useState(false);
-  const prevPathRef = React.useRef(location.pathname);
-
-  useEffect(() => {
-    if (prevPathRef.current === location.pathname) return;
-    prevPathRef.current = location.pathname;
-    setIsRouteLoading(true);
-    const t = setTimeout(() => setIsRouteLoading(false), 900);
-    return () => clearTimeout(t);
-  }, [location.pathname]);
 
   // Get background color based on current route
   const backgroundColor = useMemo(() => {
@@ -64,8 +45,6 @@ const AppContent = () => {
       colorKey = 'GREEN';
     } else if (path === '/market') {
       colorKey = 'YELLOW';
-    } else if (path === '/tavern') {
-      colorKey = 'RED';
     } else {
       // Default to blue for other routes
       colorKey = 'BLUE';
@@ -99,19 +78,7 @@ const AppContent = () => {
         }}
       >
         <SkyOverlay />
-        {isRouteLoading && (
-          <div style={{
-            position: 'fixed', inset: 0, zIndex: 99999,
-            backdropFilter: 'blur(8px)',
-            WebkitBackdropFilter: 'blur(8px)',
-            background: 'rgba(0,0,0,0.45)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            flexDirection: 'column', gap: '14px',
-          }}>
-            <img src="/images/loading/loading.png" alt="" style={{ width: 120, height: 120, objectFit: 'contain', imageRendering: 'pixelated' }} />
-            <div style={{ fontFamily: 'GROBOLD, Cartoonist, sans-serif', fontSize: 22, color: '#fff', textShadow: '2px 2px 0 #000', letterSpacing: 2 }}>Loading...</div>
-          </div>
-        )}
+        <RouteCloudTransition />
           {/* Header */}
           <div className="game-menu">
             <ProfileBar isFarmMenu={isFarmMenu} />
@@ -127,10 +94,7 @@ const AppContent = () => {
             <Route path="/house" element={<House />} />
             <Route path="/market" element={<Market />} />
             <Route path="/farm" element={<Farm isFarmMenu={isFarmMenu} setIsFarmMenu={setIsFarmMenu} />} />
-            <Route path="/tavern" element={<Tavern />} />
             <Route path="/valley" element={<Valley />} />
-            <Route path="/forest" element={<Forest />} />
-            <Route path="/mine" element={<Mine />} />
             <Route path="/animal" element={<AnimalFarm />} />
           </Routes>
         </div>
@@ -210,39 +174,30 @@ const App = () => {
     );
   }, []);
 
-  const endpoint = useMemo(() => FINAL_RPC_ENDPOINT, []);
-
   return (
     <Provider store={store}>
-      <ConnectionProvider endpoint={endpoint}>
-        <WalletProvider wallets={wallets} autoConnect>
-          <WalletModalProvider>
-            <NotificationProvider>
-              <Router basename={process.env.PUBLIC_URL}>
-                <style>{`img { color: transparent; }`}</style>
-                
-
-                
-                <BackgroundMusic />
-                <Jukebox />
-                <PlayerPullNotification />
-                <AppContent />
-                {/* Subtle vignette — shadows bleeding in from all four edges */}
-                <div
-                  aria-hidden="true"
-                  style={{
-                    position: 'fixed',
-                    inset: 0,
-                    pointerEvents: 'none',
-                    zIndex: 850,
-                    boxShadow: 'inset 0 0 140px 20px rgba(0,0,0,0.55)',
-                  }}
-                />
-              </Router>
-            </NotificationProvider>
-          </WalletModalProvider>
-        </WalletProvider>
-      </ConnectionProvider>
+      <NotificationProvider>
+        <Router basename={process.env.PUBLIC_URL}>
+          <style>{`img { color: transparent; }`}</style>
+          <BackgroundMusic />
+          <Jukebox />
+          <PlayerPullNotification />
+          <HarvestCardReveal />
+          <AppContent />
+          <IrisTransition />
+          {/* Subtle vignette — shadows bleeding in from all four edges */}
+          <div
+            aria-hidden="true"
+            style={{
+              position: 'fixed',
+              inset: 0,
+              pointerEvents: 'none',
+              zIndex: 850,
+              boxShadow: 'inset 0 0 140px 20px rgba(0,0,0,0.55)',
+            }}
+          />
+        </Router>
+      </NotificationProvider>
     </Provider>
   );
 };

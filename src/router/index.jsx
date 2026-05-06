@@ -34,7 +34,6 @@ const AdminPanel = () => {
   const [simulatedDay, setSimulatedDay] = useState(() => getSimulatedDateInfo().day);
   const [simulatedDate, setSimulatedDate] = useState(() => getSimulatedDateInfo().date);
   const [hasUnclaimedDaily, setHasUnclaimedDaily] = useState(() => localStorage.getItem('sandbox_last_claim_date') !== new Date().toDateString());
-  const isForagingOrMining = location.pathname === '/forest' || location.pathname === '/mine';
   const [tutorialStep, setTutorialStep] = useState(() => parseInt(localStorage.getItem('sandbox_tutorial_step') || '0', 10));
   const [tutPage, setTutPage] = useState(() => parseInt(localStorage.getItem('sandbox_tut_page') || '1', 10));
   const [tutMarketPage, setTutMarketPage] = useState(() => parseInt(localStorage.getItem('sandbox_tut_market_page') || '0', 10));
@@ -1061,7 +1060,7 @@ const AdminPanel = () => {
       `}</style>
       {/* Global Persisted Elements */}
 
-      {!isPanelOpen && !isForagingOrMining && location.pathname === '/farm' && (
+      {!isPanelOpen && location.pathname === '/farm' && (
         <>
           {/* Crafting Icon Overlay */}
           {false && tutorialStep >= 26 && (

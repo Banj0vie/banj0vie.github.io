@@ -182,15 +182,15 @@ const BatchBuyDialog = ({ onBack, onClose, onPurchaseSuccess, item, excludeSelle
                       <div className="price-details accordion-content">
                         <div className="price-summary">
                           <p><strong>Available:</strong> {item.totalAmount} items</p>
-                          <p><strong>Price range:</strong> {item.minPrice} - {item.maxPrice} HNY</p>
-                          <p><strong>Average price:</strong> {item.avgPrice} HNY</p>
+                          <p><strong>Price range:</strong> {item.minPrice} - {item.maxPrice} Gold</p>
+                          <p><strong>Average price:</strong> {item.avgPrice} Gold</p>
                           <p><strong>Listings:</strong> {item.listings.length}</p>
                         </div>
                         <div className="individual-listings">
                           <h4>Individual Listings:</h4>
                           {item.listings.map((listing, index) => (
                             <div key={index} className="listing-item">
-                              <p>Listing {index + 1}: {listing.amount} items @ {listing.pricePer} HNY each</p>
+                              <p>Listing {index + 1}: {listing.amount} items @ {listing.pricePer} Gold each</p>
                             </div>
                           ))}
                         </div>
@@ -198,7 +198,7 @@ const BatchBuyDialog = ({ onBack, onClose, onPurchaseSuccess, item, excludeSelle
                     )}
                     {!hasMultipleListings && (
                       <div className="price-details single-listing">
-                        <p><strong>Available:</strong> {item.totalAmount} items @ {item.minPrice} HNY each</p>
+                        <p><strong>Available:</strong> {item.totalAmount} items @ {item.minPrice} Gold each</p>
                       </div>
                     )}
                   </div>

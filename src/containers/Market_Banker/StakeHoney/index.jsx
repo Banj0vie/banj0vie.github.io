@@ -8,8 +8,12 @@ import { useBanker } from "../../../hooks/useBanker";
 import { useNotification } from "../../../contexts/NotificationContext";
 import { isTransactionRejection } from "../../../utils/errorUtils";
 import { useSolanaWallet } from "../../../hooks/useSolanaWallet";
-import { selectBankerTotalGameToken, selectBankerTotalXGameToken, selectBankerLoading } from '../../../solana/store/slices/bankerSlice';
 import CardView from "../../../components/boxes/CardView";
+
+// bankerSlice removed with the wallet code — these selectors return inert defaults.
+const selectBankerTotalGameToken = () => 0;
+const selectBankerTotalXGameToken = () => 0;
+const selectBankerLoading = () => false;
 
 const StakeHoney = ({ onBack }) => {
   const [isStaking, setIsStaking] = useState(true);

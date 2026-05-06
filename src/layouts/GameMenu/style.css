@@ -13,9 +13,23 @@
   font-family: "Cartoonist", "GROBOLD", "Courier New", monospace;
 }
 
+
 /* Re-enable pointer events for interactive elements */
 .game-menu > * {
   pointer-events: auto;
+}
+
+/* When the bag (data-bag-open) popup is open, drop ONLY the portaled nav
+   (farm/market/dock icons) into the background and dim it. The selector
+   uses `nav.game-menu` so the App.jsx <div className="game-menu"> at the top
+   (containing ProfileBar) is not affected.
+   Bank popup intentionally NOT in this list — the farm/market icons stay
+   crisp and clickable while the bank UI is open. */
+body[data-bag-open="true"] nav.game-menu {
+  z-index: 1 !important;
+  filter: blur(4px);
+  opacity: 0.55;
+  transition: filter 0.2s ease, opacity 0.2s ease;
 }
 
 /* profile bar container */

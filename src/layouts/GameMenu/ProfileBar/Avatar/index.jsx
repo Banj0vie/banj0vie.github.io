@@ -139,7 +139,7 @@ const Avatar = ({ src, alt = "avatar" }) => {
       )}
       {isAvatarDialog && (
         <div
-          style={{ position: 'fixed', inset: 0, zIndex: 100000, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(6px)', backgroundColor: 'rgba(0,0,0,0.5)' }}
+          style={{ position: 'fixed', inset: 0, zIndex: 100000, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.7)' }}
           onClick={() => { setIsAvatarDialog(false); setHasNewPfp(checkHasNewPfp()); }}
         >
           <div style={{ position: 'relative', userSelect: 'none' }} onClick={e => e.stopPropagation()}>

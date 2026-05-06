@@ -9,7 +9,7 @@ import SettingsDialog from "../../../containers/Menu_Settings";
 import Shop from "../../../containers/Shop";
 import AchievementsDialog from "../../../containers/AchievementsDialog";
 import { useSelector } from "react-redux";
-import { selectBalanceRefreshing } from "../../../solana/store/slices/balanceSlice";
+import { selectBalanceRefreshing } from "../../../store/slices/balanceSlice";
 import { useProdMint } from "../../../hooks/useProdMint";
 // Removed bnToNumber; using plain parsing based on 1e9 decimals for locked tokens
 
@@ -65,6 +65,16 @@ const ProfileBar = ({ isFarmMenu }) => {
     return () => window.removeEventListener('sandboxGemsChanged', handler);
   }, []);
 
+  // Gold counter — single source of truth is localStorage's sandbox_gold,
+  // updated by quest rewards, mission board turn-ins, the daily chest, and
+  // the tutorial farewell pack. Listens to sandboxGoldChanged for refreshes.
+  const [goldRaw, setGoldRaw] = useState(() => parseInt(localStorage.getItem('sandbox_gold') || '0', 10));
+  useEffect(() => {
+    const handler = () => setGoldRaw(parseInt(localStorage.getItem('sandbox_gold') || '0', 10));
+    window.addEventListener('sandboxGoldChanged', handler);
+    return () => window.removeEventListener('sandboxGoldChanged', handler);
+  }, []);
+
   useEffect(() => {
     const handler = (e) => setProfileBg(e.detail || BG_GRADIENTS.bg_default);
     window.addEventListener('profileBgUpdated', handler);
@@ -103,13 +113,15 @@ const ProfileBar = ({ isFarmMenu }) => {
   }, [lockedTokensUi, stakedBalance, isBalanceRefreshing]);
 
   const honeyBalance = useMemo(() => {
-    const num = Number(gameToken || "0");
+    // Reads sandbox_gold via the goldRaw state — the redux gameToken value
+    // tracked the wallet token balance, which is removed in the sandbox.
+    const num = Number(goldRaw || 0);
     if (isNaN(num)) return "-";
     if (num >= 1_000_000_000) return Math.floor(num / 1_000_000_000) + "B";
     if (num >= 1_000_000) return Math.floor(num / 1_000_000) + "M";
     if (num >= 1_000) return Math.floor(num).toLocaleString('en-US');
     return Math.floor(num).toString();
-  }, [gameToken, isBalanceRefreshing]);
+  }, [goldRaw]);
 
   return (
     <div className="profile-bar" style={{ display: isFarmMenu ? 'none' : 'flex' }}>

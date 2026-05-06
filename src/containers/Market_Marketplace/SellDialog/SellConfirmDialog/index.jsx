@@ -58,7 +58,7 @@ const SellConfirmDialog = ({ onClose, onSellSuccess, item }) => {
               <p>Available: {item.count} items</p>
             </div>
             <div className="row">
-              <div>Price per item (HNY)</div>
+              <div>Price per item (Gold)</div>
               <BaseInput
                 className="input"
                 type="number"
@@ -79,7 +79,7 @@ const SellConfirmDialog = ({ onClose, onSellSuccess, item }) => {
               </div>
             </div>
             <div className="count-label">SELL x {amount}</div>
-            <div className="total-price">Total: {price * amount} HNY</div>
+            <div className="total-price">Total: {price * amount} Gold</div>
             <BaseDivider></BaseDivider>
             <BaseButton
               label={loading ? "Listing..." : "Confirm Sale"}

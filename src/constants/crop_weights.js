@@ -40,7 +40,9 @@ export const CROP_WEIGHTS = {
 // Weight brackets: the range is split into 5 equal sections.
 // bracket 1 = Common (lowest 20%), 5 = Legendary (top 20%)
 export const WEIGHT_BRACKET_LABELS = ['COMMON', 'UNCOMMON', 'RARE', 'EPIC', 'LEGENDARY'];
-export const WEIGHT_BRACKET_COLORS = ['#f7efec', '#81c935', '#29b2c2', '#db6595', '#eedb33'];
+// Per-rarity colors — used for the harvest card glow + rarity labels everywhere.
+// Common = grey, uncommon = green, rare = blue, epic = purple, legendary = yellow.
+export const WEIGHT_BRACKET_COLORS = ['#a3a3a3', '#3fb950', '#3b82f6', '#a855f7', '#fbbf24'];
 
 export const getWeightBracket = (seedId, weight) => {
   const baseId = seedId & 0xFFF;
@@ -83,16 +85,49 @@ export const getWeeklyFeaturedCrop = () => {
   return { baseId, weekNum, ...CROP_WEIGHTS[baseId] };
 };
 
+// Probability distribution for the harvested CROP's bracket given the SEED's tier.
+// Rows = seed tier (1=common .. 5=legendary). Columns = crop bracket (1..5).
+// Each row sums to 100. Tuned so the seed's own tier is the most likely outcome,
+// with a small "miracle" chance for upgrades — e.g. a common seed has a 1-in-2000
+// shot at growing a legendary crop.
+const SEED_BRACKET_DISTRIBUTIONS = {
+  // common seed: 92.5 / 6 / 1.2 / 0.25 / 0.05  (legendary ≈ 1 in 2000)
+  1: [92.5, 6, 1.2, 0.25, 0.05],
+  // uncommon seed: 10 / 80 / 8 / 1.7 / 0.3     (legendary ≈ 1 in 333)
+  2: [10, 80, 8, 1.7, 0.3],
+  // rare seed: 3 / 12 / 75 / 8.5 / 1.5         (legendary ≈ 1.5%)
+  3: [3, 12, 75, 8.5, 1.5],
+  // epic seed: 1 / 4 / 15 / 70 / 10            (legendary ≈ 10%)
+  4: [1, 4, 15, 70, 10],
+  // legendary seed: 0.5 / 1.5 / 6 / 22 / 70    (legendary ≈ 70%)
+  5: [0.5, 1.5, 6, 22, 70],
+};
+
+// Roll the harvested crop's bracket from the seed tier's distribution.
+const rollBracketForSeedTier = (seedTier) => {
+  const dist = SEED_BRACKET_DISTRIBUTIONS[seedTier] || SEED_BRACKET_DISTRIBUTIONS[1];
+  const roll = Math.random() * 100;
+  let cum = 0;
+  for (let i = 0; i < dist.length; i++) {
+    cum += dist[i];
+    if (roll < cum) return i + 1;
+  }
+  return seedTier; // numerical safety net — shouldn't reach
+};
+
 // Returns { weight, name, bracket (1-5), rarityLabel, rarityColor }
-// Rolls weight within the seed's own rarity bracket range.
-// A Rare seed always produces a Rare crop; the weight is random within that bracket.
+// The seed's tier biases the bracket strongly but no longer guarantees it — a common
+// seed can occasionally pop a higher-tier crop (and vice versa). Once the bracket is
+// rolled, the weight is randomized within that bracket's slice of the crop's range.
 export const rollCropWeight = (seedId) => {
   const baseId = seedId & 0xFFF;
   const info = CROP_WEIGHTS[baseId];
 
-  // Determine the seed's rarity bracket (1–5) from its subtype
+  // Determine the SEED's own rarity tier (1-5) from its subtype, then roll a CROP
+  // bracket from the corresponding distribution.
   const subtype = getSubtype(Number(seedId));
-  const bracket = Math.min(5, Math.max(1, subtype || 1));
+  const seedTier = Math.min(5, Math.max(1, subtype || 1));
+  const bracket = rollBracketForSeedTier(seedTier);
 
   if (!info) {
     const weight = Math.round(50 + Math.random() * 450);

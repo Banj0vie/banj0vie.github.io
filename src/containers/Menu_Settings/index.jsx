@@ -5,8 +5,8 @@ import Slider from "../../components/inputs/Slider";
 import BaseCheckBox from "../../components/inputs/BaseCheckBox";
 import BaseInput from "../../components/inputs/BaseInput";
 import { defaultSettings } from "../../utils/settings";
-import { useAppDispatch, useAppSelector } from "../../solana/store";
-import { selectSettings, updateSetting } from "../../solana/store/slices/uiSlice";
+import { useAppDispatch, useAppSelector } from "../../store";
+import { selectSettings, updateSetting } from "../../store/slices/uiSlice";
 
 const SettingsDialog = ({ onClose }) => {
   const dispatch = useAppDispatch();

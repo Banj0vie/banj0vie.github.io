@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './style.css';
+import { navigateWithClouds } from '../../../components/RouteCloudTransition';
 
 const MenuItem = ({ path, icon, label, labelIcon, iconScale, isActive, highlight, onClickOverride, noHover = false }) => {
   const clickAudioRef = useRef(null);
@@ -18,7 +19,7 @@ const MenuItem = ({ path, icon, label, labelIcon, iconScale, isActive, highlight
     const audio = clickAudioRef.current;
     if (audio) { audio.currentTime = 0; audio.play().catch(() => {}); }
     if (onClickOverride) { onClickOverride(); return; }
-    navigate(path);
+    navigateWithClouds(navigate, path);
   };
 
   return (

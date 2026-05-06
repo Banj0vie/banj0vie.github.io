@@ -126,9 +126,12 @@ const PlayerPullNotification = () => {
     };
     // Suppress while a mail letter is open or a cutscene is playing so popups don't distract the user.
     const isLetterOpen = () => document.body.getAttribute('data-letter-open') === 'true';
+    const isMailboxOpen = () => document.body.getAttribute('data-mailbox-open') === 'true';
     const isCutsceneActive = () => document.body.getAttribute('data-cutscene-active') === 'true';
     const isBankOpen = () => document.body.getAttribute('data-bank-open') === 'true';
-    const isSuppressed = () => isTutorialActive() || isLetterOpen() || isCutsceneActive() || isBankOpen();
+    const isBagOpen = () => document.body.getAttribute('data-bag-open') === 'true';
+    const isPackOpen = () => document.body.getAttribute('data-pack-open') === 'true';
+    const isSuppressed = () => isTutorialActive() || isLetterOpen() || isMailboxOpen() || isCutsceneActive() || isBankOpen() || isBagOpen() || isPackOpen();
 
     const onPull = (e) => {
       if (isSuppressed()) return;
@@ -176,40 +179,11 @@ const PlayerPullNotification = () => {
       };
     }
 
-    // Simulation — fakes other-player pulls/grows for ambient activity feel.
-    const SIM_NAMES = {
-      rare:      ['Pumpkin', 'Eggplant', 'Tomato', 'Carrot', 'Pepper', 'Broccoli', 'Cauliflower', 'Grapes'],
-      epic:      ['Dragon Fruit', 'Mango', 'Pineapple', 'Lychee', 'Papaya', 'Lavender'],
-      legendary: ['Avocado', 'Pomegranate', 'Banana', 'Blueberry', 'Apple'],
-    };
-    const SIM_USERS = ['FarmKing', 'SunSue', 'TaterTot', 'CropTop', 'HarvestMoon', 'PlowMaster', 'GoldenRow', 'SeedWhisperer', 'VeggieVibes', 'GreenThumb', 'BumperCrop', 'CornQueen'];
-    const RARITIES = ['rare', 'epic', 'legendary'];
-    const ACTIONS = ['pulled', 'grew'];
-    let simTimer;
-    const fireOne = () => {
-      // Skip the fire while tutorial is active OR a letter is open, but keep polling so we resume right after.
-      if (!isSuppressed()) {
-        const rarity = RARITIES[Math.floor(Math.random() * RARITIES.length)];
-        const name   = SIM_NAMES[rarity][Math.floor(Math.random() * SIM_NAMES[rarity].length)];
-        const user   = SIM_USERS[Math.floor(Math.random() * SIM_USERS.length)];
-        const action = ACTIONS[Math.floor(Math.random() * ACTIONS.length)];
-        window.dispatchEvent(new CustomEvent('playerPullNoti', {
-          detail: { rarity, itemName: name, username: user, action },
-        }));
-        // After display (~6s + 1.1s slide-out) + ~1.5s gap → schedule next.
-        simTimer = setTimeout(fireOne, 6000 + 1100 + 1500);
-      } else {
-        simTimer = setTimeout(fireOne, 1500);
-      }
-    };
-    simTimer = setTimeout(fireOne, 3000 + Math.random() * 4000);
-
     return () => {
       window.removeEventListener('playerPullNoti', onPull);
       window.removeEventListener('letterOpened', onLetterOpened);
       clearTimeout(dismissTimerRef.current);
       clearTimeout(exitTimerRef.current);
-      clearTimeout(simTimer);
     };
   }, []);
 

@@ -14,9 +14,9 @@ const RARITY_CHANCES = {
 };
 
 const PACKS = [
-  { id: ID_CROP_CATEGORIES.PICO_SEED,    label: "Pico",    price: "750 HNY",   color: "#4ecbf5" },
-  { id: ID_CROP_CATEGORIES.BASIC_SEED,   label: "Basic",   price: "3,500 HNY", color: "#81c935" },
-  { id: ID_CROP_CATEGORIES.PREMIUM_SEED, label: "Premium", price: "15,000 HNY",color: "#eedb33" },
+  { id: ID_CROP_CATEGORIES.PICO_SEED,    label: "Pico",    price: "750 Gold",   color: "#4ecbf5" },
+  { id: ID_CROP_CATEGORIES.BASIC_SEED,   label: "Basic",   price: "3,500 Gold", color: "#81c935" },
+  { id: ID_CROP_CATEGORIES.PREMIUM_SEED, label: "Premium", price: "15,000 Gold",color: "#eedb33" },
 ];
 
 const RARITY_ORDER = [

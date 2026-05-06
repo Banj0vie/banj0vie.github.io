@@ -1,8 +1,8 @@
 import React, { useRef } from "react";
 import "./style.css";
 import { sliderImages } from "../../../constants/_baseimages";
-import { useAppSelector } from "../../../solana/store";
-import { selectSettings } from "../../../solana/store/slices/uiSlice";
+import { useAppSelector } from "../../../store";
+import { selectSettings } from "../../../store/slices/uiSlice";
 import { defaultSettings } from "../../../utils/settings";
 import { clampVolume } from "../../../utils/basic";
 

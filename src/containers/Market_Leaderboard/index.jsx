@@ -32,10 +32,47 @@ const PotatoImg = () => (
 
 const DEFAULT_PFP = '/images/pfp/defultpfp.png';
 
+// Prize button — clickable tile that scales up when it's the selected leaderboard view.
+const PrizeButton = ({ src, alt, active, onClick }) => {
+  const [hover, setHover] = useState(false);
+  const [pressed, setPressed] = useState(false);
+  const scale = pressed ? (active ? 1.12 : 0.94) : (active ? 1.2 : (hover ? 1.08 : 1));
+  const filter = pressed
+    ? 'brightness(0.85)'
+    : (active || hover)
+      ? 'brightness(1.15) drop-shadow(0 0 8px rgba(255,220,100,0.85))'
+      : 'brightness(1)';
+  return (
+    <img
+      src={src}
+      alt={alt}
+      draggable={false}
+      onClick={onClick}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => { setHover(false); setPressed(false); }}
+      onMouseDown={() => setPressed(true)}
+      onMouseUp={() => setPressed(false)}
+      style={{
+        width: '100%',
+        height: 'auto',
+        objectFit: 'contain',
+        cursor: 'pointer',
+        pointerEvents: 'auto',
+        userSelect: 'none',
+        transform: `scale(${scale})`,
+        filter,
+        transition: 'transform 0.15s, filter 0.1s',
+      }}
+    />
+  );
+};
+
 const LeaderboardDialog = ({ onClose }) => {
   const [farmPts, setFarmPts] = useState(0);
   const [heaviestPotato, setHeaviestPotato] = useState(null);
   const [pfpSrc, setPfpSrc] = useState(() => localStorage.getItem('sandbox_pfp') || DEFAULT_PFP);
+  // Which leaderboard the prize buttons are showing — 'bestfarmer' (points) or 'weightcontest' (potato kg).
+  const [view, setView] = useState('bestfarmer');
 
   useEffect(() => {
     const handler = () => setPfpSrc(localStorage.getItem('sandbox_pfp') || DEFAULT_PFP);
@@ -90,10 +127,37 @@ const LeaderboardDialog = ({ onClose }) => {
         onClick={e => e.stopPropagation()}
       >
         <img
-          src="/images/leaderboard/leaderboardpotato.png"
+          src={view === 'weightcontest' ? "/images/leaderboard/theweightcontest.png" : "/images/leaderboard/topfarmerleaderboard.png"}
           alt="Leaderboard"
           style={{ display: 'block', maxHeight: '90vh', maxWidth: '90vw' }}
         />
+
+        {/* Placement banners (1st/2nd/3rd) — same overlay on both screens, sits
+            behind the text rows so the rank/pfp/name still read on top. */}
+        {[
+          { src: '/images/leaderboard/1st.png', top: 'calc(34.2% + 290px)', left: 'calc(50% + 35px)', width: '38%' },
+          { src: '/images/leaderboard/2nd.png', top: 'calc(34.2% + 360px)', left: 'calc(50% - 65px)', width: '30%' },
+          { src: '/images/leaderboard/3rd.png', top: 'calc(34.2% + 360px)', left: 'calc(50% + 125px)', width: '30%' },
+        ].map((b, i) => (
+          <img
+            key={i}
+            src={b.src}
+            alt=""
+            draggable={false}
+            style={{
+              position: 'absolute',
+              top: b.top,
+              left: b.left,
+              transform: 'translate(-50%, -50%)',
+              width: b.width,
+              // Force every banner to match 1st's rendered dimensions (751x224 native).
+              aspectRatio: '751 / 224',
+              objectFit: 'fill',
+              pointerEvents: 'none',
+              userSelect: 'none',
+            }}
+          />
+        ))}
 
         {/* X button */}
         <img
@@ -106,7 +170,7 @@ const LeaderboardDialog = ({ onClose }) => {
           onMouseUp={e => { e.currentTarget.style.transform = 'scale(1.15)'; e.currentTarget.style.filter = 'brightness(1.25)'; }}
           style={{
             position: 'absolute',
-            top: 58,
+            top: 73,
             right: -19,
             width: 60,
             height: 60,
@@ -118,9 +182,9 @@ const LeaderboardDialog = ({ onClose }) => {
         />
 
         {/* BEST FARMER rows */}
-        {[34.2, 40.8, 46.9].map((top, i) => (
+        {view === 'bestfarmer' && [34.2, 40.8, 46.9].map((top, i) => (
           <div key={i} style={{ ...ROW_STYLE, top: `${top}%` }}>
-            <span style={{ fontSize: '1.8vmin', color: '#3b1f0a', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ fontSize: '1.8vmin', color: '#3b1f0a', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px', marginLeft: 70 }}>
               {MOCK_BEST_FARMER[i].rank}&nbsp;&nbsp;<img src={MOCK_BEST_FARMER[i].pfp} alt="" style={{ width: '2.4vmin', height: '2.4vmin', borderRadius: '50%', objectFit: 'cover', border: '1.5px solid rgba(59,31,10,0.4)' }} />{MOCK_BEST_FARMER[i].name}
             </span>
             <span style={{ fontSize: '1.8vmin', color: '#3b1f0a', fontWeight: 'bold' }}>
@@ -129,37 +193,95 @@ const LeaderboardDialog = ({ onClose }) => {
           </div>
         ))}
 
-        {/* You — Best Farmer */}
-        <div style={{ ...ROW_STYLE, top: '52.5%' }}>
-          <span style={{ fontSize: '1.8vmin', color: '#f5d87a', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            5&nbsp;&nbsp;<img src={pfpSrc} alt="you" style={{ width: '2.4vmin', height: '2.4vmin', borderRadius: '50%', objectFit: 'cover', border: '1.5px solid #f5d87a' }} />You
-          </span>
-          <span style={{ fontSize: '1.8vmin', color: '#f5d87a', fontWeight: 'bold' }}>
-            {farmPts.toLocaleString()} PTS
-          </span>
+        {/* WEIGHT CONTEST rows — top 3 ranks (You slots in if qualified), and
+            the bottom gold banner is always a replica of the user's actual row. */}
+        {view === 'weightcontest' && (() => {
+          const top3 = heaviestPotato
+            ? [{ kind: 'you' }, MOCK_HEAVIEST_POTATO[0], MOCK_HEAVIEST_POTATO[1]]
+            : [MOCK_HEAVIEST_POTATO[0], MOCK_HEAVIEST_POTATO[1], MOCK_HEAVIEST_POTATO[2]];
+          const slotTops = ['34.2%', '40.8%', '46.9%'];
+          // Compute the user's actual rank — slotted at 1 if they qualify, else "—".
+          const youRank = heaviestPotato ? 1 : '—';
+          return (
+            <>
+              {top3.map((entry, i) => {
+                const rank = i + 1;
+                if (entry.kind === 'you') {
+                  return (
+                    <div key={`wc-you-${i}`} style={{ ...ROW_STYLE, top: slotTops[i] }}>
+                      <span style={{ fontSize: '1.8vmin', color: '#3b1f0a', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px', marginLeft: 70 }}>
+                        {rank}&nbsp;&nbsp;<img src={pfpSrc} alt="you" style={{ width: '2.4vmin', height: '2.4vmin', borderRadius: '50%', objectFit: 'cover', border: '1.5px solid rgba(59,31,10,0.4)' }} />You
+                      </span>
+                      <span style={{ fontSize: '1.8vmin', color: '#3b1f0a', fontWeight: 'bold' }}>
+                        {heaviestPotato.weight} KG <PotatoImg />
+                      </span>
+                    </div>
+                  );
+                }
+                return (
+                  <div key={`wc-${i}`} style={{ ...ROW_STYLE, top: slotTops[i] }}>
+                    <span style={{ fontSize: '1.8vmin', color: '#3b1f0a', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px', marginLeft: 70 }}>
+                      {rank}&nbsp;&nbsp;<img src={entry.pfp} alt="" style={{ width: '2.4vmin', height: '2.4vmin', borderRadius: '50%', objectFit: 'cover', border: '1.5px solid rgba(59,31,10,0.4)' }} />{entry.name}
+                    </span>
+                    <span style={{ fontSize: '1.8vmin', color: '#3b1f0a', fontWeight: 'bold' }}>
+                      {entry.kg} KG {entry.emoji}
+                    </span>
+                  </div>
+                );
+              })}
+              {/* Bottom banner — always a replica of the user's actual placement. */}
+              <div style={{ ...ROW_STYLE, top: 'calc(52.5% + 7px)' }}>
+                <span style={{ fontSize: '1.8vmin', color: '#f5d87a', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px', marginLeft: 70 }}>
+                  {youRank}&nbsp;&nbsp;<img src={pfpSrc} alt="you" style={{ width: '2.4vmin', height: '2.4vmin', borderRadius: '50%', objectFit: 'cover', border: '1.5px solid #f5d87a' }} />You
+                </span>
+                <span style={{ fontSize: '1.8vmin', color: '#f5d87a', fontWeight: 'bold' }}>
+                  {heaviestPotato ? `${heaviestPotato.weight} KG` : '— KG'} <PotatoImg />
+                </span>
+              </div>
+            </>
+          );
+        })()}
+
+        {/* Prize buttons stack — bestfarmer on top, weightcontest 80px below. */}
+        <div
+          style={{
+            position: 'absolute',
+            top: 'calc(74% - 440px)',
+            left: 'calc(50% - 290px)',
+            transform: 'translateX(-50%)',
+            width: '28%',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '40px',
+            pointerEvents: 'none',
+          }}
+        >
+          <PrizeButton
+            src="/images/leaderboard/bestfarmer.png"
+            alt="Best Farmer"
+            active={view === 'bestfarmer'}
+            onClick={() => setView('bestfarmer')}
+          />
+          <PrizeButton
+            src="/images/leaderboard/weightcontest.png"
+            alt="Weight Contest"
+            active={view === 'weightcontest'}
+            onClick={() => setView('weightcontest')}
+          />
         </div>
 
-        {/* HEAVIEST POTATO rows */}
-        {[66.5, 72.6, 78.5].map((top, i) => (
-          <div key={i} style={{ ...ROW_STYLE, top: `${top}%` }}>
-            <span style={{ fontSize: '1.8vmin', color: '#3b1f0a', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              {MOCK_HEAVIEST_POTATO[i].rank}&nbsp;&nbsp;<img src={MOCK_HEAVIEST_POTATO[i].pfp} alt="" style={{ width: '2.4vmin', height: '2.4vmin', borderRadius: '50%', objectFit: 'cover', border: '1.5px solid rgba(59,31,10,0.4)' }} />{MOCK_HEAVIEST_POTATO[i].name}
+        {/* You — current view */}
+        {view === 'bestfarmer' && (
+          <div style={{ ...ROW_STYLE, top: 'calc(52.5% + 7px)' }}>
+            <span style={{ fontSize: '1.8vmin', color: '#f5d87a', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px', marginLeft: 70 }}>
+              5&nbsp;&nbsp;<img src={pfpSrc} alt="you" style={{ width: '2.4vmin', height: '2.4vmin', borderRadius: '50%', objectFit: 'cover', border: '1.5px solid #f5d87a' }} />You
             </span>
-            <span style={{ fontSize: '1.8vmin', color: '#3b1f0a', fontWeight: 'bold' }}>
-              {MOCK_HEAVIEST_POTATO[i].kg} KG {MOCK_HEAVIEST_POTATO[i].emoji}
+            <span style={{ fontSize: '1.8vmin', color: '#f5d87a', fontWeight: 'bold' }}>
+              {farmPts.toLocaleString()} PTS
             </span>
           </div>
-        ))}
-
-        {/* You — Heaviest Potato */}
-        <div style={{ ...ROW_STYLE, top: '84.4%' }}>
-          <span style={{ fontSize: '1.8vmin', color: '#f5d87a', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            {heaviestPotato ? '4' : '—'}&nbsp;&nbsp;<img src={pfpSrc} alt="you" style={{ width: '2.4vmin', height: '2.4vmin', borderRadius: '50%', objectFit: 'cover', border: '1.5px solid #f5d87a' }} />You
-          </span>
-          <span style={{ fontSize: '1.8vmin', color: '#f5d87a', fontWeight: 'bold' }}>
-            {heaviestPotato ? `${heaviestPotato.weight} g` : '— g'} <PotatoImg />
-          </span>
-        </div>
+        )}
 
       </div>
     </div>

@@ -84,7 +84,7 @@ function DayCard({ r, i, claimed, canClaim, busy, onClaim, accent = "#7ec8ff" })
           : r.gems > 0        ? "linear-gradient(135deg,#1565c0,#0d3a7a)"
           :                     "linear-gradient(135deg,#b8860b,#7a5500)",
       }}>
-        {r.pfp ? "👑" : r.special ? "🎁" : r.gems > 0 ? <img src="/images/profile_bar/diamond.png" alt="Gems" style={{ width: '18px', height: '18px', objectFit: 'contain' }} /> : <img src="/images/profile_bar/hny.png" alt="HNY" style={{ width: '18px', height: '18px', objectFit: 'contain' }} />}
+        {r.pfp ? "👑" : r.special ? "🎁" : r.gems > 0 ? <img src="/images/profile_bar/diamond.png" alt="Gems" style={{ width: '18px', height: '18px', objectFit: 'contain' }} /> : <img src="/images/profile_bar/hny.png" alt="Gold" style={{ width: '18px', height: '18px', objectFit: 'contain' }} />}
       </div>
       {r.pfp
         ? <div style={{ fontSize:8, color:"#f48fb1", textAlign:"center", lineHeight:1.3 }}>Exclusive PFP</div>
@@ -92,7 +92,7 @@ function DayCard({ r, i, claimed, canClaim, busy, onClaim, accent = "#7ec8ff" })
         ? <div style={{ fontSize:8, color:"#ce93d8", textAlign:"center", lineHeight:1.3 }}>{r.special}</div>
         : <>
             {r.gems > 0 && <div style={{ fontSize:10, fontWeight:700, color:"#90caf9" }}>{r.gems}<img src="/images/profile_bar/diamond.png" alt="" style={{ width: '10px', height: '10px', objectFit: 'contain', verticalAlign: 'middle', marginLeft: '2px' }} /></div>}
-            {r.hny > 0 && <div style={{ fontSize:9, color:"#ffd54f" }}>{fmtHny(r.hny)}<img src="/images/profile_bar/hny.png" alt="HNY" style={{ width: '9px', height: '9px', objectFit: 'contain', verticalAlign: 'middle', marginLeft: '1px' }} /></div>}
+            {r.hny > 0 && <div style={{ fontSize:9, color:"#ffd54f" }}>{fmtHny(r.hny)}<img src="/images/profile_bar/hny.png" alt="Gold" style={{ width: '9px', height: '9px', objectFit: 'contain', verticalAlign: 'middle', marginLeft: '1px' }} /></div>}
           </>
       }
       {isCur && (
@@ -231,7 +231,7 @@ function PassRewardCard({ data, isDone, isCur, isLock, rowType }) {
     ? isFree ? "2px solid #42a5f5" : "2px solid #ffc107"
     : "2px solid rgba(255,255,255,0.07)";
 
-  const icon = data.pfp ? "👑" : data.special ? "🎁" : data.gems > 0 ? <img src="/images/profile_bar/diamond.png" alt="Gems" style={{ width: '20px', height: '20px', objectFit: 'contain' }} /> : <img src="/images/profile_bar/hny.png" alt="HNY" style={{ width: '20px', height: '20px', objectFit: 'contain' }} />;
+  const icon = data.pfp ? "👑" : data.special ? "🎁" : data.gems > 0 ? <img src="/images/profile_bar/diamond.png" alt="Gems" style={{ width: '20px', height: '20px', objectFit: 'contain' }} /> : <img src="/images/profile_bar/hny.png" alt="Gold" style={{ width: '20px', height: '20px', objectFit: 'contain' }} />;
   const iconBg = data.pfp
     ? "linear-gradient(135deg,#c2185b,#880e4f)"
     : data.special
@@ -258,7 +258,7 @@ function PassRewardCard({ data, isDone, isCur, isLock, rowType }) {
         ? <div style={{ fontSize:8, color: isFree ? "#90caf9" : "#ffcc02", textAlign:"center", lineHeight:1.2 }}>{data.special}</div>
         : <div style={{ fontSize:9, textAlign:"center", lineHeight:1.3 }}>
             {data.gems > 0 && <div style={{ color:"#90caf9", fontWeight:700 }}>{data.gems}<img src="/images/profile_bar/diamond.png" alt="" style={{ width: '9px', height: '9px', objectFit: 'contain', verticalAlign: 'middle', marginLeft: '2px' }} /></div>}
-            {data.hny > 0 && <div style={{ color: isFree ? "#a5d6a7" : "#ffcc02" }}>{fmtHny(data.hny)}<img src="/images/profile_bar/hny.png" alt="HNY" style={{ width: '9px', height: '9px', objectFit: 'contain', verticalAlign: 'middle', marginLeft: '1px' }} /></div>}
+            {data.hny > 0 && <div style={{ color: isFree ? "#a5d6a7" : "#ffcc02" }}>{fmtHny(data.hny)}<img src="/images/profile_bar/hny.png" alt="Gold" style={{ width: '9px', height: '9px', objectFit: 'contain', verticalAlign: 'middle', marginLeft: '1px' }} /></div>}
           </div>
       }
     </div>
@@ -456,7 +456,7 @@ const POT_PRIZES = [
   { id:"ppk",   label:"💎 Premium Pack",     emoji:<img src="/images/profile_bar/diamond.png" alt="💎" style={{ width:'20px', height:'20px', objectFit:'contain' }} />, w:0.08,  apply:() => {} },
   { id:"bpk",   label:"🌟 Basic Pack",       emoji:"🌟", w:0.18,  apply:() => {} },
   { id:"gems",  label:"💎 50 Gems",          emoji:<img src="/images/profile_bar/diamond.png" alt="💎" style={{ width:'20px', height:'20px', objectFit:'contain' }} />, w:0.28,  apply:() => addGems(50) },
-  { id:"hny",   label:"🍯 800 HNY",           emoji:<img src="/images/profile_bar/hny.png" alt="HNY" style={{ width:'20px', height:'20px', objectFit:'contain' }} />, w:0.42,  apply:() => addHoney(800) },
+  { id:"hny",   label:"🍯 800 Gold",           emoji:<img src="/images/profile_bar/hny.png" alt="Gold" style={{ width:'20px', height:'20px', objectFit:'contain' }} />, w:0.42,  apply:() => addHoney(800) },
 ];
 
 function seededRand(seed) {
@@ -975,7 +975,7 @@ function ImproveFarm() {
               </div>
               <div style={{ display:"flex", gap:8, alignItems:"center" }}>
                 <div style={{ fontSize:12, color:"#90caf9", fontWeight:700 }}>{m.gems}<img src="/images/profile_bar/diamond.png" alt="" style={{ width: '12px', height: '12px', objectFit: 'contain', verticalAlign: 'middle', marginLeft: '2px' }} /></div>
-                <div style={{ fontSize:12, color:"#ffd54f", fontWeight:700 }}>{fmtHny(m.hny)}<img src="/images/profile_bar/hny.png" alt="HNY" style={{ width: '12px', height: '12px', objectFit: 'contain', verticalAlign: 'middle', marginLeft: '2px' }} /></div>
+                <div style={{ fontSize:12, color:"#ffd54f", fontWeight:700 }}>{fmtHny(m.hny)}<img src="/images/profile_bar/hny.png" alt="Gold" style={{ width: '12px', height: '12px', objectFit: 'contain', verticalAlign: 'middle', marginLeft: '2px' }} /></div>
                 {claimed ? (
                   <div style={{ fontSize:11, color:"rgba(255,255,255,0.3)", marginLeft:4 }}>✅</div>
                 ) : met ? (
@@ -1083,7 +1083,7 @@ function MissionBoardRewards() {
               </div>
               <div style={{ display:"flex", gap:8, alignItems:"center" }}>
                 <div style={{ fontSize:12, color:"#90caf9", fontWeight:700 }}>{t.gems}<img src="/images/profile_bar/diamond.png" alt="" style={{ width: '12px', height: '12px', objectFit: 'contain', verticalAlign: 'middle', marginLeft: '2px' }} /></div>
-                <div style={{ fontSize:12, color:"#ffd54f", fontWeight:700 }}>{fmtHny(t.hny)}<img src="/images/profile_bar/hny.png" alt="HNY" style={{ width: '12px', height: '12px', objectFit: 'contain', verticalAlign: 'middle', marginLeft: '2px' }} /></div>
+                <div style={{ fontSize:12, color:"#ffd54f", fontWeight:700 }}>{fmtHny(t.hny)}<img src="/images/profile_bar/hny.png" alt="Gold" style={{ width: '12px', height: '12px', objectFit: 'contain', verticalAlign: 'middle', marginLeft: '2px' }} /></div>
                 {claimed ? (
                   <div style={{ fontSize:11, color:"rgba(255,255,255,0.3)", marginLeft:4 }}>✅</div>
                 ) : met ? (

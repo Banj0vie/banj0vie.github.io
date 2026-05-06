@@ -4,7 +4,6 @@ import { HOUSE_BEES, HOUSE_HOTSPOTS, HOUSE_VIEWPORT } from "../constants/scene_h
 import { ID_HOUSE_HOTSPOTS } from "../constants/app_ids";
 import GoldDialog from "../containers/House_Gold";
 import GardnerDialog from "../containers/House_Gardner";
-import ReferralDialog from "../containers/House_Referral";
 import GoldChestDialog from "../containers/House_Gold_Chest";
 import AnglerDialog from "../containers/House_Angler";
 import AdminPanel from "./index";
@@ -277,11 +276,6 @@ const House = () => {
       component: GardnerDialog,
       label: "GARDNER",
       header: "/images/dialog/modal-header-gardner.png"
-    },
-    {
-      id: ID_HOUSE_HOTSPOTS.REFERRALS,
-      component: ReferralDialog,
-      label: "",
     },
     {
       id: ID_HOUSE_HOTSPOTS.GOLD_CHEST,

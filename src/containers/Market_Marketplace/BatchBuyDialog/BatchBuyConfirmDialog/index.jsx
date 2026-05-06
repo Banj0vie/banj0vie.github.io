@@ -59,7 +59,7 @@ const BatchBuyConfirmDialog = ({ onClose, onPurchaseSuccess, item }) => {
               <p>Buy multiple items at or below your maximum price</p>
             </div>
             <div className="row">
-              <div>Maximum price per item (HNY)</div>
+              <div>Maximum price per item (Gold)</div>
               <BaseInput
                 className="input"
                 type="number"
@@ -71,7 +71,7 @@ const BatchBuyConfirmDialog = ({ onClose, onPurchaseSuccess, item }) => {
               ></BaseInput>
             </div>
             <div className="row">
-              <div>Total budget (HNY)</div>
+              <div>Total budget (Gold)</div>
               <BaseInput
                 className="input"
                 type="number"

@@ -17,7 +17,7 @@ const CustomSeedsDialog = ({ price = 1, onConfirm, onClose }) => {
           setValue={(val) => setSeedCount(val)}
         ></Slider>
         <div className="custom-seed-text">
-          Buy {seedCount} seeds for {seedCount * price} HNY
+          Buy {seedCount} seeds for {seedCount * price} Gold
         </div>
         <BaseDivider></BaseDivider>
         <BaseButton className="h-3rem" label="Confirm" onClick={() => onConfirm(parseInt(seedCount))}></BaseButton>

@@ -47,7 +47,7 @@ const BuyConfirmDialog = ({ onClose, onPurchaseSuccess, item }) => {
           <>
             <div className="text-center">
               <h3>{item.label || item.name || "Unknown Item"}</h3>
-              <p>Price per item: {item.price} HNY</p>
+              <p>Price per item: {item.price} Gold</p>
               <p>Available: {item.count} items</p>
             </div>
             <div className="row">
@@ -67,7 +67,7 @@ const BuyConfirmDialog = ({ onClose, onPurchaseSuccess, item }) => {
             </div>
             <div className="row">
               <div>Total cost</div>
-              <div className="total-cost">{totalCost} HNY</div>
+              <div className="total-cost">{totalCost} Gold</div>
             </div>
             <BaseDivider></BaseDivider>
             <BaseButton

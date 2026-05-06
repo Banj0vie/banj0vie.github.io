@@ -36,6 +36,15 @@ const VendorDialog = ({ onClose, label = "VENDOR", header = "", headerOffset = 0
   const { getMaxPlots, getUserCrops } = useFarming();
   const { show } = useNotification();
 
+  // Door-chime "ding-dong" on entering the vendor.
+  useEffect(() => {
+    try {
+      const a = new Audio('/sounds/dingdong.wav');
+      a.volume = 0.7;
+      a.play().catch(() => {});
+    } catch (_) {}
+  }, []);
+
   // Monitor vendor errors and show notifications with duplicate prevention
   const lastNotificationTime = useRef(0);
   useEffect(() => {
@@ -411,11 +420,8 @@ const VendorDialog = ({ onClose, label = "VENDOR", header = "", headerOffset = 0
 
   const handleBuy = useCallback(
     async (item) => {
-      if (!isConnected) {
-        show("Please connect your wallet first", "warning");
-        return;
-      }
-      
+      // Wallet gate removed — sandbox uses localStorage gold balance, no
+      // wallet connection required.
       const tier = tierMap[selectedSeed];
       const farmingLevel = Math.floor(Math.sqrt((parseInt(localStorage.getItem('sandbox_farming_xp') || '0', 10) || 0) / 150)) + 1;
 

@@ -148,7 +148,7 @@ const ScratchOff = ({ onBack }) => {
     }
     const honey = parseFloat(localStorage.getItem("sandbox_honey") || "0");
     if (honey < COST) {
-      show(`Not enough Honey! Need ${COST} HNY.`, "error");
+      show(`Not enough Honey! Need ${COST} Gold.`, "error");
       return;
     }
     const newHoney = honey - COST;
@@ -187,7 +187,7 @@ const ScratchOff = ({ onBack }) => {
     const newHoney = honey + ticket.prize;
     localStorage.setItem("sandbox_honey", newHoney.toString());
     window.dispatchEvent(new CustomEvent("sandboxHoneyChanged", { detail: newHoney.toString() }));
-    show(`+${ticket.prize.toLocaleString()} HNY!`, "success");
+    show(`+${ticket.prize.toLocaleString()} Gold!`, "success");
     setPhase("buy");
     setTicket(null);
   }, [ticket, show]);
@@ -219,15 +219,15 @@ const ScratchOff = ({ onBack }) => {
                   ))}
                 </span>
                 <span className="scratch-prize-label">{p.label}</span>
-                <span className="scratch-prize-amount">+{p.prize.toLocaleString()} HNY</span>
+                <span className="scratch-prize-amount">+{p.prize.toLocaleString()} Gold</span>
               </div>
             ))}
           </div>
 
-          <div className="scratch-cost-label">Cost: {COST.toLocaleString()} HNY per ticket</div>
+          <div className="scratch-cost-label">Cost: {COST.toLocaleString()} Gold per ticket</div>
           <div className="scratch-cost-label">{dailyCount}/{DAILY_LIMIT} tickets used today</div>
           <div style={{ display: "flex", gap: "8px" }}>
-            <BaseButton label={`Buy Ticket (${COST} HNY)`} onClick={buyTicket} disabled={dailyCount >= DAILY_LIMIT} />
+            <BaseButton label={`Buy Ticket (${COST} Gold)`} onClick={buyTicket} disabled={dailyCount >= DAILY_LIMIT} />
             <BaseButton label="Back" onClick={onBack} isError />
           </div>
         </>
@@ -273,15 +273,15 @@ const ScratchOff = ({ onBack }) => {
               {ticket.prize > 0 ? (
                 <>
                   <div className="scratch-result-label">🎉 {PRIZE_TABLE.find(p => p.prize === ticket.prize)?.label ?? "YOU WIN!"}</div>
-                  <div className="scratch-result-amount">+{ticket.prize.toLocaleString()} HNY</div>
-                  <BaseButton label={`Collect ${ticket.prize.toLocaleString()} HNY`} onClick={collectPrize} />
+                  <div className="scratch-result-amount">+{ticket.prize.toLocaleString()} Gold</div>
+                  <BaseButton label={`Collect ${ticket.prize.toLocaleString()} Gold`} onClick={collectPrize} />
                 </>
               ) : (
                 <>
                   <div className="scratch-result-label">😔 No Match</div>
                   <div className="scratch-result-sublabel">Better luck next time!</div>
                   <div style={{ display: "flex", gap: "8px" }}>
-                    <BaseButton label={`Try Again (${COST} HNY)`} onClick={buyTicket} />
+                    <BaseButton label={`Try Again (${COST} Gold)`} onClick={buyTicket} />
                     <BaseButton label="Back" onClick={onBack} isError />
                   </div>
                 </>

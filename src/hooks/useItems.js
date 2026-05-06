@@ -1,8 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { ID_SEEDS, ID_PRODUCE_ITEMS, ID_BAIT_ITEMS, ID_FISH_ITEMS, ID_CHEST_ITEMS, ID_POTION_ITEMS, ID_CROP_CATEGORIES, ID_ITEM_CATEGORIES, ID_POTION_CATEGORIES, ID_LOOT_CATEGORIES, ID_RARE_TYPE } from '../constants/app_ids';
 import { ALL_ITEMS, IMAGE_URL_CROP } from '../constants/item_data';
-import { useSolanaWallet } from './useSolanaWallet';
-import { fetchAllItemBalances } from '../solana/utils/inventoryUtils';
 
 const SB_CAT = ID_ITEM_CATEGORIES?.ITEM ?? ID_ITEM_CATEGORIES?.ITEMS ?? ID_ITEM_CATEGORIES?.TOOL ?? ID_ITEM_CATEGORIES?.LOOT ?? 4;
 
@@ -64,8 +62,6 @@ export const useItems = () => {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const { connection, publicKey } = useSolanaWallet();
-
   // Get all item IDs from constants - memoize to prevent infinite loops
   const allItemIds = useMemo(() => [
     ...Object.values(ID_SEEDS),
@@ -82,10 +78,9 @@ export const useItems = () => {
     setError(null);
 
     try {
+      // Sandbox-only: balances live entirely in localStorage. The on-chain
+      // path was removed when the wallet integration was deleted.
       let balances = {};
-      try {
-        balances = await fetchAllItemBalances(connection, publicKey) || {};
-      } catch (err) {}
 
       // --- SANDBOX HACK: Load harvested produce ---
       try {
@@ -196,7 +191,7 @@ export const useItems = () => {
     } finally {
       setLoading(false);
     }
-  }, [connection, publicKey]);
+  }, []);
 
   useEffect(() => {
     fetchItems();

@@ -4,8 +4,8 @@ import { ReactComponent as TwitterIcon } from "./../../../assets/social/twitter.
 import { ReactComponent as DiscordIcon } from "./../../../assets/social/discord.svg";
 import { ReactComponent as TutorialIcon } from "./../../../assets/social/tutorial.svg";
 import { ID_SOCIAL } from "../../../constants/app_ids";
-import { useAppSelector } from "../../../solana/store";
-import { selectSettings } from "../../../solana/store/slices/uiSlice";
+import { useAppSelector } from "../../../store";
+import { selectSettings } from "../../../store/slices/uiSlice";
 import { defaultSettings } from "../../../utils/settings";
 import { clampVolume } from "../../../utils/basic";
 

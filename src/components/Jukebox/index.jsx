@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useAppSelector } from '../../solana/store';
-import { selectSettings } from '../../solana/store/slices/uiSlice';
+import { useAppSelector } from '../../store';
+import { selectSettings } from '../../store/slices/uiSlice';
 import { defaultSettings } from '../../utils/settings';
 import { clampVolume } from '../../utils/basic';
 

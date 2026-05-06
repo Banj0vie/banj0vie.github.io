@@ -10,196 +10,196 @@ export const CARD_FRONT_IMAGES = {
     1: "/images/cardfront/onioncard/onionseedcom.png",
     2: "/images/cardfront/onioncard/onionseeduncom.png",
     3: "/images/cardfront/onioncard/onionseedrare.png",
-    4: "/images/cardfront/onioncard/onionepic.png",
+    4: "/images/cardfront/onioncard/onionseedepic.png",
     5: "/images/cardfront/onioncard/onionseedleg.png",
   },
   [ID_SEEDS.POTATO]: {
     1: "/images/cardfront/potatocard/potatoseedcom.png",
     2: "/images/cardfront/potatocard/potatoseeduncom.png",
     3: "/images/cardfront/potatocard/potatoseedrare.png",
-    4: "/images/cardfront/potatocard/potatoepic.png",
+    4: "/images/cardfront/potatocard/potatoseedepic.png",
     5: "/images/cardfront/potatocard/potatoseedleg.png",
   },
   [ID_SEEDS.BLUEBERRY]: {
     1: "/images/cardfront/blueberry/blueberrycomseed.png",
     2: "/images/cardfront/blueberry/blueberryseeduncom.png",
     3: "/images/cardfront/blueberry/blueberryseedrare.png",
-    4: "/images/cardfront/blueberry/blueberryepic.png",
+    4: "/images/cardfront/blueberry/blueberryseedepic.png",
     5: "/images/cardfront/blueberry/blueberryseedleg.png",
   },
   [ID_SEEDS.BROCCOLI]: {
     1: "/images/cardfront/broccoli/Brocoloiseed.png",
     2: "/images/cardfront/broccoli/brocoliseeduncom.png",
     3: "/images/cardfront/broccoli/brocoliseedrare.png",
-    4: "/images/cardfront/broccoli/brocepic.png",
+    4: "/images/cardfront/broccoli/brocoliseedepic.png",
     5: "/images/cardfront/broccoli/broclieseedleg.png",
   },
   [ID_SEEDS.CELERY]: {
     1: "/images/cardfront/celery/cellaryseedcom.png",
     2: "/images/cardfront/celery/cellaryseeduncom.png",
     3: "/images/cardfront/celery/cellaryseedrare.png",
-    4: "/images/cardfront/celery/celepic.png",
+    4: "/images/cardfront/celery/cellaryseedepic.png",
     5: "/images/cardfront/celery/cellaryseedleg.png",
   },
   [ID_SEEDS.GRAPES]: {
     1: "/images/cardfront/grape/grapeseedcom.png",
     2: "/images/cardfront/grape/grapeseeduncom.png",
     3: "/images/cardfront/grape/grapeseedrare.png",
-    4: "/images/cardfront/grape/grapeepic.png",
+    4: "/images/cardfront/grape/grapeseedepic.png",
     5: "/images/cardfront/grape/grapeseedleg.png",
   },
   [ID_SEEDS.PEPPER]: {
     1: "/images/cardfront/pepper/pepperseedcom.png",
     2: "/images/cardfront/pepper/pepperseeduncom.png",
     3: "/images/cardfront/pepper/pepperseedrare.png",
-    4: "/images/cardfront/pepper/pepperepic.png",
+    4: "/images/cardfront/pepper/pepperseedepic.png",
     5: "/images/cardfront/pepper/pepperseedleg.png",
   },
   [ID_SEEDS.PINEAPPLE]: {
     1: "/images/cardfront/pineapplecard/pineappleseedcom.png",
     2: "/images/cardfront/pineapplecard/pineappleseeduncom.png",
     3: "/images/cardfront/pineapplecard/pineappleseedrare.png",
-    4: "/images/cardfront/pineapplecard/pineappleepic.png",
+    4: "/images/cardfront/pineapplecard/pineappleseedepic.png",
     5: "/images/cardfront/pineapplecard/pineappleseedleg.png",
   },
   [ID_SEEDS.MANGO]: {
     1: "/images/cardfront/mango/mangoseedcom.png",
     2: "/images/cardfront/mango/mangoseeduncom.png",
     3: "/images/cardfront/mango/mangoseedrare.png",
-    4: "/images/cardfront/mango/mangoepic.png",
+    4: "/images/cardfront/mango/mangoseedepic.png",
     5: "/images/cardfront/mango/mangoseedleg.png",
   },
   [ID_SEEDS.PAPAYA]: {
     1: "/images/cardfront/papaya/papayaseedcom.png",
     2: "/images/cardfront/papaya/papayaseeduncom.png",
     3: "/images/cardfront/papaya/papayaseedrare.png",
-    4: "/images/cardfront/papaya/papepic.png",
+    4: "/images/cardfront/papaya/papayaseedepic.png",
     5: "/images/cardfront/papaya/papayaseedleg.png",
   },
   [ID_SEEDS.PUMPKIN]: {
     1: "/images/cardfront/pumpkin/pumpkinseedcom.png",
     2: "/images/cardfront/pumpkin/pumpkinseeduncom.png",
     3: "/images/cardfront/pumpkin/pumpkinseedrare.png",
-    4: "/images/cardfront/pumpkin/pumpepic.png",
+    4: "/images/cardfront/pumpkin/pumpkinseedepic.png",
     5: "/images/cardfront/pumpkin/pumpkinseedleg.png",
   },
   [ID_SEEDS.TOMATO]: {
     1: "/images/cardfront/tomato/tomatoseedcom.png",
     2: "/images/cardfront/tomato/tomatoseeduncom.png",
     3: "/images/cardfront/tomato/tomatoseedrare.png",
-    4: "/images/cardfront/tomato/tomatoepic.png",
+    4: "/images/cardfront/tomato/tomatoseedepic.png",
     5: "/images/cardfront/tomato/tomatoseedleg.png",
   },
   [ID_SEEDS.TURNIP]: {
     1: "/images/cardfront/turnip/turnipseedcom.png",
     2: "/images/cardfront/turnip/turnipseeduncom.png",
     3: "/images/cardfront/turnip/turnipseedrare.png",
-    4: "/images/cardfront/turnip/turnipepic.png",
+    4: "/images/cardfront/turnip/turnipseedepic.png",
     5: "/images/cardfront/turnip/turnipseedleg.png",
   },
   [ID_SEEDS.DRAGON_FRUIT]: {
     1: "/images/cardfront/dragonfruit/dragonseedcom.png",
     2: "/images/cardfront/dragonfruit/dragonseeduncom.png",
     3: "/images/cardfront/dragonfruit/dragonfruitseedrare.png",
-    4: "/images/cardfront/dragonfruit/dragepic.png",
+    4: "/images/cardfront/dragonfruit/dragonfruitseedepic.png",
     5: "/images/cardfront/dragonfruit/dragonfruitseedleg.png",
   },
   [ID_SEEDS.LETTUCE]: {
     1: "/images/cardfront/lettuce/lettuceseedcom.png",
     2: "/images/cardfront/lettuce/lettuceseeduncom.png",
     3: "/images/cardfront/lettuce/lettuceseedrare.png",
-    4: "/images/cardfront/lettuce/letepic.png",
+    4: "/images/cardfront/lettuce/lettuceseedepic.png",
     5: "/images/cardfront/lettuce/lettuceseedleg.png",
   },
   [ID_SEEDS.LICHI]: {
     1: "/images/cardfront/lychee/lycheeseedcom.png",
     2: "/images/cardfront/lychee/lycheeseeduncom.png",
     3: "/images/cardfront/lychee/lycheeseedrare.png",
-    4: "/images/cardfront/lychee/lycepic.png",
+    4: "/images/cardfront/lychee/lycheeseedepic.png",
     5: "/images/cardfront/lychee/lycheeseedleg.png",
   },
   [ID_SEEDS.RADISH]: {
     1: "/images/cardfront/radish/raddishseedcom.png",
     2: "/images/cardfront/radish/raddishseeduncom.png",
     3: "/images/cardfront/radish/raddishseedrare.png",
-    4: "/images/cardfront/radish/radepic.png",
+    4: "/images/cardfront/radish/raddishseedepic.png",
     5: "/images/cardfront/radish/raddishseedleg.png",
   },
   [ID_SEEDS.AVOCADO]: {
     1: "/images/cardfront/avocado/avocadoseedom.png",
     2: "/images/cardfront/avocado/avocadoseedcuncom.png",
     3: "/images/cardfront/avocado/avocadoseedrare.png",
-    4: "/images/cardfront/avocado/avoepic.png",
+    4: "/images/cardfront/avocado/avocadoseedepic.png",
     5: "/images/cardfront/avocado/avocadoseedleg.png",
   },
   [ID_SEEDS.BANANA]: {
     1: "/images/cardfront/banana/bananaseedcom.png",
     2: "/images/cardfront/banana/bananaseeduncom.png",
     3: "/images/cardfront/banana/bananaseedrare.png",
-    4: "/images/cardfront/banana/banepic.png",
+    4: "/images/cardfront/banana/bananaseedepic.png",
     5: "/images/cardfront/banana/bananaseedleg.png",
   },
   [ID_SEEDS.CAULIFLOWER]: {
-    1: "/images/cardfront/califlower/califlowerseedcom.png",
-    2: "/images/cardfront/califlower/califlowerseeduncom.png",
-    3: "/images/cardfront/califlower/califlowerseedrare.png",
+    1: "/images/cardfront/califlower/calicom.png",
+    2: "/images/cardfront/califlower/caliuncom.png",
+    3: "/images/cardfront/califlower/calirare.png",
     4: "/images/cardfront/califlower/caliepic.png",
-    5: "/images/cardfront/califlower/califlowerseedleg.png",
+    5: "/images/cardfront/califlower/calileg.png",
   },
   [ID_SEEDS.CORN]: {
     1: "/images/cardfront/corn/cornseedcom.png",
     2: "/images/cardfront/corn/cornseeduncom.png",
     3: "/images/cardfront/corn/cornseedrare.png",
-    4: "/images/cardfront/corn/cornepic.png",
+    4: "/images/cardfront/corn/cornseedepic.png",
     5: "/images/cardfront/corn/cornseedleg.png",
   },
   [ID_SEEDS.BOKCHOY]: {
     1: "/images/cardfront/bokchoy/bokchoyseedcom.png",
     2: "/images/cardfront/bokchoy/bokchoyseeduncom.png",
     3: "/images/cardfront/bokchoy/bokchoyseedrare.png",
-    4: "/images/cardfront/bokchoy/bchoyepic.png",
+    4: "/images/cardfront/bokchoy/bokchoyseedepic.png",
     5: "/images/cardfront/bokchoy/bokchoyseedleg.png",
   },
   [ID_SEEDS.CARROT]: {
     1: "/images/cardfront/carrot/carrotseedcom.png",
     2: "/images/cardfront/carrot/carrotseeduncom.png",
     3: "/images/cardfront/carrot/carrotseedrare.png",
-    4: "/images/cardfront/carrot/carepic.png",
+    4: "/images/cardfront/carrot/carrotseedepic.png",
     5: "/images/cardfront/carrot/carrotseedleg.png",
   },
   [ID_SEEDS.LAVENDER]: {
     1: "/images/cardfront/lavender/lavenderseedcom.png",
     2: "/images/cardfront/lavender/lavenderseeduncom.png",
     3: "/images/cardfront/lavender/lavenderseedrare.png",
-    4: "/images/cardfront/lavender/lavepic.png",
+    4: "/images/cardfront/lavender/lavendarseedepic.png",
     5: "/images/cardfront/lavender/lavendarseedleg.png",
   },
   [ID_SEEDS.WHEAT]: {
     1: "/images/cardfront/wheat/wheatseedcom.png",
     2: "/images/cardfront/wheat/wheatseeduncom.png",
     3: "/images/cardfront/wheat/wheetseedrare.png",
-    4: "/images/cardfront/wheat/wheatepic.png",
+    4: "/images/cardfront/wheat/wheatseedepic.png",
     5: "/images/cardfront/wheat/wheatseedleg.png",
   },
   [ID_SEEDS.POMEGRANATE]: {
     1: "/images/cardfront/pomegranate/pomogranteseedcom.png",
     2: "/images/cardfront/pomegranate/pomogranteseeduncom.png",
     3: "/images/cardfront/pomegranate/pomogranteseedrare.png",
-    4: "/images/cardfront/pomegranate/pomepic.png",
+    4: "/images/cardfront/pomegranate/pomogranteseedepic.png",
     5: "/images/cardfront/pomegranate/pomogranteseedleg.png",
   },
   [ID_SEEDS.APPLE]: {
     1: "/images/cardfront/apple/appleseedcom.png",
     2: "/images/cardfront/apple/appleseeduncom.png",
     3: "/images/cardfront/apple/appleseedrare.png",
-    4: "/images/cardfront/apple/appleepic.png",
+    4: "/images/cardfront/apple/appleseedepic.png",
     5: "/images/cardfront/apple/appleseedleg.png",
   },
   [ID_SEEDS.EGGPLANT]: {
     1: "/images/cardfront/eggplant/eggplantseedcom.png",
     2: "/images/cardfront/eggplant/eggplantseeduncom.png",
     3: "/images/cardfront/eggplant/eggplantseedrare.png",
-    4: "/images/cardfront/eggplant/eggepic.png",
+    4: "/images/cardfront/eggplant/eggplantseedepic.png",
     5: "/images/cardfront/eggplant/eggplantseedleg.png",
   },
 };
@@ -312,6 +312,15 @@ const PokemonPackRipDialog = ({ rollingInfo, onClose, onBack, onBuyAgain }) => {
   const syncFrame = (f) => { openFrameRef.current = f; setOpenFrame(f); };
   useEffect(() => {
     window.dispatchEvent(new CustomEvent('packOpened'));
+  }, []);
+
+  // Mark the body so PlayerPullNotification suppresses pull notifications across the
+  // entire pack-opening experience (pack rip + card reveal). Also tear down any
+  // notification currently on screen so it doesn't sit on top.
+  useEffect(() => {
+    document.body.setAttribute('data-pack-open', 'true');
+    window.dispatchEvent(new CustomEvent('letterOpened'));
+    return () => document.body.removeAttribute('data-pack-open');
   }, []);
 
   const cfg = PACK_CONFIGS[rollingInfo.id] || PACK_CONFIGS[2];
@@ -664,7 +673,7 @@ const PokemonPackRipDialog = ({ rollingInfo, onClose, onBack, onBuyAgain }) => {
   };
 
   return (
-    <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', zIndex: 100000, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontFamily: 'monospace', backgroundColor: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(12px)' }}>
+    <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', zIndex: 100000, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontFamily: 'monospace', backgroundColor: 'rgba(0,0,0,0.75)' }}>
 
       {/* Pack — stays visible, fades+scales out when cards emerge */}
       {!dealt && (

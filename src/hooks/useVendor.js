@@ -63,21 +63,21 @@ export const useVendor = () => {
     if (loading) { setError('Transaction already in progress'); return null; }
     setLoading(true); setError(null);
     try {
-      const currentHoney = parseFloat(localStorage.getItem('sandbox_honey') || '0');
-      // Pricing: 100 / 750 / 3500 / 15000 HNY per 5-seed pack
+      const currentGold = parseInt(localStorage.getItem('sandbox_gold') || '0', 10);
+      // Pricing: 100 / 750 / 3500 / 15000 gold per 5-seed pack
       const pricePerPack = tier === 1 ? 100 : tier === 2 ? 750 : tier === 3 ? 3500 : 15000;
       const numPacks = Math.ceil(count / 5);
       const totalCost = pricePerPack * numPacks;
 
-      if (currentHoney < totalCost) {
-        setError(`Not enough Honey! Need ${totalCost} but you have ${currentHoney}`);
+      if (currentGold < totalCost) {
+        setError(`Not enough gold! Need ${totalCost} but you have ${currentGold}`);
         setLoading(false);
         return null;
       }
 
-      const newHoney = currentHoney - totalCost;
-      localStorage.setItem('sandbox_honey', newHoney.toString());
-      window.dispatchEvent(new CustomEvent('sandboxHoneyChanged', { detail: newHoney.toString() }));
+      const newGold = currentGold - totalCost;
+      localStorage.setItem('sandbox_gold', newGold.toString());
+      window.dispatchEvent(new CustomEvent('sandboxGoldChanged', { detail: newGold.toString() }));
 
       const nonce = Math.floor(Date.now() + Math.random() * 1000000);
       localStorage.setItem('sandbox_seed_request', JSON.stringify({ requestId: nonce, tier, count }));

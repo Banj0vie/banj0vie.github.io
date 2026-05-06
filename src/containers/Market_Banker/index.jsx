@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useMemo } from "react";
 import BaseDialog from "../_BaseDialog";
 import { useItems } from "../../hooks/useItems";
-import { useNotification } from "../../contexts/NotificationContext";
 import { ALL_ITEMS } from "../../constants/item_data";
 import { ID_ITEM_CATEGORIES } from "../../constants/app_ids";
 import { CARD_FRONT_IMAGES, getBaseAndRarity } from "../Market_Vendor/PokemonPackRipDialog";
+import { CROP_CARD_IMAGES } from "../../components/HarvestCardReveal";
 
 // --- Inventory-image lookup tables (kept in sync with Menu_Inventory). Used so the bank's
 // item rendering matches the bag inventory's icons exactly.
@@ -64,11 +64,14 @@ const getInventoryItemImage = (item) => {
   return item.image || null;
 };
 
-// Tier 1 (default account) capacity. Higher tiers (e.g. tier 2 → 100) come later.
-const BANK_MAX_SLOTS = 50;
+// Bank capacity is split across 3 pages of a 4×6 grid (24 stacks each).
+// 3 × 24 = 72 stacks × 10 items per stack = 720 items total.
+const BANK_SLOTS_PER_PAGE = 24;
+const BANK_PAGE_COUNT = 3;
+const BANK_MAX_SLOTS = BANK_SLOTS_PER_PAGE * BANK_PAGE_COUNT;
 // Max items per single stack/slot (any seed or crop). Beyond this the item spills into
 // a fresh slot.
-const BANK_MAX_PER_STACK = 5;
+const BANK_MAX_PER_STACK = 10;
 
 // Number of slots a given total count occupies, given the per-stack cap.
 const stacksForCount = (count) => Math.ceil(Math.max(0, Number(count) || 0) / BANK_MAX_PER_STACK);
@@ -188,6 +191,12 @@ const BankerDialog = ({ onClose, label = "BANKER", header = "" }) => {
   useEffect(() => {
     document.body.setAttribute('data-bank-open', 'true');
     window.dispatchEvent(new CustomEvent('letterOpened'));
+    // Door-chime "ding-dong" on entering the bank.
+    try {
+      const a = new Audio('/sounds/dingdong.wav');
+      a.volume = 0.7;
+      a.play().catch(() => {});
+    } catch (_) {}
     return () => document.body.removeAttribute('data-bank-open');
   }, []);
   // Track the bank cutscene step (-1 if not active) so we can gate the "Open an Account"
@@ -276,33 +285,36 @@ const BankerDialog = ({ onClose, label = "BANKER", header = "" }) => {
 // panel during deposit mode.
 const InventoryStylePopup = ({
   items,           // array of {id, count, label, category, image}
-  capacity,        // number of slots to render (15 = single page; 50 = paginated)
   page,            // current page (0-indexed)
   totalPages,      // computed total pages
   onPagePrev,
   onPageNext,
-  onItemClick,     // (itemId) => void; pass null for read-only
+  onItemClick,     // (itemId, slotIndex) => void; pass null for read-only
   title,
   showClose,       // whether to render the inventory X button
   onClose,
   showBack,
   onBack,
   scale = 1,       // overall popup scale (1 = full size, 0.5 = half size for the floating panel)
-  slotSize = 95,   // px size of each box.png slot inside the grid
+  slotSize = 88,   // px size of each box.png slot inside the grid
   gridGap = 6,     // px gap between slots
   gridPadding = '28% 12%',
-  gridTransform = 'translate(132.5px, 65px)',
+  gridTransform = 'translate(122.5px, 65px)',
   actionLabel = null, // optional badge ("WITHDRAW" / "DEPOSIT") shown below the title
   actionLabelStyle = null, // override styles merged onto the badge (position tweaks etc.)
   actionOnClick = null, // optional click handler that turns the badge into a real button
+  actionLabel2 = null, // optional second badge sitting next to the first
+  actionLabelStyle2 = null, // override styles for the second badge
+  actionOnClick2 = null, // click handler for the second badge
+  actionLabel3 = null, // optional third badge
+  actionLabelStyle3 = null,
+  actionOnClick3 = null,
   previewImage = null, // optional image rendered in the left preview panel area
-  selectedItemId = null, // highlights ANY slot containing this item id (legacy)
+  previewWeightInfo = null, // optional { w, d } for the weight/date overlay on the card
+  previewShowWeight = false, // whether to render the weight/date overlay (produce only)
   selectedSlotIndex = null, // highlights ONLY the slot at this absolute index
   onPreviewPrev = null, // callback for the left arrow on the preview card
   onPreviewNext = null, // callback for the right arrow on the preview card
-  previewIndicator = null, // optional small "1 / 3" badge over the card
-  positionStyle = {}, // any extra positioning overrides
-  zIndex = 100000,
 }) => {
   const slotsPerPage = 15;
   const start = page * slotsPerPage;
@@ -317,14 +329,13 @@ const InventoryStylePopup = ({
         // scaled popup doesn't invisibly cover other UI. Supported in Chrome/Edge/Safari
         // and Firefox 126+.
         zoom: scale !== 1 ? scale : undefined,
-        ...positionStyle,
       }}
     >
       <img
         src="/images/inventory/inventory.png"
         alt={title || 'Inventory'}
         draggable={false}
-        style={{ display: 'block', maxWidth: scale === 1 ? '90vw' : 'none', maxHeight: scale === 1 ? '90vh' : 'none', objectFit: 'contain', userSelect: 'none' }}
+        style={{ display: 'block', maxWidth: '90vw', maxHeight: '90vh', objectFit: 'contain', userSelect: 'none' }}
       />
 
       {/* Title overlay (e.g. BANK / DEPOSIT / WITHDRAW / YOUR INVENTORY) */}
@@ -344,19 +355,47 @@ const InventoryStylePopup = ({
       {previewImage && (
         <div style={{
           position: 'absolute',
-          top: 'calc(24% + 30px)', left: 'calc(12% - 50px)',
-          width: '34%', pointerEvents: 'none',
+          top: 'calc(50% - 83.5px)', left: 'calc(12% - 30px)',
+          pointerEvents: 'none',
         }}>
           <img
             src={previewImage}
             alt=""
             draggable={false}
             style={{
-              width: '100%', height: 'auto', objectFit: 'contain',
-              userSelect: 'none', display: 'block',
+              display: 'block',
+              height: '297px', width: 'auto',
+              userSelect: 'none',
               filter: 'drop-shadow(0 6px 18px rgba(0,0,0,0.55))',
             }}
           />
+          {/* Weight + Date Obtained overlay — produce only. Hidden for seed packs. */}
+          {previewShowWeight && (
+            <div style={{
+              position: 'absolute', bottom: 'calc(6% + 14px)', left: 0, right: 0,
+              textAlign: 'center',
+              fontFamily: 'GROBOLD, Cartoonist, sans-serif',
+              color: '#fff',
+              textShadow: '1px 1px 0 #000, -1px 1px 0 #000, 1px -1px 0 #000, -1px -1px 0 #000',
+              lineHeight: 1.3,
+              pointerEvents: 'none',
+            }}>
+              <div style={{ fontSize: '11px', letterSpacing: 1 }}>
+                Weight: {previewWeightInfo
+                  ? (previewWeightInfo.w >= 1000 ? `${(previewWeightInfo.w / 1000).toFixed(2)} kg` : `${previewWeightInfo.w} g`)
+                  : 'Unknown'}
+              </div>
+              <div style={{ fontSize: '11px', letterSpacing: 1 }}>
+                Date Obtained: {(() => {
+                  const ts = previewWeightInfo ? previewWeightInfo.d : Date.now();
+                  const d = new Date(ts);
+                  const m = String(d.getMonth() + 1).padStart(2, '0');
+                  const day = String(d.getDate()).padStart(2, '0');
+                  return `${m}/${day}/${d.getFullYear()}`;
+                })()}
+              </div>
+            </div>
+          )}
           {/* Prev / Next arrows overlaid on the card. The parent uses pointerEvents: none
               so the card itself doesn't capture clicks; the arrows re-enable pointer
               events on themselves. Each is rendered only if the corresponding callback
@@ -415,23 +454,6 @@ const InventoryStylePopup = ({
               ›
             </div>
           )}
-          {/* "1 / 3" instance indicator — small badge near the top of the card showing
-              which card in the stack the user is currently viewing. */}
-          {previewIndicator && (
-            <div style={{
-              position: 'absolute', top: 6, left: '50%', transform: 'translateX(-50%)',
-              padding: '3px 10px', borderRadius: 10,
-              background: 'rgba(20,10,5,0.85)', border: '2px solid #c8821a',
-              color: '#f5d87a',
-              fontFamily: 'GROBOLD, Cartoonist, sans-serif', fontSize: 12, letterSpacing: 1,
-              textShadow: '1px 1px 0 #000',
-              pointerEvents: 'none', userSelect: 'none',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.45)',
-              whiteSpace: 'nowrap',
-            }}>
-              {previewIndicator}
-            </div>
-          )}
         </div>
       )}
 
@@ -471,6 +493,80 @@ const InventoryStylePopup = ({
           }}
         >
           {actionLabel}
+        </div>
+      )}
+
+      {/* Optional secondary action badge — same look, different label/handler. */}
+      {actionLabel2 && (
+        <div
+          onClick={actionOnClick2 || undefined}
+          style={{
+            position: 'absolute',
+            top: 'calc(8% + 60px)', left: '50%', transform: 'translateX(-50%)',
+            padding: '6px 22px', borderRadius: 8,
+            background: 'rgba(20,10,5,0.92)', color: '#f5d87a',
+            border: '2px solid #c8821a',
+            fontFamily: 'GROBOLD, Cartoonist, sans-serif', fontSize: 14, letterSpacing: 2,
+            textShadow: '1px 1px 0 #000',
+            pointerEvents: actionOnClick2 ? 'auto' : 'none',
+            cursor: actionOnClick2 ? 'pointer' : 'default',
+            userSelect: 'none',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.45)',
+            whiteSpace: 'nowrap',
+            transition: 'transform 0.15s ease-out, filter 0.15s ease-out',
+            ...(actionLabelStyle2 || {}),
+          }}
+          onMouseEnter={(e) => {
+            if (!actionOnClick2) return;
+            e.currentTarget.style.filter = 'brightness(1.15) drop-shadow(0 0 6px rgba(245,216,122,0.85))';
+            const baseTransform = (actionLabelStyle2 && actionLabelStyle2.transform) || 'translateX(-50%)';
+            e.currentTarget.style.transform = `${baseTransform} scale(1.05)`;
+          }}
+          onMouseLeave={(e) => {
+            if (!actionOnClick2) return;
+            e.currentTarget.style.filter = 'none';
+            const baseTransform = (actionLabelStyle2 && actionLabelStyle2.transform) || 'translateX(-50%)';
+            e.currentTarget.style.transform = baseTransform;
+          }}
+        >
+          {actionLabel2}
+        </div>
+      )}
+
+      {/* Optional tertiary action badge. */}
+      {actionLabel3 && (
+        <div
+          onClick={actionOnClick3 || undefined}
+          style={{
+            position: 'absolute',
+            top: 'calc(8% + 60px)', left: '50%', transform: 'translateX(-50%)',
+            padding: '6px 22px', borderRadius: 8,
+            background: 'rgba(20,10,5,0.92)', color: '#f5d87a',
+            border: '2px solid #c8821a',
+            fontFamily: 'GROBOLD, Cartoonist, sans-serif', fontSize: 14, letterSpacing: 2,
+            textShadow: '1px 1px 0 #000',
+            pointerEvents: actionOnClick3 ? 'auto' : 'none',
+            cursor: actionOnClick3 ? 'pointer' : 'default',
+            userSelect: 'none',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.45)',
+            whiteSpace: 'nowrap',
+            transition: 'transform 0.15s ease-out, filter 0.15s ease-out',
+            ...(actionLabelStyle3 || {}),
+          }}
+          onMouseEnter={(e) => {
+            if (!actionOnClick3) return;
+            e.currentTarget.style.filter = 'brightness(1.15) drop-shadow(0 0 6px rgba(245,216,122,0.85))';
+            const baseTransform = (actionLabelStyle3 && actionLabelStyle3.transform) || 'translateX(-50%)';
+            e.currentTarget.style.transform = `${baseTransform} scale(1.05)`;
+          }}
+          onMouseLeave={(e) => {
+            if (!actionOnClick3) return;
+            e.currentTarget.style.filter = 'none';
+            const baseTransform = (actionLabelStyle3 && actionLabelStyle3.transform) || 'translateX(-50%)';
+            e.currentTarget.style.transform = baseTransform;
+          }}
+        >
+          {actionLabel3}
         </div>
       )}
 
@@ -519,10 +615,7 @@ const InventoryStylePopup = ({
           const item = visibleItems[i];
           const absoluteIndex = start + i;
           const clickable = !!(item && onItemClick);
-          const isSelected = !!item && (
-            (selectedSlotIndex != null && absoluteIndex === selectedSlotIndex) ||
-            (selectedItemId != null && item.id === selectedItemId)
-          );
+          const isSelected = !!item && selectedSlotIndex != null && absoluteIndex === selectedSlotIndex;
           return (
             <div
               key={i}
@@ -670,6 +763,8 @@ const BankInventoryView = ({ onBack, onClose, label, header }) => {
   const [bankState, setBankState] = useState(getBank);
   const [feedback, setFeedback] = useState('');
   const [bankPage, setBankPage] = useState(0);
+  // Which 24-slot bank page the player is currently viewing (0..BANK_PAGE_COUNT-1).
+  const [bankViewPage, setBankViewPage] = useState(0);
   // Tracks the absolute index (into bankSlots, the chunked stack list) of the slot the
   // user clicked. This is what the highlight + preview + WITHDRAW button operate on.
   // Stacks of the same item id can occupy multiple slots (cap = BANK_MAX_PER_STACK).
@@ -677,13 +772,97 @@ const BankInventoryView = ({ onBack, onClose, label, header }) => {
   // Index of which "instance" within the selected slot the user is viewing (0-based).
   // For a slot of 3 corn cards, 0 = card 1/3, 1 = card 2/3, etc. Arrows cycle this.
   const [instanceIndex, setInstanceIndex] = useState(0);
-  const { show } = useNotification();
+
+  // Player-side selection — which item id in the left inventory the user is
+  // currently previewing on the card. Mirrors Menu_Inventory's pattern.
+  const [playerSelectedItemId, setPlayerSelectedItemId] = useState(null);
+  const [playerInstanceIndex, setPlayerInstanceIndex] = useState(0);
 
   useEffect(() => {
     const update = () => setBankState(getBank());
     window.addEventListener('sandboxGoldChanged', update);
     return () => window.removeEventListener('sandboxGoldChanged', update);
   }, []);
+
+  // Auto-select the first item in the player inventory the moment items load,
+  // so the card preview is populated by default (mirrors Menu_Inventory).
+  useEffect(() => {
+    if (playerSelectedItemId != null) return;
+    const all = [...(seeds || []), ...(productions || [])];
+    const first = all.find((it) => (it.count || 0) > 0);
+    if (first) {
+      setPlayerSelectedItemId(Number(first.id));
+      setPlayerInstanceIndex(0);
+    }
+  }, [seeds, productions, playerSelectedItemId]);
+
+  // Reads fresh localStorage and finds the next item the player still has,
+  // skipping any id passed in `excludeId`. Used after a successful deposit
+  // to auto-jump the selection to a still-available item instead of leaving
+  // the player on a now-empty stack (which then misreports as "Bank is full!").
+  const findFirstAvailableItem = (excludeId = null) => {
+    let produce = {};
+    let loot = {};
+    try { produce = JSON.parse(localStorage.getItem('sandbox_produce') || '{}'); } catch (_) {}
+    try { loot = JSON.parse(localStorage.getItem('sandbox_loot') || '{}'); } catch (_) {}
+    // Loot first (seeds), then produce — mirrors playerItems' ordering.
+    for (const [idStr, count] of Object.entries(loot)) {
+      const id = Number(idStr);
+      if (excludeId != null && id === Number(excludeId)) continue;
+      if (Number(count) > 0) return id;
+    }
+    for (const [idStr, count] of Object.entries(produce)) {
+      const id = Number(idStr);
+      if (excludeId != null && id === Number(excludeId)) continue;
+      if (Number(count) > 0) return id;
+    }
+    return null;
+  };
+
+  // Withdraw the entire selected bank stack back to the player inventory.
+  // Loops transferOne(...withdraw=true) until the slot is empty. Auto-clears
+  // the slot selection once nothing's left to display, and re-points the
+  // player-side selection at the first available inventory item so the card
+  // preview always shows whatever's in box 1.
+  const withdrawSelectedStack = () => {
+    if (selectedSlotIndex == null) return;
+    const slot = bankSlots[selectedSlotIndex];
+    if (!slot || slot.count <= 0) return;
+    let any = false;
+    const cap = slot.count + 1;
+    for (let i = 0; i < cap; i++) {
+      if (!transferOne(slot.id, true)) break;
+      any = true;
+    }
+    if (!any) return;
+    const next = getBank();
+    setBankState(next);
+    refetch && refetch();
+    // Selected slot may have collapsed or emptied — drop the highlight.
+    setSelectedSlotIndex(null);
+    setInstanceIndex(0);
+    // Anything new in the inventory → auto-select the first box.
+    const firstId = findFirstAvailableItem(null);
+    if (firstId != null) {
+      setPlayerSelectedItemId(firstId);
+      setPlayerInstanceIndex(0);
+    }
+  };
+
+  // After a deposit, if the previously-selected item is now empty, auto-jump
+  // the selection to the first remaining stack the player still has.
+  const autoAdvanceSelectionIfEmpty = (depositedId) => {
+    let produce = {};
+    let loot = {};
+    try { produce = JSON.parse(localStorage.getItem('sandbox_produce') || '{}'); } catch (_) {}
+    try { loot = JSON.parse(localStorage.getItem('sandbox_loot') || '{}'); } catch (_) {}
+    const remaining = (Number(produce[depositedId]) || 0) + (Number(loot[depositedId]) || 0);
+    if (remaining <= 0) {
+      const next = findFirstAvailableItem(depositedId);
+      setPlayerSelectedItemId(next);
+      setPlayerInstanceIndex(0);
+    }
+  };
 
   const bankItems = useMemo(() => (
     Object.entries(bankState)
@@ -796,83 +975,524 @@ const BankInventoryView = ({ onBack, onClose, label, header }) => {
   const canCyclePrev = selectedSlotCount > 1 && instanceIndex > 0;
   const canCycleNext = selectedSlotCount > 1 && instanceIndex < selectedSlotCount - 1;
 
-  // Resolve the card-front image for the currently-selected stack, if any.
+  // Total count for the selected id across ALL of its slots (bank chunks at 5 each).
+  const selectedTotalCount = useMemo(() => {
+    if (!selectedSlot) return 0;
+    return bankSlots
+      .filter((s) => s.id === selectedSlot.id)
+      .reduce((sum, s) => sum + (s.count || 0), 0);
+  }, [bankSlots, selectedSlot]);
+
+  // Number of items in earlier slots of the same id — used as an offset into the
+  // weight log so each individual card maps to its own log entry.
+  const stackOffset = useMemo(() => {
+    if (!selectedSlot || selectedSlotIndex == null) return 0;
+    let off = 0;
+    for (let i = 0; i < selectedSlotIndex; i++) {
+      if (bankSlots[i] && bankSlots[i].id === selectedSlot.id) off += bankSlots[i].count;
+    }
+    return off;
+  }, [selectedSlot, selectedSlotIndex, bankSlots]);
+
+  // Per-instance weight + harvest date for the selected bank slot. Indexed by stack
+  // offset + instanceIndex so each card has its own stats.
+  const selectedWeightInfo = useMemo(() => {
+    if (!selectedSlot) return null;
+    try {
+      const log = JSON.parse(localStorage.getItem('sandbox_produce_weights') || '{}');
+      const entries = log[Number(selectedSlot.id)];
+      if (!Array.isArray(entries) || entries.length === 0) return null;
+      // Window the log to the most recent `selectedTotalCount` entries (older entries
+      // belong to crops the player has already used up).
+      const startIdx = Math.max(0, entries.length - selectedTotalCount);
+      const idx = startIdx + stackOffset + Math.max(0, instanceIndex);
+      if (idx < 0 || idx >= entries.length) return null;
+      return entries[idx];
+    } catch (_) { return null; }
+  }, [selectedSlot, selectedTotalCount, stackOffset, instanceIndex]);
+
+  // Resolve the preview image for the currently-selected stack:
+  //   1. SEED packs → CARD_FRONT_IMAGES (the seed-pack art).
+  //   2. PRODUCE → CROP_CARD_IMAGES (the crop card), keyed by the matching seed id.
+  //   3. Fall back to the inventory icon / base ALL_ITEMS image.
   const selectedCardImage = useMemo(() => {
     if (!selectedSlot) return null;
-    const { baseId, rarityLevel } = getBaseAndRarity(Number(selectedSlot.id));
-    return CARD_FRONT_IMAGES?.[baseId]?.[rarityLevel] || null;
+    const id = Number(selectedSlot.id);
+    const { baseId, rarityLevel } = getBaseAndRarity(id);
+    const cat = (baseId >> 8) & 0xF;
+    let cardImg = null;
+    if (cat >= 5 && cat <= 7) {
+      const seedBaseId = ((cat - 3) << 8) | (baseId & 0xFF);
+      cardImg = CROP_CARD_IMAGES?.[seedBaseId]?.[rarityLevel] || CROP_CARD_IMAGES?.[seedBaseId]?.[1];
+    } else {
+      cardImg = CARD_FRONT_IMAGES?.[baseId]?.[rarityLevel];
+    }
+    if (cardImg) return cardImg;
+    const data = ALL_ITEMS[id];
+    return getInventoryItemImage({ id, label: data?.label, category: data?.category, image: data?.image })
+        || data?.image
+        || null;
   }, [selectedSlot]);
 
+  // Find the player-side selected item's slot index in the rendered grid.
+  const playerSelectedSlotIndex = useMemo(() => {
+    if (playerSelectedItemId == null) return null;
+    return playerItems.findIndex((it) => Number(it.id) === Number(playerSelectedItemId));
+  }, [playerSelectedItemId, playerItems]);
+
+  // Card image for the player-side selection — same lookup the bank side
+  // uses, so produce shows its crop-card art and seeds show pack art.
+  const playerSelectedCardImage = useMemo(() => {
+    if (playerSelectedItemId == null) return null;
+    const id = Number(playerSelectedItemId);
+    const { baseId, rarityLevel } = getBaseAndRarity(id);
+    const cat = (baseId >> 8) & 0xF;
+    let cardImg = null;
+    if (cat >= 5 && cat <= 7) {
+      const seedBaseId = ((cat - 3) << 8) | (baseId & 0xFF);
+      cardImg = CROP_CARD_IMAGES?.[seedBaseId]?.[rarityLevel] || CROP_CARD_IMAGES?.[seedBaseId]?.[1];
+    } else {
+      cardImg = CARD_FRONT_IMAGES?.[baseId]?.[rarityLevel];
+    }
+    if (cardImg) return cardImg;
+    const data = ALL_ITEMS[id];
+    return getInventoryItemImage({ id, label: data?.label, category: data?.category, image: data?.image })
+        || data?.image
+        || null;
+  }, [playerSelectedItemId]);
+
+  // How many of the selected player item exist (for the prev/next cap on the
+  // card preview arrows).
+  const playerSelectedCount = useMemo(() => {
+    if (playerSelectedItemId == null) return 0;
+    const found = playerItems.find((it) => Number(it.id) === Number(playerSelectedItemId));
+    return found ? Number(found.count) || 0 : 0;
+  }, [playerSelectedItemId, playerItems]);
+
+  // Per-instance weight + harvest date for the selected player item.
+  const playerSelectedWeightInfo = useMemo(() => {
+    if (playerSelectedItemId == null) return null;
+    try {
+      const log = JSON.parse(localStorage.getItem('sandbox_produce_weights') || '{}');
+      const entries = log[Number(playerSelectedItemId)];
+      if (!Array.isArray(entries) || entries.length === 0) return null;
+      const startIdx = Math.max(0, entries.length - playerSelectedCount);
+      const idx = startIdx + Math.max(0, playerInstanceIndex);
+      if (idx < 0 || idx >= entries.length) return null;
+      return entries[idx];
+    } catch (_) { return null; }
+  }, [playerSelectedItemId, playerSelectedCount, playerInstanceIndex]);
+
+  const playerSelectedIsProduce = useMemo(() => {
+    if (playerSelectedItemId == null) return false;
+    const cat = (Number(playerSelectedItemId) >> 8) & 0xF;
+    return cat >= 5 && cat <= 7;
+  }, [playerSelectedItemId]);
+
+  const canCyclePlayerPrev = playerSelectedCount > 1 && playerInstanceIndex > 0;
+  const canCyclePlayerNext = playerSelectedCount > 1 && playerInstanceIndex < playerSelectedCount - 1;
+
+  // Card art lookup for any item id (seed pack or produce). Used by the bank
+  // box grid to render the seed/crop image inside each occupied slot.
+  const lookupCardArt = (itemId) => {
+    if (itemId == null) return null;
+    const id = Number(itemId);
+    const { baseId, rarityLevel } = getBaseAndRarity(id);
+    const cat = (baseId >> 8) & 0xF;
+    let cardImg = null;
+    if (cat >= 5 && cat <= 7) {
+      const seedBaseId = ((cat - 3) << 8) | (baseId & 0xFF);
+      cardImg = CROP_CARD_IMAGES?.[seedBaseId]?.[rarityLevel] || CROP_CARD_IMAGES?.[seedBaseId]?.[1];
+    } else {
+      cardImg = CARD_FRONT_IMAGES?.[baseId]?.[rarityLevel];
+    }
+    if (cardImg) return cardImg;
+    const data = ALL_ITEMS[id];
+    return getInventoryItemImage({ id, label: data?.label, category: data?.category, image: data?.image })
+        || data?.image
+        || null;
+  };
+
   return (
-    <>
-      {/* Backdrop dim — same overlay treatment the regular inventory popup uses. */}
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 100000,
+        background: 'rgba(0,0,0,0.65)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        cursor: 'pointer',
+      }}
+    >
+      {/* Player inventory panel — anchored top-left, scaled via CSS zoom so
+          its hit area also shrinks. Click an item to deposit 1 unit (handler
+          will be wired once deposit flow is restored). */}
       <div
-        onClick={onClose}
-        style={{
-          position: 'fixed', inset: 0, zIndex: 100000,
-          background: 'rgba(0,0,0,0.65)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          cursor: 'pointer',
-        }}
+        onClick={(e) => e.stopPropagation()}
+        style={{ position: 'fixed', top: '50%', left: 12, transform: 'translateY(-50%)', zIndex: 100002, pointerEvents: 'auto' }}
       >
-        {/* Centered bank popup — chunked stacks, click to select, WITHDRAW button to act. */}
         <InventoryStylePopup
-          items={bankSlots}
-          capacity={BANK_MAX_SLOTS}
-          page={bankPage}
-          totalPages={bankTotalPages}
-          onPagePrev={() => setBankPage((p) => Math.max(0, p - 1))}
-          onPageNext={() => setBankPage((p) => Math.min(bankTotalPages - 1, p + 1))}
-          onItemClick={(id, slotIndex) => onItemClick(slotIndex, true)}
-          title={`${label} (${bankUsedSlots}/${BANK_MAX_SLOTS})`}
-          actionLabel="WITHDRAW"
-          actionLabelStyle={{ top: 'calc(8% + 480px)', transform: 'translateX(calc(-50% - 235px))' }}
-          actionOnClick={withdrawSelected}
-          previewImage={selectedCardImage}
-          selectedSlotIndex={selectedSlotIndex}
-          onPreviewPrev={canCyclePrev ? () => cycleInstance(-1) : null}
-          onPreviewNext={canCycleNext ? () => cycleInstance(1) : null}
-          previewIndicator={selectedSlotCount > 1 ? `${instanceIndex + 1} / ${selectedSlotCount}` : null}
-          showClose
-          onClose={onClose}
-          showBack
-          onBack={onBack}
+          items={playerItems}
+          page={0}
+          totalPages={1}
+          scale={0.8}
+          onItemClick={(id) => {
+            setPlayerSelectedItemId(id);
+            setPlayerInstanceIndex(0);
+          }}
+          actionLabel="DEPOSIT"
+          actionLabelStyle={{ top: 'calc(8% + 550px)', left: 'calc(50% - 170px)' }}
+          actionOnClick={() => {
+            if (playerSelectedItemId == null) return;
+            const id = playerSelectedItemId;
+            const ok = transferOne(id, false);
+            if (!ok) {
+              // Distinguish "bank full" from "no items of this type left".
+              const stacksBefore = computeBankStacks(getBank());
+              const before = stacksForCount(getBank()[id] || 0);
+              const after = stacksForCount((getBank()[id] || 0) + 1);
+              const wouldOverflow = (stacksBefore - before + after) > BANK_MAX_SLOTS;
+              if (wouldOverflow) {
+                setFeedback('Bank is full!');
+                setTimeout(() => setFeedback(''), 1800);
+              } else {
+                // No items of this id — must have been the last one; auto-advance.
+                autoAdvanceSelectionIfEmpty(id);
+              }
+              return;
+            }
+            setBankState(getBank());
+            refetch && refetch();
+            // Always snap back to the first remaining card so the preview
+            // shows the new "card 1" and not a stale instanceIndex that's
+            // now out of range.
+            setPlayerInstanceIndex(0);
+            autoAdvanceSelectionIfEmpty(id);
+          }}
+          actionLabel2="DEPOSIT STACK"
+          actionLabelStyle2={{ top: 'calc(8% + 550px)', left: '50%' }}
+          actionOnClick2={() => {
+            if (playerSelectedItemId == null) return;
+            const id = playerSelectedItemId;
+            // Loop transferOne until it fails (bank full / no more items).
+            let any = false;
+            const cap = playerSelectedCount + 1;
+            for (let i = 0; i < cap; i++) {
+              if (!transferOne(id, false)) break;
+              any = true;
+            }
+            if (!any) {
+              setFeedback('Bank is full!');
+              setTimeout(() => setFeedback(''), 1800);
+              return;
+            }
+            setBankState(getBank());
+            refetch && refetch();
+            autoAdvanceSelectionIfEmpty(id);
+          }}
+          actionLabel3="DEPOSIT ALL"
+          actionLabelStyle3={{ top: 'calc(8% + 550px)', left: 'calc(50% + 190px)' }}
+          actionOnClick3={() => {
+            // Walk every player item and deposit until the bank is full or
+            // every stack is empty. Player items are produce + seeds combined.
+            let any = false;
+            const itemList = playerItems.map((it) => ({ id: Number(it.id), count: Number(it.count) || 0 }));
+            for (const it of itemList) {
+              for (let i = 0; i < it.count; i++) {
+                if (!transferOne(it.id, false)) {
+                  // Bank is full — stop trying entirely.
+                  i = it.count;
+                  break;
+                }
+                any = true;
+              }
+              // Re-check bank capacity after each item; if any deposit just
+              // failed for "bank full", break the outer loop too.
+              const stacksLeft = BANK_MAX_SLOTS - computeBankStacks(getBank());
+              if (stacksLeft <= 0) break;
+            }
+            if (!any) {
+              setFeedback('Bank is full!');
+              setTimeout(() => setFeedback(''), 1800);
+              return;
+            }
+            setBankState(getBank());
+            refetch && refetch();
+            // After deposit-all, the originally-selected item is most likely
+            // empty — auto-advance so the player isn't stuck on a dead stack.
+            autoAdvanceSelectionIfEmpty(playerSelectedItemId);
+          }}
+          previewImage={playerSelectedCount > 0 ? playerSelectedCardImage : null}
+          previewWeightInfo={playerSelectedCount > 0 ? playerSelectedWeightInfo : null}
+          previewShowWeight={playerSelectedCount > 0 && playerSelectedIsProduce}
+          selectedSlotIndex={playerSelectedCount > 0 ? playerSelectedSlotIndex : null}
+          onPreviewPrev={canCyclePlayerPrev ? () => setPlayerInstanceIndex((i) => Math.max(0, i - 1)) : null}
+          onPreviewNext={canCyclePlayerNext ? () => setPlayerInstanceIndex((i) => Math.min(playerSelectedCount - 1, i + 1)) : null}
+        />
+      </div>
+
+      {/* Banker room — fresh deposit/withdraw UI built on bankerroom1.png.
+          Slots, item grid, deposit/withdraw actions etc. will layer on top
+          of this background as we iterate. */}
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{ position: 'relative', display: 'inline-block', cursor: 'default', marginLeft: '500px' }}
+      >
+        <img
+          src="/images/bank/bankerroom1.png"
+          alt={label || 'Banker'}
+          draggable={false}
+          style={{
+            display: 'block',
+            maxWidth: '90vw',
+            maxHeight: '90vh',
+            objectFit: 'contain',
+            userSelect: 'none',
+          }}
         />
 
-        {/* Floating player-inventory popup — anchored top-left, scaled via CSS zoom so
-            its hit area also shrinks. Click an item to deposit 1 unit. */}
+        {/* Bank-box grid — 4 rows × 6 columns of empty deposit slots overlaid
+            on the bankerroom1 background. Each cell is bankbox.png; item icons
+            will land on top of these as we wire deposits up. */}
         <div
-          onClick={(e) => e.stopPropagation()}
-          style={{ position: 'fixed', top: 12, left: -3, zIndex: 100002, pointerEvents: 'auto' }}
+          style={{
+            position: 'absolute',
+            inset: 0,
+            display: 'grid',
+            gridTemplateColumns: 'repeat(6, 1fr)',
+            gridTemplateRows: 'repeat(4, 1fr)',
+            gap: '8px',
+            padding: 'calc(24% + 30px) 14% 22% 14%',
+            transform: 'translate(20px, 50px)',
+            pointerEvents: 'none',
+          }}
         >
-          <InventoryStylePopup
-            items={playerItems}
-            capacity={15}
-            page={0}
-            totalPages={1}
-            onItemClick={(id) => onItemClick(id, false)}
-            scale={0.25}
-            slotSize={180}
-            gridGap={5}
-            gridTransform="translate(242.5px, 65px)"
-            actionLabel="DEPOSIT"
-          />
+          {Array.from({ length: BANK_SLOTS_PER_PAGE }).map((_, i) => {
+            const absoluteIndex = bankViewPage * BANK_SLOTS_PER_PAGE + i;
+            const slot = bankSlots[absoluteIndex] || null;
+            // Use the small inventory-style icon (seed bag for seeds, crop
+            // sprite for produce) — same lookup the player inventory uses.
+            const data = slot ? ALL_ITEMS[slot.id] : null;
+            const itemImg = slot
+              ? (getInventoryItemImage({
+                  id: slot.id,
+                  label: data?.label,
+                  category: data?.category,
+                  image: data?.image,
+                }) || data?.image)
+              : null;
+            const isSelected = slot && selectedSlotIndex === absoluteIndex;
+            return (
+              <div
+                key={i}
+                onClick={slot ? () => { setSelectedSlotIndex(absoluteIndex); setInstanceIndex(0); } : undefined}
+                onMouseEnter={(e) => {
+                  if (!slot || isSelected) return;
+                  const wrap = e.currentTarget.querySelector('.bank-box-wrap');
+                  if (wrap) {
+                    wrap.style.transform = 'scale(1.1)';
+                    wrap.style.filter = 'brightness(1.15) drop-shadow(0 0 6px rgba(255,220,100,0.9)) drop-shadow(0 0 12px rgba(255,180,40,0.7))';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!slot || isSelected) return;
+                  const wrap = e.currentTarget.querySelector('.bank-box-wrap');
+                  if (wrap) {
+                    wrap.style.transform = 'scale(1)';
+                    wrap.style.filter = 'none';
+                  }
+                }}
+                style={{
+                  position: 'relative',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  pointerEvents: 'auto',
+                  cursor: slot ? 'pointer' : 'default',
+                }}
+              >
+                <div
+                  className="bank-box-wrap"
+                  style={{
+                    position: 'relative',
+                    width: '100%', height: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'transform 0.15s ease-out, filter 0.15s ease-out',
+                    ...(isSelected ? {
+                      transform: 'scale(1.08)',
+                      filter: 'brightness(1.2) drop-shadow(0 0 8px rgba(255,220,100,1)) drop-shadow(0 0 16px rgba(255,180,40,0.9))',
+                    } : {}),
+                  }}
+                >
+                <img
+                  src="/images/bank/bankbox.png"
+                  alt=""
+                  draggable={false}
+                  style={{
+                    width: '100%', height: '100%',
+                    objectFit: 'contain',
+                    userSelect: 'none',
+                  }}
+                />
+                {slot && itemImg && (
+                  <img
+                    src={itemImg}
+                    alt=""
+                    draggable={false}
+                    style={{
+                      position: 'absolute',
+                      top: '50%', left: '50%',
+                      transform: 'translate(-50%, -50%)',
+                      width: '70%', height: '70%',
+                      objectFit: 'contain',
+                      userSelect: 'none',
+                      pointerEvents: 'none',
+                    }}
+                  />
+                )}
+                {slot && slot.count > 1 && (
+                  <span style={{
+                    position: 'absolute',
+                    right: '8%', bottom: '6%',
+                    fontFamily: 'GROBOLD, Cartoonist, sans-serif',
+                    fontSize: 16, color: '#fff',
+                    textShadow: '1px 1px 0 #000, -1px 1px 0 #000, 1px -1px 0 #000, -1px -1px 0 #000',
+                    pointerEvents: 'none',
+                  }}>
+                    {slot.count}
+                  </span>
+                )}
+                </div>
+              </div>
+            );
+          })}
         </div>
+
+        {/* Bank page selector — 3 pages, each showing its own 24-slot grid. */}
+        <div
+          style={{
+            position: 'absolute',
+            bottom: 'calc(6% + 56px)', left: '50%', transform: 'translateX(-50%)',
+            display: 'flex', gap: 8,
+            pointerEvents: 'auto',
+          }}
+        >
+          {Array.from({ length: BANK_PAGE_COUNT }).map((_, p) => {
+            const isActive = bankViewPage === p;
+            return (
+              <div
+                key={p}
+                onClick={() => { setBankViewPage(p); setSelectedSlotIndex(null); setInstanceIndex(0); }}
+                onMouseEnter={(e) => {
+                  if (isActive) return;
+                  e.currentTarget.style.filter = 'brightness(1.15) drop-shadow(0 0 6px rgba(245,216,122,0.85))';
+                  e.currentTarget.style.transform = 'scale(1.05)';
+                }}
+                onMouseLeave={(e) => {
+                  if (isActive) return;
+                  e.currentTarget.style.filter = 'none';
+                  e.currentTarget.style.transform = 'scale(1)';
+                }}
+                style={{
+                  padding: '6px 16px', borderRadius: 8,
+                  background: isActive ? 'rgba(80,50,15,0.95)' : 'rgba(20,10,5,0.92)',
+                  color: isActive ? '#fff' : '#f5d87a',
+                  border: `2px solid ${isActive ? '#f5d87a' : '#c8821a'}`,
+                  fontFamily: 'GROBOLD, Cartoonist, sans-serif',
+                  fontSize: 14, letterSpacing: 1,
+                  textShadow: '1px 1px 0 #000',
+                  cursor: 'pointer', userSelect: 'none',
+                  boxShadow: '0 3px 8px rgba(0,0,0,0.4)',
+                  transition: 'transform 0.15s ease-out, filter 0.15s ease-out',
+                }}
+              >
+                PAGE {p + 1}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* WITHDRAW STACK — pulls the entire selected bank box back into the
+            player inventory. Disabled (greyed) when no slot is selected. */}
+        {(() => {
+          const enabled = selectedSlotIndex != null && bankSlots[selectedSlotIndex]?.count > 0;
+          return (
+            <div
+              onClick={enabled ? withdrawSelectedStack : undefined}
+              style={{
+                position: 'absolute',
+                bottom: '6%', left: '50%', transform: 'translateX(-50%)',
+                padding: '8px 24px', borderRadius: 10,
+                background: 'rgba(20,10,5,0.92)',
+                color: enabled ? '#f5d87a' : '#7a6650',
+                border: `2px solid ${enabled ? '#c8821a' : '#6a4f30'}`,
+                fontFamily: 'GROBOLD, Cartoonist, sans-serif',
+                fontSize: 16, letterSpacing: 2,
+                textShadow: '1px 1px 0 #000',
+                pointerEvents: enabled ? 'auto' : 'none',
+                cursor: enabled ? 'pointer' : 'default',
+                userSelect: 'none',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.45)',
+                whiteSpace: 'nowrap',
+                transition: 'transform 0.15s ease-out, filter 0.15s ease-out',
+                opacity: enabled ? 1 : 0.55,
+              }}
+              onMouseEnter={(e) => {
+                if (!enabled) return;
+                e.currentTarget.style.filter = 'brightness(1.15) drop-shadow(0 0 6px rgba(245,216,122,0.85))';
+                e.currentTarget.style.transform = 'translateX(-50%) scale(1.05)';
+              }}
+              onMouseLeave={(e) => {
+                if (!enabled) return;
+                e.currentTarget.style.filter = 'none';
+                e.currentTarget.style.transform = 'translateX(-50%)';
+              }}
+            >
+              WITHDRAW STACK
+            </div>
+          );
+        })()}
+
+        {/* Close (X) — keeps the cutscene bank flow exitable while the new view is built up. */}
+        <img
+          src="/images/inventory/x.png"
+          alt="Close"
+          draggable={false}
+          onClick={onClose}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'scale(1.1)';
+            e.currentTarget.style.filter = 'brightness(1.15) drop-shadow(0 0 6px rgba(255,220,100,0.9))';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'scale(1)';
+            e.currentTarget.style.filter = 'none';
+          }}
+          style={{
+            position: 'absolute',
+            top: 'calc(8% + 5px)',
+            right: 'calc(4% - 54px)',
+            width: 70, height: 'auto',
+            cursor: 'pointer', userSelect: 'none',
+            transition: 'transform 0.15s ease-out, filter 0.15s ease-out',
+          }}
+        />
 
         {/* Feedback toast */}
         {feedback && (
           <div style={{
-            position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)',
-            zIndex: 100003,
+            position: 'absolute', bottom: 12, left: '50%', transform: 'translateX(-50%)',
+            zIndex: 2,
             padding: '8px 16px', borderRadius: 8,
             background: 'rgba(80,20,20,0.95)', color: '#ff9977',
             fontFamily: 'monospace', fontSize: 13,
+            pointerEvents: 'none',
           }}>
             {feedback}
           </div>
         )}
       </div>
-    </>
+    </div>
   );
 };
 
