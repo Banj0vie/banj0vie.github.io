@@ -32,6 +32,14 @@ body[data-bag-open="true"] nav.game-menu {
   transition: filter 0.2s ease, opacity 0.2s ease;
 }
 
+/* News popup is open — dim the nav (farm/market/dock icons) behind it. */
+body[data-news-open="true"] nav.game-menu {
+  z-index: 1 !important;
+  filter: brightness(0.4);
+  opacity: 0.6;
+  transition: filter 0.2s ease, opacity 0.2s ease;
+}
+
 /* profile bar container */
 .profile-bar {
   display: flex;

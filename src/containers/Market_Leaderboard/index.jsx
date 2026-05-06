@@ -184,8 +184,10 @@ const LeaderboardDialog = ({ onClose }) => {
         {/* BEST FARMER rows */}
         {view === 'bestfarmer' && [34.2, 40.8, 46.9].map((top, i) => (
           <div key={i} style={{ ...ROW_STYLE, top: `${top}%` }}>
-            <span style={{ fontSize: '1.8vmin', color: '#3b1f0a', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px', marginLeft: 70 }}>
-              {MOCK_BEST_FARMER[i].rank}&nbsp;&nbsp;<img src={MOCK_BEST_FARMER[i].pfp} alt="" style={{ width: '2.4vmin', height: '2.4vmin', borderRadius: '50%', objectFit: 'cover', border: '1.5px solid rgba(59,31,10,0.4)' }} />{MOCK_BEST_FARMER[i].name}
+            <span style={{ fontSize: '1.8vmin', color: '#3b1f0a', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px', marginLeft: 70 }}>
+              <span style={{ display: 'inline-block', width: '1.4em', textAlign: 'center' }}>{MOCK_BEST_FARMER[i].rank}</span>
+              <img src={MOCK_BEST_FARMER[i].pfp} alt="" style={{ width: '2.4vmin', height: '2.4vmin', borderRadius: '50%', objectFit: 'cover', border: '1.5px solid rgba(59,31,10,0.4)' }} />
+              {MOCK_BEST_FARMER[i].name}
             </span>
             <span style={{ fontSize: '1.8vmin', color: '#3b1f0a', fontWeight: 'bold' }}>
               {MOCK_BEST_FARMER[i].pts} PTS
@@ -209,8 +211,10 @@ const LeaderboardDialog = ({ onClose }) => {
                 if (entry.kind === 'you') {
                   return (
                     <div key={`wc-you-${i}`} style={{ ...ROW_STYLE, top: slotTops[i] }}>
-                      <span style={{ fontSize: '1.8vmin', color: '#3b1f0a', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px', marginLeft: 70 }}>
-                        {rank}&nbsp;&nbsp;<img src={pfpSrc} alt="you" style={{ width: '2.4vmin', height: '2.4vmin', borderRadius: '50%', objectFit: 'cover', border: '1.5px solid rgba(59,31,10,0.4)' }} />You
+                      <span style={{ fontSize: '1.8vmin', color: '#3b1f0a', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px', marginLeft: 70 }}>
+                        <span style={{ display: 'inline-block', width: '1.4em', textAlign: 'center' }}>{rank}</span>
+                        <img src={pfpSrc} alt="you" style={{ width: '2.4vmin', height: '2.4vmin', borderRadius: '50%', objectFit: 'cover', border: '1.5px solid rgba(59,31,10,0.4)' }} />
+                        You
                       </span>
                       <span style={{ fontSize: '1.8vmin', color: '#3b1f0a', fontWeight: 'bold' }}>
                         {heaviestPotato.weight} KG <PotatoImg />
@@ -220,8 +224,10 @@ const LeaderboardDialog = ({ onClose }) => {
                 }
                 return (
                   <div key={`wc-${i}`} style={{ ...ROW_STYLE, top: slotTops[i] }}>
-                    <span style={{ fontSize: '1.8vmin', color: '#3b1f0a', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px', marginLeft: 70 }}>
-                      {rank}&nbsp;&nbsp;<img src={entry.pfp} alt="" style={{ width: '2.4vmin', height: '2.4vmin', borderRadius: '50%', objectFit: 'cover', border: '1.5px solid rgba(59,31,10,0.4)' }} />{entry.name}
+                    <span style={{ fontSize: '1.8vmin', color: '#3b1f0a', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px', marginLeft: 70 }}>
+                      <span style={{ display: 'inline-block', width: '1.4em', textAlign: 'center' }}>{rank}</span>
+                      <img src={entry.pfp} alt="" style={{ width: '2.4vmin', height: '2.4vmin', borderRadius: '50%', objectFit: 'cover', border: '1.5px solid rgba(59,31,10,0.4)' }} />
+                      {entry.name}
                     </span>
                     <span style={{ fontSize: '1.8vmin', color: '#3b1f0a', fontWeight: 'bold' }}>
                       {entry.kg} KG {entry.emoji}
@@ -231,8 +237,10 @@ const LeaderboardDialog = ({ onClose }) => {
               })}
               {/* Bottom banner — always a replica of the user's actual placement. */}
               <div style={{ ...ROW_STYLE, top: 'calc(52.5% + 7px)' }}>
-                <span style={{ fontSize: '1.8vmin', color: '#f5d87a', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px', marginLeft: 70 }}>
-                  {youRank}&nbsp;&nbsp;<img src={pfpSrc} alt="you" style={{ width: '2.4vmin', height: '2.4vmin', borderRadius: '50%', objectFit: 'cover', border: '1.5px solid #f5d87a' }} />You
+                <span style={{ fontSize: '1.8vmin', color: '#f5d87a', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px', marginLeft: 70 }}>
+                  <span style={{ display: 'inline-block', width: '1.4em', textAlign: 'center' }}>{youRank}</span>
+                  <img src={pfpSrc} alt="you" style={{ width: '2.4vmin', height: '2.4vmin', borderRadius: '50%', objectFit: 'cover', border: '1.5px solid #f5d87a' }} />
+                  You
                 </span>
                 <span style={{ fontSize: '1.8vmin', color: '#f5d87a', fontWeight: 'bold' }}>
                   {heaviestPotato ? `${heaviestPotato.weight} KG` : '— KG'} <PotatoImg />
@@ -274,8 +282,10 @@ const LeaderboardDialog = ({ onClose }) => {
         {/* You — current view */}
         {view === 'bestfarmer' && (
           <div style={{ ...ROW_STYLE, top: 'calc(52.5% + 7px)' }}>
-            <span style={{ fontSize: '1.8vmin', color: '#f5d87a', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px', marginLeft: 70 }}>
-              5&nbsp;&nbsp;<img src={pfpSrc} alt="you" style={{ width: '2.4vmin', height: '2.4vmin', borderRadius: '50%', objectFit: 'cover', border: '1.5px solid #f5d87a' }} />You
+            <span style={{ fontSize: '1.8vmin', color: '#f5d87a', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px', marginLeft: 70 }}>
+              <span style={{ display: 'inline-block', width: '1.4em', textAlign: 'center' }}>5</span>
+              <img src={pfpSrc} alt="you" style={{ width: '2.4vmin', height: '2.4vmin', borderRadius: '50%', objectFit: 'cover', border: '1.5px solid #f5d87a' }} />
+              You
             </span>
             <span style={{ fontSize: '1.8vmin', color: '#f5d87a', fontWeight: 'bold' }}>
               {farmPts.toLocaleString()} PTS

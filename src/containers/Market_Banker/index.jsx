@@ -75,17 +75,84 @@ const BANK_MAX_PER_STACK = 10;
 
 // Number of slots a given total count occupies, given the per-stack cap.
 const stacksForCount = (count) => Math.ceil(Math.max(0, Number(count) || 0) / BANK_MAX_PER_STACK);
-// Total stacks currently used across all bank items.
-const computeBankStacks = (bank) => Object.values(bank || {}).reduce(
-  (sum, c) => sum + stacksForCount(c), 0,
-);
+
+// Storage model: array of length BANK_MAX_SLOTS, each entry either {id, count} or null.
+// Slot index encodes WHICH page a stack lives on, so deposits can target the player's
+// current page even when earlier pages still have empty slots.
+const blankSlots = () => new Array(BANK_MAX_SLOTS).fill(null);
+
+const normalizeSlots = (raw) => {
+  const out = blankSlots();
+  if (!Array.isArray(raw)) return out;
+  for (let i = 0; i < Math.min(raw.length, BANK_MAX_SLOTS); i++) {
+    const s = raw[i];
+    if (s && typeof s === 'object' && s.id != null && Number(s.count) > 0) {
+      out[i] = { id: Number(s.id), count: Math.min(BANK_MAX_PER_STACK, Number(s.count) || 0) };
+    }
+  }
+  return out;
+};
+
+// Migrate the legacy {itemId: count} dict format → packed slot array.
+const migrateDictToSlots = (dict) => {
+  const slots = blankSlots();
+  let idx = 0;
+  for (const [id, count] of Object.entries(dict || {})) {
+    let remaining = Number(count) || 0;
+    while (remaining > 0 && idx < BANK_MAX_SLOTS) {
+      const stackCount = Math.min(BANK_MAX_PER_STACK, remaining);
+      slots[idx++] = { id: Number(id), count: stackCount };
+      remaining -= stackCount;
+    }
+  }
+  return slots;
+};
 
 const getBank = () => {
-  try { return JSON.parse(localStorage.getItem('sandbox_bank_items') || '{}'); }
-  catch { return {}; }
+  try {
+    const raw = JSON.parse(localStorage.getItem('sandbox_bank_items') || 'null');
+    if (Array.isArray(raw)) return normalizeSlots(raw);
+    if (raw && typeof raw === 'object') return migrateDictToSlots(raw);
+  } catch {}
+  return blankSlots();
 };
-const setBank = (bank) => {
-  localStorage.setItem('sandbox_bank_items', JSON.stringify(bank));
+const setBank = (slots) => {
+  localStorage.setItem('sandbox_bank_items', JSON.stringify(slots));
+};
+
+// Total stacks currently used (number of non-null slots).
+const computeBankStacks = (slots) => (slots || []).filter((s) => s != null).length;
+
+// Aggregate counts by item id for "how many of itemId in the bank?" lookups.
+const totalsByItem = (slots) => {
+  const out = {};
+  for (const s of slots || []) {
+    if (!s) continue;
+    out[s.id] = (out[s.id] || 0) + s.count;
+  }
+  return out;
+};
+
+// Find first empty slot at or after fromIndex, wrapping back to start if needed.
+const findEmptySlot = (slots, fromIndex) => {
+  const start = Math.max(0, Math.min(BANK_MAX_SLOTS - 1, fromIndex || 0));
+  for (let i = start; i < BANK_MAX_SLOTS; i++) if (!slots[i]) return i;
+  for (let i = 0; i < start; i++) if (!slots[i]) return i;
+  return -1;
+};
+
+// Find an existing stack of itemId that still has room. Prefer slots at or after
+// fromIndex (so depositing on page 2 tops up a page-2 stack first), then wrap.
+const findStackWithRoom = (slots, itemId, fromIndex = 0) => {
+  const id = Number(itemId);
+  const start = Math.max(0, Math.min(BANK_MAX_SLOTS - 1, fromIndex || 0));
+  for (let i = start; i < BANK_MAX_SLOTS; i++) {
+    if (slots[i] && slots[i].id === id && slots[i].count < BANK_MAX_PER_STACK) return i;
+  }
+  for (let i = 0; i < start; i++) {
+    if (slots[i] && slots[i].id === id && slots[i].count < BANK_MAX_PER_STACK) return i;
+  }
+  return -1;
 };
 
 // Determine which sandbox bucket an item lives in. Produce → sandbox_produce,
@@ -99,44 +166,54 @@ const isProduceItem = (itemId) => {
 };
 
 // Move 1 unit between player inventory and bank. Returns true on success.
-const transferOne = (itemId, fromBank) => {
-  const bank = getBank();
+// `depositPage` is the page index the user is currently viewing — new stacks
+// (when no existing stack has room) are placed in that page first so deposits
+// don't backfill into earlier pages.
+const transferOne = (itemId, fromBank, depositPage = 0) => {
+  const slots = getBank();
+  const id = Number(itemId);
   const produce = (() => { try { return JSON.parse(localStorage.getItem('sandbox_produce') || '{}'); } catch { return {}; } })();
   const loot = (() => { try { return JSON.parse(localStorage.getItem('sandbox_loot') || '{}'); } catch { return {}; } })();
 
   if (fromBank) {
-    // Withdraw: bank → player
-    if ((bank[itemId] || 0) <= 0) return false;
-    bank[itemId] = (bank[itemId] || 0) - 1;
-    if (bank[itemId] <= 0) delete bank[itemId];
-    if (isProduceItem(itemId)) produce[itemId] = (produce[itemId] || 0) + 1;
-    else loot[itemId] = (loot[itemId] || 0) + 1;
+    // Withdraw: pull from the lowest-indexed slot containing this id.
+    let slotIdx = -1;
+    for (let i = 0; i < BANK_MAX_SLOTS; i++) {
+      if (slots[i] && slots[i].id === id) { slotIdx = i; break; }
+    }
+    if (slotIdx === -1) return false;
+    slots[slotIdx].count -= 1;
+    if (slots[slotIdx].count <= 0) slots[slotIdx] = null;
+    if (isProduceItem(id)) produce[id] = (produce[id] || 0) + 1;
+    else loot[id] = (loot[id] || 0) + 1;
   } else {
-    // Deposit: player → bank. Stacks are capped at BANK_MAX_PER_STACK; a deposit that
-    // would push the item past a multiple of the cap creates a fresh stack and must
-    // fit within BANK_MAX_SLOTS total stacks.
-    const stacksBefore = computeBankStacks(bank);
-    const currentItemStacks = stacksForCount(bank[itemId] || 0);
-    const newItemStacks = stacksForCount((bank[itemId] || 0) + 1);
-    const stacksAfter = stacksBefore - currentItemStacks + newItemStacks;
-    if (stacksAfter > BANK_MAX_SLOTS) return false; // bank full
-
+    // Deposit: confirm the player has the item before touching the bank.
     let from = null;
-    if ((produce[itemId] || 0) > 0) from = 'produce';
-    else if ((loot[itemId] || 0) > 0) from = 'loot';
+    if ((produce[id] || 0) > 0) from = 'produce';
+    else if ((loot[id] || 0) > 0) from = 'loot';
     if (!from) return false;
 
-    if (from === 'produce') {
-      produce[itemId] = produce[itemId] - 1;
-      if (produce[itemId] <= 0) delete produce[itemId];
-    } else {
-      loot[itemId] = loot[itemId] - 1;
-      if (loot[itemId] <= 0) delete loot[itemId];
+    const pageStart = Math.max(0, depositPage | 0) * BANK_SLOTS_PER_PAGE;
+    // 1. Try to top up an existing stack of same id, preferring current page.
+    let stackIdx = findStackWithRoom(slots, id, pageStart);
+    if (stackIdx === -1) {
+      // 2. Allocate a new stack starting at the current page; wraps if full.
+      stackIdx = findEmptySlot(slots, pageStart);
+      if (stackIdx === -1) return false; // bank full
+      slots[stackIdx] = { id, count: 0 };
     }
-    bank[itemId] = (bank[itemId] || 0) + 1;
+    slots[stackIdx].count += 1;
+
+    if (from === 'produce') {
+      produce[id] = produce[id] - 1;
+      if (produce[id] <= 0) delete produce[id];
+    } else {
+      loot[id] = loot[id] - 1;
+      if (loot[id] <= 0) delete loot[id];
+    }
   }
 
-  setBank(bank);
+  setBank(slots);
   localStorage.setItem('sandbox_produce', JSON.stringify(produce));
   localStorage.setItem('sandbox_loot', JSON.stringify(loot));
   window.dispatchEvent(new CustomEvent('sandboxGoldChanged'));
@@ -864,27 +941,8 @@ const BankInventoryView = ({ onBack, onClose, label, header }) => {
     }
   };
 
-  const bankItems = useMemo(() => (
-    Object.entries(bankState)
-      .filter(([_, count]) => Number(count) > 0)
-      .map(([id, count]) => ({ id: Number(id), count: Number(count) }))
-      .filter((it) => ALL_ITEMS[it.id])
-  ), [bankState]);
-
-  // Chunk bank items into stacks of at most BANK_MAX_PER_STACK so the grid renders one
-  // box per stack. 8 corn → [{corn,5}, {corn,3}].
-  const bankSlots = useMemo(() => {
-    const out = [];
-    bankItems.forEach((it) => {
-      let remaining = it.count;
-      while (remaining > 0) {
-        const stackCount = Math.min(BANK_MAX_PER_STACK, remaining);
-        out.push({ id: it.id, count: stackCount });
-        remaining -= stackCount;
-      }
-    });
-    return out;
-  }, [bankItems]);
+  // bankSlots is now the storage itself — slot index = grid index.
+  const bankSlots = bankState;
 
   const playerItems = useMemo(() => {
     const all = [...(seeds || []), ...(productions || [])];
@@ -893,7 +951,7 @@ const BankInventoryView = ({ onBack, onClose, label, header }) => {
       .map((it) => ({ id: Number(it.id), count: Number(it.count) }));
   }, [seeds, productions]);
 
-  const bankUsedSlots = bankSlots.length;
+  const bankUsedSlots = computeBankStacks(bankState);
   const bankTotalPages = Math.max(1, Math.ceil(BANK_MAX_SLOTS / 15));
 
   // Bank-side click receives the absolute slot index from InventoryStylePopup; floating
@@ -907,14 +965,12 @@ const BankInventoryView = ({ onBack, onClose, label, header }) => {
     }
     // Floating-popup deposits still happen on click.
     const itemId = idOrSlotIndex;
-    const ok = transferOne(itemId, false);
+    const ok = transferOne(itemId, false, bankViewPage);
     if (!ok) {
-      // Distinguish "bank stack capacity hit" from "you have none of that item".
-      const stacksBefore = computeBankStacks(bankState);
-      const before = stacksForCount(bankState[itemId] || 0);
-      const after = stacksForCount((bankState[itemId] || 0) + 1);
-      const wouldOverflow = (stacksBefore - before + after) > BANK_MAX_SLOTS;
-      setFeedback(wouldOverflow ? 'Bank is full!' : 'Cannot deposit (no items).');
+      // Distinguish "bank full" from "you have none of that item".
+      const slotsNow = getBank();
+      const hasRoom = (findStackWithRoom(slotsNow, itemId, 0) !== -1) || (findEmptySlot(slotsNow, 0) !== -1);
+      setFeedback(hasRoom ? 'Cannot deposit (no items).' : 'Bank is full!');
       setTimeout(() => setFeedback(''), 1800);
       return;
     }
@@ -942,19 +998,9 @@ const BankInventoryView = ({ onBack, onClose, label, header }) => {
     const next = getBank();
     setBankState(next);
     refetch && refetch();
-    // Re-chunk to figure out if our slot is still there. If the slot vanished or the
-    // count shrank below our instance pointer, adjust.
-    const nextSlots = [];
-    Object.entries(next).forEach(([id, c]) => {
-      const num = Number(c) || 0;
-      if (!ALL_ITEMS[Number(id)]) return;
-      let remaining = num;
-      while (remaining > 0) {
-        nextSlots.push({ id: Number(id), count: Math.min(BANK_MAX_PER_STACK, remaining) });
-        remaining -= BANK_MAX_PER_STACK;
-      }
-    });
-    const stillThere = nextSlots[selectedSlotIndex];
+    // The selected slot may have emptied, or its count dropped below the
+    // currently-displayed instanceIndex — clamp/clear as needed.
+    const stillThere = next[selectedSlotIndex];
     if (!stillThere || stillThere.id !== selectedSlot.id) {
       setSelectedSlotIndex(null);
       setInstanceIndex(0);
@@ -978,9 +1024,7 @@ const BankInventoryView = ({ onBack, onClose, label, header }) => {
   // Total count for the selected id across ALL of its slots (bank chunks at 5 each).
   const selectedTotalCount = useMemo(() => {
     if (!selectedSlot) return 0;
-    return bankSlots
-      .filter((s) => s.id === selectedSlot.id)
-      .reduce((sum, s) => sum + (s.count || 0), 0);
+    return bankSlots.reduce((sum, s) => (s && s.id === selectedSlot.id ? sum + (s.count || 0) : sum), 0);
   }, [bankSlots, selectedSlot]);
 
   // Number of items in earlier slots of the same id — used as an offset into the
@@ -1144,14 +1188,12 @@ const BankInventoryView = ({ onBack, onClose, label, header }) => {
           actionOnClick={() => {
             if (playerSelectedItemId == null) return;
             const id = playerSelectedItemId;
-            const ok = transferOne(id, false);
+            const ok = transferOne(id, false, bankViewPage);
             if (!ok) {
               // Distinguish "bank full" from "no items of this type left".
-              const stacksBefore = computeBankStacks(getBank());
-              const before = stacksForCount(getBank()[id] || 0);
-              const after = stacksForCount((getBank()[id] || 0) + 1);
-              const wouldOverflow = (stacksBefore - before + after) > BANK_MAX_SLOTS;
-              if (wouldOverflow) {
+              const slotsNow = getBank();
+              const hasRoom = (findStackWithRoom(slotsNow, id, 0) !== -1) || (findEmptySlot(slotsNow, 0) !== -1);
+              if (!hasRoom) {
                 setFeedback('Bank is full!');
                 setTimeout(() => setFeedback(''), 1800);
               } else {
@@ -1177,7 +1219,7 @@ const BankInventoryView = ({ onBack, onClose, label, header }) => {
             let any = false;
             const cap = playerSelectedCount + 1;
             for (let i = 0; i < cap; i++) {
-              if (!transferOne(id, false)) break;
+              if (!transferOne(id, false, bankViewPage)) break;
               any = true;
             }
             if (!any) {
@@ -1198,7 +1240,7 @@ const BankInventoryView = ({ onBack, onClose, label, header }) => {
             const itemList = playerItems.map((it) => ({ id: Number(it.id), count: Number(it.count) || 0 }));
             for (const it of itemList) {
               for (let i = 0; i < it.count; i++) {
-                if (!transferOne(it.id, false)) {
+                if (!transferOne(it.id, false, bankViewPage)) {
                   // Bank is full — stop trying entirely.
                   i = it.count;
                   break;
@@ -1369,46 +1411,47 @@ const BankInventoryView = ({ onBack, onClose, label, header }) => {
           })}
         </div>
 
-        {/* Bank page selector — 3 pages, each showing its own 24-slot grid. */}
+        {/* Bank page selector — room1/room2/room3 image buttons. Active room
+            scales up to indicate the page being viewed. */}
         <div
           style={{
             position: 'absolute',
-            bottom: 'calc(6% + 56px)', left: '50%', transform: 'translateX(-50%)',
-            display: 'flex', gap: 8,
+            bottom: 'calc(6% + 506px)', left: 'calc(50% + 25px)', transform: 'translateX(-50%)',
+            display: 'flex', gap: 16,
             pointerEvents: 'auto',
           }}
         >
           {Array.from({ length: BANK_PAGE_COUNT }).map((_, p) => {
             const isActive = bankViewPage === p;
             return (
-              <div
+              <img
                 key={p}
+                src={`/images/bank/room${p + 1}.png`}
+                alt={`Page ${p + 1}`}
+                draggable={false}
                 onClick={() => { setBankViewPage(p); setSelectedSlotIndex(null); setInstanceIndex(0); }}
                 onMouseEnter={(e) => {
                   if (isActive) return;
-                  e.currentTarget.style.filter = 'brightness(1.15) drop-shadow(0 0 6px rgba(245,216,122,0.85))';
-                  e.currentTarget.style.transform = 'scale(1.05)';
+                  e.currentTarget.style.transform = 'scale(1.08)';
+                  e.currentTarget.style.filter = 'brightness(0.95) drop-shadow(0 0 6px rgba(255,220,100,0.6))';
                 }}
                 onMouseLeave={(e) => {
                   if (isActive) return;
-                  e.currentTarget.style.filter = 'none';
                   e.currentTarget.style.transform = 'scale(1)';
+                  e.currentTarget.style.filter = 'brightness(0.55) saturate(0.7)';
                 }}
                 style={{
-                  padding: '6px 16px', borderRadius: 8,
-                  background: isActive ? 'rgba(80,50,15,0.95)' : 'rgba(20,10,5,0.92)',
-                  color: isActive ? '#fff' : '#f5d87a',
-                  border: `2px solid ${isActive ? '#f5d87a' : '#c8821a'}`,
-                  fontFamily: 'GROBOLD, Cartoonist, sans-serif',
-                  fontSize: 14, letterSpacing: 1,
-                  textShadow: '1px 1px 0 #000',
-                  cursor: 'pointer', userSelect: 'none',
-                  boxShadow: '0 3px 8px rgba(0,0,0,0.4)',
+                  width: 180, height: 'auto',
+                  cursor: 'pointer',
+                  userSelect: 'none',
+                  objectFit: 'contain',
+                  transform: 'scale(1)',
+                  filter: isActive
+                    ? 'brightness(1.15) drop-shadow(0 0 8px rgba(255,220,100,1))'
+                    : 'brightness(0.55) saturate(0.7)',
                   transition: 'transform 0.15s ease-out, filter 0.15s ease-out',
                 }}
-              >
-                PAGE {p + 1}
-              </div>
+              />
             );
           })}
         </div>
