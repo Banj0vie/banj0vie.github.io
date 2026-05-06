@@ -2,7 +2,7 @@
   "name": "react-default-app",
   "version": "1.0.0",
   "private": true,
-  "homepage": ".",
+  "homepage": "/",
   "dependencies": {
     "@reduxjs/toolkit": "^2.0.1",
     "@supabase/supabase-js": "^2.104.1",
